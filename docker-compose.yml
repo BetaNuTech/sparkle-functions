@@ -1,0 +1,45 @@
+version: "3.7"
+
+services:
+  yarn:
+    image: "node:10.15-alpine"
+    working_dir: /src
+    entrypoint: yarn
+    volumes:
+      - .:/src
+
+  start:
+    image: "node:10.15-alpine"
+    working_dir: /src
+    env_file: .env
+    command: [sh, -c, "yarn start"]
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/src
+
+  gcloud:
+    build:
+      context: .
+      dockerfile: gcloud-Dockerfile
+    working_dir: /root
+    entrypoint: gcloud
+    volumes:
+      - .:/root
+
+  gcloud-auth:
+    build:
+      context: .
+      dockerfile: gcloud-Dockerfile
+    command: [sh, -c, "gcloud auth activate-service-account --key-file=/root/auth.json"]
+    volumes:
+      - .:/root
+
+  deploy:
+    build:
+      context: .
+      dockerfile: gcloud-Dockerfile
+    working_dir: /root
+    command: [sh, -c, "gcloud app deploy app.yaml cron.yaml"]
+    volumes:
+      - .:/root
