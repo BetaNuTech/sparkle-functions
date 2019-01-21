@@ -57,5 +57,8 @@ typings/
 # dotenv environment variables file
 .env
 
-# next.js build output
-.next
+# gcloud files
+auth.json
+.config
+.gsutil
+.boto
