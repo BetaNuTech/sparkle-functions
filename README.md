@@ -54,7 +54,7 @@ docker-compose run yarn
 # Development
 Running the Node.js app
 ```sh
-docker-compose run start
+docker-compose up start
 ```
 
 # Deployment
