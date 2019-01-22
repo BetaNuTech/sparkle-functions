@@ -3,9 +3,9 @@ cron:
   url: /publish/push-messages
   schedule: every 1 hours
 
-- description: Push a "tick" onto pubsub every day
-  url: /publish/daily-tick
-  schedule: every 24 hours
+- description: Trigger sync of all inspections
+  url: /publish/inspections
+  schedule: every 24 hours from 00:00 to 01:00
 
 - description: Push a "tick" onto pubsub every week
   url: /publish/weekly-tick
