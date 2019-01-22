@@ -6,7 +6,7 @@ services:
     working_dir: /src
     entrypoint: yarn
     volumes:
-      - .:/src
+      - ./appengine:/src
 
   start:
     image: "node:10.15-alpine"
@@ -16,7 +16,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - .:/src
+      - ./appengine:/src
 
   gcloud:
     build:
@@ -25,21 +25,24 @@ services:
     working_dir: /root
     entrypoint: gcloud
     volumes:
-      - .:/root
+      - ./gcloud-root:/root
 
   gcloud-auth:
     build:
       context: .
       dockerfile: gcloud-Dockerfile
+    working_dir: /root
     command: [sh, -c, "gcloud auth activate-service-account --key-file=/root/auth.json"]
     volumes:
-      - .:/root
+      - ./gcloud-root:/root
+      - ./auth.json:/root/auth.json
 
   deploy:
     build:
       context: .
       dockerfile: gcloud-Dockerfile
     working_dir: /root
-    command: [sh, -c, "gcloud app deploy app.yaml cron.yaml"]
+    command: [sh, -c, "cd /home && gcloud app deploy app.yaml cron.yaml"]
     volumes:
-      - .:/root
+      - ./gcloud-root:/root
+      - ./appengine:/home
