@@ -1,4 +1,4 @@
-# gcloud-cron-app
+# gCloud CRON App
 Google Cloud Node.js app to issue cron jobs
 
 # Requirements
@@ -6,12 +6,12 @@ Google Cloud Node.js app to issue cron jobs
 - docker-compose
 
 # Setup
-1. (Create gcloud app)[https://console.cloud.google.com/flows/enableapi?apiid=pubsub&redirect=https://console.cloud.google.com]
-- Ensure that (PubSub API)[https://console.cloud.google.com/apis/api/pubsub.googleapis.com/overview] is enabled for app
-- Ensure (Google Cloud Storage)[https://console.cloud.google.com/apis/library/storage-component.googleapis.com?q=storage&id=466e130e-03f7-4da9-965c-10f7e2cf0bd1] is enabled for app (you may have to wait a few minutes before deploying)
-- Ensure that (project billing)[https://support.google.com/cloud/answer/6293499#enable-billing] is enabled for app
+1. [Create gcloud app](https://console.cloud.google.com/flows/enableapi?apiid=pubsub&redirect=https://console.cloud.google.com)
+- Ensure that [PubSub API](https://console.cloud.google.com/apis/api/pubsub.googleapis.com/overview) is enabled for app
+- Ensure [Google Cloud Storage](https://console.cloud.google.com/apis/library/storage-component.googleapis.com?q=storage&id=466e130e-03f7-4da9-965c-10f7e2cf0bd1) is enabled for app (you may have to wait a few minutes before deploying)
+- Ensure that [project billing](https://support.google.com/cloud/answer/6293499#enable-billing) is enabled for app
 
-2. (Create a service account)[https://console.cloud.google.com/iam-admin/serviceaccounts]
+2. [Create a service account](https://console.cloud.google.com/iam-admin/serviceaccounts)
 - Ensure user's have sufficient permissions to deploy apps.
 - Download a JSON key file, used for `gcloud` authorization.
 - Copy the JSON file to repo root as `auth.json`
@@ -38,10 +38,9 @@ Ensure you select the Firebase app as the project
 docker-compose run gcloud app create
 ```
 Follow all instructions, using the user with credentials for Firebase app
-- Ensure you set permissions for users pushing to (Storage buckets)[https://console.cloud.google.com/storage/browser]
+- Ensure you set permissions for users pushing to [Storage buckets](https://console.cloud.google.com/storage/browser)
 
-7. Add .env file for local development
-*Sample .env*
+7. Add `.env` file for local development with following options:
 ```
 GOOGLE_CLOUD_PROJECT=project-id
 PORT=3000
