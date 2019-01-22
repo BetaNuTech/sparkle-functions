@@ -7,6 +7,6 @@ cron:
   url: /publish/inspections
   schedule: every 24 hours from 00:00 to 01:00
 
-- description: Push a "tick" onto pubsub every week
-  url: /publish/weekly-tick
-  schedule: every saturday 00:00
+- description: Trigger sync of all templates
+  url: /publish/templates
+  schedule: every 24 hours from 00:00 to 01:00
