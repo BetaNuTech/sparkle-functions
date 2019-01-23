@@ -20,18 +20,17 @@ services:
 
   yarn-fn:
     image: "node:6.11-alpine"
-    working_dir: /src
+    working_dir: /src/functions
     entrypoint: yarn
     volumes:
-      - ./functions:/src
+      - ./functions:/src/functions
 
   test-fn:
     image: "node:6.11-alpine"
-    working_dir: /src
-    env_file: .env
+    working_dir: /src/functions
     command: [sh, -c, "yarn dev"]
     volumes:
-      - ./functions:/src
+      - ./functions:/src/functions
 
   gcloud:
     build:
