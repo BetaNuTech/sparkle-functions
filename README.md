@@ -5,7 +5,7 @@ Google Cloud Node.js app to issue cron jobs
 - docker
 - docker-compose
 
-# Setup
+# Setup Appengine App
 1. [Create gcloud app](https://console.cloud.google.com/flows/enableapi?apiid=pubsub&redirect=https://console.cloud.google.com)
 - Ensure that [PubSub API](https://console.cloud.google.com/apis/api/pubsub.googleapis.com/overview) is enabled for app
 - Ensure [Google Cloud Storage](https://console.cloud.google.com/apis/library/storage-component.googleapis.com?q=storage&id=466e130e-03f7-4da9-965c-10f7e2cf0bd1) is enabled for app (you may have to wait a few minutes before deploying)
@@ -46,18 +46,29 @@ GOOGLE_CLOUD_PROJECT=project-id
 PORT=3000
 ```
 
-8. Install Node.js dependencies
+8. Install Appengine dependencies
 ```sh
 docker-compose run yarn
 ```
 
-# Development
-Running the Node.js app
+9. Local Appengine Server
 ```sh
 docker-compose up start
 ```
 
-# Deployment
+10. Deploy Appengine
 ```sh
 docker-compose run deploy
+```
+
+# Firebase Functions
+
+1. Install dependencies
+```sh
+docker-compose run yarn-fn add <npm-module>
+```
+
+2. Watch filesystem and run tests
+```sh
+docker-compose run test-fn add <npm-module>
 ```
