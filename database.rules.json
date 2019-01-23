@@ -1,0 +1,22 @@
+{
+  "rules": {
+    "users": {
+      ".indexOn": [
+        "email"
+      ]
+    },
+    "inspections": {
+      ".indexOn": [
+        "property",
+        "inspectionCompleted"
+      ]
+    },
+    "properties": {
+      ".indexOn": [
+        "code"
+      ]
+    },
+    ".read": "auth != null",
+    ".write": "auth != null"
+  }
+}
