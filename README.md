@@ -72,3 +72,11 @@ docker-compose run yarn-fn add <npm-module>
 ```sh
 docker-compose run test-fn add <npm-module>
 ```
+
+3. Deploying Firebase Functions
+```sh
+docker build -t lgvalle/firebase-tools-docker .
+docker run -p 9005:9005 -u node -it lgvalle/firebase-tools-docker sh
+/ $ firebase login
+```
+[Source repository](https://github.com/lgvalle/firebase-tools-docker)
