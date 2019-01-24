@@ -2,7 +2,7 @@ const sinon = require('sinon');
 const { expect } = require('chai');
 const admin = require('firebase-admin');
 const test = require('firebase-functions-test')();
-const { createDatabaseStub } = require('./test-helpers/firebase');
+const { createDatabaseStub, createMessagingStub } = require('./test-helpers/firebase');
 
 const uuid = (function() {
   let i = 0;
@@ -16,6 +16,7 @@ describe('Inspection', function() {
     // Stub admin.initializeApp to avoid live database access
     if (!admin.initializeApp.isSinonProxy) {
       adminInitStub = sinon.stub(admin, 'initializeApp').returns({ database: () => admin });
+      Object.defineProperty(admin, 'messaging', createMessagingStub());
     }
     cloudFunctions = require('./index');
   });

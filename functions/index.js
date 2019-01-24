@@ -577,8 +577,8 @@ exports.templateCategoryDeleteStaging = functionsStagingDatabase.ref('/templateC
 
 // Message Subscribers
 
-exports.pushMessageSync = pushMessages.createPublishHandler('push-messages-sync', functions.pubsub, db);
-exports.pushMessageSyncStaging = pushMessages.createPublishHandler('staging-push-messages-sync', functions.pubsub, dbStaging);
+exports.pushMessageSync = pushMessages.createPublishHandler('push-messages-sync', functions.pubsub, db, admin.messaging());
+exports.pushMessageSyncStaging = pushMessages.createPublishHandler('staging-push-messages-sync', functions.pubsub, dbStaging, admin.messaging());
 
 
 // Local Functions
