@@ -20,7 +20,7 @@ module.exports = {
         const updates = {};
         log.info(`${logPrefix} received ${Date.now()}`);
 
-        const snapShot = yield db.ref('/sendMessages').child().once('value')
+        const snapShot = yield db.ref('/sendMessages').once('value')
 
         // No messages in database
         if (!snapShot.exists()) {
@@ -39,7 +39,7 @@ module.exports = {
           updates[id] = true;
 
           try {
-            const message = yield db.ref(`/sendMessages/${id}`).child().once('value');
+            const message = yield db.ref(`/sendMessages/${id}`).once('value');
             yield db.ref(`/sendMessages/${id}`).update(message.val());
             log.info(`${logPrefix} resent message ${id} successfully`);
           } catch (e) {
