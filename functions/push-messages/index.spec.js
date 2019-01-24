@@ -39,8 +39,10 @@ function stubDb(payload = {}) {
     child() {
       return this;
     },
+    update: () => Promise.resolve(),
     once() {
       return Promise.resolve({
+        val: () => payload,
         toJSON: () => payload,
         hasChildren: () => true,
         exists: () => true

@@ -3,11 +3,7 @@ const { expect } = require('chai');
 const admin = require('firebase-admin');
 const test = require('firebase-functions-test')();
 const { createDatabaseStub, createMessagingStub } = require('./test-helpers/firebase');
-
-const uuid = (function() {
-  let i = 0;
-  return () => `-${++i}`;
-})();
+const uuid = require('./test-helpers/uuid');
 
 describe('Push Messages', function() {
   let cloudFunctions, adminInitStub;
@@ -33,7 +29,7 @@ describe('Push Messages', function() {
       return expect(wrapped(payload)).to.equal(false);
     });
 
-    it('should send message when recipient is undiscoverable', function() {
+    it('should not send message when recipient is undiscoverable', function() {
       let loaded = false;
       const wrapped = test.wrap(cloudFunctions.sendPushMessage);
       const payload = {
@@ -57,6 +53,8 @@ describe('Push Messages', function() {
           }
         })
       );
+
+      Object.defineProperty(admin, 'messaging', createMessagingStub());
 
       return wrapped(payload, { params: { objectId: uuid() } })
         .then(() => expect(loaded).to.equal(true, 'loaded data snapshot successfully'));
@@ -100,7 +98,7 @@ describe('Push Messages', function() {
             expect(expectedPayload.title).to.equal(actualPayload.notification.title, 'sent message title');
             expect(expectedPayload.message).to.equal(actualPayload.notification.body, 'sent message body');
             sentMessage = true;
-            return Promise.resolve();
+            return Promise.resolve('done');
           }
         })
       );
@@ -145,7 +143,7 @@ describe('Push Messages', function() {
             expect(expectedPayload.title).to.equal(actualPayload.notification.title, 'sent message title');
             expect(expectedPayload.message).to.equal(actualPayload.notification.body, 'sent message body');
             sentMessage = true;
-            return Promise.resolve();
+            return Promise.resolve('done');
           }
         })
       );
@@ -203,7 +201,7 @@ describe('Push Messages', function() {
         'messaging',
         createMessagingStub({}, {
           // Add randomness to send message result
-          sendToDevice: () => Math.random() > .5 ? Promise.resolve() : Promise.reject()
+          sendToDevice: () => Math.random() > .5 ? Promise.resolve('done') : Promise.reject('err')
         })
       );
 
