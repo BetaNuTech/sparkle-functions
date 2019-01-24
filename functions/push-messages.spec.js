@@ -11,9 +11,8 @@ describe('Push Messages', function() {
   before(() => {
     // Stub admin.initializeApp to avoid live database access
     if (!admin.initializeApp.isSinonProxy) {
-      adminInitStub = sinon.stub(admin, 'initializeApp').returns({
-        database: () => admin
-      });
+      adminInitStub = sinon.stub(admin, 'initializeApp').returns({ database: () => admin });
+      Object.defineProperty(admin, 'messaging', createMessagingStub());
     }
     cloudFunctions = require('./index');
   });
