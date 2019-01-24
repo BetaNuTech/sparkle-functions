@@ -27,13 +27,25 @@ module.exports = {
           return updates;
         }
 
-        // Trigger `onWrite` for all lingering messages
-        const messageIds = snapShot.hasChildren() ? Object.keys(snapShot.toJSON()) : [snapShot.key];
+        // Collect all message ID's
+        const messageIds = (
+          snapShot.hasChildren() ? Object.keys(snapShot.toJSON()) : [snapShot.key]
+        ).filter(Boolean); // ignore null's
 
-        messageIds.filter(Boolean).forEach((id) => {
+        // Trigger `onWrite` for all lingering messages
+        var id;
+        for (var i = 0; i < messageIds.length; i++) {
+          id = messageIds[i];
           updates[id] = true;
-          log.info(`${logPrefix} triggering message ${id} onWrite`);
-        });
+
+          try {
+            const message = yield db.ref(`/sendMessages/${id}`).child().once('value');
+            yield db.ref(`/sendMessages/${id}`).update(message.val());
+            log.info(`${logPrefix} resent message ${id} successfully`);
+          } catch (e) {
+            log.error(`${logPrefix} resend message ${id} failed`, e);
+          }
+        }
 
         return updates;
       }));
