@@ -19,7 +19,10 @@ module.exports = {
 
     return Object.assign({
       writable: true,
-      value: () => ({ ref: () => childWrapper })
+      value: () => ({
+        _isTestStub: true,
+        ref: () => childWrapper
+      })
     }, config);
   },
 
