@@ -12,7 +12,7 @@ var db = defaultApp.database();
 
 // Staging
 var functionsStagingDatabase = functions.database.instance('staging-sapphire-inspections');
-var dbStaging = defaultApp.database('https://staging-sapphire-inspections.firebaseio.com')
+var dbStaging = defaultApp.database('https://staging-sapphire-inspections.firebaseio.com');
 
 // Create and Deploy Your First Cloud Functions
 // https://firebase.google.com/docs/functions/write-firebase-functions
@@ -381,63 +381,22 @@ exports.inspectionWrite = functions.database.ref('/inspections/{objectId}').onWr
 // Staging Database Functions
 
 exports.sendPushMessageStaging = functionsStagingDatabase.ref('/sendMessages/{objectId}').onWrite((change,event) => {
-    // Exit when the data is deleted.
-    if (!change.after.exists()) {
-        return;
-    }
+  // Exit when the data is deleted.
+  if (!change.after.exists()) {
+      return;
+  }
 
-    var pushMessage = change.after.val();
-    var recipientId = pushMessage.recipientId;
-    var objectId = event.params.objectId;
+  var pushMessage = change.after.val();
+  var recipientId = pushMessage.recipientId;
+  var objectId = event.params.objectId;
 
-    admin.database().ref('/registrationTokens').child(recipientId).once('value')
-        .then(function(dataSnapshot) {
-            // handle read data.
-            if (dataSnapshot.exists()) {
-                // These registration tokens come from the client FCM SDKs.
-                var registrationTokens = [];
-                if (dataSnapshot.hasChildren()) {
-                    dataSnapshot.forEach(function(childSnapshot) {
-                        // key will be "ada" the first time and "alan" the second time
-                        var key = childSnapshot.key;
-                        // childData will be the actual contents of the child
-                        //var childData = childSnapshot.val();
-                        registrationTokens.push(childSnapshot.key)
-                    });
-                } else {
-                    //var data = dataSnapshot.val();
-                    registrationTokens.push(dataSnapshot.key);
-                }
-
-                // See the "Defining the message payload" section above for details
-                // on how to define a message payload.
-                var payload = {
-                    notification: {
-                        title: pushMessage.title,
-                        body: pushMessage.message,
-                        icon: 'https://s3.us-east-2.amazonaws.com/sapphireinspections/assets/app_icon_192.png'
-                    }
-                };
-
-                // Set the message as high priority and have it expire after 24 hours.
-                // var options = {
-                //   priority: "high",
-                //   timeToLive: 60 * 60 * 24
-                // };
-
-                // Send a message to the device corresponding to the provided
-                // registration token with the provided options.
-                admin.messaging().sendToDevice(registrationTokens, payload, {})
-                .then(function(response) {
-                    console.log("Successfully sent message:", response);
-                    admin.database().ref('/sendMessages').child(objectId).remove();
-                })
-                .catch(function(error) {
-                    console.error("Error sending message:", error);
-                    admin.database().ref('/sendMessages').child(objectId).remove();
-                });
-            }
-    });
+  return pushMessages.sendToRecipient(
+    dbStaging,
+    admin.messaging(),
+    recipientId,
+    objectId,
+    pushMessage
+  );
 });
 
 // For migrating to a new architecture only, setting a newer date
