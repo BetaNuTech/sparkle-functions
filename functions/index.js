@@ -4,6 +4,7 @@ const moment = require('moment');
 const admin = require('firebase-admin');
 const log = require('./utils/logger');
 const templateCategories = require('./template-categories');
+const pushMessages = require('./push-messages');
 var config = functions.config().firebase;
 var defaultApp = admin.initializeApp(config);
 
@@ -656,6 +657,11 @@ exports.inspectionWriteStaging = functionsStagingDatabase.ref('/inspections/{obj
 exports.templateCategoryDelete = functions.database.ref('/templateCategories/{objectId}').onDelete(templateCategories.onDeleteHandler(db));
 exports.templateCategoryDeleteStaging = functionsStagingDatabase.ref('/templateCategories/{objectId}').onDelete(templateCategories.onDeleteHandler(dbStaging));
 
+
+// Message Subscribers
+
+exports.pushMessageSync = pushMessages.createPublishHandler('push-messages-sync', functions.pubsub, db);
+exports.pushMessageSyncStaging = pushMessages.createPublishHandler('staging-push-messages-sync', functions.pubsub, dbStaging);
 
 
 // Local Functions
