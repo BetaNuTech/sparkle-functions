@@ -173,24 +173,13 @@ describe('Push Messages', function() {
         key: uuid()
       };
 
-      let childLookups = 0;
       Object.defineProperty(
         admin,
         'database',
         createDatabaseStub({}, snapshot, {
-          child: (actual) => {
-            childLookups++;
-            if (childLookups === 2) {
-              expect(expected).to.equal(actual);
-            }
-
-            return {
-              once: () => Promise.resolve(snapshot),
-              remove: () => {
-                removedMessage = true;
-                return Promise.resolve();
-              }
-            };
+          remove: () => {
+            removedMessage = true;
+            return Promise.resolve();
           }
         })
       );
