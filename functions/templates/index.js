@@ -1,6 +1,7 @@
 const co = require('co');
 const log = require('../utils/logger');
 const propertyTemplates = require('../property-templates');
+const adminUtils = require('../utils/firebase-admin');
 
 const LOG_PREFIX = 'templates:';
 
@@ -14,7 +15,6 @@ module.exports = {
   * @return {functions.CloudFunction}
   */
   createPublishHandler(topic = '', pubSub, db) {
-    const self = this;
     const logPrefix = `${LOG_PREFIX} onPublish: ${topic}:`;
 
     return pubSub
@@ -24,7 +24,7 @@ module.exports = {
       log.info(`${logPrefix} received ${Date.now()}`);
 
       // Collect all template ID's
-      const templateIds = yield self._fetchRecordIds(db, '/templates');
+      const templateIds = yield adminUtils.fetchRecordIds(db, '/templates');
 
       // No templates in database
       if (!templateIds.length) {
@@ -46,7 +46,7 @@ module.exports = {
         }
       }
 
-      const propertyIds = yield self._fetchRecordIds(db, '/properties');
+      const propertyIds = yield adminUtils.fetchRecordIds(db, '/properties');
 
       // Remove templates disassociated with property
       for (i = 0; i < propertyIds.length; i++) {
@@ -54,8 +54,8 @@ module.exports = {
 
         try {
           const propertySnap = yield db.ref(`/properties/${id}`).once('value');
-          const currentTemplateIds = Object.keys((propertySnap.val() || { templates: {} }).templates || {});
-          const previousTemplateIds = yield self._fetchRecordIds(db, `/propertyTemplates/${id}`);
+          const currentTemplateIds = Object.keys((propertySnap.val() || {}).templates || {});
+          const previousTemplateIds = yield adminUtils.fetchRecordIds(db, `/propertyTemplates/${id}`);
           const removedTemplateIds = previousTemplateIds.filter(tmplId => currentTemplateIds.indexOf(tmplId) === -1);
 
           for (k = 0; i < removedTemplateIds.length; i++) {
@@ -69,19 +69,5 @@ module.exports = {
 
       return updates;
     }));
-  },
-
-  _fetchRecordIds(db, recordPath) {
-    return db.ref(recordPath).once('value').then((snapShot) => {
-      // No records in database
-      if (!snapShot.exists()) {
-        return [];
-      }
-
-      // Collect all truthy ID's
-      return (
-        snapShot.hasChildren() ? Object.keys(snapShot.toJSON()) : [snapShot.key]
-      ).filter(Boolean); // ignore null's
-    });
   }
 };
