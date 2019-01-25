@@ -41,12 +41,33 @@ module.exports = {
         }
       }
 
-      // Log orphaned /completedInspections
-      var orphanedCompletedInspIds = yield adminUtils.fetchRecordIds(db, '/completedInspections');
-      orphanedCompletedInspIds = orphanedCompletedInspIds.filter((compId) => inspectionIds.indexOf(compId) === -1);
-      for (i = 0; i < orphanedCompletedInspIds.length; i++) {
-        log.info(`${logPrefix} orphaned inspection proxy: /completedInspections/${orphanedCompletedInspIds[i]}`);
-      }
+      // Log orphaned proxy inspections
+      const propertyIds = yield adminUtils.fetchRecordIds(db, '/properties');
+      var nestedInspIds = yield Promise.all(propertyIds.map((propertyId) => adminUtils.fetchRecordIds(db, `/properties/${propertyId}/inspections`)));
+      nestedInspIds = flatten(nestedInspIds);
+      var propInspIds = yield Promise.all(propertyIds.map((propertyId) => adminUtils.fetchRecordIds(db, `/propertyInspections/${propertyId}/inspections`)));
+      propInspIds = flatten(propInspIds);
+      const completedInspIds = yield adminUtils.fetchRecordIds(db, '/completedInspections');
+
+      const proxyInspectionIds = []
+        .concat(nestedInspIds, propInspIds, completedInspIds) // flatten
+        .filter((inspId, index, arr) => arr.indexOf(inspId) === index); // unique only
+
+      proxyInspectionIds
+        .filter((inspId) => inspectionIds.indexOf(inspId) === -1) // find orphaned
+        .forEach((orphanedId) => {
+          if (nestedInspIds.indexOf(orphanedId) > -1) {
+            log.info(`${logPrefix} orphaned inspection proxy: /properties/*/inspections/${orphanedId}`);
+          }
+
+          if (propInspIds.indexOf(orphanedId) > -1) {
+            log.info(`${logPrefix} orphaned inspection proxy: /propertyInspections/*/inspections/${orphanedId}`);
+          }
+
+          if (completedInspIds.indexOf(orphanedId) > -1) {
+            log.info(`${logPrefix} orphaned inspection proxy: /completedInspections/${orphanedId}`);
+          }
+        });
 
       return updates;
     }));
@@ -203,3 +224,7 @@ module.exports = {
     });
   }
 };
+
+function flatten(arr) {
+  return [].concat.apply([], arr);
+}
