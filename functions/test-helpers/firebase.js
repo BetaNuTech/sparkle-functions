@@ -27,6 +27,18 @@ module.exports = {
   },
 
   /**
+   * Create stub for PubSub Subscriber
+   * @return {Object} - Wrapper for `firebase.pubsub.topic.onPublish()`
+   */
+  createPubSubStub() {
+    return {
+      topic: () => ({
+        onPublish: (fn) => fn()
+      })
+    };
+  },
+
+  /**
    * Create a Firebase messaging stub with a provided API
    * @param  {Object} config
    * @param  {Object} api
