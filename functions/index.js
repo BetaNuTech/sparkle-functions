@@ -6,6 +6,7 @@ const log = require('./utils/logger');
 const templateCategories = require('./template-categories');
 const pushMessages = require('./push-messages');
 const templates = require('./templates');
+const propertyTemplates = require('./property-templates');
 var config = functions.config().firebase;
 var defaultApp = admin.initializeApp(config);
 
@@ -235,7 +236,7 @@ exports.propertyTemplatesWrite = functions.database.ref('/properties/{objectId}/
 
     // Find removed templates and remove them
     if (templatesPrevious != null) {
-        var templatesRemoved = findTemplatesRemoved(templatesPrevious, templatesCurrent); // Array of template keys
+        var templatesRemoved = templates.findRemoved(templatesPrevious, templatesCurrent); // Array of template keys
         if (templatesRemoved.length > 0) {
             log.info('templates removed count: ', templatesRemoved.length);
             templatesRemoved.forEach(function(templateKey) {
@@ -244,7 +245,7 @@ exports.propertyTemplatesWrite = functions.database.ref('/properties/{objectId}/
         }
     }
 
-    return processTemplatesWrite(adminDb, propertyId, templatesCurrent);
+    return propertyTemplates.processWrite(adminDb, propertyId, templatesCurrent);
 });
 
 // Property onWrite
@@ -279,7 +280,7 @@ exports.propertyWrite = functions.database.ref('/properties/{objectId}').onWrite
 
     // Find removed templates and remove them
     if (templatesPrevious != null) {
-        var templatesRemoved = findTemplatesRemoved(templatesPrevious, templatesCurrent); // Array of template keys
+        var templatesRemoved = templates.findRemoved(templatesPrevious, templatesCurrent); // Array of template keys
         if (templatesRemoved.length > 0) {
             log.info('templates removed count: ', templatesRemoved.length);
             templatesRemoved.forEach(function(templateKey) {
@@ -288,7 +289,7 @@ exports.propertyWrite = functions.database.ref('/properties/{objectId}').onWrite
         }
     }
 
-    return processTemplatesWrite(adminDb, propertyId, templatesCurrent);
+    return propertyTemplates.processWrite(adminDb, propertyId, templatesCurrent);
 });
 
 // Template onWrite
@@ -455,7 +456,7 @@ exports.propertyTemplatesWriteStaging = functionsStagingDatabase.ref('/propertie
 
     // Find removed templates and remove them
     if (templatesPrevious != null) {
-        var templatesRemoved = findTemplatesRemoved(templatesPrevious, templatesCurrent); // Array of template keys
+        var templatesRemoved = templates.findRemoved(templatesPrevious, templatesCurrent); // Array of template keys
         if (templatesRemoved.length > 0) {
             console.log('templates removed count: ', templatesRemoved.length);
             templatesRemoved.forEach(function(templateKey) {
@@ -464,7 +465,7 @@ exports.propertyTemplatesWriteStaging = functionsStagingDatabase.ref('/propertie
         }
     }
 
-    return processTemplatesWrite(dbStaging, propertyId, templatesCurrent);
+    return propertyTemplates.processWrite(dbStaging, propertyId, templatesCurrent);
 });
 
 // Property onWrite
@@ -492,7 +493,7 @@ exports.propertyWriteStaging = functionsStagingDatabase.ref('/properties/{object
 
     // Find removed templates and remove them
     if (templatesPrevious != null) {
-        var templatesRemoved = findTemplatesRemoved(templatesPrevious, templatesCurrent); // Array of template keys
+        var templatesRemoved = templates.findRemoved(templatesPrevious, templatesCurrent); // Array of template keys
         if (templatesRemoved.length > 0) {
             console.log('templates removed count: ', templatesRemoved.length);
             templatesRemoved.forEach(function(templateKey) {
@@ -501,7 +502,7 @@ exports.propertyWriteStaging = functionsStagingDatabase.ref('/properties/{object
         }
     }
 
-    return processTemplatesWrite(dbStaging, propertyId, templatesCurrent);
+    return propertyTemplates.processWrite(dbStaging, propertyId, templatesCurrent);
 });
 
 // Template onWrite
@@ -746,49 +747,6 @@ function processInspectionWrite(database, objectId, inspection) {
     });
 };
 
-function processTemplatesWrite(database, propertyId, templatesHash) {
-    if (templatesHash != null) {
-        const updates = {};
-        log.info('Writing to /propertyTemplates/', propertyId, ' with count: ', Object.keys(templatesHash).length);
-        Object.keys(templatesHash).forEach(function(templateKey) {
-            database.ref('/templates').child(templateKey).once('value').then(function(templateSnapshot) {
-                if (templateSnapshot.exists()) {
-                    var template = templateSnapshot.val(); // Assumed hash data, with no children
-                    var templateCopy = {};
-                    templateCopy['name'] = template.name;
-                    if (templateCopy['name'] == null) {
-                        templateCopy['name'] = '';
-                    }
-                    templateCopy['description'] = template.description;
-                    if (templateCopy['description'] == null) {
-                        templateCopy['description'] = '';
-                    }
-                    database.ref('/propertyTemplates').child(propertyId).child(templateKey).set(templateCopy);
-                    updates[`/propertyTemplates/${propertyId}/${templateKey}`] = 'upserted';
-                }
-            });
-        });
-
-        // Check updated propertyTemplates to remove templates that shouldn't be there
-        return database.ref('/propertyTemplates').child(propertyId).once('value').then(function(templatesSnapshot) {
-            if (templatesSnapshot.exists()) {
-                var templatesRemoved = findTemplatesRemoved(templatesSnapshot.val(), templatesHash); // Array of template keys
-                if (templatesRemoved.length > 0) {
-                    log.info('templates removed count: ', templatesRemoved.length);
-                    return Promise.all(templatesRemoved.map(templateKey =>
-                        database.ref('/propertyTemplates').child(propertyId).child(templateKey).remove()
-                          .then(() => {
-                            updates[`/propertyTemplates/${propertyId}/${templateKey}`] = 'removed';
-                          })
-                    ));
-                }
-            }
-        }).then(() => updates);
-    }
-
-    return [];
-};
-
 function removeTemplateInPropertyTemplates(database, templateId) {
     return database.ref('/propertyTemplates').once('value').then(function(propertyTemplatesSnapshot) {
         if (propertyTemplatesSnapshot.exists()) {
@@ -847,17 +805,6 @@ function updateTemplateInPropertyTemplates(database, templateId, template) {
 
         return Promise.resolve({});
     });
-};
-
-function findTemplatesRemoved(prev, current) {
-    var templateKeysRemoved = [];
-    Object.keys(prev).forEach(function(templateKey) {
-        if (current == null || current[templateKey] == null) {
-            templateKeysRemoved.push(templateKey);
-        }
-    });
-
-    return templateKeysRemoved;
 };
 
 function timeConverter(UNIX_timestamp){

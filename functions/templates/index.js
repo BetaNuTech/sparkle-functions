@@ -32,5 +32,23 @@ module.exports = {
         snapShot.hasChildren() ? Object.keys(snapShot.toJSON()) : [snapShot.key]
       ).filter(Boolean); // ignore null's
     }));
-  }
+  },
+
+  /**
+   * Create list of template ID's no longer in current object
+   * @param  {Object} prev
+   * @param  {Object} current
+   * @return {String[]} - removed ID's
+   */
+   findRemoved(prev, current) {
+     var templateKeysRemoved = [];
+
+     Object.keys(prev).forEach((templateKey) => {
+       if (current == null || current[templateKey] == null) {
+         templateKeysRemoved.push(templateKey);
+       }
+     });
+
+     return templateKeysRemoved;
+   }
 };
