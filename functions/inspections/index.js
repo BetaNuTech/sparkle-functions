@@ -41,6 +41,13 @@ module.exports = {
         }
       }
 
+      // Log orphaned /completedInspections
+      var orphanedCompletedInspIds = yield adminUtils.fetchRecordIds(db, '/completedInspections');
+      orphanedCompletedInspIds = orphanedCompletedInspIds.filter((compId) => inspectionIds.indexOf(compId) === -1);
+      for (i = 0; i < orphanedCompletedInspIds.length; i++) {
+        log.info(`${logPrefix} orphaned inspection proxy: /completedInspections/${orphanedCompletedInspIds[i]}`);
+      }
+
       return updates;
     }));
   },
