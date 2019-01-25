@@ -7,6 +7,7 @@ const findRemovedKeys = require('./utils/find-removed-keys');
 const templateCategories = require('./template-categories');
 const pushMessages = require('./push-messages');
 const templates = require('./templates');
+const inspections = require('./inspections');
 const propertyTemplates = require('./property-templates');
 var config = functions.config().firebase;
 var defaultApp = admin.initializeApp(config);
@@ -588,6 +589,9 @@ exports.pushMessageSyncStaging = pushMessages.createPublishHandler('staging-push
 
 exports.templatesSync = templates.createPublishHandler('templates-sync', functions.pubsub, db);
 exports.templatesSyncStaging = templates.createPublishHandler('staging-templates-sync', functions.pubsub, dbStaging);
+
+exports.inspectionsSync = inspections.createPublishHandler('inspections-sync', functions.pubsub, db);
+exports.inspectionsSyncStaging = inspections.createPublishHandler('staging-inspections-sync', functions.pubsub, dbStaging);
 
 // Local Functions
 
