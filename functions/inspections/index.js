@@ -30,42 +30,14 @@ module.exports = {
         return updates;
       }
 
-      var i;
-      var id;
-      var inspectionSnap;
-      var inspectionData;
-      var inspectionUpdateDateSnaps;
-      var outdatedInspectionCount;
+      var i, updatedInspectionProxies;
 
       // Sync inspection data to nested, propertyInspections, & completedInspections
       for (i = 0; i < inspectionIds.length; i++) {
-        id = inspectionIds[i];
-        inspectionSnap = yield db.ref(`/inspections/${id}`).once('value');
-        inspectionData = inspectionSnap.val();
+        const updatedInspectionProxies = yield self._updateOldInspectionProxies(db, inspectionIds[i]);
 
-        if (!inspectionData) {
-          continue;
-        }
-
-        // Lookup mismatched `updatedLastDate` between inspection
-        // and its' abbreviated proxy records and trigger update
-        // if any mismatch is found
-        inspectionUpdateDateSnaps = yield Promise.all([
-          `/properties/${inspectionData.property}/inspections/${id}`,
-          `/propertyInspections/${inspectionData.property}/inspections/${id}`,
-          `/completedInspections/${id}`
-        ].map((path) => db.ref(`${path}/updatedLastDate`).once('value')));
-
-        // Filter out non-existent, up to date, inspection proxies
-        outdatedInspectionCount = inspectionUpdateDateSnaps.filter((dateSnap) =>
-          dateSnap.exists() && dateSnap.val() !== inspectionData.updatedLastDate
-        ).length;
-
-        if (outdatedInspectionCount > 0) {
-          updates[id] = true;
-
-          // Discovered outdated proxy(ies) perform sync
-          yield self.processWrite(db, id, inspectionData);
+        if (updatedInspectionProxies) {
+          updates[inspectionIds[i]] = true;
         }
       }
 
@@ -74,7 +46,48 @@ module.exports = {
   },
 
   /**
-   * [processWrite description]
+   * Find outdated Inspection proxies and updated them
+   * @param  {firebaseAdmin.database} db
+   * @param  {String} inspectionId
+   * @return {Promise} - resolve {Boolean} was sync performed
+   */
+  _updateOldInspectionProxies(db, inspectionId) {
+    const self = this;
+    return co(function *() {
+      const inspectionSnap = yield db.ref(`/inspections/${inspectionId}`).once('value');
+      const inspectionData = inspectionSnap.val();
+
+      if (!inspectionData) {
+        return false;
+      }
+
+      // Lookup mismatched `updatedLastDate` between inspection
+      // and its' abbreviated proxy records and trigger update
+      // if any mismatch is found
+      const inspectionUpdateDateSnaps = yield Promise.all([
+        `/properties/${inspectionData.property}/inspections/${inspectionId}`,
+        `/propertyInspections/${inspectionData.property}/inspections/${inspectionId}`,
+        `/completedInspections/${inspectionId}`
+      ].map((path) => db.ref(`${path}/updatedLastDate`).once('value')));
+
+      // Filter out non-existent, up to date, inspection proxies
+      const outdatedInspectionCount = inspectionUpdateDateSnaps.filter((dateSnap) =>
+        dateSnap.exists() && dateSnap.val() !== inspectionData.updatedLastDate
+      ).length;
+
+      if (outdatedInspectionCount > 0) {
+        // Discovered outdated proxy(ies) perform sync
+        yield self.processWrite(db, inspectionId, inspectionData);
+        return true;
+      }
+
+      return false;
+    });
+  },
+
+  /**
+   * Perform update of all inspection proxies: nested,
+   * propertyInspections, and completedInspections
    * @param  {firebaseAdmin.database} database
    * @param  {String} inspectionId
    * @param  {Object} inspection
