@@ -28,12 +28,11 @@ describe('Templates Sync', () => {
   it('should update an existing template\'s data in /propertyTemplates', () => co(function *() {
     const tmplId = uuid();
     const propertyId = uuid();
-    const tmplPath = `/templates/${tmplId}`;
     const expected = { description: `desc${tmplId}`, name: `new${tmplId}` };
     const propertyData = { templates: { [tmplId]: true } };
 
     // Setup database records for test
-    yield db.ref(tmplPath).set(expected);
+    yield db.ref(`/templates/${tmplId}`).set(expected);
     yield db.ref(`/properties/${propertyId}`).set(propertyData);
     yield db.ref('/propertyTemplates').set({ [propertyId]: { [tmplId]: { name: 'old' } } }); // must exist
 
@@ -41,5 +40,31 @@ describe('Templates Sync', () => {
     yield wrapped();
     const actual = yield db.ref(`/propertyTemplates/${propertyId}/${tmplId}`).once('value');
     expect(expected).to.deep.equal(actual.val());
+  }));
+
+  it('should remove /propertyTemplates no longer associated with property', () => co(function *() {
+    const oldTmplId = uuid();
+    const currTmplId = uuid();
+    const propertyId = uuid();
+    const templateData = { name: `remove${oldTmplId}` };
+    const propertyData = { templates: { [currTmplId]: true } }; // not associated w/ oldTmplId
+
+    // Setup database records for test
+    yield db.ref(`/templates/${oldTmplId}`).set(templateData);
+    yield db.ref(`/properties/${propertyId}`).set(propertyData);
+    yield db.ref('/propertyTemplates').set({
+      [propertyId]: {
+        [oldTmplId]: templateData, // must exist
+        [currTmplId]: { name: 'current' }
+      }
+    });
+
+    const wrapped = test.wrap(cloudFunctions.templatesSync);
+    yield wrapped();
+
+    const removedtmpl = yield db.ref(`/propertyTemplates/${propertyId}/${oldTmplId}`).once('value');
+    expect(removedtmpl.exists()).to.equal(false, 'removed disassociated propertyTemplate');
+    const currentTmpl = yield db.ref(`/propertyTemplates/${propertyId}/${currTmplId}`).once('value');
+    expect(currentTmpl.exists()).to.equal(true, 'kept associated propertyTemplate');
   }));
 });
