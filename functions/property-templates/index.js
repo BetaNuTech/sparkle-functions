@@ -53,7 +53,7 @@ module.exports = {
   },
 
   /**
-   * Upsert template into /propertyTemplates
+   * Update existing template in /propertyTemplates
    * @param  {firebaseAdmin.database}
    * @param  {String} templateId
    * @param  {Object} template

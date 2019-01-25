@@ -1,4 +1,5 @@
 const co = require('co');
+const log = require('../utils/logger');
 const propertyTemplates = require('../property-templates');
 
 const LOG_PREFIX = 'templates:';
