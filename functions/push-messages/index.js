@@ -10,9 +10,11 @@ module.exports = {
   * @param  {String} topic
   * @param  {functions.pubsub} pubSub
   * @param  {firebaseAdmin.database} db
+  * @param {firebaseAdmin.messaging} msg
   * @return {functions.CloudFunction}
   */
-  createPublishHandler(topic = '', pubSub, db) {
+  createPublishHandler(topic = '', pubSub, db, msg) {
+    const self = this;
     const logPrefix = `${LOG_PREFIX} onPublish: ${topic}:`;
     return pubSub
     .topic(topic)
@@ -39,8 +41,17 @@ module.exports = {
         updates[id] = true;
 
         try {
-          const message = yield db.ref(`/sendMessages/${id}`).once('value');
-          yield db.ref(`/sendMessages/${id}`).update(message.val());
+          const path = `/sendMessages/${id}`;
+          const message = yield db.ref(path).once('value');
+          const messageData = message.val();
+          yield self.sendToRecipient(
+            db,
+            msg,
+            messageData.recipientId,
+            id,
+            messageData
+          );
+          yield db.ref(path).remove();
           log.info(`${logPrefix} resent message ${id} successfully`);
         } catch (e) {
           log.error(`${logPrefix} resend message ${id} failed`, e);
@@ -106,7 +117,6 @@ module.exports = {
         log.error(`Error sending message: ${e}`);
       }
 
-      yield db.ref('/sendMessages').child(messageId).remove();
       return registrationTokens;
     });
   }
