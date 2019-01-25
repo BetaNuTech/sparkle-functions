@@ -1,10 +1,11 @@
 const co = require('co');
+const propertyTemplates = require('../property-templates');
 
 const LOG_PREFIX = 'templates:';
 
 module.exports = {
  /**
-  * Sync /propertyTemplates with templates and log
+  * Sync templates with propertyTemplates and log
   * any orphaned records
   * @param  {String} topic
   * @param  {functions.pubsub} pubSub
@@ -31,24 +32,23 @@ module.exports = {
       const templateIds = (
         snapShot.hasChildren() ? Object.keys(snapShot.toJSON()) : [snapShot.key]
       ).filter(Boolean); // ignore null's
+
+      var id, i;
+
+      // Sync existing templates w/ /propertyTemplates
+      for (i = 0; i < templateIds.length; i++) {
+        id = templateIds[i];
+
+        try {
+          const templateSnap = yield db.ref(`/templates/${id}`).once('value');
+          yield propertyTemplates.update(db, id, templateSnap.val());
+          updates[id] = true;
+        } catch (e) {
+          log.error(`${logPrefix} update failed`, e);
+        }
+      }
+
+      return updates;
     }));
-  },
-
-  /**
-   * Create list of template ID's no longer in current object
-   * @param  {Object} prev
-   * @param  {Object} current
-   * @return {String[]} - removed ID's
-   */
-   findRemoved(prev, current) {
-     var templateKeysRemoved = [];
-
-     Object.keys(prev).forEach((templateKey) => {
-       if (current == null || current[templateKey] == null) {
-         templateKeysRemoved.push(templateKey);
-       }
-     });
-
-     return templateKeysRemoved;
-   }
+  }
 };
