@@ -160,17 +160,19 @@ exports.sendPushMessage = functions.database.ref('/sendMessages/{objectId}').onW
         return false;
     }
 
+    var adminDb = admin.database();
     var pushMessage = change.after.val();
     var recipientId = pushMessage.recipientId;
     var objectId = event.params.objectId;
 
     return pushMessages.sendToRecipient(
-      admin.database(),
+      adminDb,
       admin.messaging(),
       recipientId,
       objectId,
       pushMessage
-    );
+    )
+    .then(() => adminDb.ref(`/sendMessages/${objectId}`).remove());
 });
 
 // For migrating to a new architecture only, setting a newer date
@@ -396,7 +398,8 @@ exports.sendPushMessageStaging = functionsStagingDatabase.ref('/sendMessages/{ob
     recipientId,
     objectId,
     pushMessage
-  );
+  )
+  .then(() => dbStaging.ref(`/sendMessages/${objectId}`).remove());
 });
 
 // For migrating to a new architecture only, setting a newer date
