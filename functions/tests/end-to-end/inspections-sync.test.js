@@ -71,4 +71,37 @@ describe('Inspections Sync', () => {
     delete expectedCompleted.totalItems;
     expect(expectedCompleted).to.deep.equal(completedInspection.val(), 'updated nested /completedInspections');
   }));
+
+  it('should remove a completedInspection that becomes incomplete', () => co(function *() {
+    const inspId = uuid();
+    const propertyId = uuid();
+    const now = Date.now() / 1000;
+    const newInspection = {
+      templateName: `name${inspId}`,
+      inspector: '23423423',
+      inspectorName: 'testor',
+      creationDate: now - 100000,
+      score: 10,
+      deficienciesExist: false,
+      itemsCompleted: 10,
+      totalItems: 10,
+      property: propertyId,
+      updatedLastDate: now,
+      inspectionCompleted: false
+    };
+    const oldInspection = Object.assign({}, newInspection, { inspectionCompleted: true, updatedLastDate: now - 1000 })
+
+    // Setup database
+    yield db.ref(`/inspections/${inspId}`).set(newInspection);
+    yield db.ref(`/properties/${propertyId}`).set({ inspections: { [inspId]: oldInspection } });
+    yield db.ref(`/completedInspections/${inspId}`).set(oldInspection);
+
+    // execute
+    const wrapped = test.wrap(cloudFunctions.inspectionsSync);
+    yield wrapped();
+
+    // Lookup updated records
+    const actual = yield db.ref(`/completedInspections/${inspId}`).once('value');
+    expect(actual.exists()).to.equal(false);
+  }));
 });
