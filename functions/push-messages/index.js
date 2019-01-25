@@ -22,7 +22,7 @@ module.exports = {
       const updates = {};
       log.info(`${logPrefix} received ${Date.now()}`);
 
-      const snapShot = yield db.ref('/sendMessages').once('value')
+      const snapShot = yield db.ref('/sendMessages').once('value');
 
       // No messages in database
       if (!snapShot.exists()) {

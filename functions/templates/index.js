@@ -18,6 +18,19 @@ module.exports = {
     .topic(topic)
     .onPublish(() => co(function *() {
       log.info(`${logPrefix} received ${Date.now()}`);
+
+      const updates = {};
+      const snapShot = yield db.ref('/templates').once('value');
+
+      // No templates in database
+      if (!snapShot.exists()) {
+        return updates;
+      }
+
+      // Collect all template ID's
+      const templateIds = (
+        snapShot.hasChildren() ? Object.keys(snapShot.toJSON()) : [snapShot.key]
+      ).filter(Boolean); // ignore null's
     }));
   }
 };
