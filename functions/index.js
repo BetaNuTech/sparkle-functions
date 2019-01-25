@@ -5,6 +5,7 @@ const admin = require('firebase-admin');
 const log = require('./utils/logger');
 const templateCategories = require('./template-categories');
 const pushMessages = require('./push-messages');
+const templates = require('./templates');
 var config = functions.config().firebase;
 var defaultApp = admin.initializeApp(config);
 
@@ -583,6 +584,8 @@ exports.templateCategoryDeleteStaging = functionsStagingDatabase.ref('/templateC
 exports.pushMessageSync = pushMessages.createPublishHandler('push-messages-sync', functions.pubsub, db, admin.messaging());
 exports.pushMessageSyncStaging = pushMessages.createPublishHandler('staging-push-messages-sync', functions.pubsub, dbStaging, admin.messaging());
 
+exports.templatesSync = templates.createPublishHandler('templates-sync', functions.pubsub, db);
+exports.templatesSyncStaging = templates.createPublishHandler('staging-templates-sync', functions.pubsub, dbStaging);
 
 // Local Functions
 
