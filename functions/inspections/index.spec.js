@@ -9,9 +9,14 @@ const {
 describe('Inspections Module', () => {
   describe('On Publish', () => {
     it('should resolve a hash of updates', () => {
-      const actual = createPublishHandler('test', createPubSubStub(), createDatabaseStub());
+      const db = createDatabaseStub({}, {
+        exists: () => true,
+        hasChildren: () => true,
+        toJSON: () => ({})
+      }).value();
+      const actual = createPublishHandler('test', createPubSubStub(), db);
       expect(actual).to.be.an.instanceof(Promise, 'returned a promise');
-      return actual.then((result) => expect(result).to.be.an('object', 'has update hash'))
+      return actual.then((result) => expect(result).to.be.an('object', 'has update hash'));
     });
   });
 });

@@ -195,9 +195,9 @@ exports.inspectionMigrationDateWrite = functions.database.ref('/inspections/{obj
                 return;
             }
 
-            console.log('migrationDate updated, calling processInspectionWrite()');
+            console.log('migrationDate updated, calling inspections.processWrite()');
             var inspection = inspectionSnapshot.val();
-            return processInspectionWrite(db, objectId, inspection);
+            return inspections.processWrite(db, objectId, inspection);
         }).catch(function(error) {
             // Handle any errors
             console.error("Unable to access updated inspection", error);
@@ -325,9 +325,9 @@ exports.inspectionUpdatedLastDateWrite = functions.database.ref('/inspections/{o
                 return null;
             }
 
-            log.info('updatedLastDate updated, calling processInspectionWrite()');
+            log.info('updatedLastDate updated, calling inspections.processWrite()');
             var inspection = inspectionSnapshot.val();
-            return processInspectionWrite(adminDb, objectId, inspection);
+            return inspections.processWrite(adminDb, objectId, inspection);
         }).catch(function(error) {
             // Handle any errors
             log.error('Unable to access updated inspection', error);
@@ -342,7 +342,7 @@ exports.inspectionUpdatedLastDateWrite = functions.database.ref('/inspections/{o
 //     // When the data is created, or new root data added/deleted.
 //     if (event.data.exists()) {
 //         var inspection = event.data.current.val();
-//         processInspectionWrite(inspection);
+//         inspections.processWrite(inspection);
 //     } else {
 //         console.error("inspectionCreate: Inspection created, but data is missing");
 //     }
@@ -377,8 +377,8 @@ exports.inspectionWrite = functions.database.ref('/inspections/{objectId}').onWr
           .then(() => updates);
     } else {
         var inspection = change.after.val();
-        log.info('inspectionWrite: inspection created/updated, so calling processInspectionWrite()');
-        return processInspectionWrite(adminDb, objectId, inspection);
+        log.info('inspectionWrite: inspection created/updated, so calling inspections.processWrite()');
+        return inspections.processWrite(adminDb, objectId, inspection);
     }
 });
 
@@ -422,9 +422,9 @@ exports.inspectionMigrationDateWriteStaging = functionsStagingDatabase.ref('/ins
                 return;
             }
 
-            console.log('migrationDate updated, calling processInspectionWrite()');
+            console.log('migrationDate updated, calling inspections.processWrite()');
             var inspection = inspectionSnapshot.val();
-            return processInspectionWrite(dbStaging, objectId, inspection);
+            return inspections.processWrite(dbStaging, objectId, inspection);
         }).catch(function(error) {
             // Handle any errors
             console.error("Unable to access updated inspection", error);
@@ -535,9 +535,9 @@ exports.inspectionUpdatedLastDateWriteStaging = functionsStagingDatabase.ref('/i
                 return;
             }
 
-            console.log('updatedLastDate updated, calling processInspectionWrite()');
+            console.log('updatedLastDate updated, calling inspections.processWrite()');
             var inspection = inspectionSnapshot.val();
-            return processInspectionWrite(dbStaging, objectId, inspection);
+            return inspections.processWrite(dbStaging, objectId, inspection);
         }).catch(function(error) {
             // Handle any errors
             console.error("Unable to access updated inspection", error);
@@ -569,8 +569,8 @@ exports.inspectionWriteStaging = functionsStagingDatabase.ref('/inspections/{obj
         return dbStaging.ref('/propertyInspections').child(propertyKey).child('inspections').child(objectId).remove();
     } else {
         var inspection = change.after.val();
-        console.log('inspectionWrite: inspection created/updated, so calling processInspectionWrite()');
-        return processInspectionWrite(dbStaging, objectId, inspection);
+        console.log('inspectionWrite: inspection created/updated, so calling inspections.processWrite()');
+        return inspections.processWrite(dbStaging, objectId, inspection);
     }
 });
 
@@ -648,109 +648,6 @@ function latestInspectionResponseData(date, propertyKey, latestInspection, lates
     console.log(responseData);
     return responseData;
 }
-
-function processInspectionWrite(database, objectId, inspection) {
-    var propertyKey = inspection.property;
-    const dbUpdates = {};
-
-    if (!propertyKey) {
-        log.error('processUpdatedInspection: property key missing');
-        return Promise.resolve(dbUpdates);
-    }
-
-    var templateName = inspection.templateName;
-    if (!templateName) {
-        templateName = inspection.template.name;
-    }
-
-    // Update property/inspections
-    var inspectionData = {
-        'inspector': inspection.inspector,
-        'inspectorName': inspection.inspectorName,
-        'creationDate': inspection.creationDate,
-        'updatedLastDate': inspection.updatedLastDate,
-        'templateName': templateName,
-        'score': inspection.score,
-        'deficienciesExist': inspection.deficienciesExist,
-        'inspectionCompleted': inspection.inspectionCompleted,
-        'itemsCompleted': inspection.itemsCompleted,
-        'totalItems': inspection.totalItems
-    };
-    database.ref('/properties').child(propertyKey).child('inspections').child(objectId).set(inspectionData);  // Need to remove
-    dbUpdates[`/properties/${propertyKey}/inspections/${objectId}`] = inspectionData;
-    database.ref('/propertyInspections').child(propertyKey).child('inspections').child(objectId).set(inspectionData);
-    dbUpdates[`/propertyInspections/${propertyKey}/inspections/${objectId}`] = inspectionData;
-
-    if (inspection.inspectionCompleted) {
-        const completedInspectionData = {
-            'inspector': inspection.inspector,
-            'inspectorName': inspection.inspectorName,
-            'creationDate': inspection.creationDate,
-            'updatedLastDate': inspection.updatedLastDate,
-            'templateName': templateName,
-            'score': inspection.score,
-            'deficienciesExist': inspection.deficienciesExist,
-            'inspectionCompleted': inspection.inspectionCompleted,
-            'property': inspection.property
-        };
-        database.ref('/completedInspections').child(objectId).set(completedInspectionData);
-        dbUpdates[`/completedInspections/${objectId}`] = completedInspectionData;
-    } else {
-        database.ref('/completedInspections').child(objectId).remove();
-        dbUpdates[`/completedInspections/${objectId}`] = 'removed';
-    }
-
-    // Pull all inspections for the same property
-    return database.ref("/inspections").orderByChild("property").equalTo(propertyKey).once("value").then(inspectionsSnapshot => {
-        var latestInspection;
-        var numOfInspectionsCompleted = 0;
-        if (!inspectionsSnapshot.exists()) {
-            return dbUpdates;
-        } else if (inspectionsSnapshot.hasChildren()) {
-            var inspections = [];
-            inspectionsSnapshot.forEach(function(childSnapshot) {
-                // key will be "ada" the first time and "alan" the second time
-                var inspection = childSnapshot.val();
-                // childData will be the actual contents of the child
-                //var childData = childSnapshot.val();
-                if (inspection.inspectionCompleted) {
-                    inspections.push(inspection);
-                    numOfInspectionsCompleted++;
-                }
-            });
-
-            if (inspections.length > 0) {
-                var sortedInspections = inspections.sort(function(a,b) { return b.creationDate-a.creationDate });  // DESC
-                latestInspection = sortedInspections[0];
-            }
-        } else {
-            var inspection = inspectionsSnapshot.val();
-            if (inspection.inspectionCompleted) {
-                latestInspection = inspection;
-                numOfInspectionsCompleted++;
-            }
-        }
-
-        // Update numOfInspections for the property
-        log.info('property numOfInspections updated');
-        database.ref('/properties').child(propertyKey).update({'numOfInspections': numOfInspectionsCompleted});
-        dbUpdates[`/properties/${propertyKey}/numOfInspections`] = numOfInspectionsCompleted
-
-        if (latestInspection) {
-            var updates = {};
-            updates['lastInspectionScore'] = latestInspection.score;
-            updates['lastInspectionDate'] = latestInspection.creationDate;
-            log.info('property lastInspectionScore & lastInspectionDate updated');
-            database.ref('/properties').child(propertyKey).update(updates);
-            dbUpdates[`/properties/${propertyKey}`] = updates;
-        }
-        return dbUpdates;
-    }).catch(function(error) {
-        // Handle any errors
-        log.error('Unable to access inspections', error);
-        return null;
-    });
-};
 
 function timeConverter(UNIX_timestamp){
     var a = new Date(UNIX_timestamp * 1000);
