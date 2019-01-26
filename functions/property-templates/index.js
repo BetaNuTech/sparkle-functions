@@ -12,7 +12,9 @@ module.exports = {
   processWrite(database, propertyId, templatesHash) {
     if (templatesHash != null) {
       const updates = {};
-      log.info('Writing to /propertyTemplates/', propertyId, ' with count: ', Object.keys(templatesHash).length);
+      log.info(`Writing to /propertyTemplates/${propertyId} with count: ${Object.keys(templatesHash).length}`);
+
+      // TODO: fix potential race condition here:
       Object.keys(templatesHash).forEach(function(templateKey) {
         database.ref('/templates').child(templateKey).once('value').then(function(templateSnapshot) {
           if (templateSnapshot.exists()) {

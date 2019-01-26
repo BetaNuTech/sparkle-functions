@@ -28,10 +28,9 @@ describe('Property Templates Write', () => {
   it('should remove all /propertyTemplates when a property removes all templates', () => co(function *() {
     const tmplId = uuid();
     const propertyId = uuid();
-    const inspectionData = { description: `desc${tmplId}`, name: `new${tmplId}` };
 
     // Setup database
-    yield db.ref(`/properties/${propertyId}`).set({ name: 'test', templates: { [tmplId]: true } }); // Add property with templates
+    yield db.ref(`/properties/${propertyId}`).set({ name: 'test', templates: { [tmplId]: true } }); // Add property with a template
     const propertyBeforeSnap = yield db.ref(`/properties/${propertyId}/templates`).once('value'); // Get before templates
     yield db.ref(`/properties/${propertyId}/templates`).remove(); // Remove templates
     const propertyAfterSnap = yield db.ref(`/properties/${propertyId}/templates`).once('value'); // Get after templates
@@ -45,5 +44,58 @@ describe('Property Templates Write', () => {
     // Test result
     const actual = yield db.ref(`/propertyTemplates/${propertyId}`).once('value');
     expect(actual.exists()).to.equal(false);
+  }));
+
+  it('should remove from /propertyTemplates when a template is removed from a property', () => co(function *() {
+    const tmplId1 = uuid();
+    const tmplId2 = uuid();
+    const propertyId = uuid();
+    const expected = { [tmplId1]: { name: `name${tmplId1}`, description: `desc${tmplId1}` } }; // only has template 1
+
+    // Setup database
+    // Add property with templates
+    yield db.ref(`/properties/${propertyId}`).set({ name: 'test', templates: { [tmplId1]: true, [tmplId2]: true } });
+    const propertyBeforeSnap = yield db.ref(`/properties/${propertyId}/templates`).once('value'); // Get before templates
+    yield db.ref(`/properties/${propertyId}/templates/${tmplId2}`).remove(); // Remove 2nd template
+    const propertyAfterSnap = yield db.ref(`/properties/${propertyId}/templates`).once('value'); // Get after templates
+    yield db.ref(`/propertyTemplates/${propertyId}/${tmplId1}`).set(expected[tmplId1]);
+    yield db.ref(`/propertyTemplates/${propertyId}/${tmplId2}`).set({ name: `test${tmplId2}`});
+
+    // Execute
+    const changeSnap = test.makeChange(propertyBeforeSnap, propertyAfterSnap);
+    const wrapped = test.wrap(cloudFunctions.propertyTemplatesWrite);
+    yield wrapped(changeSnap, { params: { objectId: propertyId } });
+
+    // Test result
+    const actual = yield db.ref(`/propertyTemplates/${propertyId}`).once('value');
+    expect(expected).to.deep.equal(actual.val());
+  }));
+
+  it('should update /propertyTemplates when a template is added to a property', () => co(function *() {
+    const tmplId1 = uuid();
+    const tmplId2 = uuid();
+    const propertyId = uuid();
+    const expected = {
+      [tmplId1]: { name: `name${tmplId1}`, description: `desc${tmplId1}` },
+      [tmplId2]: { name: `name${tmplId2}`, description: `desc${tmplId2}` }
+    };
+
+    // Setup database
+    // Add property with templates
+    yield db.ref('/templates').set(expected);
+    yield db.ref(`/properties/${propertyId}`).set({ name: 'test', templates: { [tmplId1]: true } }); // Only has 1st template
+    const propertyBeforeSnap = yield db.ref(`/properties/${propertyId}/templates`).once('value'); // Get before templates
+    yield db.ref(`/properties/${propertyId}/templates/${tmplId2}`).set(true); // Associate 2nd template w/ property
+    const propertyAfterSnap = yield db.ref(`/properties/${propertyId}/templates`).once('value'); // Get after templates
+    yield db.ref(`/propertyTemplates/${propertyId}/${tmplId1}`).set(expected[tmplId1]); // Add 1st template proxy record
+
+    // Execute
+    const changeSnap = test.makeChange(propertyBeforeSnap, propertyAfterSnap);
+    const wrapped = test.wrap(cloudFunctions.propertyTemplatesWrite);
+    yield wrapped(changeSnap, { params: { objectId: propertyId } });
+
+    // Test result
+    const actual = yield db.ref(`/propertyTemplates/${propertyId}`).once('value');
+    expect(expected).to.deep.equal(actual.val());
   }));
 });
