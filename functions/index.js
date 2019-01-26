@@ -208,26 +208,14 @@ exports.inspectionMigrationDateWrite = functions.database.ref('/inspections/{obj
 
 // Property templates onWrite
 exports.propertyTemplatesWrite = functions.database.ref('/properties/{objectId}/templates').onWrite((change,event) => {
-    var propertyId = event.params.objectId;
+    const propertyId = event.params.objectId;
     const adminDb = admin.database();
 
     // Delete onWrite event?
     if (change.before.exists() && !change.after.exists()) {
-        log.info('all templates removed');
-        var templatesRemoved = change.before.val();
-        if (templatesRemoved != null) {
-            return Promise.all(Object.keys(templatesRemoved).map(templateKey =>
-                adminDb.ref('/propertyTemplates').child(propertyId).child(templateKey).remove()
-                  .then(() => ({ [`/propertyTemplates/${propertyId}/${templateKey}`]: 'removed' }))
-            ))
-              .then(result => {
-                const updates = {};
-                result.forEach(update => Object.assign(updates, update));
-                return updates;
-              });
-        }
-
-        return Promise.resolve({});
+      log.info(`all /properties/${propertyId} templates removed`);
+      return adminDb.ref(`/propertyTemplates/${propertyId}`).remove()
+        .then(() => ({ [`/propertyTemplates/${propertyId}`]: 'removed' }));
     }
 
     var templatesPrevious = null;
