@@ -208,34 +208,17 @@ exports.inspectionMigrationDateWrite = functions.database.ref('/inspections/{obj
 
 // Property templates onWrite
 exports.propertyTemplatesWrite = functions.database.ref('/properties/{objectId}/templates').onWrite((change,event) => {
-    const propertyId = event.params.objectId;
-    const adminDb = admin.database();
+  const propertyId = event.params.objectId;
+  const adminDb = admin.database();
 
-    // Delete onWrite event?
-    if (change.before.exists() && !change.after.exists()) {
-      log.info(`all /properties/${propertyId} templates removed`);
-      return adminDb.ref(`/propertyTemplates/${propertyId}`).remove()
-        .then(() => ({ [`/propertyTemplates/${propertyId}`]: 'removed' }));
-    }
+  // Delete onWrite event?
+  if (change.before.exists() && !change.after.exists()) {
+    log.info(`all /properties/${propertyId} templates removed`);
+    return adminDb.ref(`/propertyTemplates/${propertyId}`).remove()
+    .then(() => ({ [`/propertyTemplates/${propertyId}`]: 'removed' }));
+  }
 
-    var templatesPrevious = null;
-    if (change.before.exists()) {
-        templatesPrevious = change.before.val();
-    }
-    var templatesCurrent = change.after.val();
-
-    // Find removed templates and remove them
-    if (templatesPrevious != null) {
-        var templatesRemoved = findRemovedKeys(templatesPrevious, templatesCurrent); // Array of template keys
-        if (templatesRemoved.length > 0) {
-            log.info('templates removed count: ', templatesRemoved.length);
-            templatesRemoved.forEach(function(templateKey) {
-                adminDb.ref('/propertyTemplates').child(propertyId).child(templateKey).remove();
-            });
-        }
-    }
-
-    return propertyTemplates.processWrite(adminDb, propertyId, templatesCurrent);
+  return propertyTemplates.processWrite(adminDb, propertyId, change.after.val());
 });
 
 // Property onWrite
