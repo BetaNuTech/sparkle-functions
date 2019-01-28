@@ -1,0 +1,104 @@
+const co = require('co');
+const test = require('firebase-functions-test')({
+  databaseURL: 'https://test-sapphire-inspections-8a9e3.firebaseio.com',
+  storageBucket: 'test-sapphire-inspections-8a9e3.appspot.com',
+  projectId: 'test-sapphire-inspections-8a9e3',
+}, '../auth.json');
+const sinon = require('sinon');
+const admin = require('firebase-admin');
+const { expect } = require('chai');
+const uuid = require('../../test-helpers/uuid');
+admin.initializeApp();
+const db = admin.database();
+
+describe('Property Templates Write', () => {
+  var cloudFunctions, oldDatabase;
+
+  before(() => {
+    // Stub admin.initializeApp to avoid live database access
+    if (!admin.initializeApp.isSinonProxy) {
+      adminInitStub = sinon.stub(admin, 'initializeApp').returns({ database: () => db });
+      oldDatabase = admin.database;
+      Object.defineProperty(admin, 'database', { writable: true, value: () => db });
+    }
+    cloudFunctions = require('../../index');
+  });
+  after(() => admin.database = oldDatabase);
+
+  it('should remove all a property\'s `/propertyTemplates` when it gets deleted', () => co(function *() {
+    const tmplId = uuid();
+    const propertyId = uuid();
+    const templateData = { name: `test${tmplId}`};
+
+    // Setup database
+    yield db.ref(`/properties/${propertyId}`).set({ name: 'test', templates: { [tmplId]: true } }); // Add property with a template    yield db.ref('/templates').set(expected);
+    yield db.ref(`/templates/${tmplId}`).set(templateData); // Add template
+    yield db.ref(`/propertyTemplates/${propertyId}/${tmplId}`).set(templateData); // Add propertyTemplate proxy record
+
+    const propertyBeforeSnap = yield db.ref(`/properties/${propertyId}`).once('value'); // Get before property
+    yield db.ref(`/properties/${propertyId}`).remove(); // Remove property
+    const propertyAfterSnap = yield db.ref(`/properties/${propertyId}`).once('value'); // Get after templates
+
+    // Execute
+    const changeSnap = test.makeChange(propertyBeforeSnap, propertyAfterSnap);
+    const wrapped = test.wrap(cloudFunctions.propertyWrite);
+    yield wrapped(changeSnap, { params: { objectId: propertyId } });
+
+    // Test result
+    const actual = yield db.ref(`/propertyTemplates/${propertyId}`).once('value');
+    expect(actual.exists()).to.equal(false);
+  }));
+
+  it('should remove from /propertyTemplates when a template is removed from a property', () => co(function *() {
+    const tmplId1 = uuid();
+    const tmplId2 = uuid();
+    const propertyId = uuid();
+    const expected = { [tmplId1]: { name: `name${tmplId1}`, description: `desc${tmplId1}` } }; // only has template 1
+
+    // Setup database
+    // Add property with templates
+    yield db.ref(`/properties/${propertyId}`).set({ name: 'test', templates: { [tmplId1]: true, [tmplId2]: true } });
+    const propertyBeforeSnap = yield db.ref(`/properties/${propertyId}`).once('value'); // Get before templates
+    yield db.ref(`/properties/${propertyId}/templates/${tmplId2}`).remove(); // Remove 2nd template
+    const propertyAfterSnap = yield db.ref(`/properties/${propertyId}`).once('value'); // Get after templates
+    yield db.ref(`/propertyTemplates/${propertyId}/${tmplId1}`).set(expected[tmplId1]);
+    yield db.ref(`/propertyTemplates/${propertyId}/${tmplId2}`).set({ name: `test${tmplId2}`});
+
+    // Execute
+    const changeSnap = test.makeChange(propertyBeforeSnap, propertyAfterSnap);
+    const wrapped = test.wrap(cloudFunctions.propertyWrite);
+    yield wrapped(changeSnap, { params: { objectId: propertyId } });
+
+    // Test result
+    const actual = yield db.ref(`/propertyTemplates/${propertyId}`).once('value');
+    expect(expected).to.deep.equal(actual.val());
+  }));
+
+  it('should always upsert `propertyTemplates` when a property has any template relationships', () => co(function *() {
+    const tmplId1 = uuid();
+    const tmplId2 = uuid();
+    const propertyId = uuid();
+    const expected = {
+      [tmplId1]: { name: `name${tmplId1}`, description: `desc${tmplId1}` },
+      [tmplId2]: { name: `name${tmplId2}`, description: `desc${tmplId2}` }
+    };
+
+    // Setup database
+    // Add property with templates
+    yield db.ref('/templates').set(expected);
+    yield db.ref(`/properties/${propertyId}`).set({ name: 'test', templates: { [tmplId1]: true } }); // Only has 1st template
+    yield db.ref(`/propertyTemplates/${propertyId}/${tmplId1}`).set(expected[tmplId1]); // Add 1st template proxy record
+    const propertyBeforeSnap = yield db.ref(`/properties/${propertyId}`).once('value'); // Get before templates
+    yield db.ref(`/properties/${propertyId}/templates/${tmplId2}`).set(true); // Associate 2nd template w/ property
+    const propertyAfterSnap = yield db.ref(`/properties/${propertyId}`).once('value'); // Get after templates
+
+    // Execute
+    const changeSnap = test.makeChange(propertyBeforeSnap, propertyAfterSnap);
+    const wrapped = test.wrap(cloudFunctions.propertyWrite);
+    yield wrapped(changeSnap, { params: { objectId: propertyId } });
+
+    // Test result
+    const actual = yield db.ref(`/propertyTemplates/${propertyId}`).once('value');
+    expect(expected).to.deep.equal(actual.val());
+  }));
+});
