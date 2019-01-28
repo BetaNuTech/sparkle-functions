@@ -231,77 +231,22 @@ exports.inspectionUpdatedLastDateWriteStaging = functionsStagingDatabase.ref('/i
 // });
 
 // Inspection onWrite
-exports.inspectionWrite = functions.database.ref('/inspections/{objectId}').onWrite((change,event) => {
-    var objectId = event.params.objectId;
-    const adminDb = admin.database();
-    const updates = {};
-
-    // When the data is deleted.
-    if (!change.after.exists()) {
-        log.info('inspection deleted');
-        var inspection = change.before.val();
-        var propertyKey = inspection.property;
-
-        if (!propertyKey) {
-            log.error('property key missing');
-            return Promise.resolve(updates);
-        }
-
-        if (inspection.inspectionCompleted) {
-            updates[`/completedInspections/${objectId}`] = 'removed';
-            adminDb.ref('/completedInspections').child(objectId).remove();
-        }
-
-        updates[`/properties/${propertyKey}/inspections/${objectId}`] = 'removed';
-        adminDb.ref('/properties').child(propertyKey).child('inspections').child(objectId).remove();  // Need to remove
-        updates[`/propertyInspections/${propertyKey}/inspections/${objectId}`] = 'removed';
-        return adminDb.ref('/propertyInspections').child(propertyKey).child('inspections').child(objectId).remove()
-          .then(() => updates);
-    } else {
-        var inspection = change.after.val();
-        log.info('inspectionWrite: inspection created/updated, so calling inspections.processWrite()');
-        return inspections.processWrite(adminDb, objectId, inspection);
-    }
-});
-
-
-
-// Staging Database Functions
-
-// Inspection onWrite
-exports.inspectionWriteStaging = functionsStagingDatabase.ref('/inspections/{objectId}').onWrite((change,event) => {
-    var objectId = event.params.objectId;
-
-    // When the data is deleted.
-    if (!change.after.exists()) {
-        console.log('inspection deleted');
-        var inspection = change.before.val();
-        var propertyKey = inspection.property;
-
-        if (!propertyKey) {
-            console.error('property key missing');
-            return;
-        }
-
-        if (inspection.inspectionCompleted) {
-            dbStaging.ref('/completedInspections').child(objectId).remove();
-        }
-
-        dbStaging.ref('/properties').child(propertyKey).child('inspections').child(objectId).remove();  // Need to remove
-        return dbStaging.ref('/propertyInspections').child(propertyKey).child('inspections').child(objectId).remove();
-    } else {
-        var inspection = change.after.val();
-        console.log('inspectionWrite: inspection created/updated, so calling inspections.processWrite()');
-        return inspections.processWrite(dbStaging, objectId, inspection);
-    }
-});
-
+exports.inspectionWrite = functions.database.ref('/inspections/{objectId}').onWrite(
+  inspections.createOnWriteHandler(db)
+);
+exports.inspectionWriteStaging = functionsStagingDatabase.ref('/inspections/{objectId}').onWrite(
+  inspections.createOnWriteHandler(dbStaging)
+);
 
 
 // Template Category Delete
 
-exports.templateCategoryDelete = functions.database.ref('/templateCategories/{objectId}').onDelete(templateCategories.onDeleteHandler(db));
-exports.templateCategoryDeleteStaging = functionsStagingDatabase.ref('/templateCategories/{objectId}').onDelete(templateCategories.onDeleteHandler(dbStaging));
+exports.templateCategoryDelete = functions.database.ref('/templateCategories/{objectId}').onDelete(
+  templateCategories.onDeleteHandler(db)
+);
+exports.templateCategoryDeleteStaging = functionsStagingDatabase.ref('/templateCategories/{objectId}').onDelete(
+  templateCategories.onDeleteHandler(dbStaging)
+);
 
 
 // Message Subscribers
