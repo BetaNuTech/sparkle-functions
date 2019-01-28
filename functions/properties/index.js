@@ -1,6 +1,7 @@
 const co = require('co');
 const log = require('../utils/logger');
 const propertyTemplates = require('../property-templates');
+const createOnWriteHandler = require('./on-write-handler');
 
 module.exports = {
   /**
@@ -21,5 +22,7 @@ module.exports = {
 
       return propertyTemplates.processWrite(db, propertyId, change.after.val());
     });
-  }
+  },
+
+  createOnWriteHandler
 }
