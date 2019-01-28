@@ -10,7 +10,7 @@ module.exports = {
   * @return {Promise} - resolves {Object} hash of updats
   */
   processWrite(database, propertyId, templatesHash) {
-    if (templatesHash != null) {
+    if (templatesHash != null) { // TODO reduce acyclical complexity
       const updates = {};
       log.info(`Writing to /propertyTemplates/${propertyId} with count: ${Object.keys(templatesHash).length}`);
 
