@@ -196,7 +196,7 @@ exports.inspectionMigrationDateWrite = functions.database.ref('/inspections/{obj
 
 // Property templates onWrite
 exports.propertyTemplatesWrite = functions.database.ref('/properties/{objectId}/templates').onWrite(
-  properties.templatesOnWriteHandler(admin.database())
+  properties.templatesOnWriteHandler(db)
 );
 
 exports.propertyTemplatesWriteStaging = functionsStagingDatabase.ref('/properties/{objectId}/templates').onWrite(
@@ -204,48 +204,14 @@ exports.propertyTemplatesWriteStaging = functionsStagingDatabase.ref('/propertie
 );
 
 // Property onWrite
-exports.propertyWrite = functions.database.ref('/properties/{objectId}').onWrite((change,event) => {
-    var propertyId = event.params.objectId;
-    const adminDb = admin.database();
+exports.propertyWrite = functions.database.ref('/properties/{objectId}').onWrite(
+  properties.createOnWriteHandler(db)
+);
 
-    // Delete onWrite event?
-    if (change.before.exists() && !change.after.exists()) {
-        log.info('property removed');
-        var templatesRemoved = change.before.val().templates;
-        if (templatesRemoved != null) {
-            return Promise.all(Object.keys(templatesRemoved).map(templateKey =>
-                adminDb.ref('/propertyTemplates').child(propertyId).child(templateKey).remove()
-                  .then(() => ({ [`/propertyTemplates/${propertyId}/${templateKey}`]: 'removed' }))
-            ))
-              .then(result => {
-                const updates = {};
-                result.forEach(update => Object.assign(updates, update));
-                return updates;
-              });
-        }
+exports.propertyWriteStaging = functionsStagingDatabase.ref('/properties/{objectId}').onWrite(
+  properties.createOnWriteHandler(dbStaging)
+);
 
-        return Promise.resolve({});
-    }
-
-    var templatesPrevious = null;
-    if (change.before.exists()) {
-        templatesPrevious = change.before.val().templates;
-    }
-    var templatesCurrent = change.after.val().templates;
-
-    // Find removed templates and remove them
-    if (templatesPrevious != null) {
-        var templatesRemoved = findRemovedKeys(templatesPrevious, templatesCurrent); // Array of template keys
-        if (templatesRemoved.length > 0) {
-            log.info('templates removed count: ', templatesRemoved.length);
-            templatesRemoved.forEach(function(templateKey) {
-                adminDb.ref('/propertyTemplates').child(propertyId).child(templateKey).remove();
-            });
-        }
-    }
-
-    return propertyTemplates.processWrite(adminDb, propertyId, templatesCurrent);
-});
 
 // Template onWrite
 exports.templateWrite = functions.database.ref('/templates/{objectId}').onWrite((change,event) => {
@@ -364,43 +330,6 @@ exports.inspectionMigrationDateWriteStaging = functionsStagingDatabase.ref('/ins
             return;
         });
     }
-});
-
-// Property onWrite
-exports.propertyWriteStaging = functionsStagingDatabase.ref('/properties/{objectId}').onWrite((change,event) => {
-    var propertyId = event.params.objectId;
-
-    // Delete onWrite event?
-    if (change.before.exists() && !change.after.exists()) {
-        console.log('property removed');
-        var templatesRemoved = change.before.val().templates;
-        if (templatesRemoved != null) {
-            return Object.keys(templatesRemoved).forEach(function(templateKey) {
-                dbStaging.ref('/propertyTemplates').child(propertyId).child(templateKey).remove();
-            });
-        }
-
-        return;
-    }
-
-    var templatesPrevious = null;
-    if (change.before.exists()) {
-        templatesPrevious = change.before.val().templates;
-    }
-    var templatesCurrent = change.after.val().templates;
-
-    // Find removed templates and remove them
-    if (templatesPrevious != null) {
-        var templatesRemoved = findRemovedKeys(templatesPrevious, templatesCurrent); // Array of template keys
-        if (templatesRemoved.length > 0) {
-            console.log('templates removed count: ', templatesRemoved.length);
-            templatesRemoved.forEach(function(templateKey) {
-                dbStaging.ref('/propertyTemplates').child(propertyId).child(templateKey).remove();
-            });
-        }
-    }
-
-    return propertyTemplates.processWrite(dbStaging, propertyId, templatesCurrent);
 });
 
 // Template onWrite
