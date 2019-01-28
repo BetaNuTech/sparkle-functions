@@ -2,7 +2,7 @@ const co = require('co');
 const log = require('../utils/logger');
 const adminUtils = require('../utils/firebase-admin');
 const processWrite = require('./process-write');
-const createOnMigrationDateWriteHandler = require('./on-migration-date-write-handler');
+const createOnAttributeWriteHandler = require('./on-attribute-write-handler');
 
 const LOG_PREFIX = 'inspections:';
 
@@ -116,7 +116,7 @@ module.exports = {
   },
 
   processWrite,
-  createOnMigrationDateWriteHandler
+  createOnAttributeWriteHandler
 };
 
 function flatten(arr) {

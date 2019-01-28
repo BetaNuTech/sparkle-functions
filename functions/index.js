@@ -171,11 +171,11 @@ exports.sendPushMessageStaging = functionsStagingDatabase.ref('/sendMessages/{ob
 // For migrating to a new architecture only, setting a newer date
 // This allow the updatedLastDate to stay as-is (make sure client doesn't update it though)
 exports.inspectionMigrationDateWrite = functions.database.ref('/inspections/{objectId}/migrationDate').onWrite(
-  inspections.createOnMigrationDateWriteHandler(db)
+  inspections.createOnAttributeWriteHandler(db)
 );
 
 exports.inspectionMigrationDateWriteStaging = functionsStagingDatabase.ref('/inspections/{objectId}/migrationDate').onWrite(
-  inspections.createOnMigrationDateWriteHandler(dbStaging)
+  inspections.createOnAttributeWriteHandler(dbStaging)
 );
 
 
@@ -208,33 +208,15 @@ exports.templateWriteStaging = functionsStagingDatabase.ref('/templates/{objectI
   templates.createOnWriteHandler(dbStaging)
 );
 
+
 // Inspection updatedLastDate onWrite
-exports.inspectionUpdatedLastDateWrite = functions.database.ref('/inspections/{objectId}/updatedLastDate').onWrite((change,event) => {
-    var objectId = event.params.objectId;
-    const adminDb = admin.database();
+exports.inspectionUpdatedLastDateWrite = functions.database.ref('/inspections/{objectId}/updatedLastDate').onWrite(
+  inspections.createOnAttributeWriteHandler(db)
+);
 
-    if (!change.after.exists()) {
-        log.info('updatedLastDate updated, but inspection deleted');
-        return Promise.resolve(null);
-    }
-
-    if (change.before.val() !== change.after.val()) {
-        return change.after.ref.parent.once('value').then(function(inspectionSnapshot) {
-            if (!inspectionSnapshot.exists()) {
-                log.info('updatedLastDate updated, but no inspection value found');
-                return null;
-            }
-
-            log.info('updatedLastDate updated, calling inspections.processWrite()');
-            var inspection = inspectionSnapshot.val();
-            return inspections.processWrite(adminDb, objectId, inspection);
-        }).catch(function(error) {
-            // Handle any errors
-            log.error('Unable to access updated inspection', error);
-            return error;
-        });
-    }
-});
+exports.inspectionUpdatedLastDateWriteStaging = functionsStagingDatabase.ref('/inspections/{objectId}/updatedLastDate').onWrite(
+  inspections.createOnAttributeWriteHandler(dbStaging)
+);
 
 // exports.inspectionCreate = functions.database.ref('/inspections/{objectId}').onCreate(event => {
 //     var objectId = event.params.objectId;
@@ -285,32 +267,6 @@ exports.inspectionWrite = functions.database.ref('/inspections/{objectId}').onWr
 
 
 // Staging Database Functions
-
-// Inspection updatedLastDate onWrite
-exports.inspectionUpdatedLastDateWriteStaging = functionsStagingDatabase.ref('/inspections/{objectId}/updatedLastDate').onWrite((change,event) => {
-    var objectId = event.params.objectId;
-    if (!change.after.exists()) {
-        console.log('updatedLastDate updated, but inspection deleted');
-        return;
-    }
-
-    if (change.before.val() !== change.after.val()) {
-        return change.after.ref.parent.once('value').then(function(inspectionSnapshot) {
-            if (!inspectionSnapshot.exists()) {
-                console.log('updatedLastDate updated, but no inspection value found');
-                return;
-            }
-
-            console.log('updatedLastDate updated, calling inspections.processWrite()');
-            var inspection = inspectionSnapshot.val();
-            return inspections.processWrite(dbStaging, objectId, inspection);
-        }).catch(function(error) {
-            // Handle any errors
-            console.error("Unable to access updated inspection", error);
-            return;
-        });
-    }
-});
 
 // Inspection onWrite
 exports.inspectionWriteStaging = functionsStagingDatabase.ref('/inspections/{objectId}').onWrite((change,event) => {
