@@ -1,3 +1,4 @@
+const co = require('co');
 const log = require('../utils/logger');
 const propertyTemplates = require('../property-templates');
 
@@ -8,17 +9,17 @@ module.exports = {
    * @return {function}
    */
   templatesOnWriteHandler(db) {
-    return (change, event) => {
+    return (change, event) => co(function *() {
       const propertyId = event.params.objectId;
 
       // Delete onWrite event?
       if (change.before.exists() && !change.after.exists()) {
         log.info(`all /properties/${propertyId} templates removed`);
-        return db.ref(`/propertyTemplates/${propertyId}`).remove()
-        .then(() => ({ [`/propertyTemplates/${propertyId}`]: 'removed' }));
+        yield db.ref(`/propertyTemplates/${propertyId}`).remove()
+        return { [`/propertyTemplates/${propertyId}`]: 'removed' };
       }
 
       return propertyTemplates.processWrite(db, propertyId, change.after.val());
-    }
+    });
   }
 }
