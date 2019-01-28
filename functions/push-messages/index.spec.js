@@ -1,12 +1,12 @@
 const { expect } = require('chai');
-const { createPublishHandler } = require('./index');
+const { createCRONHandler } = require('./index');
 const uuid = require('../test-helpers/uuid');
 const { createPubSubStub } = require('../test-helpers/firebase');
 
 describe('Push Messages Module', () => {
   describe('On Publish', () => {
     it('should resolve a hash of updates', () => {
-      const actual = createPublishHandler('test', createPubSubStub(), stubDb(), stubMessaging());
+      const actual = createCRONHandler('test', createPubSubStub(), stubDb(), stubMessaging());
       expect(actual).to.be.an.instanceof(Promise, 'returned a promise');
       return actual.then((result) => expect(result).to.be.an('object', 'has update hash'))
     });
@@ -15,7 +15,7 @@ describe('Push Messages Module', () => {
       const id1 = uuid();
       const id2 = uuid();
       const db =  stubDb({ [id1]: {}, [id2]: {} });
-      const actual = createPublishHandler('test', createPubSubStub(), db, stubMessaging());
+      const actual = createCRONHandler('test', createPubSubStub(), db, stubMessaging());
       return actual.then((result) => {
         expect(result).to.have.property(id1);
         expect(result).to.have.property(id2);

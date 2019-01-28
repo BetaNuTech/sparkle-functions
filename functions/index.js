@@ -159,26 +159,13 @@ exports.latestCompleteInspection = functions.https.onRequest((request, response)
 
 // Default Database Functions
 
-exports.sendPushMessage = functions.database.ref('/sendMessages/{objectId}').onWrite((change,event) => {
-    // Exit when the data is deleted.
-    if (!change.after.exists()) {
-        return false;
-    }
+exports.sendPushMessage = functions.database.ref('/sendMessages/{objectId}').onWrite(
+  pushMessages.createOnWriteHandler(db, admin.messaging())
+);
 
-    var adminDb = admin.database();
-    var pushMessage = change.after.val();
-    var recipientId = pushMessage.recipientId;
-    var objectId = event.params.objectId;
-
-    return pushMessages.sendToRecipient(
-      adminDb,
-      admin.messaging(),
-      recipientId,
-      objectId,
-      pushMessage
-    )
-    .then(() => adminDb.ref(`/sendMessages/${objectId}`).remove());
-});
+exports.sendPushMessageStaging = functionsStagingDatabase.ref('/sendMessages/{objectId}').onWrite(
+  pushMessages.createOnWriteHandler(dbStaging, admin.messaging())
+);
 
 // For migrating to a new architecture only, setting a newer date
 // This allow the updatedLastDate to stay as-is (make sure client doesn't update it though)
@@ -352,26 +339,6 @@ exports.inspectionWrite = functions.database.ref('/inspections/{objectId}').onWr
 
 // Staging Database Functions
 
-exports.sendPushMessageStaging = functionsStagingDatabase.ref('/sendMessages/{objectId}').onWrite((change,event) => {
-  // Exit when the data is deleted.
-  if (!change.after.exists()) {
-      return;
-  }
-
-  var pushMessage = change.after.val();
-  var recipientId = pushMessage.recipientId;
-  var objectId = event.params.objectId;
-
-  return pushMessages.sendToRecipient(
-    dbStaging,
-    admin.messaging(),
-    recipientId,
-    objectId,
-    pushMessage
-  )
-  .then(() => dbStaging.ref(`/sendMessages/${objectId}`).remove());
-});
-
 // For migrating to a new architecture only, setting a newer date
 // This allow the updatedLastDate to stay as-is (make sure client doesn't update it though)
 exports.inspectionMigrationDateWriteStaging = functionsStagingDatabase.ref('/inspections/{objectId}/migrationDate').onWrite((change, event) => {
@@ -513,8 +480,8 @@ exports.templateCategoryDeleteStaging = functionsStagingDatabase.ref('/templateC
 
 // Message Subscribers
 
-exports.pushMessageSync = pushMessages.createPublishHandler('push-messages-sync', functions.pubsub, db, admin.messaging());
-exports.pushMessageSyncStaging = pushMessages.createPublishHandler('staging-push-messages-sync', functions.pubsub, dbStaging, admin.messaging());
+exports.pushMessageSync = pushMessages.createCRONHandler('push-messages-sync', functions.pubsub, db, admin.messaging());
+exports.pushMessageSyncStaging = pushMessages.createCRONHandler('staging-push-messages-sync', functions.pubsub, dbStaging, admin.messaging());
 
 exports.templatesSync = templates.createPublishHandler('templates-sync', functions.pubsub, db);
 exports.templatesSyncStaging = templates.createPublishHandler('staging-templates-sync', functions.pubsub, dbStaging);
