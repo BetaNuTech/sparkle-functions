@@ -1,5 +1,5 @@
-const { expect } = require("chai");
-const templateCategories = require("./index");
+const { expect } = require('chai');
+const templateCategories = require('./index');
 
 const { onDeleteHandler } = templateCategories;
 const uuid = (function() {
@@ -7,9 +7,9 @@ const uuid = (function() {
   return () => `-${++i}`;
 })();
 
-describe("Template Categories", function() {
-  describe("On deletion", function() {
-    it("should lookup all templates associated with template category", function() {
+describe('Template Categories', function() {
+  describe('On deletion', function() {
+    it('should lookup all templates associated with template category', function() {
       const expected = uuid();
       const templateCategory = createDataSnapshot({}, expected);
       const db = createDatabase();
@@ -20,7 +20,7 @@ describe("Template Categories", function() {
       return onDeleteHandler(db)(templateCategory, { params: { objectId: expected } });
     });
 
-    it("should apply all updates to the database", function() {
+    it('should apply all updates to the database', function() {
       const template1 = createDataSnapshot().val();
       const template2 = createDataSnapshot().val();
       const payload = Object.assign({}, template1, template2);

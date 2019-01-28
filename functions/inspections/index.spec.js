@@ -6,7 +6,7 @@ const {
   createDatabaseStub
 } = require('../test-helpers/firebase');
 
-describe('Inspections Module', () => {
+describe('Inspections', () => {
   describe('On Publish', () => {
     it('should resolve a hash of updates', () => {
       const db = createDatabaseStub({}, {

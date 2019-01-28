@@ -3,7 +3,7 @@ const { createCRONHandler } = require('./index');
 const uuid = require('../test-helpers/uuid');
 const { createPubSubStub } = require('../test-helpers/firebase');
 
-describe('Push Messages Module', () => {
+describe('Push Messages', () => {
   describe('On Publish', () => {
     it('should resolve a hash of updates', () => {
       const actual = createCRONHandler('test', createPubSubStub(), stubDb(), stubMessaging());
