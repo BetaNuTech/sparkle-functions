@@ -167,32 +167,17 @@ exports.sendPushMessageStaging = functionsStagingDatabase.ref('/sendMessages/{ob
   pushMessages.createOnWriteHandler(dbStaging, admin.messaging())
 );
 
+
 // For migrating to a new architecture only, setting a newer date
 // This allow the updatedLastDate to stay as-is (make sure client doesn't update it though)
-exports.inspectionMigrationDateWrite = functions.database.ref('/inspections/{objectId}/migrationDate').onWrite((change, event) => {
-    var objectId = event.params.objectId;
-    if (!change.after.exists()) {
-        console.log('migrationDate updated, but inspection deleted');
-        return;
-    }
+exports.inspectionMigrationDateWrite = functions.database.ref('/inspections/{objectId}/migrationDate').onWrite(
+  inspections.createOnMigrationDateWriteHandler(db)
+);
 
-    if (change.before.val() !== change.after.val()) {
-        return change.after.ref.parent.once('value').then(function(inspectionSnapshot) {
-            if (!inspectionSnapshot.exists()) {
-                console.log('migrationDate updated, but no inspection value found');
-                return;
-            }
+exports.inspectionMigrationDateWriteStaging = functionsStagingDatabase.ref('/inspections/{objectId}/migrationDate').onWrite(
+  inspections.createOnMigrationDateWriteHandler(dbStaging)
+);
 
-            console.log('migrationDate updated, calling inspections.processWrite()');
-            var inspection = inspectionSnapshot.val();
-            return inspections.processWrite(db, objectId, inspection);
-        }).catch(function(error) {
-            // Handle any errors
-            console.error("Unable to access updated inspection", error);
-            return;
-        });
-    }
-});
 
 // Property templates onWrite
 exports.propertyTemplatesWrite = functions.database.ref('/properties/{objectId}/templates').onWrite(
@@ -202,6 +187,7 @@ exports.propertyTemplatesWrite = functions.database.ref('/properties/{objectId}/
 exports.propertyTemplatesWriteStaging = functionsStagingDatabase.ref('/properties/{objectId}/templates').onWrite(
   properties.templatesOnWriteHandler(dbStaging)
 );
+
 
 // Property onWrite
 exports.propertyWrite = functions.database.ref('/properties/{objectId}').onWrite(
@@ -299,33 +285,6 @@ exports.inspectionWrite = functions.database.ref('/inspections/{objectId}').onWr
 
 
 // Staging Database Functions
-
-// For migrating to a new architecture only, setting a newer date
-// This allow the updatedLastDate to stay as-is (make sure client doesn't update it though)
-exports.inspectionMigrationDateWriteStaging = functionsStagingDatabase.ref('/inspections/{objectId}/migrationDate').onWrite((change, event) => {
-    var objectId = event.params.objectId;
-    if (!change.after.exists()) {
-        console.log('migrationDate updated, but inspection deleted');
-        return;
-    }
-
-    if (change.before.val() !== change.after.val()) {
-        return change.after.ref.parent.once('value').then(function(inspectionSnapshot) {
-            if (!inspectionSnapshot.exists()) {
-                console.log('migrationDate updated, but no inspection value found');
-                return;
-            }
-
-            console.log('migrationDate updated, calling inspections.processWrite()');
-            var inspection = inspectionSnapshot.val();
-            return inspections.processWrite(dbStaging, objectId, inspection);
-        }).catch(function(error) {
-            // Handle any errors
-            console.error("Unable to access updated inspection", error);
-            return;
-        });
-    }
-});
 
 // Inspection updatedLastDate onWrite
 exports.inspectionUpdatedLastDateWriteStaging = functionsStagingDatabase.ref('/inspections/{objectId}/updatedLastDate').onWrite((change,event) => {
