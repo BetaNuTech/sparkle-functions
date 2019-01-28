@@ -214,18 +214,13 @@ exports.propertyWriteStaging = functionsStagingDatabase.ref('/properties/{object
 
 
 // Template onWrite
-exports.templateWrite = functions.database.ref('/templates/{objectId}').onWrite((change,event) => {
-    var templateId = event.params.objectId;
-    const adminDb = admin.database();
+exports.templateWrite = functions.database.ref('/templates/{objectId}').onWrite(
+  templates.createOnWriteHandler(db)
+);
 
-    // Delete onWrite event?
-    if (change.before.exists() && !change.after.exists()) {
-        log.info('template removed');
-        return propertyTemplates.remove(adminDb, templateId);
-    }
-
-    return propertyTemplates.update(adminDb, templateId, change.after.val());
-});
+exports.templateWriteStaging = functionsStagingDatabase.ref('/templates/{objectId}').onWrite(
+  templates.createOnWriteHandler(dbStaging)
+);
 
 // Inspection updatedLastDate onWrite
 exports.inspectionUpdatedLastDateWrite = functions.database.ref('/inspections/{objectId}/updatedLastDate').onWrite((change,event) => {
@@ -330,19 +325,6 @@ exports.inspectionMigrationDateWriteStaging = functionsStagingDatabase.ref('/ins
             return;
         });
     }
-});
-
-// Template onWrite
-exports.templateWriteStaging = functionsStagingDatabase.ref('/templates/{objectId}').onWrite((change,event) => {
-    var templateId = event.params.objectId;
-
-    // Delete onWrite event?
-    if (change.before.exists() && !change.after.exists()) {
-        console.log('template removed');
-        return propertyTemplates.remove(dbStaging, templateId);
-    }
-
-    return propertyTemplates.update(dbStaging, templateId, change.after.val());
 });
 
 // Inspection updatedLastDate onWrite

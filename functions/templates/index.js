@@ -2,6 +2,7 @@ const co = require('co');
 const log = require('../utils/logger');
 const propertyTemplates = require('../property-templates');
 const adminUtils = require('../utils/firebase-admin');
+const createOnWriteHandler = require('./on-write-handler');
 
 const LOG_PREFIX = 'templates:';
 
@@ -69,5 +70,7 @@ module.exports = {
 
       return updates;
     }));
-  }
+  },
+
+  createOnWriteHandler
 };
