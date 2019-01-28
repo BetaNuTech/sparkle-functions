@@ -2,14 +2,14 @@ const co = require('co');
 const log = require('../utils/logger');
 const processWrite = require('./process-write');
 
-const LOG_PREFIX = 'inspections: on-migration-date:';
+const LOG_PREFIX = 'inspections: on-attribute-write:';
 
 /**
- * Factory for inspection migration date on write handler
+ * Factory for general inspection updated onWrite handler
  * @param  {firebaseAdmin.database} - Firebase Admin DB instance
- * @return {Function} - inspection migration date onWrite handler
+ * @return {Function} - inspection attribute onWrite handler
  */
-module.exports = function createOnMigrationDateWriteHandler(db) {
+module.exports = function createOnAttributeWriteHandler(db) {
   return (change, event) => co(function *() {
     const updates = {};
     const objectId = event.params.objectId;
