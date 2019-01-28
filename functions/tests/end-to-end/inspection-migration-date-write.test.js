@@ -8,6 +8,7 @@ const sinon = require('sinon');
 const admin = require('firebase-admin');
 const { expect } = require('chai');
 const uuid = require('../../test-helpers/uuid');
+const mocking = require('../../test-helpers/mocking');
 admin.initializeApp();
 const db = admin.database();
 
@@ -72,5 +73,53 @@ describe('Inspections Migration Date Sync', () => {
     delete expectedCompleted.itemsCompleted;
     delete expectedCompleted.totalItems;
     expect(expectedCompleted).to.deep.equal(completedInspection.val(), 'updated nested /completedInspections');
+  }));
+
+  it('should update property with any meta data from its\' completed inspections', () => co(function *() {
+    const insp1Id = uuid();
+    const insp2Id = uuid();
+    const propertyId = uuid();
+    const newest = (Date.now() / 1000);
+    const oldest = (Date.now() / 1000) - 100000;
+    const inspectionOne = mocking.createInspection({ property: propertyId, inspectionCompleted: true, creationDate: newest, score: 65 });
+    const inspectionTwo = mocking.createInspection({ property: propertyId, inspectionCompleted: true, creationDate: oldest, score: 25 });
+    const expected = {
+      numOfInspections: 2,
+      lastInspectionScore: inspectionOne.score,
+      lastInspectionDate: inspectionOne.creationDate
+    };
+
+    // Setup database
+    yield db.ref(`/inspections/${insp1Id}`).set(inspectionOne); // Add inspection #1
+    yield db.ref(`/inspections/${insp2Id}`).set(inspectionTwo); // Add inspection #2
+    yield db.ref(`/properties/${propertyId}`).set({
+      inspections: { [insp1Id]: inspectionOne, [insp2Id]: inspectionTwo } // Add nested inspections
+    });
+    const beforeSnap = yield db.ref(`/inspections/${insp1Id}/updatedLastDate`).once('value');
+    yield db.ref(`/inspections/${insp1Id}/updatedLastDate`).set(newest);
+    const afterSnap = yield db.ref(`/inspections/${insp1Id}/updatedLastDate`).once('value');
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.inspectionMigrationDateWrite);
+    yield wrapped(changeSnap, { params: { objectId: insp1Id } });
+
+    // Lookup updated records
+    const propertySnap = yield db.ref(`/properties/${propertyId}`).once('value');
+    const actual = propertySnap.val();
+
+    // Assertions
+    expect(expected.numOfInspections).to.equal(
+      actual.numOfInspections,
+      'updated property\'s `numOfInspections`'
+    );
+    expect(expected.lastInspectionScore).to.equal(
+      actual.lastInspectionScore,
+      'updated property\'s `lastInspectionScore`'
+    );
+    expect(expected.lastInspectionDate).to.equal(
+      actual.lastInspectionDate,
+      'updated property\'s `lastInspectionDate`'
+    );
   }));
 });

@@ -8,6 +8,7 @@ const sinon = require('sinon');
 const admin = require('firebase-admin');
 const { expect } = require('chai');
 const uuid = require('../../test-helpers/uuid');
+const mocking = require('../../test-helpers/mocking');
 admin.initializeApp();
 const db = admin.database();
 
@@ -211,8 +212,8 @@ describe('Inspection Write', () => {
     const propertyId = uuid();
     const newest = (Date.now() / 1000);
     const oldest = (Date.now() / 1000) - 100000;
-    const inspectionOne = createInspection({ property: propertyId, inspectionCompleted: true, creationDate: newest, score: 65 });
-    const inspectionTwo = createInspection({ property: propertyId, inspectionCompleted: true, creationDate: oldest, score: 25 });
+    const inspectionOne = mocking.createInspection({ property: propertyId, inspectionCompleted: true, creationDate: newest, score: 65 });
+    const inspectionTwo = mocking.createInspection({ property: propertyId, inspectionCompleted: true, creationDate: oldest, score: 25 });
     const expected = {
       numOfInspections: 2,
       lastInspectionScore: inspectionOne.score,
@@ -251,32 +252,3 @@ describe('Inspection Write', () => {
     );
   }));
 });
-
-/**
- * Create a randomized inspection object
- * @param  {Object} config
- * @return {Object}
- */
-function createInspection(config) {
-  if (!config.property) {
-    throw new Error('createInspection requires a `property`');
-  }
-
-  const now = Date.now() / 1000;
-  const offset = Math.floor(Math.random() * 100);
-  const items = Math.floor(Math.random() * 100);
-  const completed = config.inspectionCompleted || false;
-
-  return Object.assign({
-    creationDate: (now - offset),
-    deficienciesExist: Math.random() > .5 ? true : false,
-    inspectionCompleted: completed,
-    inspector: `user-${offset * 2}`,
-    inspectorName: 'test-user',
-    itemsCompleted: completed ? items : (items / 2),
-    score: Math.random() > .5 ? 100 : Math.random(),
-    templateName: `test-${offset * 3}`,
-    totalItems: items,
-    updatedLastDate: (now - (offset / 2))
-  }, config);
-}
