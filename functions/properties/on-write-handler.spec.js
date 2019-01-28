@@ -1,14 +1,14 @@
 const sinon = require('sinon');
 const { expect } = require('chai');
-const { templatesOnWriteHandler } = require('./index');
 const { createDatabaseStub } = require('../test-helpers/firebase');
+const createOnWriteHandler = require('./on-write-handler');
 
 describe('Properties', function() {
-  describe('On Write Template Handler', function() {
+  describe('On Write Handler', function() {
     it('should create a handler that returns a promise resolving updates hash', () => {
-      const actual = templatesOnWriteHandler(createDatabaseStub().value())(
+      const actual = createOnWriteHandler(createDatabaseStub().value())(
         {
-          before: { exists: () => true },
+          before: { exists: () => true, val: () => ({ templates: null }) },
           after: { exists: () => false }
         },
         { params: { objectId: '1' } }
