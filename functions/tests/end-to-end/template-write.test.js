@@ -8,6 +8,7 @@ const sinon = require('sinon');
 const admin = require('firebase-admin');
 const { expect } = require('chai');
 const uuid = require('../../test-helpers/uuid');
+const { cleanDb } = require('../../test-helpers/firebase');
 admin.initializeApp();
 const db = admin.database();
 
@@ -24,8 +25,9 @@ describe('Templates Write', () => {
     cloudFunctions = require('../../index');
   });
   after(() => admin.database = oldDatabase);
+  afterEach(() => cleanDb(db));
 
-  it('should remove all `propertyTemplates` belonging to a deleted template', () => co(function *() {
+  it('should remove all /propertyTemplates belonging to a deleted template', () => co(function *() {
     const tmplId = uuid();
     const property1Id = uuid();
     const property2Id = uuid();
@@ -55,7 +57,7 @@ describe('Templates Write', () => {
     expect(actual.map((ds) => ds.val())).to.deep.equal([null, null]);
   }));
 
-  it('should update all `propertyTemplates` belonging to an updated template', () => co(function *() {
+  it('should update all /propertyTemplates belonging to an updated template', () => co(function *() {
     const tmplId = uuid();
     const property1Id = uuid();
     const property2Id = uuid();
@@ -84,5 +86,67 @@ describe('Templates Write', () => {
     ]);
 
     expect(actual.map((ds) => ds.val())).to.deep.equal([expected, expected]);
+  }));
+
+  it('should add proxy record to /templatesList after template addition', () => co(function *() {
+    const tmplId = uuid();
+    const expected = { name: `test${tmplId}`, description: `desc${tmplId}`, category: uuid() };
+
+    // Setup database
+    const beforeSnap = yield db.ref(`/templates/${tmplId}`).once('value');
+    yield db.ref(`/templates/${tmplId}`).set(expected); // add template
+    const afterSnap = yield db.ref(`/templates/${tmplId}`).once('value');
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.templateWrite);
+    yield wrapped(changeSnap, { params: { objectId: tmplId } });
+
+    // Test result
+    const actual = yield db.ref(`/templatesList/${tmplId}`).once('value');
+    expect(actual.val()).to.deep.equal(expected);
+  }));
+
+  it('should update proxy record in /templatesList after template update', () => co(function *() {
+    const tmplId = uuid();
+    const beforeData = { name: `test${tmplId}`, description: `desc${tmplId}`, category: uuid() };
+    const expected = { name: `test${tmplId}--rev2`, description: `desc${tmplId}--rev2`, category: `${uuid()}--rev2` };
+
+    // Setup database
+    yield db.ref(`/templates/${tmplId}`).set(beforeData); // add template
+    yield db.ref(`/templatesList/${tmplId}`).set(beforeData); // add proxy template
+    const beforeSnap = yield db.ref(`/templates/${tmplId}`).once('value');
+    yield db.ref(`/templates/${tmplId}`).set(expected); // update template
+    const afterSnap = yield db.ref(`/templates/${tmplId}`).once('value');
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.templateWrite);
+    yield wrapped(changeSnap, { params: { objectId: tmplId } });
+
+    // Test result
+    const actual = yield db.ref(`/templatesList/${tmplId}`).once('value');
+    expect(actual.val()).to.deep.equal(expected);
+  }));
+
+  it('should remove proxy record from /templatesList after template deletion', () => co(function *() {
+    const tmplId = uuid();
+    const beforeData = { name: `test${tmplId}`, description: `desc${tmplId}`, category: uuid() };
+
+    // Setup database
+    yield db.ref(`/templates/${tmplId}`).set(beforeData); // add template
+    yield db.ref(`/templatesList/${tmplId}`).set(beforeData); // add proxy templateList
+    const beforeSnap = yield db.ref(`/templates/${tmplId}`).once('value');
+    yield db.ref(`/templates/${tmplId}`).remove(); // delete template
+    const afterSnap = yield db.ref(`/templates/${tmplId}`).once('value');
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.templateWrite);
+    yield wrapped(changeSnap, { params: { objectId: tmplId } });
+
+    // Test result
+    const actual = yield db.ref(`/templatesList/${tmplId}`).once('value');
+    expect(actual.exists()).to.equal(false);
   }));
 });

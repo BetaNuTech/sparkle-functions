@@ -49,5 +49,9 @@ module.exports = {
       writable: true,
       value: () => api
     }, config)
+  },
+
+  cleanDb(db) {
+    return db.ref('/').set(null);
   }
 };
