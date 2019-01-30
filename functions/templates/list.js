@@ -30,7 +30,16 @@ module.exports = {
         .then(() => null);
     }
 
-    // TODO: Template added or updated
-    return Promise.resolve({});
+    // Template added or updated
+    const upsertData = Object.create(null);
+    upsertData.name = after.name;
+    upsertData.description = after.description;
+    if (after.category) upsertData.category = after.category;
+
+    return db.ref(target).update(upsertData)
+      .catch((e) => Promise.reject(
+        new Error(`${LOG_PREFIX} failed to ${before ? 'update' : 'add'} record at ${target} ${e}`) // wrap error
+      ))
+      .then(() => upsertData);
   }
 }
