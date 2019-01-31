@@ -28,6 +28,13 @@ module.exports = {
       // Collect all template ID's
       const templateIds = yield adminUtils.fetchRecordIds(db, '/templates');
 
+      // Cleanup templatesList items without a source template
+      try {
+        yield list.removeOrphans(db, templateIds);
+      } catch (e) {
+        log.error(`${e}`);
+      }
+
       // No templates in database
       if (!templateIds.length) {
         return updates;
@@ -46,7 +53,7 @@ module.exports = {
           yield list.write(db, id, templateData, templateData); // sync `/templatesList`
           updates[id] = true;
         } catch (e) {
-          log.error(e);
+          log.error(`${e}`);
         }
       }
 
@@ -67,7 +74,7 @@ module.exports = {
             updates[removedTemplateIds[k]] = true;
           }
         } catch (e) {
-          log.error(`${logPrefix} property sync failed`, e);
+          log.error(`${logPrefix} property sync failed ${e}`);
         }
       }
 

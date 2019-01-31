@@ -1,12 +1,13 @@
 const co = require('co');
 const assert = require('assert');
 const log = require('../utils/logger');
+const adminUtils = require('../utils/firebase-admin');
 
 const LOG_PREFIX = 'templates: list:';
 
 module.exports = {
   /**
-   * Handle adds, deletes, & updates to /templatesList/*
+   * Handle adds, deletes, & updates to `/templatesList/*`
    * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
    * @param  {String} templateId
    * @param  {Object} before - record POJO
@@ -103,7 +104,24 @@ module.exports = {
     const updates = Object.create(null);
 
     return co(function *() {
+      const templatesListIds = yield adminUtils.fetchRecordIds(db, '/templatesList');
+
+      templatesListIds
+        .filter(id => existingTemplateIds.indexOf(id) === -1)
+        .forEach(id => {
+          // Collect updates
+          updates[`/templatesList/${id}`] = null;
+        })
+
+      // Update database
+      if (Object.keys(updates).length) {
+        yield db.ref().update(updates);
+      }
+
       return updates;
-    });
+    })
+    .catch((e) => Promise.reject(
+      new Error(`${LOG_PREFIX} orphan removal failed ${e}`) // wrap error
+    ));
   }
 }
