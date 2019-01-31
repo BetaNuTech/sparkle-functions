@@ -8,6 +8,7 @@ const sinon = require('sinon');
 const admin = require('firebase-admin');
 const { expect } = require('chai');
 const uuid = require('../../test-helpers/uuid');
+const { cleanDb } = require('../../test-helpers/firebase');
 admin.initializeApp();
 const db = admin.database();
 
@@ -24,6 +25,7 @@ describe('Property Templates Write', () => {
     cloudFunctions = require('../../index');
   });
   after(() => admin.database = oldDatabase);
+  afterEach(() => cleanDb(db));
 
   it('should remove all a property\'s `/propertyTemplates` when it gets deleted', () => co(function *() {
     const tmplId = uuid();
