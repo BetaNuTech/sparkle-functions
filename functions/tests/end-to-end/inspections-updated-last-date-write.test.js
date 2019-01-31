@@ -9,6 +9,7 @@ const admin = require('firebase-admin');
 const { expect } = require('chai');
 const uuid = require('../../test-helpers/uuid');
 const mocking = require('../../test-helpers/mocking');
+const { cleanDb } = require('../../test-helpers/firebase');
 admin.initializeApp();
 const db = admin.database();
 
@@ -25,6 +26,7 @@ describe('Inspections Updated Last Date Write', () => {
     cloudFunctions = require('../../index');
   });
   after(() => admin.database = oldDatabase);
+  afterEach(() => cleanDb(db));
 
   it('should update all an inspections\' outdated proxy records', () => co(function *() {
     const inspId = uuid();
