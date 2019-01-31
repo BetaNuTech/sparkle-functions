@@ -52,7 +52,7 @@ describe('Templates Sync', () => {
     const oldTmplId = uuid();
     const currTmplId = uuid();
     const propertyId = uuid();
-    const templateData = { name: `remove${oldTmplId}` };
+    const templateData = { name: `remove${oldTmplId}`, description: `remove${oldTmplId}` };
     const propertyData = { templates: { [currTmplId]: true } }; // not associated w/ oldTmplId
 
     // Setup database
