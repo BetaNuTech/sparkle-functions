@@ -1,5 +1,7 @@
 const co = require('co');
 const log = require('../utils/logger');
+const templatesList = require('../templates/list');
+
 const LOG_PREFIX = 'template-categories: onDelete:';
 
 module.exports = {
@@ -17,6 +19,7 @@ module.exports = {
      * Template Category record
      *
      * @param {functions.database.DataSnapshot} templateCategorySnapshot
+     * @return {Promise}
      */
     return co.wrap(function *(templateCategorySnapshot, context) {
       const id = context.params.objectId;
@@ -24,10 +27,10 @@ module.exports = {
 
       // Lookup associated templates
       const templatesInCategory = yield db
-        .ref("/templates")
-        .orderByChild("category")
+        .ref('/templates')
+        .orderByChild('category')
         .equalTo(id)
-        .once("value");
+        .once('value');
 
       // Category has no associated templates
       if (!templatesInCategory.exists()) {
@@ -37,23 +40,32 @@ module.exports = {
 
       // Create update hash for all
       // associated templates
-      const bulkUpdates = {};
-      const templateIds = Object.keys(templatesInCategory.val());
-      templateIds.forEach(tempId => {
-        // Add to bluk update
-        bulkUpdates[`/templates/${tempId}/category`] = null;
+      const updates = {};
+      Object.keys(templatesInCategory.val()).forEach(tempId => {
+        updates[`/templates/${tempId}/category`] = null;
         log.info(`${LOG_PREFIX} disassociating template: ${tempId}`);
       });
 
+      // Write all template updates to database
       try {
-        // Write all template updates to database
-        if (templateIds.length) yield db.ref().update(bulkUpdates);
+        if (Object.keys(updates).length) {
+          yield db.ref().update(updates);
+        }
       } catch (e) {
         log.error(
           `${LOG_PREFIX} Failed to disassociate template relationship`,
           e
         );
       }
+
+      // Remove associations in /templatesList
+      try {
+        yield templatesList.removeCategory(db, id);
+      } catch (e) {
+        log.error(e);
+      }
+
+      return updates;
     });
   }
 };

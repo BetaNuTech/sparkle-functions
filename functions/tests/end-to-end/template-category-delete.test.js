@@ -85,10 +85,12 @@ describe('Template Category Delete', () => {
     const actualTmpl1Cat = yield db.ref(`/templatesList/${tmpl1Id}/category`).once('value');
     const actualTmpl2Cat = yield db.ref(`/templatesList/${tmpl2Id}/category`).once('value');
     const actualTmpl3Cat = yield db.ref(`/templatesList/${tmpl3Id}/category`).once('value');
+    const actualTmpl1 = yield db.ref(`/templatesList/${tmpl1Id}`).once('value');
 
     // Assertions
     expect(actualTmpl1Cat.val()).to.equal(null, 'removed template 1 proxy relationship');
     expect(actualTmpl2Cat.val()).to.equal(null, 'removed template 2 proxy relationship');
     expect(actualTmpl3Cat.val()).to.equal(tmpl3Data.category, 'template 3 proxy relationship unchanged');
+    expect(actualTmpl1.val().name).to.equal(tmpl1Data.name, 'non-category attributes unchanged');
   }));
 });
