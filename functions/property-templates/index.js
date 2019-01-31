@@ -81,7 +81,7 @@ module.exports = {
           if (propertyTemplates[propertyId][templateId] != null) {
             return database.ref('/propertyTemplates').child(propertyId).child(templateId).set(templateCopy)
             .then(() => {
-              log.info('template updated at /propertyTemplates/', propertyId, '/', templateId);
+              log.info(`template updated at /propertyTemplates/${propertyId}/${templateId}`);
               return { [`/propertyTemplates/${propertyId}/${templateId}`]: 'updated' }
             })
           }
@@ -112,7 +112,7 @@ module.exports = {
           if (propertyTemplates[propertyId][templateId] != null) {
             return database.ref('/propertyTemplates').child(propertyId).child(templateId).remove()
             .then(() => {
-              log.info('template removed /propertyTemplates/', propertyId);
+              log.info(`template removed /propertyTemplates/${propertyId}`);
               return { [`/propertyTemplates/${propertyId}/${templateId}`]: 'removed' }
             })
           }
