@@ -1,5 +1,7 @@
 const assert = require('assert');
 
+const PROJECT_ID = `${process.env.GOOGLE_CLOUD_PROJECT || 'Unknown Cloud Project'}`;
+
 /**
  * Create a handler that publishes topics to a client
  * @param  {String} topicPrefix
@@ -16,6 +18,14 @@ module.exports = function createPublishTopicHandler(topicPrefix = '', client) {
     const target = `${topicPrefix}${topic}`;
 
     try {
+      const [topics] = await client.getTopics();
+      const hasCreatedTopic = topics.map(({name}) => name.split('/').pop()).includes(target);
+
+      if (!hasCreatedTopic) {
+        console.log(`${PROJECT_ID}: creating topic ${target}`);
+        await client.createTopic(target);
+      }
+
       await client.topic(target)
           .publisher()
           .publish(Buffer.from('msg'));
@@ -23,7 +33,7 @@ module.exports = function createPublishTopicHandler(topicPrefix = '', client) {
       res.status(200).send(`Published to ${target}`).end();
     } catch (e) {
       console.error(e);
-      console.log(`${process.env.GOOGLE_CLOUD_PROJECT || 'Unknown Cloud Project'}: failed to publish topic ${target}`);
+      console.log(`${PROJECT_ID}: failed to publish topic ${target}`);
       res.status(500).send(`${e}`).end();
     }
   }
