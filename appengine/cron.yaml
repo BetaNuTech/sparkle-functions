@@ -1,12 +1,12 @@
 cron:
 - description: Trigger resend of unsent /push-messages
-  url: /publish/push-messages
+  url: /publish/push-messages-sync
   schedule: every 1 hours
 
 - description: Trigger sync of all inspections
-  url: /publish/inspections
+  url: /publish/inspections-sync
   schedule: every 24 hours from 00:00 to 01:00
 
 - description: Trigger sync of all templates
-  url: /publish/templates
+  url: /publish/templates-sync
   schedule: every 24 hours from 00:00 to 01:00
