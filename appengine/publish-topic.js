@@ -22,7 +22,9 @@ module.exports = function createPublishTopicHandler(topicPrefix = '', client) {
 
       res.status(200).send(`Published to ${target}`).end();
     } catch (e) {
-      res.status(500).send('' + e).end();
+      console.error(e);
+      console.log(`${process.env.GOOGLE_CLOUD_PROJECT || 'Unknown Cloud Project'}: failed to publish topic ${target}`);
+      res.status(500).send(`${e}`).end();
     }
   }
 };
