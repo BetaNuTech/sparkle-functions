@@ -1,6 +1,6 @@
-const { write, removeCategory } = require('./list');
 const { expect } = require('chai');
 const { createDatabaseStub } = require('../test-helpers/firebase');
+const { write, removeCategory, removeOrphans } = require('./list');
 
 describe('Templates List', () => {
   describe('Writing a template change', () => {
@@ -44,6 +44,22 @@ describe('Templates List', () => {
       return removeCategory(
         createDatabaseStub({}, { exists: () => true, val: () => ({}) }).value(),
         'test'
+      ).then((actual) =>
+        expect(actual).to.be.an('object')
+      )
+    });
+  });
+
+  describe('Removing orphaned records', () => {
+    it('should return a promise', () => {
+      const actual = removeOrphans(createDatabaseStub().value(), ['test']);
+      expect(actual).to.be.an.instanceof(Promise);
+    });
+
+    it('should resolve an update hash', () => {
+      return removeOrphans(
+        createDatabaseStub().value(),
+        ['test']
       ).then((actual) =>
         expect(actual).to.be.an('object')
       )

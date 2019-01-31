@@ -35,16 +35,18 @@ module.exports = {
 
       var id, i, k;
 
-      // Sync existing templates w/ /propertyTemplates
+      // Sync /propertyTemplates and /templatesList
       for (i = 0; i < templateIds.length; i++) {
         id = templateIds[i];
 
         try {
           const templateSnap = yield db.ref(`/templates/${id}`).once('value');
-          yield propertyTemplates.update(db, id, templateSnap.val());
+          const templateData = templateSnap.val();
+          yield propertyTemplates.update(db, id, templateData); // sync `/propertyTemplates`
+          yield list.write(db, id, templateData, templateData); // sync `/templatesList`
           updates[id] = true;
         } catch (e) {
-          log.error(`${logPrefix} update failed`, e);
+          log.error(e);
         }
       }
 

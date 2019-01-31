@@ -84,5 +84,26 @@ module.exports = {
     .catch((e) => Promise.reject(
       new Error(`${LOG_PREFIX} category ${categoryId} removal from /templatesList failed ${e}`) // wrap error
     ));
+  },
+
+  /**
+   * Remove templatesList items that do not have a
+   * existing source template record
+   * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+   * @param  {String[]} existingTemplateIds
+   * @return {Promise} - resolves {Object} updates hash
+   */
+  removeOrphans(db, existingTemplateIds = []) {
+    assert(
+      Array.isArray(existingTemplateIds)
+      && existingTemplateIds.every(id => id && typeof id === 'string'),
+      'has existing templates ids array'
+    );
+
+    const updates = Object.create(null);
+
+    return co(function *() {
+      return updates;
+    });
   }
 }
