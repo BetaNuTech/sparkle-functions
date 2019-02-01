@@ -1,31 +1,11 @@
 const co = require('co');
-const test = require('firebase-functions-test')({
-  databaseURL: 'https://test-sapphire-inspections-8a9e3.firebaseio.com',
-  storageBucket: 'test-sapphire-inspections-8a9e3.appspot.com',
-  projectId: 'test-sapphire-inspections-8a9e3',
-}, '../auth.json');
-const sinon = require('sinon');
-const admin = require('firebase-admin');
 const { expect } = require('chai');
 const uuid = require('../../test-helpers/uuid');
 const mocking = require('../../test-helpers/mocking');
 const { cleanDb } = require('../../test-helpers/firebase');
-admin.initializeApp();
-const db = admin.database();
+const { db, test, cloudFunctions } = require('./setup');
 
 describe('Inspections Migration Date Sync', () => {
-  var cloudFunctions, oldDatabase;
-
-  before(() => {
-    // Stub admin.initializeApp to avoid live database access
-    if (!admin.initializeApp.isSinonProxy) {
-      adminInitStub = sinon.stub(admin, 'initializeApp').returns({ database: () => db });
-      oldDatabase = admin.database;
-      Object.defineProperty(admin, 'database', { writable: true, value: () => db });
-    }
-    cloudFunctions = require('../../index');
-  });
-  after(() => admin.database = oldDatabase);
   afterEach(() => cleanDb(db));
 
   it('should migrate all an inspections\' outdated proxy records', () => co(function *() {
@@ -58,23 +38,23 @@ describe('Inspections Migration Date Sync', () => {
     const wrapped = test.wrap(cloudFunctions.inspectionMigrationDateWrite);
     yield wrapped(changeSnap, { params: { objectId: inspId } });
 
-    // Lookup updated records
+    // Test Results
     const nested = yield db.ref(`/properties/${propertyId}/inspections/${inspId}`).once('value');
     const propertyInspection = yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value');
     const completedInspection = yield db.ref(`/completedInspections/${inspId}`).once('value');
 
-    // Compare to expected
+    // Assertions
     const expected = Object.assign({}, inspectionData);
     delete expected.property;
     delete expected.migrationDate;
-    expect(expected).to.deep.equal(propertyInspection.val(), 'updated nested /propertyInspections');
-    expect(expected).to.deep.equal(nested.val(), 'updated /property nested inspection');
+    expect(propertyInspection.val()).to.deep.equal(expected, 'updated nested /propertyInspections');
+    expect(nested.val()).to.deep.equal(expected, 'updated /property nested inspection');
 
     const expectedCompleted = Object.assign({}, inspectionData);
     delete expectedCompleted.migrationDate;
     delete expectedCompleted.itemsCompleted;
     delete expectedCompleted.totalItems;
-    expect(expectedCompleted).to.deep.equal(completedInspection.val(), 'updated nested /completedInspections');
+    expect(completedInspection.val()).to.deep.equal(expectedCompleted, 'updated nested /completedInspections');
   }));
 
   it('should update property with any meta data from its\' completed inspections', () => co(function *() {
@@ -106,7 +86,7 @@ describe('Inspections Migration Date Sync', () => {
     const wrapped = test.wrap(cloudFunctions.inspectionMigrationDateWrite);
     yield wrapped(changeSnap, { params: { objectId: insp1Id } });
 
-    // Lookup updated records
+    // Test results
     const propertySnap = yield db.ref(`/properties/${propertyId}`).once('value');
     const actual = propertySnap.val();
 
