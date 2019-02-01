@@ -2,7 +2,7 @@ version: 2
 
 jobs:
   build:
-    working_directory: /src/functions
+    working_directory: functions
     docker:
       - image: circleci/node:6.11
     steps:
@@ -12,7 +12,7 @@ jobs:
           command: yarn
 
   test:
-    working_directory: /src/functions
+    working_directory: functions
     docker:
       - image: circleci/node:6.11
     steps:
