@@ -2,9 +2,9 @@ version: 2
 
 jobs:
   build:
-    working_directory: ~/project/functions
     docker:
       - image: circleci/node:6.11
+    working_directory: ~/sparkle-functions/functions
     steps:
       - checkout
       - run:
@@ -18,9 +18,9 @@ jobs:
           command: yarn
 
   test:
-    working_directory: ~/project/functions
     docker:
       - image: circleci/node:6.11
+    working_directory: ~/sparkle-functions/functions
     steps:
       - checkout
       - run:
