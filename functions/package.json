@@ -3,7 +3,7 @@
   "description": "Cloud Functions for Firebase",
   "scripts": {
     "test": "npm run test-unit",
-    "test-unit": "NODE_ENV=test LOG_LEVEL=crit ./node_modules/.bin/mocha './{,!(node_modules)/**}/*.spec.js'",
+    "test-unit": "NODE_ENV=test LOG_LEVEL=crit ./node_modules/.bin/mocha --opts ./void './{,!(node_modules)/**}/*.spec.js'",
     "test-e2e": "NODE_ENV=test LOG_LEVEL=crit ./node_modules/.bin/mocha './{,!(node_modules)/**}/test/end-to-end/*.test.js'",
     "dev": "./node_modules/.bin/nodemon -i node_modules -e js,json --exec 'npm test --silent'",
     "coverage": "./node_modules/.bin/nyc npm test --silent"
