@@ -7,16 +7,10 @@ jobs:
     # working_directory: ~/sparkle-functions/functions
     steps:
       - checkout
-      - run: cd functions
-      - run:
-          name: Where am I?
-          command: pwd
-      - run:
-          name: What's in here?
-          command: ls
       - run:
           name: Install Dependencies
           command: yarn
+          working_directory: functions
 
   test:
     docker:
@@ -28,9 +22,11 @@ jobs:
       - run:
           name: Unit Tests
           command: yarn test-unit
+          working_directory: functions
       - run:
           name: End to End Tests
           command: yarn test-e2e
+          working_directory: functions
 
 workflows:
   version: 2
