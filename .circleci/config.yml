@@ -2,20 +2,23 @@ version: 2
 
 jobs:
   build:
-    working_directory: /home/circleci/project/functions
+    working_directory: ~/project/functions
     docker:
       - image: circleci/node:6.11
     steps:
       - checkout
       - run:
-          name: Where's home?
-          command: echo ~
+          name: Where am I?
+          command: pwd
+      - run:
+          name: What's in here?
+          command: ls
       - run:
           name: Install Dependencies
           command: yarn
 
   test:
-    working_directory: /home/circleci/project/functions
+    working_directory: ~/project/functions
     docker:
       - image: circleci/node:6.11
     steps:
