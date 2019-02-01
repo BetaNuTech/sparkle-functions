@@ -33,9 +33,9 @@ services:
       - ./functions:/src/functions
 
   test-e2e-fn:
-    image: "node:6.11-alpine"
+    image: "circleci/node:6.11"
     working_dir: /src/functions
-    command: [sh, -c, "yarn test-e2e"]
+    command: [sh, -c, "yarn && yarn test-e2e"]
     volumes:
       - ./auth.json:/src/auth.json
       - ./functions:/src/functions
