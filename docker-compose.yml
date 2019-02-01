@@ -25,10 +25,10 @@ services:
     volumes:
       - ./functions:/src/functions
 
-  test-fn:
+  test-unit-fn:
     image: "node:6.11-alpine"
     working_dir: /src/functions
-    command: [sh, -c, "yarn dev"]
+    command: [sh, -c, "yarn test-unit"]
     volumes:
       - ./functions:/src/functions
 
