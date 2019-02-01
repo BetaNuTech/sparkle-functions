@@ -4,9 +4,10 @@ jobs:
   build:
     docker:
       - image: circleci/node:6.11
-    working_directory: ~/sparkle-functions/functions
+    # working_directory: ~/sparkle-functions/functions
     steps:
       - checkout
+      - run: cd functions
       - run:
           name: Where am I?
           command: pwd
@@ -20,9 +21,10 @@ jobs:
   test:
     docker:
       - image: circleci/node:6.11
-    working_directory: ~/sparkle-functions/functions
+    # working_directory: ~/sparkle-functions/functions
     steps:
       - checkout
+      - run: cd functions
       - run:
           name: Unit Tests
           command: yarn test-unit
