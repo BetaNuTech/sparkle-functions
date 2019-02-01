@@ -1,4 +1,4 @@
-# gCloud CRON App
+# gCloud CRON App [![CircleCI](https://circleci.com/gh/BetaNuTech/sparkle-functions.svg?style=svg)](https://circleci.com/gh/BetaNuTech/sparkle-functions)
 Google Cloud Node.js app to issue cron jobs
 
 # Requirements
