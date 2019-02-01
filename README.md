@@ -68,12 +68,17 @@ docker-compose run deploy
 docker-compose run yarn-fn add <npm-module>
 ```
 
-2. Watch filesystem and run tests
+2. Watch filesystem and run unit tests
 ```sh
-docker-compose run test-fn add <npm-module>
+docker-compose run test-fn
 ```
 
-3. Deploying Firebase Functions
+3. Running End to End tests
+```sh
+docker-compose run test-e2e-fn
+```
+
+4. Deploying Firebase Functions
 ```sh
 docker build -t lgvalle/firebase-tools-docker .
 docker run -p 9005:9005 -u node -it lgvalle/firebase-tools-docker sh
