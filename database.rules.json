@@ -16,6 +16,16 @@
         "code"
       ]
     },
+    "templates": {
+      ".indexOn": [
+        "category"
+      ]
+    },
+    "templatesList": {
+      ".indexOn": [
+        "category"
+      ]
+    },
     ".read": "auth != null",
     ".write": "auth != null"
   }
