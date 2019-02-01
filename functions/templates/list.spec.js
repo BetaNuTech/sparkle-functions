@@ -36,7 +36,10 @@ describe('Templates List', () => {
 
   describe('Removing a category', () => {
     it('should return a promise', () => {
-      const actual = removeCategory(createDatabaseStub().value(), 'test');
+      const actual = removeCategory(
+        createDatabaseStub({}, { exists: () => false }).value(),
+        'test'
+      );
       expect(actual).to.be.an.instanceof(Promise);
     });
 
@@ -52,17 +55,28 @@ describe('Templates List', () => {
 
   describe('Removing orphaned records', () => {
     it('should return a promise', () => {
-      const actual = removeOrphans(createDatabaseStub().value(), ['test']);
+      const actual = removeOrphans(
+        createDatabaseStub().value(),
+        ['test'],
+        stupAdminUtils({}, ['test'])
+      );
       expect(actual).to.be.an.instanceof(Promise);
     });
 
     it('should resolve an update hash', () => {
       return removeOrphans(
         createDatabaseStub().value(),
-        ['test']
+        ['test'],
+        stupAdminUtils({}, ['test'])
       ).then((actual) =>
         expect(actual).to.be.an('object')
       )
     });
   });
 });
+
+function stupAdminUtils(config = {}, ids = []) {
+  return Object.assign({
+    fetchRecordIds: () => Promise.resolve(ids)
+  }, config);
+}

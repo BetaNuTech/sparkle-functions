@@ -92,9 +92,10 @@ module.exports = {
    * existing source template record
    * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
    * @param  {String[]} existingTemplateIds
+   * @param  {utils}    adminUtils
    * @return {Promise} - resolves {Object} updates hash
    */
-  removeOrphans(db, existingTemplateIds = []) {
+  removeOrphans(db, existingTemplateIds = [], utils = adminUtils) {
     assert(
       Array.isArray(existingTemplateIds)
       && existingTemplateIds.every(id => id && typeof id === 'string'),
@@ -104,7 +105,7 @@ module.exports = {
     const updates = Object.create(null);
 
     return co(function *() {
-      const templatesListIds = yield adminUtils.fetchRecordIds(db, '/templatesList');
+      const templatesListIds = yield utils.fetchRecordIds(db, '/templatesList');
 
       templatesListIds
         .filter(id => existingTemplateIds.indexOf(id) === -1)
