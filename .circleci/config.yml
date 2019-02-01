@@ -12,7 +12,7 @@ jobs:
           working_directory: functions
       - run:
           name: Unit Tests
-          command: ls && yarn test-unit
+          command: yarn test-unit
           working_directory: functions
       - run:
           name: End to End Tests
