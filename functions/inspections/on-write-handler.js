@@ -36,9 +36,11 @@ module.exports = function createOnWriteHandler(db) {
 
       updates[`/properties/${propertyKey}/inspections/${objectId}`] = 'removed'; // TODO #28
       updates[`/propertyInspections/${propertyKey}/inspections/${objectId}`] = 'removed';
+      updates[`/propertyInspectionsList/${propertyKey}/inspections/${objectId}`] = 'removed';
       requests.push(
         db.ref(`/properties/${propertyKey}/inspections/${objectId}`).remove(), // TODO #28
-        db.ref(`/propertyInspections/${propertyKey}/inspections/${objectId}`).remove()
+        db.ref(`/propertyInspections/${propertyKey}/inspections/${objectId}`).remove(),
+        db.ref(`/propertyInspectionsList/${propertyKey}/inspections/${objectId}`).remove()
       );
 
       return Promise.all(requests).then(() => updates);

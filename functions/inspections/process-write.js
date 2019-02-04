@@ -38,7 +38,9 @@ module.exports = function processWrite(database, inspectionId, inspection) {
   database.ref(`/properties/${propertyKey}/inspections/${inspectionId}`).set(inspectionData);  // Need to remove
   dbUpdates[`/properties/${propertyKey}/inspections/${inspectionId}`] = inspectionData;
   database.ref(`/propertyInspections/${propertyKey}/inspections/${inspectionId}`).set(inspectionData);
+  database.ref(`/propertyInspectionsList/${propertyKey}/inspections/${inspectionId}`).set(inspectionData);
   dbUpdates[`/propertyInspections/${propertyKey}/inspections/${inspectionId}`] = inspectionData;
+  dbUpdates[`/propertyInspectionsList/${propertyKey}/inspections/${inspectionId}`] = inspectionData;
 
   if (inspection.inspectionCompleted) {
     const completedInspectionData = {
