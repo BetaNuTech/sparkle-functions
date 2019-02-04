@@ -31,6 +31,7 @@ describe('Inspections Sync', () => {
     yield db.ref(`/properties/${propertyId}`).set({ inspections: { [inspId]: oldInspection } });
     yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).set(oldInspection);
     yield db.ref(`/completedInspections/${inspId}`).set(oldInspection);
+    yield db.ref(`/completedInspectionsList/${inspId}`).set(oldInspection);
 
     // execute
     const wrapped = test.wrap(cloudFunctions.inspectionsSync);
@@ -40,18 +41,20 @@ describe('Inspections Sync', () => {
     const nested = yield db.ref(`/properties/${propertyId}/inspections/${inspId}`).once('value');
     const propertyInspection = yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value');
     const completedInspection = yield db.ref(`/completedInspections/${inspId}`).once('value');
+    const completedInspectionList = yield db.ref(`/completedInspectionsList/${inspId}`).once('value');
 
     // Compare to expected
     const expected = Object.assign({}, newInspection);
     delete expected.property;
-    expect(expected).to.deep.equal(propertyInspection.val(), 'updated nested /propertyInspections');
-    expect(expected).to.deep.equal(nested.val(), 'updated /property nested inspection');
+    expect(propertyInspection.val()).to.deep.equal(expected, 'updated /propertyInspections proxy');
+    expect(nested.val()).to.deep.equal(expected, 'updated /property nested inspection proxy');
 
     const expectedCompleted = Object.assign({}, newInspection);
     delete expected.property;
     delete expectedCompleted.itemsCompleted;
     delete expectedCompleted.totalItems;
-    expect(expectedCompleted).to.deep.equal(completedInspection.val(), 'updated nested /completedInspections');
+    expect(completedInspection.val()).to.deep.equal(expectedCompleted, 'updated /completedInspections proxy');
+    expect(completedInspectionList.val()).to.deep.equal(expectedCompleted, 'updated /completedInspectionsList proxy');
   }));
 
   it('should remove a completedInspection that becomes incomplete', () => co(function *() {
@@ -77,13 +80,18 @@ describe('Inspections Sync', () => {
     yield db.ref(`/inspections/${inspId}`).set(newInspection);
     yield db.ref(`/properties/${propertyId}`).set({ inspections: { [inspId]: oldInspection } });
     yield db.ref(`/completedInspections/${inspId}`).set(oldInspection);
+    yield db.ref(`/completedInspectionsList/${inspId}`).set(oldInspection);
 
-    // execute
+    // Execute
     const wrapped = test.wrap(cloudFunctions.inspectionsSync);
     yield wrapped();
 
-    // Lookup updated records
+    // Test results
     const actual = yield db.ref(`/completedInspections/${inspId}`).once('value');
-    expect(actual.exists()).to.equal(false);
+    const actualList = yield db.ref(`/completedInspectionsList/${inspId}`).once('value');
+
+    // Assertions
+    expect(actual.exists()).to.equal(false, 'removed /completedInspections proxy');
+    expect(actualList.exists()).to.equal(false, 'removed /completedInspectionsList proxy');
   }));
 });
