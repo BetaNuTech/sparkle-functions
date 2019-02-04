@@ -32,26 +32,28 @@ describe('Inspections Updated Last Date Write', () => {
     yield db.ref(`/inspections/${inspId}/updatedLastDate`).set(now);
     const afterSnap = yield db.ref(`/inspections/${inspId}/updatedLastDate`).once('value');
 
-    // execute
+    // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
     const wrapped = test.wrap(cloudFunctions.inspectionUpdatedLastDateWrite);
     yield wrapped(changeSnap, { params: { objectId: inspId } });
 
-    // Lookup updated records
+    // Test results
     const nested = yield db.ref(`/properties/${propertyId}/inspections/${inspId}`).once('value');
     const propertyInspection = yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value');
     const completedInspection = yield db.ref(`/completedInspections/${inspId}`).once('value');
+    const completedInspectionList = yield db.ref(`/completedInspectionsList/${inspId}`).once('value');
 
-    // Compare to expected
+    // Assertions
     const expected = Object.assign({}, inspectionData);
     delete expected.property;
-    expect(expected).to.deep.equal(propertyInspection.val(), 'updated nested /propertyInspections');
-    expect(expected).to.deep.equal(nested.val(), 'updated /property nested inspection');
+    expect(propertyInspection.val()).to.deep.equal(expected, 'updated /propertyInspections proxy');
+    expect(nested.val()).to.deep.equal(expected, 'updated /property nested inspection proxy');
 
     const expectedCompleted = Object.assign({}, inspectionData);
     delete expectedCompleted.itemsCompleted;
     delete expectedCompleted.totalItems;
-    expect(expectedCompleted).to.deep.equal(completedInspection.val(), 'updated nested /completedInspections');
+    expect(completedInspection.val()).to.deep.equal(expectedCompleted, 'updated /completedInspections proxy');
+    expect(completedInspectionList.val()).to.deep.equal(expectedCompleted, 'updated /completedInspectionsList proxy');
   }));
 
   it('should update property with any meta data from its\' completed inspections', () => co(function *() {
@@ -88,16 +90,16 @@ describe('Inspections Updated Last Date Write', () => {
     const actual = propertySnap.val();
 
     // Assertions
-    expect(expected.numOfInspections).to.equal(
-      actual.numOfInspections,
+    expect(actual.numOfInspections).to.equal(
+      expected.numOfInspections,
       'updated property\'s `numOfInspections`'
     );
-    expect(expected.lastInspectionScore).to.equal(
-      actual.lastInspectionScore,
+    expect(actual.lastInspectionScore).to.equal(
+      expected.lastInspectionScore,
       'updated property\'s `lastInspectionScore`'
     );
-    expect(expected.lastInspectionDate).to.equal(
-      actual.lastInspectionDate,
+    expect(actual.lastInspectionDate).to.equal(
+      expected.lastInspectionDate,
       'updated property\'s `lastInspectionDate`'
     );
   }));
