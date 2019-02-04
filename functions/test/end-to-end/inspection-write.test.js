@@ -41,13 +41,15 @@ describe('Inspection Write', () => {
     const wrapped = test.wrap(cloudFunctions.inspectionWrite);
     yield wrapped(changeSnap, { params: { objectId: inspId } });
 
-    // Lookup updated records
+    // Test result
     const actual = yield Promise.all([
       db.ref(`/completedInspections/${inspId}`).once('value'),
       db.ref(`/completedInspectionsList/${inspId}`).once('value'),
       db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value'),
       db.ref(`/properties/${propertyId}/inspections/${inspId}`).once('value')
     ]);
+
+    // Assertions
     expect(actual.map((ds) => ds.exists())).to.deep.equal([false, false, false, false]);
   }));
 
@@ -92,13 +94,13 @@ describe('Inspection Write', () => {
     const wrapped = test.wrap(cloudFunctions.inspectionWrite);
     yield wrapped(changeSnap, { params: { objectId: inspId } });
 
-    // Lookup updated records
+    // Test result
     const nested = yield db.ref(`/properties/${propertyId}/inspections/${inspId}`).once('value');
     const propertyInspection = yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value');
     const completedInspection = yield db.ref(`/completedInspections/${inspId}`).once('value');
     const completedInspectionList = yield db.ref(`/completedInspectionsList/${inspId}`).once('value');
 
-    // Compare to expected
+    // Assertions
     const expected = Object.assign({}, afterData);
     delete expected.property;
     expect(propertyInspection.val()).to.deep.equal(expected, 'updated /propertyInspections proxy');
@@ -146,10 +148,11 @@ describe('Inspection Write', () => {
     const wrapped = test.wrap(cloudFunctions.inspectionWrite);
     yield wrapped(changeSnap, { params: { objectId: inspId } });
 
-    // Lookup updated records
+    // Test result
     const actual = yield db.ref(`/completedInspections/${inspId}`).once('value');
     const actualList = yield db.ref(`/completedInspectionsList/${inspId}`).once('value');
 
+    // Assertions
     const expected = Object.assign({}, afterData);
     delete expected.itemsCompleted;
     delete expected.totalItems;
@@ -188,11 +191,11 @@ describe('Inspection Write', () => {
     const wrapped = test.wrap(cloudFunctions.inspectionWrite);
     yield wrapped(changeSnap, { params: { objectId: inspId } });
 
-    // Lookup updated records
+    // Test result
     const actual = yield db.ref(`/completedInspections/${inspId}`).once('value');
     const actualList = yield db.ref(`/completedInspectionsList/${inspId}`).once('value');
 
-    // Compare to expected
+    // Assertions
     expect(actual.exists()).to.equal(false, '/completedInspections proxy does not exist');
     expect(actualList.exists()).to.equal(false, '/completedInspectionsList proxy does not exist');
   }));
@@ -224,7 +227,7 @@ describe('Inspection Write', () => {
     const wrapped = test.wrap(cloudFunctions.inspectionWrite);
     yield wrapped(changeSnap, { params: { objectId: insp1Id } });
 
-    // Lookup updated records
+    // Test result
     const propertySnap = yield db.ref(`/properties/${propertyId}`).once('value');
     const actual = propertySnap.val();
 

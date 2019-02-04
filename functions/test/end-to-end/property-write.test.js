@@ -28,6 +28,8 @@ describe('Property Templates Write', () => {
 
     // Test result
     const actual = yield db.ref(`/propertyTemplates/${propertyId}`).once('value');
+
+    // Assertions
     expect(actual.exists()).to.equal(false);
   }));
 
@@ -53,7 +55,9 @@ describe('Property Templates Write', () => {
 
     // Test result
     const actual = yield db.ref(`/propertyTemplates/${propertyId}`).once('value');
-    expect(expected).to.deep.equal(actual.val());
+
+    // Assertions
+    expect(actual.val()).to.deep.equal(expected);
   }));
 
   it('should always upsert `propertyTemplates` when a property has any template relationships', () => co(function *() {
@@ -81,6 +85,8 @@ describe('Property Templates Write', () => {
 
     // Test result
     const actual = yield db.ref(`/propertyTemplates/${propertyId}`).once('value');
-    expect(expected).to.deep.equal(actual.val());
+
+    // Assertions
+    expect(actual.val()).to.deep.equal(expected);
   }));
 });

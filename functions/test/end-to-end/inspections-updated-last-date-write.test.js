@@ -85,7 +85,7 @@ describe('Inspections Updated Last Date Write', () => {
     const wrapped = test.wrap(cloudFunctions.inspectionUpdatedLastDateWrite);
     yield wrapped(changeSnap, { params: { objectId: insp1Id } });
 
-    // Lookup updated records
+    // Test result
     const propertySnap = yield db.ref(`/properties/${propertyId}`).once('value');
     const actual = propertySnap.val();
 

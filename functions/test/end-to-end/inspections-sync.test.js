@@ -33,17 +33,17 @@ describe('Inspections Sync', () => {
     yield db.ref(`/completedInspections/${inspId}`).set(oldInspection);
     yield db.ref(`/completedInspectionsList/${inspId}`).set(oldInspection);
 
-    // execute
+    // Execute
     const wrapped = test.wrap(cloudFunctions.inspectionsSync);
     yield wrapped();
 
-    // Lookup updated records
+    // Test result
     const nested = yield db.ref(`/properties/${propertyId}/inspections/${inspId}`).once('value');
     const propertyInspection = yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value');
     const completedInspection = yield db.ref(`/completedInspections/${inspId}`).once('value');
     const completedInspectionList = yield db.ref(`/completedInspectionsList/${inspId}`).once('value');
 
-    // Compare to expected
+    // Assertions
     const expected = Object.assign({}, newInspection);
     delete expected.property;
     expect(propertyInspection.val()).to.deep.equal(expected, 'updated /propertyInspections proxy');

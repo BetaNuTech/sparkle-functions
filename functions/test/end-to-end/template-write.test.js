@@ -34,6 +34,7 @@ describe('Templates Write', () => {
       db.ref(`/propertyTemplates/${property2Id}/${tmplId}`).once('value')
     ]);
 
+    // Assertions
     expect(actual.map((ds) => ds.val())).to.deep.equal([null, null]);
   }));
 
@@ -65,6 +66,7 @@ describe('Templates Write', () => {
       db.ref(`/propertyTemplates/${property2Id}/${tmplId}`).once('value')
     ]);
 
+    // Assertions
     expect(actual.map((ds) => ds.val())).to.deep.equal([expected, expected]);
   }));
 
@@ -84,6 +86,8 @@ describe('Templates Write', () => {
 
     // Test result
     const actual = yield db.ref(`/templatesList/${tmplId}`).once('value');
+
+    // Assertions
     expect(actual.val()).to.deep.equal(expected);
   }));
 
@@ -106,6 +110,8 @@ describe('Templates Write', () => {
 
     // Test result
     const actual = yield db.ref(`/templatesList/${tmplId}`).once('value');
+
+    // Assertions
     expect(actual.val()).to.deep.equal(expected);
   }));
 
@@ -127,6 +133,8 @@ describe('Templates Write', () => {
 
     // Test result
     const actual = yield db.ref(`/templatesList/${tmplId}`).once('value');
+
+    // Assertions
     expect(actual.exists()).to.equal(false);
   }));
 });

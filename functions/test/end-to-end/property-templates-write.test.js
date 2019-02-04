@@ -25,6 +25,8 @@ describe('Property Templates Write', () => {
 
     // Test result
     const actual = yield db.ref(`/propertyTemplates/${propertyId}`).once('value');
+
+    // Assertions
     expect(actual.exists()).to.equal(false);
   }));
 
@@ -50,7 +52,9 @@ describe('Property Templates Write', () => {
 
     // Test result
     const actual = yield db.ref(`/propertyTemplates/${propertyId}`).once('value');
-    expect(expected).to.deep.equal(actual.val());
+
+    // Assertions
+    expect(actual.val()).to.deep.equal(expected);
   }));
 
   it('should update /propertyTemplates when a template is added to a property', () => co(function *() {
@@ -63,8 +67,7 @@ describe('Property Templates Write', () => {
     };
 
     // Setup database
-    // Add property with templates
-    yield db.ref('/templates').set(expected);
+    yield db.ref('/templates').set(expected); // Add template
     yield db.ref(`/properties/${propertyId}`).set({ name: 'test', templates: { [tmplId1]: true } }); // Only has 1st template
     const propertyBeforeSnap = yield db.ref(`/properties/${propertyId}/templates`).once('value'); // Get before templates
     yield db.ref(`/properties/${propertyId}/templates/${tmplId2}`).set(true); // Associate 2nd template w/ property
@@ -78,6 +81,8 @@ describe('Property Templates Write', () => {
 
     // Test result
     const actual = yield db.ref(`/propertyTemplates/${propertyId}`).once('value');
-    expect(expected).to.deep.equal(actual.val());
+
+    // Assertions
+    expect(actual.val()).to.deep.equal(expected);
   }));
 });
