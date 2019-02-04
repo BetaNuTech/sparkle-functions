@@ -31,7 +31,8 @@ describe('Inspection Write', () => {
     yield db.ref(`/properties/${propertyId}`).set({ inspections: { [inspId]: inspectionData } }); // Add nested inspection
     yield db.ref(`/completedInspections/${inspId}`).set(inspectionData); // Add completedInspections
     yield db.ref(`/completedInspectionsList/${inspId}`).set(inspectionData); // Add completedInspectionsList
-    yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).set(inspectionData); // Add propertyInspection
+    yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).set(inspectionData); // Add propertyInspections
+    yield db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).set(inspectionData); // Add propertyInspectionsList
     const beforeSnap = yield db.ref(`/inspections/${inspId}`).once('value'); // Create before
     yield db.ref(`/inspections/${inspId}`).remove(); // Remove inspection
     const afterSnap = yield db.ref(`/inspections/${inspId}`).once('value'); // Create after
@@ -46,11 +47,12 @@ describe('Inspection Write', () => {
       db.ref(`/completedInspections/${inspId}`).once('value'),
       db.ref(`/completedInspectionsList/${inspId}`).once('value'),
       db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value'),
+      db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).once('value'),
       db.ref(`/properties/${propertyId}/inspections/${inspId}`).once('value')
     ]);
 
     // Assertions
-    expect(actual.map((ds) => ds.exists())).to.deep.equal([false, false, false, false]);
+    expect(actual.map((ds) => ds.exists())).to.deep.equal([false, false, false, false, false]);
   }));
 
   it('should update inspections\' proxy records with new data', () => co(function *() {
@@ -84,7 +86,8 @@ describe('Inspection Write', () => {
     yield db.ref(`/properties/${propertyId}`).set({ inspections: { [inspId]: beforeData } }); // Add nested inspection
     yield db.ref(`/completedInspections/${inspId}`).set(beforeData); // Add completedInspections
     yield db.ref(`/completedInspectionsList/${inspId}`).set(beforeData); // Add completedInspections
-    yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).set(beforeData); // Add propertyInspection
+    yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).set(beforeData); // Add propertyInspections
+    yield db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).set(beforeData); // Add propertyInspectionsList
     const beforeSnap = yield db.ref(`/inspections/${inspId}`).once('value'); // Create before
     yield db.ref(`/inspections/${inspId}`).update(afterData); // Remove inspection
     const afterSnap = yield db.ref(`/inspections/${inspId}`).once('value'); // Create after
@@ -97,6 +100,7 @@ describe('Inspection Write', () => {
     // Test result
     const nested = yield db.ref(`/properties/${propertyId}/inspections/${inspId}`).once('value');
     const propertyInspection = yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value');
+    const propertyInspectionList = yield db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).once('value');
     const completedInspection = yield db.ref(`/completedInspections/${inspId}`).once('value');
     const completedInspectionList = yield db.ref(`/completedInspectionsList/${inspId}`).once('value');
 
@@ -104,6 +108,7 @@ describe('Inspection Write', () => {
     const expected = Object.assign({}, afterData);
     delete expected.property;
     expect(propertyInspection.val()).to.deep.equal(expected, 'updated /propertyInspections proxy');
+    expect(propertyInspectionList.val()).to.deep.equal(expected, 'updated /propertyInspectionsList proxy');
     expect(nested.val()).to.deep.equal(expected, 'updated /property nested inspection proxy');
 
     const expectedCompleted = Object.assign({}, afterData);

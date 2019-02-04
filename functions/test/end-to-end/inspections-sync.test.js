@@ -30,6 +30,7 @@ describe('Inspections Sync', () => {
     yield db.ref(`/inspections/${inspId}`).set(newInspection);
     yield db.ref(`/properties/${propertyId}`).set({ inspections: { [inspId]: oldInspection } });
     yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).set(oldInspection);
+    yield db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).set(oldInspection);
     yield db.ref(`/completedInspections/${inspId}`).set(oldInspection);
     yield db.ref(`/completedInspectionsList/${inspId}`).set(oldInspection);
 
@@ -40,6 +41,7 @@ describe('Inspections Sync', () => {
     // Test result
     const nested = yield db.ref(`/properties/${propertyId}/inspections/${inspId}`).once('value');
     const propertyInspection = yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value');
+    const propertyInspectionList = yield db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).once('value');
     const completedInspection = yield db.ref(`/completedInspections/${inspId}`).once('value');
     const completedInspectionList = yield db.ref(`/completedInspectionsList/${inspId}`).once('value');
 
@@ -47,6 +49,7 @@ describe('Inspections Sync', () => {
     const expected = Object.assign({}, newInspection);
     delete expected.property;
     expect(propertyInspection.val()).to.deep.equal(expected, 'updated /propertyInspections proxy');
+    expect(propertyInspectionList.val()).to.deep.equal(expected, 'updated /propertyInspectionsList proxy');
     expect(nested.val()).to.deep.equal(expected, 'updated /property nested inspection proxy');
 
     const expectedCompleted = Object.assign({}, newInspection);
