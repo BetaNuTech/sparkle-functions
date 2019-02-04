@@ -59,8 +59,8 @@ describe('Property Templates Write', () => {
     const actualList = yield db.ref(`/propertyTemplatesList/${propertyId}`).once('value');
 
     // Assertions
-    expect(actual.val()).to.deep.equal(expected, 'has /propertyTemplates proxy');
-    expect(actualList.val()).to.deep.equal(expected, 'has /propertyTemplatesList proxy');
+    expect(actual.val()).to.deep.equal(expected, 'removed single /propertyTemplates proxy');
+    expect(actualList.val()).to.deep.equal(expected, 'removed single /propertyTemplatesList proxy');
   }));
 
   it('should update property template proxies when a template is added to a property', () => co(function *() {
