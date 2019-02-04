@@ -56,12 +56,7 @@ describe('Inspections Migration Date Sync', () => {
     delete expectedCompleted.itemsCompleted;
     delete expectedCompleted.totalItems;
     expect(completedInspection.val()).to.deep.equal(expectedCompleted, 'updated /completedInspections proxy');
-
-    const expectedCompletedList = Object.assign({}, inspectionData);
-    delete expectedCompletedList.migrationDate;
-    delete expectedCompletedList.itemsCompleted;
-    delete expectedCompletedList.totalItems;
-    expect(completedInspectionList.val()).to.deep.equal(expectedCompletedList, 'updated /completedInspections proxy');
+    expect(completedInspectionList.val()).to.deep.equal(expectedCompleted, 'updated /completedInspectionsList proxy');
   }));
 
   it('should update property with any meta data from its\' completed inspections', () => co(function *() {
