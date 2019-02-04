@@ -52,11 +52,15 @@ module.exports = function processWrite(database, inspectionId, inspection) {
       'inspectionCompleted': inspection.inspectionCompleted,
       'property': inspection.property
     };
-    database.ref('/completedInspections').child(inspectionId).set(completedInspectionData);
+    database.ref(`/completedInspections/${inspectionId}`).set(completedInspectionData);
+    database.ref(`/completedInspectionsList/${inspectionId}`).set(completedInspectionData);
     dbUpdates[`/completedInspections/${inspectionId}`] = completedInspectionData;
+    dbUpdates[`/completedInspectionsList/${inspectionId}`] = completedInspectionData;
   } else {
-    database.ref('/completedInspections').child(inspectionId).remove();
+    database.ref(`/completedInspections/${inspectionId}`).remove();
+    database.ref(`/completedInspectionsList/${inspectionId}`).remove();
     dbUpdates[`/completedInspections/${inspectionId}`] = 'removed';
+    dbUpdates[`/completedInspectionsList/${inspectionId}`] = 'removed';
   }
 
   // Pull all inspections for the same property
