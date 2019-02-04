@@ -42,19 +42,26 @@ describe('Inspections Migration Date Sync', () => {
     const nested = yield db.ref(`/properties/${propertyId}/inspections/${inspId}`).once('value');
     const propertyInspection = yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value');
     const completedInspection = yield db.ref(`/completedInspections/${inspId}`).once('value');
+    const completedInspectionList = yield db.ref(`/completedInspectionsList/${inspId}`).once('value');
 
     // Assertions
     const expected = Object.assign({}, inspectionData);
     delete expected.property;
     delete expected.migrationDate;
-    expect(propertyInspection.val()).to.deep.equal(expected, 'updated nested /propertyInspections');
-    expect(nested.val()).to.deep.equal(expected, 'updated /property nested inspection');
+    expect(propertyInspection.val()).to.deep.equal(expected, 'updated /propertyInspections proxy');
+    expect(nested.val()).to.deep.equal(expected, 'updated /property nested inspection proxy');
 
     const expectedCompleted = Object.assign({}, inspectionData);
     delete expectedCompleted.migrationDate;
     delete expectedCompleted.itemsCompleted;
     delete expectedCompleted.totalItems;
-    expect(completedInspection.val()).to.deep.equal(expectedCompleted, 'updated nested /completedInspections');
+    expect(completedInspection.val()).to.deep.equal(expectedCompleted, 'updated /completedInspections proxy');
+
+    const expectedCompletedList = Object.assign({}, inspectionData);
+    delete expectedCompletedList.migrationDate;
+    delete expectedCompletedList.itemsCompleted;
+    delete expectedCompletedList.totalItems;
+    expect(completedInspectionList.val()).to.deep.equal(expectedCompletedList, 'updated /completedInspections proxy');
   }));
 
   it('should update property with any meta data from its\' completed inspections', () => co(function *() {
