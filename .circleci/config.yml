@@ -21,7 +21,7 @@ jobs:
 
   deploy-staging:
     docker:
-      - image: lgvalle/firebase-tools-docker
+      - image: mj3000/firebase-tools
     steps:
       - checkout
       - run:
@@ -30,7 +30,7 @@ jobs:
 
   deploy-production:
     docker:
-      - image: lgvalle/firebase-tools-docker
+      - image: mj3000/firebase-tools
     steps:
       - checkout
       - run:
