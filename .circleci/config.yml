@@ -25,6 +25,10 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Install Dependencies
+          command: yarn
+          working_directory: functions
+      - run:
           command: ../scripts/deploy-functions.sh staging
           working_directory: functions
 
@@ -33,6 +37,10 @@ jobs:
       - image: mj3000/firebase-tools
     steps:
       - checkout
+      - run:
+          name: Install Dependencies
+          command: yarn
+          working_directory: functions
       - run:
           command: ../scripts/deploy-functions.sh production
           working_directory: functions
