@@ -7,6 +7,45 @@ const { db, test, cloudFunctions } = require('./setup');
 describe('Inspections Sync', () => {
   afterEach(() => cleanDb(db));
 
+  it('should create new inspection proxy records', () => co(function *() {
+    const inspId = uuid();
+    const propertyId = uuid();
+    const now = Date.now() / 1000;
+    const inspectionData = {
+      templateName: `name${inspId}`,
+      inspector: '23423423',
+      inspectorName: 'testor',
+      creationDate: now - 100000,
+      score: 10,
+      deficienciesExist: false,
+      itemsCompleted: 10,
+      totalItems: 10,
+      property: propertyId,
+      updatedLastDate: now,
+      inspectionCompleted: true
+    };
+
+    // Setup database
+    yield db.ref(`/inspections/${inspId}`).set(inspectionData);
+    yield db.ref(`/properties/${propertyId}`).set({ inspections: { [inspId]: inspectionData } });
+
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.inspectionsSync);
+    yield wrapped();
+
+    // Test result
+    const actual = yield Promise.all([
+      db.ref(`/properties/${propertyId}/inspections/${inspId}`).once('value'),
+      db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value'),
+      db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).once('value'),
+      db.ref(`/completedInspections/${inspId}`).once('value'),
+      db.ref(`/completedInspectionsList/${inspId}`).once('value')
+    ]);
+
+    // Assertions
+    expect(actual.map(proxy => proxy.exists())).to.deep.equal([true, true, true, true, true]);
+  }));
+
   it('should update all an inspections\' outdated proxy records', () => co(function *() {
     const inspId = uuid();
     const propertyId = uuid();
