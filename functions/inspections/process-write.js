@@ -24,39 +24,45 @@ module.exports = function processWrite(database, inspectionId, inspection) {
 
   // Update property/inspections
   var inspectionData = {
-    'inspector': inspection.inspector,
-    'inspectorName': inspection.inspectorName,
-    'creationDate': inspection.creationDate,
-    'updatedLastDate': inspection.updatedLastDate,
-    'templateName': templateName,
-    'score': inspection.score,
-    'deficienciesExist': inspection.deficienciesExist,
-    'inspectionCompleted': inspection.inspectionCompleted,
-    'itemsCompleted': inspection.itemsCompleted,
-    'totalItems': inspection.totalItems
+    inspector: inspection.inspector,
+    inspectorName: inspection.inspectorName,
+    creationDate: inspection.creationDate,
+    updatedLastDate: inspection.updatedLastDate,
+    templateName: templateName,
+    score: inspection.score,
+    deficienciesExist: inspection.deficienciesExist,
+    inspectionCompleted: inspection.inspectionCompleted,
+    itemsCompleted: inspection.itemsCompleted,
+    totalItems: inspection.totalItems
   };
-  database.ref('/properties').child(propertyKey).child('inspections').child(inspectionId).set(inspectionData);  // Need to remove
+  database.ref(`/properties/${propertyKey}/inspections/${inspectionId}`).set(inspectionData);  // Need to remove
   dbUpdates[`/properties/${propertyKey}/inspections/${inspectionId}`] = inspectionData;
-  database.ref('/propertyInspections').child(propertyKey).child('inspections').child(inspectionId).set(inspectionData);
+  database.ref(`/propertyInspections/${propertyKey}/inspections/${inspectionId}`).set(inspectionData);
+  database.ref(`/propertyInspectionsList/${propertyKey}/inspections/${inspectionId}`).set(inspectionData);
   dbUpdates[`/propertyInspections/${propertyKey}/inspections/${inspectionId}`] = inspectionData;
+  dbUpdates[`/propertyInspectionsList/${propertyKey}/inspections/${inspectionId}`] = inspectionData;
 
   if (inspection.inspectionCompleted) {
     const completedInspectionData = {
-      'inspector': inspection.inspector,
-      'inspectorName': inspection.inspectorName,
-      'creationDate': inspection.creationDate,
-      'updatedLastDate': inspection.updatedLastDate,
-      'templateName': templateName,
-      'score': inspection.score,
-      'deficienciesExist': inspection.deficienciesExist,
-      'inspectionCompleted': inspection.inspectionCompleted,
-      'property': inspection.property
+      inspector: inspection.inspector,
+      inspectorName: inspection.inspectorName,
+      creationDate: inspection.creationDate,
+      updatedLastDate: inspection.updatedLastDate,
+      templateName: templateName,
+      score: inspection.score,
+      deficienciesExist: inspection.deficienciesExist,
+      inspectionCompleted: inspection.inspectionCompleted,
+      property: inspection.property
     };
-    database.ref('/completedInspections').child(inspectionId).set(completedInspectionData);
+    database.ref(`/completedInspections/${inspectionId}`).set(completedInspectionData);
+    database.ref(`/completedInspectionsList/${inspectionId}`).set(completedInspectionData);
     dbUpdates[`/completedInspections/${inspectionId}`] = completedInspectionData;
+    dbUpdates[`/completedInspectionsList/${inspectionId}`] = completedInspectionData;
   } else {
-    database.ref('/completedInspections').child(inspectionId).remove();
+    database.ref(`/completedInspections/${inspectionId}`).remove();
+    database.ref(`/completedInspectionsList/${inspectionId}`).remove();
     dbUpdates[`/completedInspections/${inspectionId}`] = 'removed';
+    dbUpdates[`/completedInspectionsList/${inspectionId}`] = 'removed';
   }
 
   // Pull all inspections for the same property
@@ -92,7 +98,7 @@ module.exports = function processWrite(database, inspectionId, inspection) {
 
     // Update numOfInspections for the property
     log.info('property numOfInspections updated');
-    database.ref('/properties').child(propertyKey).update({'numOfInspections': numOfInspectionsCompleted});
+    database.ref(`/properties/${propertyKey}`).update({'numOfInspections': numOfInspectionsCompleted});
     dbUpdates[`/properties/${propertyKey}/numOfInspections`] = numOfInspectionsCompleted
 
     if (latestInspection) {
@@ -100,7 +106,7 @@ module.exports = function processWrite(database, inspectionId, inspection) {
       updates['lastInspectionScore'] = latestInspection.score;
       updates['lastInspectionDate'] = latestInspection.creationDate;
       log.info('property lastInspectionScore & lastInspectionDate updated');
-      database.ref('/properties').child(propertyKey).update(updates);
+      database.ref(`/properties/${propertyKey}`).update(updates);
       dbUpdates[`/properties/${propertyKey}`] = updates;
     }
     return dbUpdates;

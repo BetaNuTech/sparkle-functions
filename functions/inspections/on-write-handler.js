@@ -16,8 +16,9 @@ module.exports = function createOnWriteHandler(db) {
     // When the data is deleted.
     if (!change.after.exists()) {
       log.info(`${LOG_PREFIX} inspection deleted`);
-      var inspection = change.before.val();
-      var propertyKey = inspection.property;
+      const inspection = change.before.val();
+      const propertyKey = inspection.property;
+      const requests = [];
 
       if (!propertyKey) {
         log.error(`${LOG_PREFIX} property key missing`);
@@ -26,14 +27,23 @@ module.exports = function createOnWriteHandler(db) {
 
       if (inspection.inspectionCompleted) {
         updates[`/completedInspections/${objectId}`] = 'removed';
-        db.ref('/completedInspections').child(objectId).remove();
+        updates[`/completedInspectionsList/${objectId}`] = 'removed';
+        requests.push(
+          db.ref(`/completedInspections/${objectId}`).remove(),
+          db.ref(`/completedInspectionsList/${objectId}`).remove()
+        );
       }
 
-      updates[`/properties/${propertyKey}/inspections/${objectId}`] = 'removed';
-      db.ref('/properties').child(propertyKey).child('inspections').child(objectId).remove();  // Need to remove
+      updates[`/properties/${propertyKey}/inspections/${objectId}`] = 'removed'; // TODO #28
       updates[`/propertyInspections/${propertyKey}/inspections/${objectId}`] = 'removed';
-      return db.ref('/propertyInspections').child(propertyKey).child('inspections').child(objectId).remove()
-      .then(() => updates);
+      updates[`/propertyInspectionsList/${propertyKey}/inspections/${objectId}`] = 'removed';
+      requests.push(
+        db.ref(`/properties/${propertyKey}/inspections/${objectId}`).remove(), // TODO #28
+        db.ref(`/propertyInspections/${propertyKey}/inspections/${objectId}`).remove(),
+        db.ref(`/propertyInspectionsList/${propertyKey}/inspections/${objectId}`).remove()
+      );
+
+      return Promise.all(requests).then(() => updates);
     } else {
       var inspection = change.after.val();
       log.info(`${LOG_PREFIX} inspection created/updated updating proxy records`);

@@ -11,13 +11,20 @@ describe('Send Push Message', () => {
     const msgId = uuid();
     const messagePath = `/sendMessages/${msgId}`;
     const messageData = { createdAt: Date.now() / 1000, message: 'message', title: 'title', recipientId: uuid() };
+
+    // Setup database
     yield db.ref(messagePath).set(messageData);
     const message = yield db.ref(messagePath).once('value');
     const messageSnap = test.makeChange(null, message);
-    const wrapped = test.wrap(cloudFunctions.sendPushMessage);
 
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.sendPushMessage);
     yield wrapped(messageSnap, { params: { objectId: msgId } });
+
+    // Test result
     const actual = yield db.ref(messagePath).once('value');
+
+    // Assertions
     expect(actual.exists()).to.equal(false);
   }));
 });

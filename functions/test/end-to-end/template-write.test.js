@@ -7,7 +7,7 @@ const { db, test, cloudFunctions } = require('./setup');
 describe('Templates Write', () => {
   afterEach(() => cleanDb(db));
 
-  it('should remove all /propertyTemplates belonging to a deleted template', () => co(function *() {
+  it('should remove all a deleted template\'s property proxies', () => co(function *() {
     const tmplId = uuid();
     const property1Id = uuid();
     const property2Id = uuid();
@@ -15,8 +15,10 @@ describe('Templates Write', () => {
 
     // Setup database
     yield db.ref(`/templates/${tmplId}`).set(templateData);
-    yield db.ref(`/propertyTemplates/${property1Id}/${tmplId}`).set(templateData);
-    yield db.ref(`/propertyTemplates/${property2Id}/${tmplId}`).set(templateData);
+    yield db.ref(`/propertyTemplates/${property1Id}/${tmplId}`).set(templateData); // Property #1
+    yield db.ref(`/propertyTemplatesList/${property1Id}/${tmplId}`).set(templateData); // Property #1
+    yield db.ref(`/propertyTemplates/${property2Id}/${tmplId}`).set(templateData); // Property #2
+    yield db.ref(`/propertyTemplatesList/${property2Id}/${tmplId}`).set(templateData); // Property #2
     yield db.ref(`/properties/${property1Id}`).set({ name: `test${property1Id}`, templates: { [tmplId]: true } }); // Add property 1 with template
     yield db.ref(`/properties/${property2Id}`).set({ name: `test${property2Id}`, templates: { [tmplId]: true } }); // Add property 2 with template
     const beforeSnap = yield db.ref(`/templates/${tmplId}`).once('value'); // Get before template
@@ -31,13 +33,16 @@ describe('Templates Write', () => {
     // Test result
     const actual = yield Promise.all([
       db.ref(`/propertyTemplates/${property1Id}/${tmplId}`).once('value'),
-      db.ref(`/propertyTemplates/${property2Id}/${tmplId}`).once('value')
+      db.ref(`/propertyTemplatesList/${property1Id}/${tmplId}`).once('value'),
+      db.ref(`/propertyTemplates/${property2Id}/${tmplId}`).once('value'),
+      db.ref(`/propertyTemplatesList/${property2Id}/${tmplId}`).once('value')
     ]);
 
-    expect(actual.map((ds) => ds.val())).to.deep.equal([null, null]);
+    // Assertions
+    expect(actual.map((ds) => ds.val())).to.deep.equal([null, null, null, null]);
   }));
 
-  it('should update all /propertyTemplates belonging to an updated template', () => co(function *() {
+  it('should update a template\'s property proxies with newest data', () => co(function *() {
     const tmplId = uuid();
     const property1Id = uuid();
     const property2Id = uuid();
@@ -46,8 +51,10 @@ describe('Templates Write', () => {
 
     // Setup database
     yield db.ref(`/templates/${tmplId}`).set(beforeData);
-    yield db.ref(`/propertyTemplates/${property1Id}/${tmplId}`).set(beforeData);
-    yield db.ref(`/propertyTemplates/${property2Id}/${tmplId}`).set(beforeData);
+    yield db.ref(`/propertyTemplates/${property1Id}/${tmplId}`).set(beforeData); // Property #1
+    yield db.ref(`/propertyTemplatesList/${property1Id}/${tmplId}`).set(beforeData); // Property #1
+    yield db.ref(`/propertyTemplates/${property2Id}/${tmplId}`).set(beforeData); // Property #2
+    yield db.ref(`/propertyTemplatesList/${property2Id}/${tmplId}`).set(beforeData); // Property #2
     yield db.ref(`/properties/${property1Id}`).set({ name: `test${property1Id}`, templates: { [tmplId]: true } }); // Add property 1 with template
     yield db.ref(`/properties/${property2Id}`).set({ name: `test${property2Id}`, templates: { [tmplId]: true } }); // Add property 2 with template
     const beforeSnap = yield db.ref(`/templates/${tmplId}`).once('value'); // Get before template
@@ -62,10 +69,13 @@ describe('Templates Write', () => {
     // Test result
     const actual = yield Promise.all([
       db.ref(`/propertyTemplates/${property1Id}/${tmplId}`).once('value'),
-      db.ref(`/propertyTemplates/${property2Id}/${tmplId}`).once('value')
+      db.ref(`/propertyTemplatesList/${property1Id}/${tmplId}`).once('value'),
+      db.ref(`/propertyTemplates/${property2Id}/${tmplId}`).once('value'),
+      db.ref(`/propertyTemplatesList/${property2Id}/${tmplId}`).once('value')
     ]);
 
-    expect(actual.map((ds) => ds.val())).to.deep.equal([expected, expected]);
+    // Assertions
+    expect(actual.map((ds) => ds.val())).to.deep.equal([expected, expected, expected, expected]);
   }));
 
   it('should add proxy record to /templatesList after template addition', () => co(function *() {
@@ -84,6 +94,8 @@ describe('Templates Write', () => {
 
     // Test result
     const actual = yield db.ref(`/templatesList/${tmplId}`).once('value');
+
+    // Assertions
     expect(actual.val()).to.deep.equal(expected);
   }));
 
@@ -106,6 +118,8 @@ describe('Templates Write', () => {
 
     // Test result
     const actual = yield db.ref(`/templatesList/${tmplId}`).once('value');
+
+    // Assertions
     expect(actual.val()).to.deep.equal(expected);
   }));
 
@@ -127,6 +141,8 @@ describe('Templates Write', () => {
 
     // Test result
     const actual = yield db.ref(`/templatesList/${tmplId}`).once('value');
+
+    // Assertions
     expect(actual.exists()).to.equal(false);
   }));
 });

@@ -13,11 +13,15 @@ module.exports = {
     return (change, event) => co(function *() {
       const propertyId = event.params.objectId;
 
-      // Delete onWrite event?
+      // Property's templates deleted
       if (change.before.exists() && !change.after.exists()) {
         log.info(`all /properties/${propertyId} templates removed`);
-        yield db.ref(`/propertyTemplates/${propertyId}`).remove()
-        return { [`/propertyTemplates/${propertyId}`]: 'removed' };
+        yield propertyTemplates.removeForProperty(db, propertyId);
+
+        return {
+          [`/propertyTemplates/${propertyId}`]: 'removed',
+          [`/propertyTemplatesList/${propertyId}`]: 'removed'
+        };
       }
 
       return propertyTemplates.processWrite(db, propertyId, change.after.val());
