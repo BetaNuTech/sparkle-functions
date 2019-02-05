@@ -1,3 +1,4 @@
+const co = require('co');
 const log = require('../utils/logger');
 const propertyTemplates = require('../property-templates');
 const findRemovedKeys = require('../utils/find-removed-keys');
@@ -8,28 +9,21 @@ const findRemovedKeys = require('../utils/find-removed-keys');
  * @return {Function} - property onWrite handler
  */
 module.exports = function createOnWriteHandler(db) {
-  return (change,event) => {
+  return (change, event) => co(function *() {
     const propertyId = event.params.objectId;
 
-    // Delete onWrite event?
+    // Property deleted
     if (change.before.exists() && !change.after.exists()) {
-      log.info('property removed');
-      var templatesRemoved = change.before.val().templates;
-      if (templatesRemoved != null) {
-        return Promise.all(Object.keys(templatesRemoved).map(templateKey =>
-          db.ref('/propertyTemplates').child(propertyId).child(templateKey).remove()
-          .then(() => ({ [`/propertyTemplates/${propertyId}/${templateKey}`]: 'removed' }))
-        ))
-        .then(result => {
-          const updates = {};
-          result.forEach(update => Object.assign(updates, update));
-          return updates;
-        });
-      }
+      log.info(`property ${propertyId} removed`);
+      yield propertyTemplates.removeForProperty(db, propertyId);
 
-      return Promise.resolve({});
+      // Remove all property template proxies
+      return {
+        [`/propertyTemplates/${propertyId}`]: 'removed',
+        [`/propertyTemplatesList/${propertyId}`]: 'removed'
+      };
     }
 
     return propertyTemplates.processWrite(db, propertyId, change.after.val().templates);
-  };
+  });
 }
