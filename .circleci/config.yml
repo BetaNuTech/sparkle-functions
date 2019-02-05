@@ -26,7 +26,7 @@ jobs:
       - checkout
       - run:
           command: ../scripts/deploy-functions.sh staging
-          working_dir: functions
+          working_directory: functions
 
   deploy-production:
     docker:
@@ -35,7 +35,7 @@ jobs:
       - checkout
       - run:
           command: ../scripts/deploy-functions.sh production
-          working_dir: functions
+          working_directory: functions
 
 workflows:
   version: 2
