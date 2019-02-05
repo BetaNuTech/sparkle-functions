@@ -54,9 +54,10 @@ module.exports = {
       var propInspListIds = yield Promise.all(propertyIds.map((propertyId) => adminUtils.fetchRecordIds(db, `/propertyInspectionsList/${propertyId}/inspections`)));
       propInspListIds = flatten(propInspListIds);
       const completedInspIds = yield adminUtils.fetchRecordIds(db, '/completedInspections');
+      const completedInspListIds = yield adminUtils.fetchRecordIds(db, '/completedInspectionsList');
 
       const proxyInspectionIds = []
-        .concat(nestedInspIds, propInspIds, propInspListIds, completedInspIds) // flatten
+        .concat(nestedInspIds, propInspIds, propInspListIds, completedInspIds, completedInspListIds) // flatten
         .filter((inspId, index, arr) => arr.indexOf(inspId) === index); // unique only
 
       proxyInspectionIds
@@ -76,6 +77,10 @@ module.exports = {
 
           if (completedInspIds.includes(orphanedId)) {
             log.info(`${logPrefix} orphaned inspection proxy: /completedInspections/${orphanedId}`);
+          }
+
+          if (completedInspListIds.includes(orphanedId)) {
+            log.info(`${logPrefix} orphaned inspection proxy: /completedInspectionsList/${orphanedId}`);
           }
         });
 
