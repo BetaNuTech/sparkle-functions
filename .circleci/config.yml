@@ -18,3 +18,9 @@ jobs:
           name: End to End Tests
           command: yarn test-e2e
           working_directory: functions
+
+  deploy:
+    docker:
+      - image: lgvalle/firebase-tools-docker
+
+    firebase deploy --non-interactive --token $FIREBASE_TOKEN
