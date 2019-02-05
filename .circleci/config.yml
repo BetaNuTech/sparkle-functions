@@ -18,3 +18,47 @@ jobs:
           name: End to End Tests
           command: yarn test-e2e
           working_directory: functions
+
+  deploy-staging:
+    docker:
+      - image: mj3000/firebase-tools
+    steps:
+      - checkout
+      - run:
+          name: Install Dependencies
+          command: yarn
+          working_directory: functions
+      - run:
+          command: ../scripts/deploy-functions.sh staging
+          working_directory: functions
+
+  deploy-production:
+    docker:
+      - image: mj3000/firebase-tools
+    steps:
+      - checkout
+      - run:
+          name: Install Dependencies
+          command: yarn
+          working_directory: functions
+      - run:
+          command: ../scripts/deploy-functions.sh production
+          working_directory: functions
+
+workflows:
+  version: 2
+  build-deploy:
+    jobs:
+      - build
+      - deploy-staging:
+          requires:
+            - build
+          filters:
+            branches:
+              only: staging
+      - deploy-production:
+          requires:
+            - build
+          filters:
+            branches:
+              only: production
