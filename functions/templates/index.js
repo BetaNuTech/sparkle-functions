@@ -42,14 +42,14 @@ module.exports = {
 
       var id, i, k;
 
-      // Sync /propertyTemplates and /templatesList
+      // Sync /propertyTemplates, /propertyTemplatesList, and /templatesList
       for (i = 0; i < templateIds.length; i++) {
         id = templateIds[i];
 
         try {
           const templateSnap = yield db.ref(`/templates/${id}`).once('value');
           const templateData = templateSnap.val();
-          yield propertyTemplates.update(db, id, templateData); // sync `/propertyTemplates`
+          yield propertyTemplates.upsert(db, id, templateData); // sync `/propertyTemplates` & `/propertyTemplatesList`
           yield list.write(db, id, templateData, templateData); // sync `/templatesList`
           updates[id] = true;
         } catch (e) {
