@@ -19,8 +19,38 @@ jobs:
           command: yarn test-e2e
           working_directory: functions
 
-  deploy:
+  deploy-staging:
     docker:
       - image: lgvalle/firebase-tools-docker
+    steps:
+      - checkout
+      - run:
+          command: ../scripts/deploy-functions.sh staging
+          working_dir: functions
 
-    firebase deploy --non-interactive --token $FIREBASE_TOKEN
+  deploy-production:
+    docker:
+      - image: lgvalle/firebase-tools-docker
+    steps:
+      - checkout
+      - run:
+          command: ../scripts/deploy-functions.sh production
+          working_dir: functions
+
+workflows:
+  version: 2
+  build-deploy:
+    jobs:
+      - build
+      - deploy-staging:
+          requires:
+            - build
+          filters:
+            branches:
+              only: staging
+      - deploy-production:
+          requires:
+            - build
+          filters:
+            branches:
+              only: production
