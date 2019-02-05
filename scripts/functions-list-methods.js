@@ -10,5 +10,5 @@ if (TARGET.search(/^prod/i) !== -1) {
 }
 
 // Write matched functions to STDOUT
-process.stdout.write(functionNames.join(','));
+process.stdout.write(functionNames.map(name => `functions:${name}`).join(','));
 process.exit(0);
