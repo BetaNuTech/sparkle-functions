@@ -35,9 +35,10 @@ module.exports = {
 
       var i, updatedInspectionProxies;
 
-      // Sync inspection data to nested, propertyInspections, & completedInspections
+      // Sync inspection data to nested, propertyInspections, propertyInspectionsList,
+      // completedInspections, & completedInspectionsList
       for (i = 0; i < inspectionIds.length; i++) {
-        const updatedInspectionProxies = yield self._updateOldInspectionProxies(db, inspectionIds[i]);
+        const updatedInspectionProxies = yield self._upsertOldInspectionProxies(db, inspectionIds[i]);
 
         if (updatedInspectionProxies) {
           updates[inspectionIds[i]] = true;
@@ -77,33 +78,36 @@ module.exports = {
   },
 
   /**
-   * Find outdated Inspection proxies and updated them
+   * Create observer find outdated inspection
+   * proxies and updated them
    * @param  {firebaseAdmin.database} db
    * @param  {String} inspectionId
    * @return {Promise} - resolve {Boolean} was sync performed
    */
-  _updateOldInspectionProxies(db, inspectionId) {
+  _upsertOldInspectionProxies(db, inspectionId) {
     const self = this;
     return co(function *() {
       const inspectionSnap = yield db.ref(`/inspections/${inspectionId}`).once('value');
       const inspectionData = inspectionSnap.val();
 
-      if (!inspectionData) {
+      if (!inspectionData || !inspectionData.updatedLastDate) {
         return false;
       }
 
       // Lookup mismatched `updatedLastDate` between inspection
-      // and its' abbreviated proxy records and trigger update
+      // and its' proxy records and trigger update
       // if any mismatch is found
       const inspectionUpdateDateSnaps = yield Promise.all([
         `/properties/${inspectionData.property}/inspections/${inspectionId}`,
         `/propertyInspections/${inspectionData.property}/inspections/${inspectionId}`,
-        `/completedInspections/${inspectionId}`
+        `/propertyInspectionsList/${inspectionData.property}/inspections/${inspectionId}`,
+        `/completedInspections/${inspectionId}`,
+        `/completedInspectionsList/${inspectionId}`
       ].map((path) => db.ref(`${path}/updatedLastDate`).once('value')));
 
-      // Filter out non-existent, up to date, inspection proxies
+      // Filter out existing, up to date, inspection proxies
       const outdatedInspectionCount = inspectionUpdateDateSnaps.filter((dateSnap) =>
-        dateSnap.exists() && dateSnap.val() !== inspectionData.updatedLastDate
+        !dateSnap.exists() || dateSnap.val() !== inspectionData.updatedLastDate
       ).length;
 
       if (outdatedInspectionCount > 0) {
