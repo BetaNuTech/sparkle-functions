@@ -136,4 +136,77 @@ describe('Inspections Sync', () => {
     expect(actual.exists()).to.equal(false, 'removed /completedInspections proxy');
     expect(actualList.exists()).to.equal(false, 'removed /completedInspectionsList proxy');
   }));
+
+  it('should not create proxy records for inspections belonging to a deleted property', () => co(function *() {
+    const inspId = uuid();
+    const propertyId = uuid();
+    const now = Date.now() / 1000;
+    const inspectionData = {
+      templateName: `name${inspId}`,
+      inspector: '23423423',
+      inspectorName: 'testor',
+      creationDate: now - 100000,
+      score: 10,
+      deficienciesExist: false,
+      itemsCompleted: 10,
+      totalItems: 10,
+      property: propertyId,
+      updatedLastDate: now,
+      inspectionCompleted: true
+    };
+
+    // Setup database
+    yield db.ref(`/inspections/${inspId}`).set(inspectionData);
+
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.inspectionsSync);
+    yield wrapped();
+
+    // Test results
+    const actual = yield Promise.all([
+      db.ref(`/completedInspections/${inspId}`).once('value'),
+      db.ref(`/completedInspectionsList/${inspId}`).once('value'),
+      db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value'),
+      db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).once('value')
+    ]);
+
+    // Assertions
+    expect(actual.map(proxy => proxy.exists())).to.deep.equal([false, false, false, false]);
+  }));
+
+  it('should not update a deleted property\'s meta data when its\' inspections still exist', () => co(function *() {
+    const inspId = uuid();
+    const propertyId = uuid();
+    const now = Date.now() / 1000;
+    const inspectionData = {
+      templateName: `name${inspId}`,
+      inspector: '23423423',
+      inspectorName: 'testor',
+      creationDate: now - 100000,
+      score: 10,
+      deficienciesExist: false,
+      itemsCompleted: 10,
+      totalItems: 10,
+      property: propertyId,
+      updatedLastDate: now,
+      inspectionCompleted: true
+    };
+
+    // Setup database
+    yield db.ref(`/inspections/${inspId}`).set(inspectionData);
+
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.inspectionsSync);
+    yield wrapped();
+
+    // Test result
+    const actual = yield Promise.all([
+      db.ref(`/properties/${propertyId}/numOfInspections`).once('value'),
+      db.ref(`/properties/${propertyId}/lastInspectionScore`).once('value'),
+      db.ref(`/properties/${propertyId}/lastInspectionDate`).once('value')
+    ]);
+
+    // Assertions
+    expect(actual.map(attr => attr.val())).to.deep.equal([null, null, null]);
+  }));
 });
