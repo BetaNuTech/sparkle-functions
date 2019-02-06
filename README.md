@@ -90,3 +90,13 @@ docker run -p 9005:9005 -u node -it lgvalle/firebase-tools-docker sh
 / $ firebase login
 ```
 [Source repository](https://github.com/lgvalle/firebase-tools-docker)
+
+### CRON Job (PubSub) Timeouts
+**Functions that include the word "sync" need a longer timeout**.
+Follow these steps to increase their runtime allowance:
+
+1. In the Google Cloud Platform Console, select Cloud Functions from the left menu.
+2. Select a function by clicking on its name in the functions list.
+3. Click the Edit icon in the top menu.
+4. Click More to display the advanced options, and enter `540` (the maximum amount) seconds in the Timeout text box.
+5. Click Save to update the function.

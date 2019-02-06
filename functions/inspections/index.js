@@ -26,24 +26,42 @@ module.exports = {
       const updates = {};
       log.info(`${logPrefix} received ${Date.now()}`);
 
-      const inspectionIds = yield adminUtils.fetchRecordIds(db, '/inspections');
+      var inspectionIds = [];
 
-      // No inspections in database
-      if (!inspectionIds.length) {
+      // Fetch first inspection ID in database
+      var lastInspectionId = yield db.ref('/inspections').orderByKey().limitToFirst(1).once('value');
+      lastInspectionId = Object.keys(lastInspectionId.val())[0];
+
+      // Has no inspections
+      if (!lastInspectionId) {
         return updates;
       }
 
-      var i, updatedInspectionProxies;
+      do {
+        // Load inspections 10 at a time
+        var queuedInspections = yield db.ref('/inspections').orderByKey().startAt(lastInspectionId).limitToFirst(11).once('value');
+        queuedInspections = queuedInspections.val();
 
-      // Sync inspection data to nested, propertyInspections, propertyInspectionsList,
-      // completedInspections, & completedInspectionsList
-      for (i = 0; i < inspectionIds.length; i++) {
-        const updatedInspectionProxies = yield self._upsertOldInspectionProxies(db, inspectionIds[i]);
-
-        if (updatedInspectionProxies) {
-          updates[inspectionIds[i]] = true;
+        // Remove last itterations' last inspection
+        // that's been already upserted
+        if (inspectionIds.length > 0) {
+          delete queuedInspections[lastInspectionId];
         }
-      }
+
+        inspectionIds = Object.keys(queuedInspections);
+        lastInspectionId = inspectionIds[inspectionIds.length - 1];
+
+        var i, updatedInspectionProxies;
+
+        // Sync inspection data to nested, propertyInspections, propertyInspectionsList,
+        // completedInspections, & completedInspectionsList
+        for (i = 0; i < inspectionIds.length; i++) {
+          const updatedInspectionProxies = yield self._upsertOldInspectionProxies(db, inspectionIds[i]);
+
+          if (updatedInspectionProxies) {
+            updates[inspectionIds[i]] = true;
+          }
+        }
 
       // Log orphaned proxy inspections
       const propertyIds = yield adminUtils.fetchRecordIds(db, '/properties');
