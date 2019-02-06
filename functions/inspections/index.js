@@ -64,43 +64,43 @@ module.exports = {
         }
 
         // Log orphaned proxy inspections
-        const propertyIds = yield adminUtils.fetchRecordIds(db, '/properties');
-        var nestedInspIds = yield Promise.all(propertyIds.map((propertyId) => adminUtils.fetchRecordIds(db, `/properties/${propertyId}/inspections`)));
-        nestedInspIds = flatten(nestedInspIds);
-        var propInspIds = yield Promise.all(propertyIds.map((propertyId) => adminUtils.fetchRecordIds(db, `/propertyInspections/${propertyId}/inspections`)));
-        propInspIds = flatten(propInspIds);
-        var propInspListIds = yield Promise.all(propertyIds.map((propertyId) => adminUtils.fetchRecordIds(db, `/propertyInspectionsList/${propertyId}/inspections`)));
-        propInspListIds = flatten(propInspListIds);
-        const completedInspIds = yield adminUtils.fetchRecordIds(db, '/completedInspections');
-        const completedInspListIds = yield adminUtils.fetchRecordIds(db, '/completedInspectionsList');
-
-        const proxyInspectionIds = []
-          .concat(nestedInspIds, propInspIds, propInspListIds, completedInspIds, completedInspListIds) // flatten
-          .filter((inspId, index, arr) => arr.indexOf(inspId) === index); // unique only
-
-        proxyInspectionIds
-          .filter((inspId) => inspectionIds.indexOf(inspId) === -1) // find orphaned
-          .forEach((orphanedId) => {
-            if (nestedInspIds.includes(orphanedId)) {
-              log.info(`${logPrefix} orphaned inspection proxy: /properties/*/inspections/${orphanedId}`);
-            }
-
-            if (propInspIds.includes(orphanedId)) {
-              log.info(`${logPrefix} orphaned inspection proxy: /propertyInspections/*/inspections/${orphanedId}`);
-            }
-
-            if (propInspListIds.includes(orphanedId)) {
-              log.info(`${logPrefix} orphaned inspection proxy: /propertyInspectionsList/*/inspections/${orphanedId}`);
-            }
-
-            if (completedInspIds.includes(orphanedId)) {
-              log.info(`${logPrefix} orphaned inspection proxy: /completedInspections/${orphanedId}`);
-            }
-
-            if (completedInspListIds.includes(orphanedId)) {
-              log.info(`${logPrefix} orphaned inspection proxy: /completedInspectionsList/${orphanedId}`);
-            }
-          });
+        // const propertyIds = yield adminUtils.fetchRecordIds(db, '/properties');
+        // var nestedInspIds = yield Promise.all(propertyIds.map((propertyId) => adminUtils.fetchRecordIds(db, `/properties/${propertyId}/inspections`)));
+        // nestedInspIds = flatten(nestedInspIds);
+        // var propInspIds = yield Promise.all(propertyIds.map((propertyId) => adminUtils.fetchRecordIds(db, `/propertyInspections/${propertyId}/inspections`)));
+        // propInspIds = flatten(propInspIds);
+        // var propInspListIds = yield Promise.all(propertyIds.map((propertyId) => adminUtils.fetchRecordIds(db, `/propertyInspectionsList/${propertyId}/inspections`)));
+        // propInspListIds = flatten(propInspListIds);
+        // const completedInspIds = yield adminUtils.fetchRecordIds(db, '/completedInspections');
+        // const completedInspListIds = yield adminUtils.fetchRecordIds(db, '/completedInspectionsList');
+        //
+        // const proxyInspectionIds = []
+        //   .concat(nestedInspIds, propInspIds, propInspListIds, completedInspIds, completedInspListIds) // flatten
+        //   .filter((inspId, index, arr) => arr.indexOf(inspId) === index); // unique only
+        //
+        // proxyInspectionIds
+        //   .filter((inspId) => inspectionIds.indexOf(inspId) === -1) // find orphaned
+        //   .forEach((orphanedId) => {
+        //     if (nestedInspIds.includes(orphanedId)) {
+        //       log.info(`${logPrefix} orphaned inspection proxy: /properties/*/inspections/${orphanedId}`);
+        //     }
+        //
+        //     if (propInspIds.includes(orphanedId)) {
+        //       log.info(`${logPrefix} orphaned inspection proxy: /propertyInspections/*/inspections/${orphanedId}`);
+        //     }
+        //
+        //     if (propInspListIds.includes(orphanedId)) {
+        //       log.info(`${logPrefix} orphaned inspection proxy: /propertyInspectionsList/*/inspections/${orphanedId}`);
+        //     }
+        //
+        //     if (completedInspIds.includes(orphanedId)) {
+        //       log.info(`${logPrefix} orphaned inspection proxy: /completedInspections/${orphanedId}`);
+        //     }
+        //
+        //     if (completedInspListIds.includes(orphanedId)) {
+        //       log.info(`${logPrefix} orphaned inspection proxy: /completedInspectionsList/${orphanedId}`);
+        //     }
+        //   });
       } while (inspectionIds.length > 0);
 
       return updates;
