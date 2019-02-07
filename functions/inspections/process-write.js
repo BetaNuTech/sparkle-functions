@@ -1,49 +1,37 @@
+const co = require('co');
 const log = require('../utils/logger');
+
+const LOG_PREFIX = 'inspections: process-write:';
 
 /**
  * Perform update of all inspection proxies: nested,
  * propertyInspections, and completedInspections
- * @param  {firebaseAdmin.database} database
+ * @param  {firebaseAdmin.database} db
  * @param  {String} inspectionId
  * @param  {Object} inspection
  * @return {Promise} - resolves {Object} hash of updates
  */
-module.exports = function processWrite(database, inspectionId, inspection) {
-  var propertyKey = inspection.property;
-  const dbUpdates = {};
+module.exports = function processWrite(db, inspectionId, inspection) {
+  const updates = {};
+  const propertyId = inspection.property;
 
-  if (!propertyKey) {
-    log.error('processUpdatedInspection: property key missing');
-    return Promise.resolve(dbUpdates);
-  }
+  return co(function *() {
+    if (!propertyId) {
+      log.error(`${LOG_PREFIX} property relationship missing`);
+      return updates;
+    }
 
-  var templateName = inspection.templateName;
-  if (!templateName) {
-    templateName = inspection.template.name;
-  }
+    // Stop if inspection dead (belongs to archived property)
+    const property = yield db.ref(`/properties/${propertyId}`).once('value');
+    if (!property.exists()) {
+      log.error(`${LOG_PREFIX} inspection belonging to archived property, stopping`);
+      return updates;
+    }
 
-  // Update property/inspections
-  var inspectionData = {
-    inspector: inspection.inspector,
-    inspectorName: inspection.inspectorName,
-    creationDate: inspection.creationDate,
-    updatedLastDate: inspection.updatedLastDate,
-    templateName: templateName,
-    score: inspection.score,
-    deficienciesExist: inspection.deficienciesExist,
-    inspectionCompleted: inspection.inspectionCompleted,
-    itemsCompleted: inspection.itemsCompleted,
-    totalItems: inspection.totalItems
-  };
-  database.ref(`/properties/${propertyKey}/inspections/${inspectionId}`).set(inspectionData);  // Need to remove
-  dbUpdates[`/properties/${propertyKey}/inspections/${inspectionId}`] = inspectionData;
-  database.ref(`/propertyInspections/${propertyKey}/inspections/${inspectionId}`).set(inspectionData);
-  database.ref(`/propertyInspectionsList/${propertyKey}/inspections/${inspectionId}`).set(inspectionData);
-  dbUpdates[`/propertyInspections/${propertyKey}/inspections/${inspectionId}`] = inspectionData;
-  dbUpdates[`/propertyInspectionsList/${propertyKey}/inspections/${inspectionId}`] = inspectionData;
+    const templateName = inspection.templateName || inspection.template.name;
 
-  if (inspection.inspectionCompleted) {
-    const completedInspectionData = {
+    // Update property/inspections
+    const inspectionData = {
       inspector: inspection.inspector,
       inspectorName: inspection.inspectorName,
       creationDate: inspection.creationDate,
@@ -52,67 +40,98 @@ module.exports = function processWrite(database, inspectionId, inspection) {
       score: inspection.score,
       deficienciesExist: inspection.deficienciesExist,
       inspectionCompleted: inspection.inspectionCompleted,
-      property: inspection.property
+      itemsCompleted: inspection.itemsCompleted,
+      totalItems: inspection.totalItems
     };
-    database.ref(`/completedInspections/${inspectionId}`).set(completedInspectionData);
-    database.ref(`/completedInspectionsList/${inspectionId}`).set(completedInspectionData);
-    dbUpdates[`/completedInspections/${inspectionId}`] = completedInspectionData;
-    dbUpdates[`/completedInspectionsList/${inspectionId}`] = completedInspectionData;
-  } else {
-    database.ref(`/completedInspections/${inspectionId}`).remove();
-    database.ref(`/completedInspectionsList/${inspectionId}`).remove();
-    dbUpdates[`/completedInspections/${inspectionId}`] = 'removed';
-    dbUpdates[`/completedInspectionsList/${inspectionId}`] = 'removed';
-  }
+    yield db.ref(`/properties/${propertyId}/inspections/${inspectionId}`).set(inspectionData);  // TODO remove #28
+    updates[`/properties/${propertyId}/inspections/${inspectionId}`] = inspectionData;
+    yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspectionId}`).set(inspectionData);
+    yield db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`).set(inspectionData);
+    updates[`/propertyInspections/${propertyId}/inspections/${inspectionId}`] = inspectionData;
+    updates[`/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`] = inspectionData;
 
-  // Pull all inspections for the same property
-  return database.ref('/inspections').orderByChild('property').equalTo(propertyKey).once('value').then(inspectionsSnapshot => {
-    var latestInspection;
-    var numOfInspectionsCompleted = 0;
+    if (inspection.inspectionCompleted) {
+      const completedInspectionData = {
+        inspector: inspection.inspector,
+        inspectorName: inspection.inspectorName,
+        creationDate: inspection.creationDate,
+        updatedLastDate: inspection.updatedLastDate,
+        templateName: templateName,
+        score: inspection.score,
+        deficienciesExist: inspection.deficienciesExist,
+        inspectionCompleted: inspection.inspectionCompleted,
+        property: inspection.property
+      };
+
+      yield db.ref(`/completedInspections/${inspectionId}`).set(completedInspectionData);
+      yield db.ref(`/completedInspectionsList/${inspectionId}`).set(completedInspectionData);
+      updates[`/completedInspections/${inspectionId}`] = completedInspectionData;
+      updates[`/completedInspectionsList/${inspectionId}`] = completedInspectionData;
+    } else {
+      yield db.ref(`/completedInspections/${inspectionId}`).remove();
+      yield db.ref(`/completedInspectionsList/${inspectionId}`).remove();
+      updates[`/completedInspections/${inspectionId}`] = 'removed';
+      updates[`/completedInspectionsList/${inspectionId}`] = 'removed';
+    }
+
+    // Pull all inspections for the same property
+    const inspectionsSnapshot = yield db.ref('/inspections').orderByChild('property').equalTo(propertyId).once('value');
+
     if (!inspectionsSnapshot.exists()) {
-      return dbUpdates;
-    } else if (inspectionsSnapshot.hasChildren()) {
-      var inspections = [];
-      inspectionsSnapshot.forEach(function(childSnapshot) {
-        // key will be 'ada' the first time and 'alan' the second time
-        var inspection = childSnapshot.val();
-        // childData will be the actual contents of the child
-        //var childData = childSnapshot.val();
-        if (inspection.inspectionCompleted) {
-          inspections.push(inspection);
+      return updates;
+    }
+
+    try {
+      var latestInspection = null;
+      var latestInspectionTmp = null;
+      var numOfInspectionsCompleted = 0;
+      const inspections = [];
+
+      if (inspectionsSnapshot.hasChildren()) {
+        inspectionsSnapshot.forEach((childSnapshot) => {
+          // key will be 'ada' the first time and 'alan' the second time
+          latestInspectionTmp = childSnapshot.val();
+
+          // childData will be the actual contents of the child
+          //var childData = childSnapshot.val();
+          if (latestInspectionTmp.inspectionCompleted) {
+            inspections.push(latestInspectionTmp);
+            numOfInspectionsCompleted++;
+          }
+        });
+
+        if (inspections.length) {
+          latestInspection = inspections.sort((a, b) => b.creationDate - a.creationDate)[0]; // DESC
+        }
+      } else {
+        latestInspectionTmp = inspectionsSnapshot.val();
+
+        if (latestInspectionTmp.inspectionCompleted) {
+          latestInspection = latestInspectionTmp;
           numOfInspectionsCompleted++;
         }
-      });
+      }
 
-      if (inspections.length > 0) {
-        var sortedInspections = inspections.sort(function(a,b) { return b.creationDate-a.creationDate });  // DESC
-        latestInspection = sortedInspections[0];
+      // Update `numOfInspections` for the property
+      yield db.ref(`/properties/${propertyId}/numOfInspections`).set(numOfInspectionsCompleted);
+      log.info(`${LOG_PREFIX} property numOfInspections updated`);
+      updates[`/properties/${propertyId}/numOfInspections`] = 'updated';
+
+      if (latestInspection) {
+        yield db.ref(`/properties/${propertyId}`).update({
+          lastInspectionScore: latestInspection.score,
+          lastInspectionDate: latestInspection.creationDate
+        });
+
+        log.info(`${LOG_PREFIX} property lastInspectionScore & lastInspectionDate updated`);
+        updates[`/properties/${propertyId}/lastInspectionScore`] = 'updated';
+        updates[`/properties/${propertyId}/lastInspectionDate`] = 'updated';
       }
-    } else {
-      var inspection = inspectionsSnapshot.val();
-      if (inspection.inspectionCompleted) {
-        latestInspection = inspection;
-        numOfInspectionsCompleted++;
-      }
+    } catch(error) {
+      log.error(`${LOG_PREFIX} Unable to access inspections ${error}`);
+      return null;
     }
 
-    // Update numOfInspections for the property
-    log.info('property numOfInspections updated');
-    database.ref(`/properties/${propertyKey}`).update({'numOfInspections': numOfInspectionsCompleted});
-    dbUpdates[`/properties/${propertyKey}/numOfInspections`] = numOfInspectionsCompleted
-
-    if (latestInspection) {
-      var updates = {};
-      updates['lastInspectionScore'] = latestInspection.score;
-      updates['lastInspectionDate'] = latestInspection.creationDate;
-      log.info('property lastInspectionScore & lastInspectionDate updated');
-      database.ref(`/properties/${propertyKey}`).update(updates);
-      dbUpdates[`/properties/${propertyKey}`] = updates;
-    }
-    return dbUpdates;
-  }).catch(function(error) {
-    // Handle any errors
-    log.error('Unable to access inspections', error);
-    return null;
+    return updates;
   });
 }

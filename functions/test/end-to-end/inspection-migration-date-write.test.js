@@ -28,12 +28,13 @@ describe('Inspections Migration Date Sync', () => {
     };
 
     // Setup database
+    yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
     yield db.ref(`/inspections/${inspId}`).set(Object.assign({}, inspectionData, { migrationDate: now - 1000 })); // Add inspection with old migration
     const beforeSnap = yield db.ref(`/inspections/${inspId}/migrationDate`).once('value');
     yield db.ref(`/inspections/${inspId}/migrationDate`).set(now);
     const afterSnap = yield db.ref(`/inspections/${inspId}/migrationDate`).once('value');
 
-    // execute
+    // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
     const wrapped = test.wrap(cloudFunctions.inspectionMigrationDateWrite);
     yield wrapped(changeSnap, { params: { objectId: inspId } });
