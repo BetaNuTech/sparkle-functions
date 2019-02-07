@@ -31,10 +31,20 @@ module.exports = {
         .then(() => null);
     }
 
+    if (!after.name) {
+      return Promise.reject(
+        new Error(`${LOG_PREFIX} required template name missing`)
+      );
+    }
+
     // Template added or updated
     const upsertData = Object.create(null);
+
+    // Required attributes
     upsertData.name = after.name;
-    upsertData.description = after.description;
+
+    // Optional attributes
+    if (after.description) upsertData.description = after.description;
     if (after.category) upsertData.category = after.category;
 
     return db.ref(target).update(upsertData)
