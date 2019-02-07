@@ -31,6 +31,12 @@ module.exports = {
         .then(() => null);
     }
 
+    if (!after.name) {
+      return Promise.reject(
+        new Error(`${LOG_PREFIX} required template name missing`)
+      );
+    }
+
     // Template added or updated
     const upsertData = Object.create(null);
     upsertData.name = after.name;

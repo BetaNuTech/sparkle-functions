@@ -20,6 +20,19 @@ describe('Templates List', () => {
       )
     });
 
+    it('should reject template without name', () => {
+      return write(
+        createDatabaseStub().value(),
+        'test',
+        { name: 'before' },
+        { name: '' } // after has no name
+      ).then((actual) =>
+        expect(true).to.equal(false, 'should not resolve')
+      ).catch((e) =>
+        expect(e).to.be.instanceof(Error, 'rejected with error')
+      );
+    });
+
     it('should resolve upserted data on template upsert', () => {
       const expected = { name: 'test-2', description: 'desc-2' };
 
