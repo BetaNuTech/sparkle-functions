@@ -25,7 +25,7 @@ describe('Templates List', () => {
         createDatabaseStub().value(),
         'test',
         { name: 'before' },
-        { name: '' } // after has no name
+        { name: '' } // New template has no name
       ).then((actual) =>
         expect(true).to.equal(false, 'should not resolve')
       ).catch((e) =>
@@ -34,16 +34,22 @@ describe('Templates List', () => {
     });
 
     it('should resolve upserted data on template upsert', () => {
-      const expected = { name: 'test-2', description: 'desc-2' };
+      const tests = [
+        { name: 'test-1' },
+        { name: 'test-2', description: 'desc-2' },
+        { name: 'test-3', category: 'category-3' },
+        { name: 'test-4', category: 'category-4', description: 'desc-4' }
+      ].map((expected, i) => write(
+          createDatabaseStub().value(),
+          `test-${i}`,
+          { name: 'test' }, // before
+          expected // update
+        ).then((actual) =>
+          expect(actual).to.deep.equal(expected, `test case ${i} updated`)
+        )
+      );
 
-      return write(
-        createDatabaseStub().value(),
-        'test',
-        { name: 'test', description: 'desc' },
-        expected // update
-      ).then((actual) =>
-        expect(actual).to.deep.equal(expected)
-      )
+      return Promise.all(tests);
     });
   });
 
