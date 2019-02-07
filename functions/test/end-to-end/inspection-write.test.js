@@ -143,6 +143,7 @@ describe('Inspection Write', () => {
     });
 
     // Setup database
+    yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
     yield db.ref(`/inspections/${inspId}`).set(beforeData); // Add inspection
     const beforeSnap = yield db.ref(`/inspections/${inspId}`).once('value'); // Create before
     yield db.ref(`/inspections/${inspId}`).update(afterData); // Update inspection

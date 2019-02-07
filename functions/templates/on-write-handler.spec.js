@@ -9,8 +9,8 @@ describe('Templates', function() {
       const db = createDatabaseStub({}, { exists: () => true, val: () => ({}) }).value();
       const actual = createOnWriteHandler(db)(
         {
-          before: { exists: () => true, val: () => ({}) },
-          after: { exists: () => false, val: () => ({}) }
+          before: { exists: () => true, val: () => null },
+          after: { exists: () => false, val: () => null }
         },
         { params: { objectId: '1' } }
       );

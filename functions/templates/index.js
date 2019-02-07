@@ -42,14 +42,14 @@ module.exports = {
 
       var id, i, k;
 
-      // Sync /propertyTemplates and /templatesList
+      // Sync /propertyTemplates, /propertyTemplatesList, and /templatesList
       for (i = 0; i < templateIds.length; i++) {
         id = templateIds[i];
 
         try {
           const templateSnap = yield db.ref(`/templates/${id}`).once('value');
           const templateData = templateSnap.val();
-          yield propertyTemplates.update(db, id, templateData); // sync `/propertyTemplates`
+          yield propertyTemplates.upsert(db, id, templateData); // sync `/propertyTemplates` & `/propertyTemplatesList`
           yield list.write(db, id, templateData, templateData); // sync `/templatesList`
           updates[id] = true;
         } catch (e) {
@@ -67,7 +67,10 @@ module.exports = {
           const propertySnap = yield db.ref(`/properties/${id}`).once('value');
           const currentTemplateIds = Object.keys((propertySnap.val() || {}).templates || {});
           const previousTemplateIds = yield adminUtils.fetchRecordIds(db, `/propertyTemplates/${id}`);
-          const removedTemplateIds = previousTemplateIds.filter(tmplId => currentTemplateIds.indexOf(tmplId) === -1);
+          const previousTemplateListIds = yield adminUtils.fetchRecordIds(db, `/propertyTemplatesList/${id}`);
+          const removedTemplateIds = [].concat(previousTemplateIds, previousTemplateListIds)
+            .filter((tmplId, i, arr) => arr.indexOf(tmplId) === i) // Unique only
+            .filter(tmplId => currentTemplateIds.indexOf(tmplId) === -1); // Proxy does not associated to property
 
           for (k = 0; i < removedTemplateIds.length; i++) {
             yield propertyTemplates.remove(db, removedTemplateIds[k]);

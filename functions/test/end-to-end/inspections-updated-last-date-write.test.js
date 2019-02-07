@@ -27,6 +27,7 @@ describe('Inspections Updated Last Date Write', () => {
     };
 
     // Setup database
+    yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
     yield db.ref(`/inspections/${inspId}`).set(Object.assign({}, inspectionData, { updatedLastDate: now - 1000 })); // Add inspection with old updated date
     const beforeSnap = yield db.ref(`/inspections/${inspId}/updatedLastDate`).once('value');
     yield db.ref(`/inspections/${inspId}/updatedLastDate`).set(now);

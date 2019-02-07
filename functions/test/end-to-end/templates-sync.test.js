@@ -7,6 +7,29 @@ const { db, test, cloudFunctions } = require('./setup');
 describe('Templates Sync', () => {
   afterEach(() => cleanDb(db));
 
+  it('should create new proxy template records', () => co(function *() {
+    const tmplId = uuid();
+    const propertyId = uuid();
+    const expected = { description: `desc${tmplId}`, name: `new${tmplId}` };
+    const propertyData = { templates: { [tmplId]: true } };
+
+    // Setup database
+    yield db.ref(`/templates/${tmplId}`).set(expected);
+    yield db.ref(`/properties/${propertyId}`).set(propertyData);
+
+    // Execute
+    yield test.wrap(cloudFunctions.templatesSync)();
+
+    // Test results
+    const actual = yield Promise.all([
+      db.ref(`/propertyTemplates/${propertyId}/${tmplId}`).once('value'),
+      db.ref(`/propertyTemplatesList/${propertyId}/${tmplId}`).once('value')
+    ]);
+
+    // Assertions
+    expect(actual.map(proxy => proxy.exists())).to.deep.equal([true, true]);
+  }));
+
   it('should update all existing proxy template\'s data', () => co(function *() {
     const tmplId = uuid();
     const propertyId = uuid();

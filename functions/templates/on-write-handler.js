@@ -11,7 +11,7 @@ const LOG_PREFIX = 'templates: on-write-handler:';
 * @return {Function} - property onWrite handler
 */
 module.exports = function createOnWriteHandler(db) {
-  return (change,event) => co(function *() {
+  return (change, event) => co(function *() {
     const templateId = event.params.objectId;
     const beforeData = change.before.val();
     const afterData = change.after.val();
@@ -33,8 +33,12 @@ module.exports = function createOnWriteHandler(db) {
       return propertyTemplates.remove(db, templateId);
     }
 
-    // Update template proxies
-    log.info(`${LOG_PREFIX} template ${templateId} ${beforeData ? 'updated' : 'added'}`);
-    return propertyTemplates.update(db, templateId, afterData);
+    // Create or update template proxies
+    if (afterData) {
+      log.info(`${LOG_PREFIX} template ${templateId} ${beforeData ? 'updated' : 'added'}`);
+      return propertyTemplates.upsert(db, templateId, afterData);
+    }
+
+    return {};
   });
 }

@@ -26,84 +26,118 @@ module.exports = {
       const updates = {};
       log.info(`${logPrefix} received ${Date.now()}`);
 
-      const inspectionIds = yield adminUtils.fetchRecordIds(db, '/inspections');
+      var inspectionIds = [];
 
-      // No inspections in database
-      if (!inspectionIds.length) {
+      // Fetch first inspection ID in database
+      var lastInspectionId = yield db.ref('/inspections').orderByKey().limitToFirst(1).once('value');
+      lastInspectionId = Object.keys(lastInspectionId.val())[0];
+
+      // Has no inspections
+      if (!lastInspectionId) {
         return updates;
       }
 
-      var i, updatedInspectionProxies;
+      do {
+        // Load inspections 10 at a time
+        var queuedInspections = yield db.ref('/inspections').orderByKey().startAt(lastInspectionId).limitToFirst(11).once('value');
+        queuedInspections = queuedInspections.val();
 
-      // Sync inspection data to nested, propertyInspections, & completedInspections
-      for (i = 0; i < inspectionIds.length; i++) {
-        const updatedInspectionProxies = yield self._updateOldInspectionProxies(db, inspectionIds[i]);
-
-        if (updatedInspectionProxies) {
-          updates[inspectionIds[i]] = true;
+        // Remove last itterations' last inspection
+        // that's been already upserted
+        if (inspectionIds.length > 0) {
+          delete queuedInspections[lastInspectionId];
         }
-      }
 
-      // Log orphaned proxy inspections
-      const propertyIds = yield adminUtils.fetchRecordIds(db, '/properties');
-      var nestedInspIds = yield Promise.all(propertyIds.map((propertyId) => adminUtils.fetchRecordIds(db, `/properties/${propertyId}/inspections`)));
-      nestedInspIds = flatten(nestedInspIds);
-      var propInspIds = yield Promise.all(propertyIds.map((propertyId) => adminUtils.fetchRecordIds(db, `/propertyInspections/${propertyId}/inspections`)));
-      propInspIds = flatten(propInspIds);
-      const completedInspIds = yield adminUtils.fetchRecordIds(db, '/completedInspections');
+        inspectionIds = Object.keys(queuedInspections);
+        lastInspectionId = inspectionIds[inspectionIds.length - 1];
 
-      const proxyInspectionIds = []
-        .concat(nestedInspIds, propInspIds, completedInspIds) // flatten
-        .filter((inspId, index, arr) => arr.indexOf(inspId) === index); // unique only
+        var i, updatedInspectionProxies;
 
-      proxyInspectionIds
-        .filter((inspId) => inspectionIds.indexOf(inspId) === -1) // find orphaned
-        .forEach((orphanedId) => {
-          if (nestedInspIds.indexOf(orphanedId) > -1) {
-            log.info(`${logPrefix} orphaned inspection proxy: /properties/*/inspections/${orphanedId}`);
+        // Sync inspection data to nested, propertyInspections, propertyInspectionsList,
+        // completedInspections, & completedInspectionsList
+        for (i = 0; i < inspectionIds.length; i++) {
+          const updatedInspectionProxies = yield self._upsertOldInspectionProxies(db, inspectionIds[i]);
+
+          if (updatedInspectionProxies) {
+            updates[inspectionIds[i]] = true;
           }
+        }
 
-          if (propInspIds.indexOf(orphanedId) > -1) {
-            log.info(`${logPrefix} orphaned inspection proxy: /propertyInspections/*/inspections/${orphanedId}`);
-          }
-
-          if (completedInspIds.indexOf(orphanedId) > -1) {
-            log.info(`${logPrefix} orphaned inspection proxy: /completedInspections/${orphanedId}`);
-          }
-        });
+        // Log orphaned proxy inspections
+        // const propertyIds = yield adminUtils.fetchRecordIds(db, '/properties');
+        // var nestedInspIds = yield Promise.all(propertyIds.map((propertyId) => adminUtils.fetchRecordIds(db, `/properties/${propertyId}/inspections`)));
+        // nestedInspIds = flatten(nestedInspIds);
+        // var propInspIds = yield Promise.all(propertyIds.map((propertyId) => adminUtils.fetchRecordIds(db, `/propertyInspections/${propertyId}/inspections`)));
+        // propInspIds = flatten(propInspIds);
+        // var propInspListIds = yield Promise.all(propertyIds.map((propertyId) => adminUtils.fetchRecordIds(db, `/propertyInspectionsList/${propertyId}/inspections`)));
+        // propInspListIds = flatten(propInspListIds);
+        // const completedInspIds = yield adminUtils.fetchRecordIds(db, '/completedInspections');
+        // const completedInspListIds = yield adminUtils.fetchRecordIds(db, '/completedInspectionsList');
+        //
+        // const proxyInspectionIds = []
+        //   .concat(nestedInspIds, propInspIds, propInspListIds, completedInspIds, completedInspListIds) // flatten
+        //   .filter((inspId, index, arr) => arr.indexOf(inspId) === index); // unique only
+        //
+        // proxyInspectionIds
+        //   .filter((inspId) => inspectionIds.indexOf(inspId) === -1) // find orphaned
+        //   .forEach((orphanedId) => {
+        //     if (nestedInspIds.includes(orphanedId)) {
+        //       log.info(`${logPrefix} orphaned inspection proxy: /properties/*/inspections/${orphanedId}`);
+        //     }
+        //
+        //     if (propInspIds.includes(orphanedId)) {
+        //       log.info(`${logPrefix} orphaned inspection proxy: /propertyInspections/*/inspections/${orphanedId}`);
+        //     }
+        //
+        //     if (propInspListIds.includes(orphanedId)) {
+        //       log.info(`${logPrefix} orphaned inspection proxy: /propertyInspectionsList/*/inspections/${orphanedId}`);
+        //     }
+        //
+        //     if (completedInspIds.includes(orphanedId)) {
+        //       log.info(`${logPrefix} orphaned inspection proxy: /completedInspections/${orphanedId}`);
+        //     }
+        //
+        //     if (completedInspListIds.includes(orphanedId)) {
+        //       log.info(`${logPrefix} orphaned inspection proxy: /completedInspectionsList/${orphanedId}`);
+        //     }
+        //   });
+      } while (inspectionIds.length > 0);
 
       return updates;
     }));
   },
 
   /**
-   * Find outdated Inspection proxies and updated them
+   * Create observer find outdated inspection
+   * proxies and updated them
    * @param  {firebaseAdmin.database} db
    * @param  {String} inspectionId
    * @return {Promise} - resolve {Boolean} was sync performed
    */
-  _updateOldInspectionProxies(db, inspectionId) {
+  _upsertOldInspectionProxies(db, inspectionId) {
     const self = this;
     return co(function *() {
       const inspectionSnap = yield db.ref(`/inspections/${inspectionId}`).once('value');
       const inspectionData = inspectionSnap.val();
 
-      if (!inspectionData) {
+      if (!inspectionData || !inspectionData.updatedLastDate) {
         return false;
       }
 
       // Lookup mismatched `updatedLastDate` between inspection
-      // and its' abbreviated proxy records and trigger update
+      // and its' proxy records and trigger update
       // if any mismatch is found
       const inspectionUpdateDateSnaps = yield Promise.all([
         `/properties/${inspectionData.property}/inspections/${inspectionId}`,
         `/propertyInspections/${inspectionData.property}/inspections/${inspectionId}`,
-        `/completedInspections/${inspectionId}`
+        `/propertyInspectionsList/${inspectionData.property}/inspections/${inspectionId}`,
+        `/completedInspections/${inspectionId}`,
+        `/completedInspectionsList/${inspectionId}`
       ].map((path) => db.ref(`${path}/updatedLastDate`).once('value')));
 
-      // Filter out non-existent, up to date, inspection proxies
+      // Filter out existing, up to date, inspection proxies
       const outdatedInspectionCount = inspectionUpdateDateSnaps.filter((dateSnap) =>
-        dateSnap.exists() && dateSnap.val() !== inspectionData.updatedLastDate
+        !dateSnap.exists() || dateSnap.val() !== inspectionData.updatedLastDate
       ).length;
 
       if (outdatedInspectionCount > 0) {

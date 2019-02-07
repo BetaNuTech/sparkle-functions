@@ -1,6 +1,9 @@
 const co = require('co');
 const log = require('../utils/logger');
+const adminUtils = require('../utils/firebase-admin');
 const findRemovedKeys = require('../utils/find-removed-keys');
+
+LOG_PREFIX = 'property-templates:';
 
 module.exports = {
  /**
@@ -8,7 +11,7 @@ module.exports = {
   * @param  {firebaseAdmin.database}
   * @param  {String} propertyId
   * @param  {Object} templatesHash
-  * @return {Promise} - resolves {Object} hash of updats
+  * @return {Promise} - resolves {Object} hash of updates
   */
   processWrite(database, propertyId, templatesHash) {
     const updates = {};
@@ -78,48 +81,46 @@ module.exports = {
   },
 
   /**
-   * Update existing template in `/propertyTemplates` & `/propertyTemplatesList`
+   * Create or update existing proxys in
+   * `/propertyTemplates` & `/propertyTemplatesList`
    * @param  {firebaseAdmin.database}
    * @param  {String} templateId
    * @param  {Object} template
    * @return {Promise} - resolves {Object} updates hash
    */
-  update(database, templateId, template) {
+  upsert(db, templateId, template) {
     const updates = {};
     const templateCopy = {};
     templateCopy['name'] = template.name || ''
     templateCopy['description'] = template.description || '';
 
     return co(function *() {
-      const propTmplsSnap = yield database.ref('/propertyTemplates').once('value');
-      const propTmplsListSnap = yield database.ref('/propertyTemplatesList').once('value');
+      const allPropertyIds = yield adminUtils.fetchRecordIds(db, '/properties');
+      const templatesPropertyIds = [];
 
-      // Update in `/propertyTemplates`
-      if (propTmplsSnap.exists()) {
-        const propertyTemplates = propTmplsSnap.val();
-        const activePropertyIds = Object.keys(propertyTemplates).filter((propertyId) => propertyTemplates[propertyId][templateId]);
+      // Collect all properties associated with template
+      for (var i = 0; i < allPropertyIds.length; i++) {
+        const propertyId = allPropertyIds[i];
+        const propertyTemplateIds = yield adminUtils.fetchRecordIds(db, `/properties/${propertyId}/templates`);
 
-        for (var i = 0; i < activePropertyIds.length; i++) {
-          const propertyId = activePropertyIds[i];
-          const target = `/propertyTemplates/${propertyId}/${templateId}`;
-          yield database.ref(target).set(templateCopy);
-          log.info(`template updated at ${target}`);
-          updates[target] = 'updated';
+        if (propertyTemplateIds.includes(templateId)) {
+          templatesPropertyIds.push(propertyId);
         }
       }
 
-      // Update in `/propertyTemplatesList`
-      if (propTmplsListSnap.exists()) {
-        const propertyTemplates = propTmplsListSnap.val();
-        const activePropertyIds = Object.keys(propertyTemplates).filter((propertyId) => propertyTemplates[propertyId][templateId]);
+      // Upsert all templates proxies
+      for (i = 0; i < templatesPropertyIds.length; i++) {
+        const propertyId = templatesPropertyIds[i];
 
-        for (var i = 0; i < activePropertyIds.length; i++) {
-          const propertyId = activePropertyIds[i];
-          const target = `/propertyTemplatesList/${propertyId}/${templateId}`;
-          yield database.ref(target).set(templateCopy);
-          log.info(`template updated at ${target}`);
-          updates[target] = 'updated';
-        }
+        const target = `/propertyTemplates/${propertyId}/${templateId}`;
+        yield db.ref(target).set(templateCopy);
+        log.info(`${LOG_PREFIX} upsert: template at ${target}`);
+        updates[target] = 'upsert';
+
+        const targetList = `/propertyTemplatesList/${propertyId}/${templateId}`;
+        yield db.ref(targetList).set(templateCopy);
+        log.info(`${LOG_PREFIX} upsert: template at ${targetList}`);
+        updates[targetList] = 'upsert';
       }
 
       return updates;

@@ -12,6 +12,7 @@ describe('Inspections', () => {
       const db = createDatabaseStub({}, {
         exists: () => true,
         hasChildren: () => true,
+        val: () => ({}),
         toJSON: () => ({})
       }).value();
       const actual = createPublishHandler('test', createPubSubStub(), db);
