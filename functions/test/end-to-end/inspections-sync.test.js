@@ -1,6 +1,7 @@
 const co = require('co');
 const { expect } = require('chai');
 const uuid = require('../../test-helpers/uuid');
+const mocking = require('../../test-helpers/mocking');
 const { cleanDb } = require('../../test-helpers/firebase');
 const { db, test, cloudFunctions } = require('./setup');
 
@@ -135,6 +136,50 @@ describe('Inspections Sync', () => {
     // Assertions
     expect(actual.exists()).to.equal(false, 'removed /completedInspections proxy');
     expect(actualList.exists()).to.equal(false, 'removed /completedInspectionsList proxy');
+  }));
+
+  it('should update property with any meta data from its\' completed inspections', () => co(function *() {
+    const insp1Id = uuid();
+    const insp2Id = uuid();
+    const propertyId = uuid();
+    const newest = (Date.now() / 1000);
+    const oldest = (Date.now() / 1000) - 100000;
+    const inspectionOne = mocking.createInspection({ property: propertyId, inspectionCompleted: true, creationDate: newest, score: 65 });
+    const inspectionTwo = mocking.createInspection({ property: propertyId, inspectionCompleted: true, creationDate: oldest, score: 25 });
+    const expected = {
+      numOfInspections: 2,
+      lastInspectionScore: inspectionOne.score,
+      lastInspectionDate: inspectionOne.creationDate
+    };
+
+    // Setup database
+    yield db.ref(`/inspections/${insp1Id}`).set(inspectionOne); // Add inspection #1
+    yield db.ref(`/inspections/${insp2Id}`).set(inspectionTwo); // Add inspection #2
+    yield db.ref(`/properties/${propertyId}`).set({
+      inspections: { [insp1Id]: inspectionOne, [insp2Id]: inspectionTwo } // Add nested inspections
+    });
+
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.inspectionsSync);
+    yield wrapped();
+
+    // Test result
+    const propertySnap = yield db.ref(`/properties/${propertyId}`).once('value');
+    const actual = propertySnap.val();
+
+    // Assertions
+    expect(actual.numOfInspections).to.equal(
+      expected.numOfInspections,
+      'updated property\'s `numOfInspections`'
+    );
+    expect(actual.lastInspectionScore).to.equal(
+      expected.lastInspectionScore,
+      'updated property\'s `lastInspectionScore`'
+    );
+    expect(actual.lastInspectionDate).to.equal(
+      expected.lastInspectionDate,
+      'updated property\'s `lastInspectionDate`'
+    );
   }));
 
   it('should not create proxy records for inspections belonging to a deleted property', () => co(function *() {
