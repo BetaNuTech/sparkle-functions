@@ -47,12 +47,11 @@ describe('Inspection Write', () => {
       db.ref(`/completedInspections/${inspId}`).once('value'),
       db.ref(`/completedInspectionsList/${inspId}`).once('value'),
       db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value'),
-      db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).once('value'),
-      db.ref(`/properties/${propertyId}/inspections/${inspId}`).once('value')
+      db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).once('value')
     ]);
 
     // Assertions
-    expect(actual.map((ds) => ds.exists())).to.deep.equal([false, false, false, false, false]);
+    expect(actual.map((ds) => ds.exists())).to.deep.equal([false, false, false, false]);
   }));
 
   it('should update inspections\' proxy records with new data', () => co(function *() {
@@ -98,7 +97,6 @@ describe('Inspection Write', () => {
     yield wrapped(changeSnap, { params: { objectId: inspId } });
 
     // Test result
-    const nested = yield db.ref(`/properties/${propertyId}/inspections/${inspId}`).once('value');
     const propertyInspection = yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value');
     const propertyInspectionList = yield db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).once('value');
     const completedInspection = yield db.ref(`/completedInspections/${inspId}`).once('value');
@@ -109,7 +107,6 @@ describe('Inspection Write', () => {
     delete expected.property;
     expect(propertyInspection.val()).to.deep.equal(expected, 'updated /propertyInspections proxy');
     expect(propertyInspectionList.val()).to.deep.equal(expected, 'updated /propertyInspectionsList proxy');
-    expect(nested.val()).to.deep.equal(expected, 'updated /property nested inspection proxy');
 
     const expectedCompleted = Object.assign({}, afterData);
     delete expectedCompleted.itemsCompleted;
@@ -221,11 +218,9 @@ describe('Inspection Write', () => {
     };
 
     // Setup database
+    yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
     yield db.ref(`/inspections/${insp1Id}`).set(inspectionOne); // Add inspection #1
     yield db.ref(`/inspections/${insp2Id}`).set(inspectionTwo); // Add inspection #2
-    yield db.ref(`/properties/${propertyId}`).set({
-      inspections: { [insp1Id]: inspectionOne, [insp2Id]: inspectionTwo } // Add nested inspections
-    });
     const snap = yield db.ref(`/inspections/${insp1Id}`).once('value'); // Create snapshot
 
     // Execute

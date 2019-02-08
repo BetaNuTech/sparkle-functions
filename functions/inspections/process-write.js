@@ -43,8 +43,6 @@ module.exports = function processWrite(db, inspectionId, inspection) {
       itemsCompleted: inspection.itemsCompleted,
       totalItems: inspection.totalItems
     };
-    yield db.ref(`/properties/${propertyId}/inspections/${inspectionId}`).set(inspectionData);  // TODO remove #28
-    updates[`/properties/${propertyId}/inspections/${inspectionId}`] = inspectionData;
     yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspectionId}`).set(inspectionData);
     yield db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`).set(inspectionData);
     updates[`/propertyInspections/${propertyId}/inspections/${inspectionId}`] = inspectionData;

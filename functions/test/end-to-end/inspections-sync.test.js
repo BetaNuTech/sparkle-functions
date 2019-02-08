@@ -36,7 +36,6 @@ describe('Inspections Sync', () => {
 
     // Test result
     const actual = yield Promise.all([
-      db.ref(`/properties/${propertyId}/inspections/${inspId}`).once('value'),
       db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value'),
       db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).once('value'),
       db.ref(`/completedInspections/${inspId}`).once('value'),
@@ -44,7 +43,7 @@ describe('Inspections Sync', () => {
     ]);
 
     // Assertions
-    expect(actual.map(proxy => proxy.exists())).to.deep.equal([true, true, true, true, true]);
+    expect(actual.map(proxy => proxy.exists())).to.deep.equal([true, true, true, true]);
   }));
 
   it('should update all an inspections\' outdated proxy records', () => co(function *() {
@@ -67,8 +66,8 @@ describe('Inspections Sync', () => {
     const oldInspection = Object.assign({}, newInspection, { updatedLastDate: now - 1000 })
 
     // Setup database
+    yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
     yield db.ref(`/inspections/${inspId}`).set(newInspection);
-    yield db.ref(`/properties/${propertyId}`).set({ inspections: { [inspId]: oldInspection } });
     yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).set(oldInspection);
     yield db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).set(oldInspection);
     yield db.ref(`/completedInspections/${inspId}`).set(oldInspection);
@@ -79,7 +78,6 @@ describe('Inspections Sync', () => {
     yield wrapped();
 
     // Test result
-    const nested = yield db.ref(`/properties/${propertyId}/inspections/${inspId}`).once('value');
     const propertyInspection = yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value');
     const propertyInspectionList = yield db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).once('value');
     const completedInspection = yield db.ref(`/completedInspections/${inspId}`).once('value');
@@ -90,7 +88,6 @@ describe('Inspections Sync', () => {
     delete expected.property;
     expect(propertyInspection.val()).to.deep.equal(expected, 'updated /propertyInspections proxy');
     expect(propertyInspectionList.val()).to.deep.equal(expected, 'updated /propertyInspectionsList proxy');
-    expect(nested.val()).to.deep.equal(expected, 'updated /property nested inspection proxy');
 
     const expectedCompleted = Object.assign({}, newInspection);
     delete expected.property;
@@ -120,8 +117,8 @@ describe('Inspections Sync', () => {
     const oldInspection = Object.assign({}, newInspection, { inspectionCompleted: true, updatedLastDate: now - 1000 })
 
     // Setup database
+    yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
     yield db.ref(`/inspections/${inspId}`).set(newInspection);
-    yield db.ref(`/properties/${propertyId}`).set({ inspections: { [inspId]: oldInspection } });
     yield db.ref(`/completedInspections/${inspId}`).set(oldInspection);
     yield db.ref(`/completedInspectionsList/${inspId}`).set(oldInspection);
 
@@ -153,11 +150,9 @@ describe('Inspections Sync', () => {
     };
 
     // Setup database
+    yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
     yield db.ref(`/inspections/${insp1Id}`).set(inspectionOne); // Add inspection #1
     yield db.ref(`/inspections/${insp2Id}`).set(inspectionTwo); // Add inspection #2
-    yield db.ref(`/properties/${propertyId}`).set({
-      inspections: { [insp1Id]: inspectionOne, [insp2Id]: inspectionTwo } // Add nested inspections
-    });
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.inspectionsSync);
