@@ -40,7 +40,6 @@ describe('Inspections Migration Date Sync', () => {
     yield wrapped(changeSnap, { params: { objectId: inspId } });
 
     // Test Results
-    const nested = yield db.ref(`/properties/${propertyId}/inspections/${inspId}`).once('value');
     const propertyInspection = yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value');
     const propertyInspectionList = yield db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).once('value');
     const completedInspection = yield db.ref(`/completedInspections/${inspId}`).once('value');
@@ -52,7 +51,6 @@ describe('Inspections Migration Date Sync', () => {
     delete expected.migrationDate;
     expect(propertyInspection.val()).to.deep.equal(expected, 'updated /propertyInspections proxy');
     expect(propertyInspectionList.val()).to.deep.equal(expected, 'updated /propertyInspectionsList proxy');
-    expect(nested.val()).to.deep.equal(expected, 'updated /property nested inspection proxy');
 
     const expectedCompleted = Object.assign({}, inspectionData);
     delete expectedCompleted.migrationDate;
