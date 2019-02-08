@@ -65,8 +65,6 @@ module.exports = {
 
         // Log orphaned proxy inspections
         // const propertyIds = yield adminUtils.fetchRecordIds(db, '/properties');
-        // var nestedInspIds = yield Promise.all(propertyIds.map((propertyId) => adminUtils.fetchRecordIds(db, `/properties/${propertyId}/inspections`)));
-        // nestedInspIds = flatten(nestedInspIds);
         // var propInspIds = yield Promise.all(propertyIds.map((propertyId) => adminUtils.fetchRecordIds(db, `/propertyInspections/${propertyId}/inspections`)));
         // propInspIds = flatten(propInspIds);
         // var propInspListIds = yield Promise.all(propertyIds.map((propertyId) => adminUtils.fetchRecordIds(db, `/propertyInspectionsList/${propertyId}/inspections`)));
@@ -75,16 +73,12 @@ module.exports = {
         // const completedInspListIds = yield adminUtils.fetchRecordIds(db, '/completedInspectionsList');
         //
         // const proxyInspectionIds = []
-        //   .concat(nestedInspIds, propInspIds, propInspListIds, completedInspIds, completedInspListIds) // flatten
+        //   .concat(propInspIds, propInspListIds, completedInspIds, completedInspListIds) // flatten
         //   .filter((inspId, index, arr) => arr.indexOf(inspId) === index); // unique only
         //
         // proxyInspectionIds
         //   .filter((inspId) => inspectionIds.indexOf(inspId) === -1) // find orphaned
         //   .forEach((orphanedId) => {
-        //     if (nestedInspIds.includes(orphanedId)) {
-        //       log.info(`${logPrefix} orphaned inspection proxy: /properties/*/inspections/${orphanedId}`);
-        //     }
-        //
         //     if (propInspIds.includes(orphanedId)) {
         //       log.info(`${logPrefix} orphaned inspection proxy: /propertyInspections/*/inspections/${orphanedId}`);
         //     }
@@ -128,7 +122,6 @@ module.exports = {
       // and its' proxy records and trigger update
       // if any mismatch is found
       const inspectionUpdateDateSnaps = yield Promise.all([
-        `/properties/${inspectionData.property}/inspections/${inspectionId}`,
         `/propertyInspections/${inspectionData.property}/inspections/${inspectionId}`,
         `/propertyInspectionsList/${inspectionData.property}/inspections/${inspectionId}`,
         `/completedInspections/${inspectionId}`,
