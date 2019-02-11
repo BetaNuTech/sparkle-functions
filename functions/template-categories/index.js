@@ -1,6 +1,7 @@
 const co = require('co');
 const log = require('../utils/logger');
 const templatesList = require('../templates/list');
+const propertyTemplates = require('../property-templates');
 
 const LOG_PREFIX = 'template-categories: onDelete:';
 
@@ -41,15 +42,23 @@ module.exports = {
       // Create update hash for all
       // associated templates
       const updates = {};
-      Object.keys(templatesInCategory.val()).forEach(tempId => {
+      const templateIds = Object.keys(templatesInCategory.val());
+      templateIds.forEach(tempId => {
         updates[`/templates/${tempId}/category`] = null;
         log.info(`${LOG_PREFIX} disassociating template: ${tempId}`);
       });
 
-      // Write all template updates to database
       try {
+        // Write all template updates to database
         if (Object.keys(updates).length) {
           yield db.ref().update(updates);
+        }
+
+        // Remove each template's proxy record `category`
+        for (var i = 0; i < templateIds.length; i++) {
+          updates[`/propertyTemplates/**/${templateIds[i]}/category`] = 'removed';
+          updates[`/propertyTemplatesList/**/${templateIds[i]}/category`] = 'removed';
+          yield propertyTemplates.remove(db, templateIds[i], '/category');
         }
       } catch (e) {
         log.error(

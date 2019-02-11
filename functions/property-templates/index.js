@@ -123,12 +123,14 @@ module.exports = {
   },
 
   /**
-   * Remove a template from all properties in `/propertyTemplates` & `/propertyTemplatesList`
+   * Remove a template or attribute from all
+   * properties in `/propertyTemplates` & `/propertyTemplatesList`
    * @param  {firebaseAdmin.database}
    * @param  {String} templateId
+   * @param  {String} attribute
    * @return {Promise} - resolves {Object} hash of updates
    */
-  remove(db, templateId) {
+  remove(db, templateId, attribute = '') {
     return co(function *() {
       const updates = {};
       const propTmplsSnap = yield db.ref('/propertyTemplates').once('value');
@@ -141,7 +143,7 @@ module.exports = {
 
         for (var i = 0; i < activePropertyIds.length; i++) {
           const propertyId = activePropertyIds[i];
-          const target = `/propertyTemplates/${propertyId}/${templateId}`;
+          const target = `/propertyTemplates/${propertyId}/${templateId}${attribute}`;
           yield db.ref(target).remove();
           log.info(target);
           updates[target] = 'removed';
@@ -155,7 +157,7 @@ module.exports = {
 
         for (var i = 0; i < activePropertyIds.length; i++) {
           const propertyId = activePropertyIds[i];
-          const target = `/propertyTemplatesList/${propertyId}/${templateId}`;
+          const target = `/propertyTemplatesList/${propertyId}/${templateId}${attribute}`;
           yield db.ref(target).remove();
           log.info(`templates removed ${target}`);
           updates[target] = 'removed';
