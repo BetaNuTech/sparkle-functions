@@ -10,7 +10,7 @@ describe('Property Write', () => {
   it('should remove all a deleted property\'s template proxies', () => co(function *() {
     const tmplId = uuid();
     const propertyId = uuid();
-    const templateData = { name: `test${tmplId}`};
+    const templateData = { name: `test${tmplId}` };
 
     // Setup database
     yield db.ref(`/properties/${propertyId}`).set({ name: 'test', templates: { [tmplId]: true } }); // Add property with a template    yield db.ref('/templates').set(expected);

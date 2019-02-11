@@ -28,7 +28,7 @@ describe('Inspection Write', () => {
 
     // Setup database
     yield db.ref(`/inspections/${inspId}`).set(inspectionData); // Add inspection
-    yield db.ref(`/properties/${propertyId}`).set({ inspections: { [inspId]: inspectionData } }); // Add nested inspection
+    yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
     yield db.ref(`/completedInspections/${inspId}`).set(inspectionData); // Add completedInspections
     yield db.ref(`/completedInspectionsList/${inspId}`).set(inspectionData); // Add completedInspectionsList
     yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).set(inspectionData); // Add propertyInspections
@@ -84,7 +84,7 @@ describe('Inspection Write', () => {
 
     // Setup database
     yield db.ref(`/inspections/${inspId}`).set(beforeData); // Add inspection
-    yield db.ref(`/properties/${propertyId}`).set({ inspections: { [inspId]: beforeData } }); // Add nested inspection
+    yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
     yield db.ref(`/templateCategories/${categoryId}`).set({ name: `name${categoryId}` }); // Add inspections' category
     yield db.ref(`/completedInspections/${inspId}`).set(beforeData); // Add completedInspections
     yield db.ref(`/completedInspectionsList/${inspId}`).set(beforeData); // Add completedInspections

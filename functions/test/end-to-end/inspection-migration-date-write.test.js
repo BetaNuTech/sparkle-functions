@@ -82,9 +82,7 @@ describe('Inspections Migration Date Sync', () => {
     // Setup database
     yield db.ref(`/inspections/${insp1Id}`).set(inspectionOne); // Add inspection #1
     yield db.ref(`/inspections/${insp2Id}`).set(inspectionTwo); // Add inspection #2
-    yield db.ref(`/properties/${propertyId}`).set({
-      inspections: { [insp1Id]: inspectionOne, [insp2Id]: inspectionTwo } // Add nested inspections
-    });
+    yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
     const beforeSnap = yield db.ref(`/inspections/${insp1Id}/updatedLastDate`).once('value');
     yield db.ref(`/inspections/${insp1Id}/updatedLastDate`).set(newest);
     const afterSnap = yield db.ref(`/inspections/${insp1Id}/updatedLastDate`).once('value');
