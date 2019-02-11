@@ -5,12 +5,15 @@ const mocking = require('../../test-helpers/mocking');
 const { cleanDb } = require('../../test-helpers/firebase');
 const { db, test, cloudFunctions } = require('./setup');
 
+const { assign } = Object;
+
 describe('Inspections Migration Date Sync', () => {
   afterEach(() => cleanDb(db));
 
   it('should migrate all an inspections\' outdated proxy records', () => co(function *() {
     const inspId = uuid();
     const propertyId = uuid();
+    const categoryId = uuid();
     const now = Date.now() / 1000;
     const inspectionData = {
       templateName: `name${inspId}`,
@@ -22,6 +25,7 @@ describe('Inspections Migration Date Sync', () => {
       itemsCompleted: 10,
       totalItems: 10,
       property: propertyId,
+      templateCategory: categoryId,
       updatedLastDate: now,
       inspectionCompleted: true,
       migrationDate: now
@@ -29,7 +33,8 @@ describe('Inspections Migration Date Sync', () => {
 
     // Setup database
     yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
-    yield db.ref(`/inspections/${inspId}`).set(Object.assign({}, inspectionData, { migrationDate: now - 1000 })); // Add inspection with old migration
+    yield db.ref(`/templateCategories/${categoryId}`).set({ name: `name${categoryId}` }); // sanity check
+    yield db.ref(`/inspections/${inspId}`).set(assign({}, inspectionData, { migrationDate: now - 1000 })); // Add inspection with old migration
     const beforeSnap = yield db.ref(`/inspections/${inspId}/migrationDate`).once('value');
     yield db.ref(`/inspections/${inspId}/migrationDate`).set(now);
     const afterSnap = yield db.ref(`/inspections/${inspId}/migrationDate`).once('value');
@@ -46,16 +51,17 @@ describe('Inspections Migration Date Sync', () => {
     const completedInspectionList = yield db.ref(`/completedInspectionsList/${inspId}`).once('value');
 
     // Assertions
-    const expected = Object.assign({}, inspectionData);
+    const expected = assign({}, inspectionData);
     delete expected.property;
     delete expected.migrationDate;
     expect(propertyInspection.val()).to.deep.equal(expected, 'updated /propertyInspections proxy');
     expect(propertyInspectionList.val()).to.deep.equal(expected, 'updated /propertyInspectionsList proxy');
 
-    const expectedCompleted = Object.assign({}, inspectionData);
+    const expectedCompleted = assign({}, inspectionData);
     delete expectedCompleted.migrationDate;
     delete expectedCompleted.itemsCompleted;
     delete expectedCompleted.totalItems;
+    delete expectedCompleted.templateCategory;
     expect(completedInspection.val()).to.deep.equal(expectedCompleted, 'updated /completedInspections proxy');
     expect(completedInspectionList.val()).to.deep.equal(expectedCompleted, 'updated /completedInspectionsList proxy');
   }));
@@ -77,9 +83,7 @@ describe('Inspections Migration Date Sync', () => {
     // Setup database
     yield db.ref(`/inspections/${insp1Id}`).set(inspectionOne); // Add inspection #1
     yield db.ref(`/inspections/${insp2Id}`).set(inspectionTwo); // Add inspection #2
-    yield db.ref(`/properties/${propertyId}`).set({
-      inspections: { [insp1Id]: inspectionOne, [insp2Id]: inspectionTwo } // Add nested inspections
-    });
+    yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
     const beforeSnap = yield db.ref(`/inspections/${insp1Id}/updatedLastDate`).once('value');
     yield db.ref(`/inspections/${insp1Id}/updatedLastDate`).set(newest);
     const afterSnap = yield db.ref(`/inspections/${insp1Id}/updatedLastDate`).once('value');

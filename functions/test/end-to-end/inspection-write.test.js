@@ -28,7 +28,7 @@ describe('Inspection Write', () => {
 
     // Setup database
     yield db.ref(`/inspections/${inspId}`).set(inspectionData); // Add inspection
-    yield db.ref(`/properties/${propertyId}`).set({ inspections: { [inspId]: inspectionData } }); // Add nested inspection
+    yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
     yield db.ref(`/completedInspections/${inspId}`).set(inspectionData); // Add completedInspections
     yield db.ref(`/completedInspectionsList/${inspId}`).set(inspectionData); // Add completedInspectionsList
     yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).set(inspectionData); // Add propertyInspections
@@ -57,6 +57,7 @@ describe('Inspection Write', () => {
   it('should update inspections\' proxy records with new data', () => co(function *() {
     const inspId = uuid();
     const propertyId = uuid();
+    const categoryId = uuid();
     const now = Date.now() / 1000;
     const beforeData = {
       templateName: `name${inspId}`,
@@ -76,13 +77,15 @@ describe('Inspection Write', () => {
       templateName: `name${inspId}--rev2`,
       inspectorName: 'testor--rev2',
       score: 8,
+      templateCategory: categoryId,
       deficienciesExist: true,
       updatedLastDate: now,
     });
 
     // Setup database
     yield db.ref(`/inspections/${inspId}`).set(beforeData); // Add inspection
-    yield db.ref(`/properties/${propertyId}`).set({ inspections: { [inspId]: beforeData } }); // Add nested inspection
+    yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
+    yield db.ref(`/templateCategories/${categoryId}`).set({ name: `name${categoryId}` }); // Add inspections' category
     yield db.ref(`/completedInspections/${inspId}`).set(beforeData); // Add completedInspections
     yield db.ref(`/completedInspectionsList/${inspId}`).set(beforeData); // Add completedInspections
     yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).set(beforeData); // Add propertyInspections
@@ -111,6 +114,7 @@ describe('Inspection Write', () => {
     const expectedCompleted = Object.assign({}, afterData);
     delete expectedCompleted.itemsCompleted;
     delete expectedCompleted.totalItems;
+    delete expectedCompleted.templateCategory;
     expect(completedInspection.val()).to.deep.equal(expectedCompleted, 'updated /completedInspections proxy');
     expect(completedInspectionList.val()).to.deep.equal(expectedCompleted, 'updated /completedInspectionsList proxy');
   }));

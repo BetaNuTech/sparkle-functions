@@ -66,15 +66,17 @@ describe('Property Templates Write', () => {
   it('should update property template proxies when a template is added to a property', () => co(function *() {
     const tmplId1 = uuid();
     const tmplId2 = uuid();
+    const categoryId = uuid();
     const propertyId = uuid();
     const expected = {
-      [tmplId1]: { name: `name${tmplId1}`, description: `desc${tmplId1}` },
-      [tmplId2]: { name: `name${tmplId2}`, description: `desc${tmplId2}` }
+      [tmplId1]: { name: `name${tmplId1}`, description: `desc${tmplId1}`, category: categoryId },
+      [tmplId2]: { name: `name${tmplId2}`, description: `desc${tmplId2}`, category: categoryId }
     };
 
     // Setup database
     yield db.ref('/templates').set(expected); // Add template
     yield db.ref(`/properties/${propertyId}`).set({ name: 'test', templates: { [tmplId1]: true } }); // Only has 1st template
+    yield db.ref(`/templateCategories/${categoryId}`).set({ name: `name${categoryId}` }); // sanity check
     const propertyBeforeSnap = yield db.ref(`/properties/${propertyId}/templates`).once('value'); // Get before templates
     yield db.ref(`/properties/${propertyId}/templates/${tmplId2}`).set(true); // Associate 2nd template w/ property
     const propertyAfterSnap = yield db.ref(`/properties/${propertyId}/templates`).once('value'); // Get after templates

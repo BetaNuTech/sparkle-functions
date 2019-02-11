@@ -43,10 +43,16 @@ module.exports = function processWrite(db, inspectionId, inspection) {
       itemsCompleted: inspection.itemsCompleted,
       totalItems: inspection.totalItems
     };
+
+    // Add optional template category
+    if (inspection.templateCategory) {
+      inspectionData.templateCategory = inspection.templateCategory;
+    }
+
     yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspectionId}`).set(inspectionData);
     yield db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`).set(inspectionData);
-    updates[`/propertyInspections/${propertyId}/inspections/${inspectionId}`] = inspectionData;
-    updates[`/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`] = inspectionData;
+    updates[`/propertyInspections/${propertyId}/inspections/${inspectionId}`] = 'upserted';
+    updates[`/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`] = 'upserted';
 
     if (inspection.inspectionCompleted) {
       const completedInspectionData = {

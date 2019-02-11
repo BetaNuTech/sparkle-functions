@@ -10,7 +10,7 @@ describe('Property Write', () => {
   it('should remove all a deleted property\'s template proxies', () => co(function *() {
     const tmplId = uuid();
     const propertyId = uuid();
-    const templateData = { name: `test${tmplId}`};
+    const templateData = { name: `test${tmplId}` };
 
     // Setup database
     yield db.ref(`/properties/${propertyId}`).set({ name: 'test', templates: { [tmplId]: true } }); // Add property with a template    yield db.ref('/templates').set(expected);
@@ -36,7 +36,7 @@ describe('Property Write', () => {
     expect(actualList.exists()).to.equal(false, 'removed /propertyTemplatesList proxy');
   }));
 
-  it('should remove a template\'s property proxies when it is disassociated from that property', () => co(function *() {
+  it('should remove a template\'s property proxies when a template is disassociated from property', () => co(function *() {
     const tmplId1 = uuid();
     const tmplId2 = uuid();
     const propertyId = uuid();
@@ -70,14 +70,16 @@ describe('Property Write', () => {
   it('should upsert template property proxies when a property has template relationships', () => co(function *() {
     const tmplId1 = uuid();
     const tmplId2 = uuid();
+    const categoryId = uuid();
     const propertyId = uuid();
     const expected = {
-      [tmplId1]: { name: `name${tmplId1}`, description: `desc${tmplId1}` },
-      [tmplId2]: { name: `name${tmplId2}`, description: `desc${tmplId2}` }
+      [tmplId1]: { name: `name${tmplId1}`, description: `desc${tmplId1}`, category: categoryId },
+      [tmplId2]: { name: `name${tmplId2}`, description: `desc${tmplId2}`, category: categoryId }
     };
 
     // Setup database
     yield db.ref('/templates').set(expected); // Add property's templates
+    yield db.ref(`/templateCategories/${categoryId}`).set({ name: `name${categoryId}` }); // sanity check
     yield db.ref(`/properties/${propertyId}`).set({ name: 'test', templates: { [tmplId1]: true } }); // Only has 1st template
     yield db.ref(`/propertyTemplates/${propertyId}/${tmplId1}`).set(expected[tmplId1]); // Add 1st template proxy record
     yield db.ref(`/propertyTemplatesList/${propertyId}/${tmplId1}`).set(expected[tmplId1]); // Add 1st template list proxy record
