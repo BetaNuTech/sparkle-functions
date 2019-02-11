@@ -50,7 +50,7 @@ describe('Templates Write', () => {
       results.forEach((snapshot, i) => {
         const actual = snapshot.val();
         const expected = afterData[tmplId];
-        expect(actual).to.deep.equal(expected, `proxy record ${recordPaths[i]} created at test ${i}`);
+        expect(actual).to.deep.equal(expected, `proxy record ${paths[i]} created at test ${i}`);
       });
     }
   }));
@@ -143,7 +143,7 @@ describe('Templates Write', () => {
       results.forEach((snapshot, i) => {
         const actual = snapshot.val();
         const expected = afterData[tmplId];
-        expect(actual).to.deep.equal(expected, `proxy record ${recordPaths[i]} created at test ${i}`);
+        expect(actual).to.deep.equal(expected, `proxy record ${paths[i]} created at test ${i}`);
       });
     }
   }));

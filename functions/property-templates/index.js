@@ -14,6 +14,7 @@ module.exports = {
   * @return {Promise} - resolves {Object} hash of updates
   */
   processWrite(database, propertyId, templatesHash) {
+    const self = this;
     const updates = {};
     const templateKeys = Object.keys(templatesHash || {});
 
@@ -33,11 +34,7 @@ module.exports = {
         }
 
         const template = templateSnapshot.val(); // Assumed hash data, with no children
-        const templateCopy = {};
-
-        templateCopy['name'] = template.name || '';
-        templateCopy['description'] = template.description || '';
-
+        const templateCopy = self._toTemplateProxy(template);
         yield database.ref(`/propertyTemplates/${propertyId}/${templateId}`).set(templateCopy);
         yield database.ref(`/propertyTemplatesList/${propertyId}/${templateId}`).set(templateCopy);
         updates[`/propertyTemplates/${propertyId}/${templateId}`] = 'upserted';
@@ -90,9 +87,7 @@ module.exports = {
    */
   upsert(db, templateId, template) {
     const updates = {};
-    const templateCopy = {};
-    templateCopy['name'] = template.name || ''
-    templateCopy['description'] = template.description || '';
+    const templateCopy = this._toTemplateProxy(template);
 
     return co(function *() {
       const allPropertyIds = yield adminUtils.fetchRecordIds(db, '/properties');
@@ -182,5 +177,29 @@ module.exports = {
       db.ref(`/propertyTemplates/${propertyId}`).remove(),
       db.ref(`/propertyTemplatesList/${propertyId}`).remove()
     ]);
+  },
+
+  /**
+   * Copy specified template attributes into an
+   * abbreviated proxy record
+   * @param  {Object} template
+   * @return {Object} - template copy
+   */
+  _toTemplateProxy(template) {
+    const templateCopy = Object.create(null);
+
+    // Required attributes
+    templateCopy.name = template.name || '';
+
+    // Add optional attributes
+    if (template.description) {
+      templateCopy.description = template.description;
+    }
+
+    if (template.category) {
+      templateCopy.category = template.category;
+    }
+
+    return templateCopy;
   }
 };
