@@ -100,6 +100,7 @@ describe('Inspections Sync', () => {
     delete expected.property;
     delete expectedCompleted.itemsCompleted;
     delete expectedCompleted.totalItems;
+    delete expectedCompleted.templateCategory;
     expect(completedInspection.val()).to.deep.equal(expectedCompleted, 'updated /completedInspections proxy');
     expect(completedInspectionList.val()).to.deep.equal(expectedCompleted, 'updated /completedInspectionsList proxy');
   }));
