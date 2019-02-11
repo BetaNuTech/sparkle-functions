@@ -11,6 +11,7 @@ describe('Inspections Sync', () => {
   it('should create new inspection proxy records', () => co(function *() {
     const inspId = uuid();
     const propertyId = uuid();
+    const categoryId = uuid();
     const now = Date.now() / 1000;
     const inspectionData = {
       templateName: `name${inspId}`,
@@ -22,13 +23,15 @@ describe('Inspections Sync', () => {
       itemsCompleted: 10,
       totalItems: 10,
       property: propertyId,
+      templateCategory: categoryId,
       updatedLastDate: now,
       inspectionCompleted: true
     };
 
     // Setup database
     yield db.ref(`/inspections/${inspId}`).set(inspectionData);
-    yield db.ref(`/properties/${propertyId}`).set({ inspections: { [inspId]: inspectionData } });
+    yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
+    yield db.ref(`/templateCategories/${categoryId}`).set({ name: `name${categoryId}` }); // sanity check
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.inspectionsSync);
@@ -49,6 +52,7 @@ describe('Inspections Sync', () => {
   it('should update all an inspections\' outdated proxy records', () => co(function *() {
     const inspId = uuid();
     const propertyId = uuid();
+    const categoryId = uuid();
     const now = Date.now() / 1000;
     const newInspection = {
       templateName: `name${inspId}`,
@@ -60,13 +64,16 @@ describe('Inspections Sync', () => {
       itemsCompleted: 10,
       totalItems: 10,
       property: propertyId,
+      templateCategory: categoryId,
       updatedLastDate: now,
       inspectionCompleted: true
     };
-    const oldInspection = Object.assign({}, newInspection, { updatedLastDate: now - 1000 })
+    const oldInspection = Object.assign({}, newInspection, { updatedLastDate: now - 1000 });
+    delete oldInspection.templateCategory;
 
     // Setup database
     yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
+    yield db.ref(`/templateCategories/${categoryId}`).set({ name: `name${categoryId}` }); // sanity check
     yield db.ref(`/inspections/${inspId}`).set(newInspection);
     yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).set(oldInspection);
     yield db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).set(oldInspection);

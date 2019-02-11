@@ -11,6 +11,7 @@ describe('Inspections Updated Last Date Write', () => {
   it('should update all an inspections\' outdated proxy records', () => co(function *() {
     const inspId = uuid();
     const propertyId = uuid();
+    const categoryId = uuid();
     const now = Date.now() / 1000;
     const inspectionData = {
       templateName: `name${inspId}`,
@@ -22,12 +23,14 @@ describe('Inspections Updated Last Date Write', () => {
       itemsCompleted: 10,
       totalItems: 10,
       property: propertyId,
+      templateCategory: categoryId,
       updatedLastDate: now,
       inspectionCompleted: true,
     };
 
     // Setup database
     yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
+    yield db.ref(`/templateCategories/${categoryId}`).set({ name: `name${categoryId}` }); // sanity check
     yield db.ref(`/inspections/${inspId}`).set(Object.assign({}, inspectionData, { updatedLastDate: now - 1000 })); // Add inspection with old updated date
     const beforeSnap = yield db.ref(`/inspections/${inspId}/updatedLastDate`).once('value');
     yield db.ref(`/inspections/${inspId}/updatedLastDate`).set(now);
