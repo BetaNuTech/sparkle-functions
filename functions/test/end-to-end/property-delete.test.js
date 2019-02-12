@@ -24,10 +24,11 @@ describe('Property Delete', () => {
     yield wrapped(propertyAfterSnap, { params: { propertyId } });
 
     // Test results
-    const actual = yield Promise.all([
+    const paths = [
       `/inspections/${insp1Id}`,
       `/inspections/${insp2Id}`
-    ]);
+    ];
+    const actual = yield Promise.all(paths.map(p => db.ref(p).once('value')));
 
     // Assertions
     expect(actual.map(snap => snap.exists())).to.deep.equal([false, false]);

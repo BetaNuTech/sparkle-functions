@@ -143,6 +143,36 @@ module.exports = {
     });
   },
 
+  /**
+   * Remove all inspections and inspection proxies for a property
+   * @param  {firebaseAdmin.database} db
+   * @param  {String} propertyId
+   * @return {Promise} - resolves {Object} hash of updates
+   */
+  removeForProperty(db, propertyId) {
+    const updates = Object.create(null);
+
+    return co(function *() {
+      const inspectionsSnap = yield db.ref('/inspections').orderByChild('property').equalTo(propertyId).once('value');
+
+      // Collect inspections to delete in `updates`
+      Object.keys(inspectionsSnap.val()).forEach(inspectionId => {
+        updates[`/inspections/${inspectionId}`] = null;
+      });
+
+      // Remove all `/propertyInspections`
+      updates[`/propertyInspections/${propertyId}`] = null;
+
+      // Remove all `/propertyInspectionsList`
+      updates[`/propertyInspectionsList/${propertyId}`] = null;
+
+      yield db.ref().update(updates);
+      return updates;
+    }).catch(e =>
+      new Error(`${LOG_PREFIX} removeForProperty: ${e}`) // wrap error
+    );
+  },
+
   processWrite,
   createOnAttributeWriteHandler,
   createOnWriteHandler
