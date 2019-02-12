@@ -3,7 +3,6 @@ const PubSub = require('@google-cloud/pubsub');
 const createPublishTopicHandler = require('./publish-topic');
 
 const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || '';
-const PUBSUB_PREFIX = PROJECT_ID.search(/^staging/) === 0 ? 'staging-' : '';
 
 // Create a new PubSub client using the GOOGLE_CLOUD_PROJECT
 // environment variable. This is automatically set to the correct
@@ -16,7 +15,7 @@ const app = express();
 
 // For any request to /public/{some_topic}, push a simple
 // PubSub message to that topic.
-app.get('/publish/:topic', createPublishTopicHandler(PUBSUB_PREFIX, pubsubClient));
+app.get('/publish/:topic', createPublishTopicHandler(pubsubClient));
 
 // Index page, just to make it easy to see if the app is working.
 app.get('/', (req, res) => {
