@@ -73,4 +73,42 @@ describe('Template Category Delete', () => {
     expect(actualTmpl3Cat.val()).to.equal(tmpl3Data.category, 'template 3 proxy relationship unchanged');
     expect(actualTmpl1.val().name).to.equal(tmpl1Data.name, 'non-category attributes unchanged');
   }));
+
+  it('should disassociate all /propertyTemplatesList belonging to the template category', () => co(function *() {
+    const tmpl1Id = uuid();
+    const tmpl2Id = uuid();
+    const tmpl3Id = uuid();
+    const propertyId = uuid();
+    const categoryId = uuid();
+    const tmpl1Data = { name: `test${tmpl1Id}`, description: `desc${tmpl1Id}`, category: categoryId }; // related
+    const tmpl2Data = { name: `test${tmpl2Id}`, description: `desc${tmpl2Id}`, category: categoryId }; // related
+    const tmpl3Data = { name: `test${tmpl3Id}`, description: `desc${tmpl3Id}`, category: uuid() }; // unrelated
+
+    // Setup database
+    yield db.ref(`/templates/${tmpl1Id}`).set(tmpl1Data); // add template #1
+    yield db.ref(`/property/${propertyId}`).set({ templates: { [tmpl1Id]: true, [tmpl2Id]: true, [tmpl3Id]: true } }); // required
+    yield db.ref(`/propertyTemplatesList/${propertyId}/${tmpl1Id}`).set(tmpl1Data); // add template #1 proxy
+    yield db.ref(`/templates/${tmpl2Id}`).set(tmpl2Data); // add template #2
+    yield db.ref(`/propertyTemplatesList/${propertyId}/${tmpl2Id}`).set(tmpl2Data); // add template #2 proxy
+    yield db.ref(`/templates/${tmpl3Id}`).set(tmpl3Data); // add template #3
+    yield db.ref(`/propertyTemplatesList/${propertyId}/${tmpl3Id}`).set(tmpl3Data); // add template #2 proxy
+    yield db.ref(`/templateCategories/${categoryId}`).set({ name: `category${categoryId}` }); // add category
+    const deleteSnap = yield db.ref(`/templateCategories/${categoryId}`).once('value');
+
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.templateCategoryDelete);
+    yield wrapped(deleteSnap, { params: { objectId: categoryId } });
+
+    // Test result
+    const actualTmpl1Cat = yield db.ref(`/propertyTemplatesList/${propertyId}/${tmpl1Id}/category`).once('value');
+    const actualTmpl2Cat = yield db.ref(`/propertyTemplatesList/${propertyId}/${tmpl2Id}/category`).once('value');
+    const actualTmpl3Cat = yield db.ref(`/propertyTemplatesList/${propertyId}/${tmpl3Id}/category`).once('value');
+    const actualTmpl1 = yield db.ref(`/propertyTemplatesList/${propertyId}/${tmpl1Id}`).once('value');
+
+    // Assertions
+    expect(actualTmpl1Cat.val()).to.equal(null, 'removed property template 1 proxy category');
+    expect(actualTmpl2Cat.val()).to.equal(null, 'removed property template 2 proxy category');
+    expect(actualTmpl3Cat.val()).to.equal(tmpl3Data.category, 'property template 3 proxy category unchanged');
+    expect(actualTmpl1.val().name).to.equal(tmpl1Data.name, 'non-category attributes unchanged');
+  }));
 });

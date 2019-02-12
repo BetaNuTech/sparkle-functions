@@ -199,6 +199,16 @@ exports.propertyWriteStaging = functionsStagingDatabase.ref('/properties/{object
 );
 
 
+// Property onDelete
+exports.propertyDelete = functions.database.ref('/properties/{propertyId}').onDelete(
+  properties.createOnDeleteHandler(db)
+);
+
+exports.propertyDeleteStaging = functionsStagingDatabase.ref('/properties/{propertyId}').onDelete(
+  properties.createOnDeleteHandler(dbStaging)
+);
+
+
 // Template onWrite
 exports.templateWrite = functions.database.ref('/templates/{objectId}').onWrite(
   templates.createOnWriteHandler(db)

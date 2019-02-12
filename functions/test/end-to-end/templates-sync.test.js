@@ -8,50 +8,99 @@ describe('Templates Sync', () => {
   afterEach(() => cleanDb(db));
 
   it('should create new proxy template records', () => co(function *() {
-    const tmplId = uuid();
+    const tmpl1Id = uuid();
+    const tmpl2Id = uuid();
+    const tmpl3Id = uuid();
     const propertyId = uuid();
-    const expected = { description: `desc${tmplId}`, name: `new${tmplId}` };
-    const propertyData = { templates: { [tmplId]: true } };
+    const categoryId = uuid();
+    const expected = {
+      [tmpl1Id]: { name: `name${tmpl1Id}` },
+      [tmpl2Id]: { description: `desc${tmpl2Id}`, name: `name${tmpl2Id}` },
+      [tmpl3Id]: { description: `desc${tmpl3Id}`, name: `name${tmpl3Id}`, category: categoryId }
+    };
+    const propertyData = { templates: { [tmpl1Id]: true, [tmpl2Id]: true, [tmpl3Id]: true } };
 
     // Setup database
-    yield db.ref(`/templates/${tmplId}`).set(expected);
+    yield db.ref(`/templates/${tmpl1Id}`).set(expected[tmpl1Id]);
+    yield db.ref(`/templates/${tmpl2Id}`).set(expected[tmpl2Id]);
+    yield db.ref(`/templates/${tmpl3Id}`).set(expected[tmpl3Id]);
+    yield db.ref(`/templateCategories/${categoryId}`).set({ name: `name${categoryId}` }); // sanity check
     yield db.ref(`/properties/${propertyId}`).set(propertyData);
 
     // Execute
     yield test.wrap(cloudFunctions.templatesSync)();
 
     // Test results
-    const actual = yield Promise.all([
-      db.ref(`/propertyTemplates/${propertyId}/${tmplId}`).once('value'),
-      db.ref(`/propertyTemplatesList/${propertyId}/${tmplId}`).once('value')
+    const results = yield Promise.all([
+      db.ref(`/propertyTemplates/${propertyId}/${tmpl1Id}`).once('value'),
+      db.ref(`/propertyTemplatesList/${propertyId}/${tmpl1Id}`).once('value'),
+      db.ref(`/propertyTemplates/${propertyId}/${tmpl2Id}`).once('value'),
+      db.ref(`/propertyTemplatesList/${propertyId}/${tmpl2Id}`).once('value'),
+      db.ref(`/propertyTemplates/${propertyId}/${tmpl3Id}`).once('value'),
+      db.ref(`/propertyTemplatesList/${propertyId}/${tmpl3Id}`).once('value')
     ]);
 
     // Assertions
-    expect(actual.map(proxy => proxy.exists())).to.deep.equal([true, true]);
+    results.forEach((snapshot, i) => {
+      const actual = snapshot.val();
+      const expectedtmpl = expected[[tmpl1Id, tmpl2Id, tmpl3Id][i <= 1 ? 0 : i <= 3 ? 1 : 2]];
+      expect(actual).to.deep.equal(expectedtmpl, `proxy record ${snapshot.key} synced at test ${i}`);
+    });
   }));
 
   it('should update all existing proxy template\'s data', () => co(function *() {
-    const tmplId = uuid();
+    const tmpl1Id = uuid();
+    const tmpl2Id = uuid();
+    const tmpl3Id = uuid();
     const propertyId = uuid();
-    const expected = { description: `desc${tmplId}`, name: `new${tmplId}` };
-    const propertyData = { templates: { [tmplId]: true } };
+    const categoryId = uuid();
+    const expected = {
+      [tmpl1Id]: { name: `name${tmpl1Id}` },
+      [tmpl2Id]: { description: `desc${tmpl2Id}`, name: `name${tmpl2Id}` },
+      [tmpl3Id]: { description: `desc${tmpl3Id}`, name: `name${tmpl3Id}`, category: categoryId }
+    };
+    const propertyData = { templates: { [tmpl1Id]: true, [tmpl2Id]: true, [tmpl3Id]: true } };
 
     // Setup database
-    yield db.ref(`/templates/${tmplId}`).set(expected);
+    yield db.ref(`/templates/${tmpl1Id}`).set(expected[tmpl1Id]);
+    yield db.ref(`/templates/${tmpl2Id}`).set(expected[tmpl2Id]);
+    yield db.ref(`/templates/${tmpl3Id}`).set(expected[tmpl3Id]);
+    yield db.ref(`/templateCategories/${categoryId}`).set({ name: `name${categoryId}` }); // sanity check
     yield db.ref(`/properties/${propertyId}`).set(propertyData);
-    yield db.ref('/propertyTemplates').set({ [propertyId]: { [tmplId]: { name: 'old' } } }); // must exist
-    yield db.ref('/propertyTemplatesList').set({ [propertyId]: { [tmplId]: { name: 'old' } } }); // must exist
+    yield db.ref('/propertyTemplates').set({
+      [propertyId]: {
+        [tmpl1Id]: { name: 'old' },
+        [tmpl2Id]: { name: 'old', description: 'old' },
+        [tmpl3Id]: { name: 'old', description: 'old', category: 'old' },
+      }
+    });
+    yield db.ref('/propertyTemplatesList').set({
+      [propertyId]: {
+        [tmpl1Id]: { name: 'old' },
+        [tmpl2Id]: { name: 'old', description: 'old' },
+        [tmpl3Id]: { name: 'old', description: 'old', category: 'old' },
+      }
+    });
 
     // Execute
     yield test.wrap(cloudFunctions.templatesSync)();
 
     // Test results
-    const actual = yield db.ref(`/propertyTemplates/${propertyId}/${tmplId}`).once('value');
-    const actualList = yield db.ref(`/propertyTemplatesList/${propertyId}/${tmplId}`).once('value');
+    const results = yield Promise.all([
+      db.ref(`/propertyTemplates/${propertyId}/${tmpl1Id}`).once('value'),
+      db.ref(`/propertyTemplatesList/${propertyId}/${tmpl1Id}`).once('value'),
+      db.ref(`/propertyTemplates/${propertyId}/${tmpl2Id}`).once('value'),
+      db.ref(`/propertyTemplatesList/${propertyId}/${tmpl2Id}`).once('value'),
+      db.ref(`/propertyTemplates/${propertyId}/${tmpl3Id}`).once('value'),
+      db.ref(`/propertyTemplatesList/${propertyId}/${tmpl3Id}`).once('value')
+    ]);
 
     // Assertions
-    expect(actual.val()).to.deep.equal(expected, 'updated /propertyTemplates proxy');
-    expect(actualList.val()).to.deep.equal(expected, 'updated /propertyTemplatesList proxy');
+    results.forEach((snapshot, i) => {
+      const actual = snapshot.val();
+      const expectedtmpl = expected[[tmpl1Id, tmpl2Id, tmpl3Id][i <= 1 ? 0 : i <= 3 ? 1 : 2]];
+      expect(actual).to.deep.equal(expectedtmpl, `proxy record ${snapshot.key} synced at test ${i}`);
+    })
   }));
 
   it('should remove a property\'s template proxies no longer associated with property', () => co(function *() {
@@ -90,41 +139,63 @@ describe('Templates Sync', () => {
   }));
 
   it('should add missing records in /templatesList', () => co(function *() {
-    const tmplId = uuid();
+    const tmpl1Id = uuid();
+    const tmpl2Id = uuid();
+    const tmpl3Id = uuid();
     const propertyId = uuid();
-    const expected = { description: `desc${tmplId}`, name: `new${tmplId}` };
-    const propertyData = { templates: { [tmplId]: true } };
+    const categoryId = uuid();
+    const expected = {
+      [tmpl1Id]: { name: `new${tmpl1Id}` },
+      [tmpl2Id]: { description: `desc${tmpl2Id}`, name: `new${tmpl2Id}` },
+      [tmpl3Id]: { description: `desc${tmpl3Id}`, name: `new${tmpl3Id}`, category: categoryId }
+    };
+    const propertyData = { templates: { [tmpl1Id]: true } };
 
     // Setup database
-    yield db.ref(`/templates/${tmplId}`).set(expected);
+    yield db.ref(`/templates/${tmpl1Id}`).set(expected[tmpl1Id]);
+    yield db.ref(`/templates/${tmpl2Id}`).set(expected[tmpl2Id]);
+    yield db.ref(`/templates/${tmpl3Id}`).set(expected[tmpl3Id]);
+    yield db.ref(`/templateCategories/${categoryId}`).set({ name: `name${categoryId}` }); // sanity check
     yield db.ref(`/properties/${propertyId}`).set(propertyData);
 
     // Execute
     yield test.wrap(cloudFunctions.templatesSync)();
 
     // Test results
-    const actual = yield db.ref(`/templatesList/${tmplId}`).once('value');
+    const actual = yield db.ref(`/templatesList`).once('value');
 
     // Assertions
     expect(actual.val()).to.deep.equal(expected);
   }));
 
   it('should update existing records in /templatesList', () => co(function *() {
-    const tmplId = uuid();
+    const tmpl1Id = uuid();
+    const tmpl2Id = uuid();
+    const tmpl3Id = uuid();
     const propertyId = uuid();
-    const expected = { description: `desc${tmplId}`, name: `new${tmplId}` };
-    const propertyData = { templates: { [tmplId]: true } };
+    const categoryId = uuid();
+    const expected = {
+      [tmpl1Id]: { name: `new${tmpl1Id}` },
+      [tmpl2Id]: { description: `desc${tmpl2Id}`, name: `new${tmpl2Id}` },
+      [tmpl3Id]: { description: `desc${tmpl3Id}`, name: `new${tmpl3Id}`, category: categoryId }
+    };
+    const propertyData = { templates: { [tmpl1Id]: true, [tmpl2Id]: true, [tmpl3Id]: true } };
 
     // Setup database
-    yield db.ref(`/templates/${tmplId}`).set(expected); // up to date
+    yield db.ref(`/templates/${tmpl1Id}`).set(expected[tmpl1Id]); // updated
+    yield db.ref(`/templates/${tmpl2Id}`).set(expected[tmpl2Id]); // updated
+    yield db.ref(`/templates/${tmpl3Id}`).set(expected[tmpl3Id]); // updated
     yield db.ref(`/properties/${propertyId}`).set(propertyData);
-    yield db.ref(`/templatesList/${tmplId}`).set({ name: 'outdated', description: 'outdated' });
+    yield db.ref(`/templateCategories/${categoryId}`).set({ name: `name${categoryId}` }); // sanity check
+    yield db.ref(`/templatesList/${tmpl1Id}`).set({ name: 'old' });
+    yield db.ref(`/templatesList/${tmpl2Id}`).set({ name: 'old', description: 'old' });
+    yield db.ref(`/templatesList/${tmpl3Id}`).set({ name: 'old', description: 'old', category: 'old' });
 
     // Execute
     yield test.wrap(cloudFunctions.templatesSync)();
 
     // Test results
-    const actual = yield db.ref(`/templatesList/${tmplId}`).once('value');
+    const actual = yield db.ref(`/templatesList`).once('value');
 
     // Assertions
     expect(actual.val()).to.deep.equal(expected);

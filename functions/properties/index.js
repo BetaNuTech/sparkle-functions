@@ -2,6 +2,7 @@ const co = require('co');
 const log = require('../utils/logger');
 const propertyTemplates = require('../property-templates');
 const createOnWriteHandler = require('./on-write-handler');
+const createOnDeleteHandler = require('./on-delete-handler');
 
 module.exports = {
   /**
@@ -28,5 +29,6 @@ module.exports = {
     });
   },
 
+  createOnDeleteHandler,
   createOnWriteHandler
 }
