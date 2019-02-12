@@ -1,7 +1,8 @@
 const co = require('co');
 const log = require('../utils/logger');
 const propertyTemplates = require('../property-templates');
-const findRemovedKeys = require('../utils/find-removed-keys');
+
+const LOG_PREFIX = 'properties: on-write:';
 
 /**
  * Factory for property on write handler
@@ -10,20 +11,15 @@ const findRemovedKeys = require('../utils/find-removed-keys');
  */
 module.exports = function createOnWriteHandler(db) {
   return (change, event) => co(function *() {
+    const updates = Object.create(null);
     const propertyId = event.params.objectId;
 
     // Property deleted
-    if (change.before.exists() && !change.after.exists()) {
-      log.info(`property ${propertyId} removed`);
-      yield propertyTemplates.removeForProperty(db, propertyId);
-
-      // Remove all property template proxies
-      return {
-        [`/propertyTemplates/${propertyId}`]: 'removed',
-        [`/propertyTemplatesList/${propertyId}`]: 'removed'
-      };
+    if (!change.after.exists()) {
+      return updates;
     }
 
+    log.info(`${LOG_PREFIX} property ${propertyId} updated`);
     return propertyTemplates.processWrite(db, propertyId, change.after.val().templates);
   });
 }

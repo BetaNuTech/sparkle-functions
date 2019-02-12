@@ -7,35 +7,6 @@ const { db, test, cloudFunctions } = require('./setup');
 describe('Property Write', () => {
   afterEach(() => cleanDb(db));
 
-  it('should remove all a deleted property\'s template proxies', () => co(function *() {
-    const tmplId = uuid();
-    const propertyId = uuid();
-    const templateData = { name: `test${tmplId}` };
-
-    // Setup database
-    yield db.ref(`/properties/${propertyId}`).set({ name: 'test', templates: { [tmplId]: true } }); // Add property with a template    yield db.ref('/templates').set(expected);
-    yield db.ref(`/templates/${tmplId}`).set(templateData); // Add template
-    yield db.ref(`/propertyTemplates/${propertyId}/${tmplId}`).set(templateData); // Add propertyTemplates
-    yield db.ref(`/propertyTemplatesList/${propertyId}/${tmplId}`).set(templateData); // Add propertyTemplatesList
-
-    const propertyBeforeSnap = yield db.ref(`/properties/${propertyId}`).once('value'); // Get before property
-    yield db.ref(`/properties/${propertyId}`).remove(); // Remove property
-    const propertyAfterSnap = yield db.ref(`/properties/${propertyId}`).once('value'); // Get after templates
-
-    // Execute
-    const changeSnap = test.makeChange(propertyBeforeSnap, propertyAfterSnap);
-    const wrapped = test.wrap(cloudFunctions.propertyWrite);
-    yield wrapped(changeSnap, { params: { objectId: propertyId } });
-
-    // Test result
-    const actual = yield db.ref(`/propertyTemplates/${propertyId}`).once('value');
-    const actualList = yield db.ref(`/propertyTemplatesList/${propertyId}`).once('value');
-
-    // Assertions
-    expect(actual.exists()).to.equal(false, 'removed /propertyTemplates proxy');
-    expect(actualList.exists()).to.equal(false, 'removed /propertyTemplatesList proxy');
-  }));
-
   it('should remove a template\'s property proxies when a template is disassociated from property', () => co(function *() {
     const tmplId1 = uuid();
     const tmplId2 = uuid();
