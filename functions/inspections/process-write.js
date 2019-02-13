@@ -29,15 +29,16 @@ module.exports = function processWrite(db, inspectionId, inspection) {
     }
 
     const templateName = inspection.templateName || inspection.template.name;
+    const score = inspection.score && typeof inspection.score === 'number' ? inspection.score : 0;
 
     // Update property/inspections
     const inspectionData = {
+      score,
       inspector: inspection.inspector,
       inspectorName: inspection.inspectorName,
       creationDate: inspection.creationDate,
       updatedLastDate: inspection.updatedLastDate,
       templateName: templateName,
-      score: inspection.score,
       deficienciesExist: inspection.deficienciesExist,
       inspectionCompleted: inspection.inspectionCompleted,
       itemsCompleted: inspection.itemsCompleted,
@@ -56,12 +57,12 @@ module.exports = function processWrite(db, inspectionId, inspection) {
 
     if (inspection.inspectionCompleted) {
       const completedInspectionData = {
+        score,
         inspector: inspection.inspector,
         inspectorName: inspection.inspectorName,
         creationDate: inspection.creationDate,
         updatedLastDate: inspection.updatedLastDate,
         templateName: templateName,
-        score: inspection.score,
         deficienciesExist: inspection.deficienciesExist,
         inspectionCompleted: inspection.inspectionCompleted,
         property: inspection.property
