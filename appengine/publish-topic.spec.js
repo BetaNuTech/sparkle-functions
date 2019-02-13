@@ -13,7 +13,7 @@ describe('GET /publish/:topic', function() {
       expect(actual).to.equal(expected);
       return originalCreateTopic(actual);
     }
-    const app = createApp('', pubsub);
+    const app = createApp(pubsub);
     request(app)
       .get(`/publish/${expected}`)
       .expect(200, done);
@@ -21,7 +21,7 @@ describe('GET /publish/:topic', function() {
 
   it('should successfully publish requested topic', function(done) {
     const expected = 'test-topic';
-    const app = createApp('', stubPubSubClient(expected, (actual) => {
+    const app = createApp(stubPubSubClient(expected, (actual) => {
       expect(expected).to.equal(actual, 'has expected topic');
     }));
     request(app)
@@ -29,21 +29,9 @@ describe('GET /publish/:topic', function() {
       .expect(200, done);
   });
 
-  it('should add any configured prefix to a topic', function(done) {
-    const prefix = 'prefix-';
-    const topic = 'test-topic-2';
-    const expected = `${prefix}${topic}`;
-    const app = createApp(prefix, stubPubSubClient(expected, (actual) => {
-      expect(expected).to.equal(actual, 'has topic with prefix');
-    }));
-    request(app)
-      .get(`/publish/${topic}`)
-      .expect(200, done);
-  });
-
   it('should publish a message Buffer', function(done) {
     const topic = 'test'
-    const app = createApp('', stubPubSubClient(
+    const app = createApp(stubPubSubClient(
       topic,
       () => {},
       (actual) => {

@@ -54,6 +54,57 @@ describe('Inspection Write', () => {
     expect(actual.map((ds) => ds.exists())).to.deep.equal([false, false, false, false]);
   }));
 
+  it('should set an invalid score value to zero', () => co(function *() {
+    const inspId = uuid();
+    const propertyId = uuid();
+    const now = Date.now() / 1000;
+    const beforeData = {
+      templateName: `name${inspId}`,
+      inspector: '23423423',
+      inspectorName: 'testor',
+      creationDate: now - 100000,
+      score: 10,
+      deficienciesExist: false,
+      itemsCompleted: 10,
+      totalItems: 10,
+      property: propertyId,
+      updatedLastDate: now,
+      inspectionCompleted: true
+    };
+    const afterData = Object.assign({}, beforeData, { score: null });
+
+    // Setup database
+    yield db.ref(`/inspections/${inspId}`).set(beforeData); // Add inspection
+    yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
+    yield db.ref(`/completedInspections/${inspId}`).set(beforeData); // Add completedInspections
+    yield db.ref(`/completedInspectionsList/${inspId}`).set(beforeData); // Add completedInspectionsList
+    yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).set(beforeData); // Add propertyInspections
+    yield db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).set(beforeData); // Add propertyInspectionsList
+    const beforeSnap = yield db.ref(`/inspections/${inspId}`).once('value'); // Create before
+    yield db.ref(`/inspections/${inspId}`).update(afterData); // set invalid score
+    const afterSnap = yield db.ref(`/inspections/${inspId}`).once('value'); // Create after
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.inspectionWrite);
+    yield wrapped(changeSnap, { params: { objectId: inspId } });
+
+    // Test result
+    const paths = [
+      `/completedInspections/${inspId}/score`,
+      `/completedInspectionsList/${inspId}/score`,
+      `/propertyInspections/${propertyId}/inspections/${inspId}/score`,
+      `/propertyInspectionsList/${propertyId}/inspections/${inspId}/score`
+    ];
+    const results = yield Promise.all(paths.map(p => db.ref(p).once('value')));
+
+    // Assertions
+    results.forEach((scoreSnap, i) => {
+      const actual = scoreSnap.val();
+      expect(actual).to.equal(0, `test for ${paths[i]} set score to 0`);
+    });
+  }));
+
   it('should update inspections\' proxy records with new data', () => co(function *() {
     const inspId = uuid();
     const propertyId = uuid();

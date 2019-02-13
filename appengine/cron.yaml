@@ -3,10 +3,22 @@ cron:
   url: /publish/push-messages-sync
   schedule: every 1 hours
 
-- description: Trigger sync of all inspections
+- description: Trigger resend of unsent staging /push-messages
+  url: /publish/staging-push-messages-sync
+  schedule: every 1 hours
+
+- description: Trigger sync of all /inspections
   url: /publish/inspections-sync
   schedule: every 24 hours from 00:00 to 01:00
 
-- description: Trigger sync of all templates
+- description: Trigger sync of all staging /inspections
+  url: /publish/staging-inspections-sync
+  schedule: every 24 hours from 00:00 to 01:00
+
+- description: Trigger sync of all /templates
   url: /publish/templates-sync
+  schedule: every 24 hours from 00:00 to 01:00
+
+- description: Trigger sync of all staging /templates
+  url: /publish/staging-templates-sync
   schedule: every 24 hours from 00:00 to 01:00

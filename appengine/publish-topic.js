@@ -4,18 +4,17 @@ const PROJECT_ID = `${process.env.GOOGLE_CLOUD_PROJECT || 'Unknown Cloud Project
 
 /**
  * Create a handler that publishes topics to a client
- * @param  {String} topicPrefix
  * @param  {PubSub} client - @google-cloud/pubsub client instance
  * @return {Function} - Express request handler
  */
-module.exports = function createPublishTopicHandler(topicPrefix = '', client) {
+module.exports = function createPublishTopicHandler(client) {
   // Duck type the client object
   assert(client && typeof client.topic === 'function', 'has pubsub client');
 
   return async function(req, res) {
     const { topic }  = req.params;
 
-    const target = `${topicPrefix}${topic}`;
+    const target = `${topic}`;
 
     try {
       const [topics] = await client.getTopics();
