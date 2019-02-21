@@ -2,10 +2,33 @@ const co = require('co');
 const { expect } = require('chai');
 const uuid = require('../../test-helpers/uuid');
 const { cleanDb } = require('../../test-helpers/firebase');
-const { db, test, cloudFunctions } = require('./setup');
+const { db, test, storage, cloudFunctions } = require('./setup');
+
+const SRC_PROFILE_IMG = 'property-profile.jpg';
 
 describe('Property Delete', () => {
   afterEach(() => cleanDb(db));
+
+  it('should remove a property\'s profile image from storage', () => co(function *() {
+    const propertyId = uuid();
+    const bucket =  storage.bucket();
+
+    // Setup database
+    const destination = `propertyImagesTest/${propertyId}-${Date.now()}-${SRC_PROFILE_IMG}`;
+    yield bucket.upload(`${__dirname}/${SRC_PROFILE_IMG}`, { gzip: true, destination }); // upload file
+    const uploadedFile = yield findPropertyImageFile(bucket, destination); // find the file
+    const [url] = yield uploadedFile.getSignedUrl({ action: 'read', expires: '01-01-2491' }); // get download URL
+    yield db.ref(`/properties/${propertyId}`).set({ name: 'test', photoURL: url }); // Create property /w profile
+    const propertyAfterSnap = yield db.ref(`/properties/${propertyId}`).once('value');
+
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.propertyDelete);
+    yield wrapped(propertyAfterSnap, { params: { propertyId } });
+
+    // Test results
+    const actual = yield findPropertyImageFile(bucket, destination); // find the file
+    expect(actual).to.equal(undefined);
+  }));
 
   it('should remove all a property\'s /inspections', () => co(function *() {
     const insp1Id = uuid();
@@ -93,3 +116,16 @@ describe('Property Delete', () => {
     expect(actualList.exists()).to.equal(false, 'removed /propertyTemplatesList proxy');
   }));
 });
+
+/**
+ * Find an image in the property images test bucket
+ * @param  {firebaseAdmin.storage} bucket
+ * @param  {String} fileName
+ * @return {Promise} - resolves {Object} file reference
+ */
+function findPropertyImageFile(bucket, fileName) {
+  return bucket.getFiles({ prefix: 'propertyImagesTest' })
+    .then(([files]) =>
+      files.filter(f => f.name.search(fileName) > -1)[0]
+    );
+}

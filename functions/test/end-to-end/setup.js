@@ -6,23 +6,27 @@ if (process.env.FIREBASE_FUNCTIONS_AUTH && !fs.existsSync(AUTH_FILE_PATH)) {
   fs.writeFileSync(AUTH_FILE_PATH, Buffer.from(process.env.FIREBASE_FUNCTIONS_AUTH, 'hex'));
 }
 
-const test = require('firebase-functions-test')({
+const testConfig = {
   databaseURL: 'https://test-sapphire-inspections-8a9e3.firebaseio.com',
-  storageBucket: 'test-sapphire-inspections-8a9e3.appspot.com',
-  projectId: 'test-sapphire-inspections-8a9e3',
-}, AUTH_FILE_PATH);
+  storageBucket: 'sapphire-inspections.appspot.com',
+  projectId: 'test-sapphire-inspections-8a9e3'
+};
+const test = require('firebase-functions-test')(testConfig, AUTH_FILE_PATH);
 const sinon = require('sinon');
 const admin = require('firebase-admin');
 
-admin.initializeApp();
+admin.initializeApp(testConfig);
 const db = admin.database();
+const storage = admin.storage();
 
 // Stub admin.initializeApp & `database()` to avoid live data access
 sinon.stub(admin, 'initializeApp').returns({ database: () => db });
 Object.defineProperty(admin, 'database', { writable: true, value: () => db });
+Object.defineProperty(admin, 'storage', { writable: true, value: () => storage });
 
 module.exports = {
   db,
   test,
+  storage,
   cloudFunctions: require('../../index')
 }

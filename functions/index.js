@@ -1,6 +1,5 @@
 const functions = require('firebase-functions');
 const moment = require('moment');
-
 const admin = require('firebase-admin');
 const log = require('./utils/logger');
 const findRemovedKeys = require('./utils/find-removed-keys');
@@ -18,6 +17,7 @@ var db = defaultApp.database();
 // Staging
 var functionsStagingDatabase = functions.database.instance('staging-sapphire-inspections');
 var dbStaging = defaultApp.database('https://staging-sapphire-inspections.firebaseio.com');
+const storage = admin.storage();
 
 // Create and Deploy Your First Cloud Functions
 // https://firebase.google.com/docs/functions/write-firebase-functions
@@ -201,11 +201,11 @@ exports.propertyWriteStaging = functionsStagingDatabase.ref('/properties/{object
 
 // Property onDelete
 exports.propertyDelete = functions.database.ref('/properties/{propertyId}').onDelete(
-  properties.createOnDeleteHandler(db)
+  properties.createOnDeleteHandler(db, storage)
 );
 
 exports.propertyDeleteStaging = functionsStagingDatabase.ref('/properties/{propertyId}').onDelete(
-  properties.createOnDeleteHandler(dbStaging)
+  properties.createOnDeleteHandler(dbStaging, storage)
 );
 
 
