@@ -9,7 +9,6 @@
     "coverage": "./node_modules/.bin/nyc npm test --silent"
   },
   "dependencies": {
-    "@google-cloud/storage": "^2.4.2",
     "co": "^4.6.0",
     "firebase-admin": "^6.0.0",
     "firebase-functions": "^2.0.5",

@@ -8,7 +8,7 @@ const PROPERTY_BUCKET_NAME = `propertyImages${process.env.NODE_ENV === 'test' ? 
 /**
  * Factory for property on delete handler
  * @param  {firebaseAdmin.database} - Firebase Admin DB instance
- * @param  {@google-cloud/storage}  - gClound Storage instance
+ * @param  {firebaseAdmin.storage}  - Firebase Admin Storage instance
  * @return {Function} - property onDelete handler
  */
 module.exports = function createOnDeleteHandler(db, storage) {

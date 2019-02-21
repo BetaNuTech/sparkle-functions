@@ -1,6 +1,5 @@
 const functions = require('firebase-functions');
 const moment = require('moment');
-const {Storage} = require('@google-cloud/storage');
 const admin = require('firebase-admin');
 const log = require('./utils/logger');
 const findRemovedKeys = require('./utils/find-removed-keys');
@@ -18,7 +17,7 @@ var db = defaultApp.database();
 // Staging
 var functionsStagingDatabase = functions.database.instance('staging-sapphire-inspections');
 var dbStaging = defaultApp.database('https://staging-sapphire-inspections.firebaseio.com');
-const storage = new Storage(config);
+const storage = admin.storage();
 
 // Create and Deploy Your First Cloud Functions
 // https://firebase.google.com/docs/functions/write-firebase-functions
