@@ -20,13 +20,14 @@ module.exports = function createOnDeleteHandler(db, storage) {
     yield propertyTemplates.removeForProperty(db, propertyId);
 
     // Cleanup deleted property's profile image
-    const property = propertySnap.val();
-
-    if (property.photoURL) {
-      const [fileName] = path.basename(decodeURIComponent(property.photoURL)).split('?');
-      const file = yield storage.bucket(PROPERTY_BUCKET_NAME).file(fileName);
-      console.log('>>> file', file);
-    }
+    try {
+      const property = propertySnap.val();
+      if (property && property.photoURL) {
+        const fileName = (decodeURIComponent(property.photoURL).split('?')[0] || '').split('/').pop();
+        yield storage.bucket().file(`${PROPERTY_BUCKET_NAME}/${fileName}`).delete();
+        log.info(`${LOG_PREFIX} property ${propertyId} profile image removed`);
+      }
+    } catch (e) {}
 
     // Remove all property template proxies
     return Object.assign({

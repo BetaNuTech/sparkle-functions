@@ -17,14 +17,16 @@ const admin = require('firebase-admin');
 
 admin.initializeApp(testConfig);
 const db = admin.database();
+const storage = admin.storage();
 
 // Stub admin.initializeApp & `database()` to avoid live data access
 sinon.stub(admin, 'initializeApp').returns({ database: () => db });
 Object.defineProperty(admin, 'database', { writable: true, value: () => db });
+Object.defineProperty(admin, 'storage', { writable: true, value: () => storage });
 
 module.exports = {
   db,
   test,
-  storage: admin.storage(),
+  storage,
   cloudFunctions: require('../../index')
 }
