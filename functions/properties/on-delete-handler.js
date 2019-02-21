@@ -25,9 +25,11 @@ module.exports = function createOnDeleteHandler(db, storage) {
       if (property && property.photoURL) {
         const fileName = (decodeURIComponent(property.photoURL).split('?')[0] || '').split('/').pop();
         yield storage.bucket().file(`${PROPERTY_BUCKET_NAME}/${fileName}`).delete();
-        log.info(`${LOG_PREFIX} property ${propertyId} profile image removed`);
+        log.info(`${LOG_PREFIX} property ${propertyId} profile image removal succeeded`);
       }
-    } catch (e) {}
+    } catch (e) {
+      log.error(`${LOG_PREFIX} property ${propertyId} profile image removal failed ${e}`);
+    }
 
     // Remove all property template proxies
     return Object.assign({
