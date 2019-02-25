@@ -2,8 +2,11 @@ const co = require('co');
 const { expect } = require('chai');
 const uuid = require('../../test-helpers/uuid');
 const mocking = require('../../test-helpers/mocking');
-const { cleanDb } = require('../../test-helpers/firebase');
-const { db, test, cloudFunctions } = require('./setup');
+const { cleanDb, findStorageFile } = require('../../test-helpers/firebase');
+const { db, test, storage, cloudFunctions } = require('./setup');
+
+const SRC_UPLOAD_IMG = 'test-image.jpg';
+const INSP_UPLOAD_DIR = 'inspectionItemImagesTest';
 
 describe('Inspection Delete', () => {
   afterEach(() => cleanDb(db));
@@ -94,5 +97,34 @@ describe('Inspection Delete', () => {
       expected.lastInspectionDate,
       'updated property\'s `lastInspectionDate`'
     );
+  }));
+
+  it('should remove an inspection\'s uploaded images from storage', () => co(function *() {
+    const inspectionId = uuid();
+    const itemId = uuid();
+    const bucket =  storage.bucket();
+
+    // Setup database
+    const destination = `${INSP_UPLOAD_DIR}/${inspectionId}-${Date.now()}-${SRC_UPLOAD_IMG}`;
+    yield bucket.upload(`${__dirname}/${SRC_UPLOAD_IMG}`, { gzip: true, destination }); // upload file
+    const uploadedFile = yield findStorageFile(bucket, INSP_UPLOAD_DIR, destination); // find the file
+    const [url] = yield uploadedFile.getSignedUrl({ action: 'read', expires: '01-01-2491' }); // get download URL
+
+    // Create inspection /w upload
+    yield db.ref(`/inspections/${inspectionId}`).set({
+      name: inspectionId,
+      template: {
+        items: { [itemId]: { photosData: { [Date.now()]: { downloadURL: url } } } }
+      }
+    });
+    const snap = yield db.ref(`/inspections/${inspectionId}`).once('value');
+
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.inspectionDelete);
+    yield wrapped(snap, { params: { inspectionId } });
+
+    // Test results
+    const actual = yield findStorageFile(bucket, INSP_UPLOAD_DIR, destination); // find the profile
+    expect(actual).to.equal(undefined);
   }));
 });

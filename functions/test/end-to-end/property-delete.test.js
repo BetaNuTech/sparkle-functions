@@ -1,10 +1,11 @@
 const co = require('co');
 const { expect } = require('chai');
 const uuid = require('../../test-helpers/uuid');
-const { cleanDb } = require('../../test-helpers/firebase');
+const { cleanDb, findStorageFile } = require('../../test-helpers/firebase');
 const { db, test, storage, cloudFunctions } = require('./setup');
 
-const SRC_PROFILE_IMG = 'property-profile.jpg';
+const SRC_PROFILE_IMG = 'test-image.jpg';
+const PROP_UPLOAD_DIR = 'propertyImagesTest';
 
 describe('Property Delete', () => {
   afterEach(() => cleanDb(db));
@@ -14,9 +15,9 @@ describe('Property Delete', () => {
     const bucket =  storage.bucket();
 
     // Setup database
-    const destination = `propertyImagesTest/${propertyId}-${Date.now()}-${SRC_PROFILE_IMG}`;
+    const destination = `${PROP_UPLOAD_DIR}/${propertyId}-${Date.now()}-${SRC_PROFILE_IMG}`;
     yield bucket.upload(`${__dirname}/${SRC_PROFILE_IMG}`, { gzip: true, destination }); // upload file
-    const uploadedFile = yield findPropertyImageFile(bucket, destination); // find the file
+    const uploadedFile = yield findStorageFile(bucket, PROP_UPLOAD_DIR, destination); // find the file
     const [url] = yield uploadedFile.getSignedUrl({ action: 'read', expires: '01-01-2491' }); // get download URL
     yield db.ref(`/properties/${propertyId}`).set({ name: 'test', photoURL: url }); // Create property /w profile
     const propertyAfterSnap = yield db.ref(`/properties/${propertyId}`).once('value');
@@ -26,7 +27,7 @@ describe('Property Delete', () => {
     yield wrapped(propertyAfterSnap, { params: { propertyId } });
 
     // Test results
-    const actual = yield findPropertyImageFile(bucket, destination); // find the profile
+    const actual = yield findStorageFile(bucket, PROP_UPLOAD_DIR, destination); // find the profile
     expect(actual).to.equal(undefined);
   }));
 
@@ -35,10 +36,10 @@ describe('Property Delete', () => {
     const bucket =  storage.bucket();
 
     // Setup database
-    let destination = `propertyImagesTest/${propertyId}-${Date.now()}-${SRC_PROFILE_IMG}`.split('.');
+    let destination = `${PROP_UPLOAD_DIR}/${propertyId}-${Date.now()}-${SRC_PROFILE_IMG}`.split('.');
     destination = `${destination[0]}_banner.${destination[1]}`;
     yield bucket.upload(`${__dirname}/${SRC_PROFILE_IMG}`, { gzip: true, destination }); // upload file
-    const uploadedFile = yield findPropertyImageFile(bucket, destination); // find the file
+    const uploadedFile = yield findStorageFile(bucket, PROP_UPLOAD_DIR, destination); // find the file
     const [url] = yield uploadedFile.getSignedUrl({ action: 'read', expires: '01-01-2491' }); // get download URL
     yield db.ref(`/properties/${propertyId}`).set({ name: 'test', bannerPhotoURL: url }); // Create property /w banner
     const propertyAfterSnap = yield db.ref(`/properties/${propertyId}`).once('value');
@@ -48,7 +49,7 @@ describe('Property Delete', () => {
     yield wrapped(propertyAfterSnap, { params: { propertyId } });
 
     // Test results
-    const actual = yield findPropertyImageFile(bucket, destination); // find the banner
+    const actual = yield findStorageFile(bucket, PROP_UPLOAD_DIR, destination); // find the banner
     expect(actual).to.equal(undefined);
   }));
 
@@ -138,16 +139,3 @@ describe('Property Delete', () => {
     expect(actualList.exists()).to.equal(false, 'removed /propertyTemplatesList proxy');
   }));
 });
-
-/**
- * Find an image in the property images test bucket
- * @param  {firebaseAdmin.storage} bucket
- * @param  {String} fileName
- * @return {Promise} - resolves {Object} file reference
- */
-function findPropertyImageFile(bucket, fileName) {
-  return bucket.getFiles({ prefix: 'propertyImagesTest' })
-    .then(([files]) =>
-      files.filter(f => f.name.search(fileName) > -1)[0]
-    );
-}
