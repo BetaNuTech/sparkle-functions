@@ -102,9 +102,6 @@ describe('Inspection Delete', () => {
   it('should remove an inspection\'s uploaded images from storage', () => co(function *() {
     const propertyId = uuid();
     const inspectionId = uuid();
-    const item1Id = uuid();
-    const item2Id = uuid();
-    const item3Id = uuid();
     const bucket =  storage.bucket();
 
     // Setup database
@@ -122,9 +119,9 @@ describe('Inspection Delete', () => {
       property: propertyId,
       template: {
         items: {
-          [item1Id]: { photosData: { [Date.now()]: { downloadURL: url1 } } },
-          [item2Id]: { photosData: { [Date.now()]: { downloadURL: url2 } } },
-          [item3Id]: {} // no uploads
+          [uuid()]: { photosData: { [Date.now()]: { downloadURL: url1 } } },
+          [uuid()]: { photosData: { [Date.now()]: { downloadURL: url2 } } },
+          [uuid()]: {} // no uploads
         }
       }
     });

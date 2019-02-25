@@ -16,7 +16,7 @@ module.exports = function createOnDeleteHandler(db, storage) {
     const { propertyId } = event.params;
 
     log.info(`${LOG_PREFIX} property ${propertyId} deleted`);
-    const inspUpdates = yield inspections.removeForProperty(db, propertyId);
+    const inspUpdates = yield inspections.removeForProperty(db, storage, propertyId);
     yield propertyTemplates.removeForProperty(db, propertyId);
 
     // Cleanup deleted property's images
