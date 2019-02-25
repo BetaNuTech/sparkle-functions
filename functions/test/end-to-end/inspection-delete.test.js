@@ -100,21 +100,32 @@ describe('Inspection Delete', () => {
   }));
 
   it('should remove an inspection\'s uploaded images from storage', () => co(function *() {
+    const propertyId = uuid();
     const inspectionId = uuid();
-    const itemId = uuid();
+    const item1Id = uuid();
+    const item2Id = uuid();
+    const item3Id = uuid();
     const bucket =  storage.bucket();
 
     // Setup database
-    const destination = `${INSP_UPLOAD_DIR}/${inspectionId}-${Date.now()}-${SRC_UPLOAD_IMG}`;
-    yield bucket.upload(`${__dirname}/${SRC_UPLOAD_IMG}`, { gzip: true, destination }); // upload file
-    const uploadedFile = yield findStorageFile(bucket, INSP_UPLOAD_DIR, destination); // find the file
-    const [url] = yield uploadedFile.getSignedUrl({ action: 'read', expires: '01-01-2491' }); // get download URL
-
-    // Create inspection /w upload
+    const destination1 = `${INSP_UPLOAD_DIR}/${inspectionId}-${Date.now()}-1-${SRC_UPLOAD_IMG}`;
+    const destination2 = `${INSP_UPLOAD_DIR}/${inspectionId}-${Date.now()}-2-${SRC_UPLOAD_IMG}`;
+    yield bucket.upload(`${__dirname}/${SRC_UPLOAD_IMG}`, { gzip: true, destination: destination1 }); // upload file
+    const uploadedFile1 = yield findStorageFile(bucket, INSP_UPLOAD_DIR, destination1); // find the file
+    const [url1] = yield uploadedFile1.getSignedUrl({ action: 'read', expires: '01-01-2491' }); // get download URL
+    yield bucket.upload(`${__dirname}/${SRC_UPLOAD_IMG}`, { gzip: true, destination: destination2 }); // upload file
+    const uploadedFile2 = yield findStorageFile(bucket, INSP_UPLOAD_DIR, destination2); // find the file
+    const [url2] = yield uploadedFile2.getSignedUrl({ action: 'read', expires: '01-01-2491' }); // get download URL
+    // Create inspection /w uploads
     yield db.ref(`/inspections/${inspectionId}`).set({
       name: inspectionId,
+      property: propertyId,
       template: {
-        items: { [itemId]: { photosData: { [Date.now()]: { downloadURL: url } } } }
+        items: {
+          [item1Id]: { photosData: { [Date.now()]: { downloadURL: url1 } } },
+          [item2Id]: { photosData: { [Date.now()]: { downloadURL: url2 } } },
+          [item3Id]: {} // no uploads
+        }
       }
     });
     const snap = yield db.ref(`/inspections/${inspectionId}`).once('value');
@@ -124,7 +135,10 @@ describe('Inspection Delete', () => {
     yield wrapped(snap, { params: { inspectionId } });
 
     // Test results
-    const actual = yield findStorageFile(bucket, INSP_UPLOAD_DIR, destination); // find the profile
-    expect(actual).to.equal(undefined);
+    let actual = yield findStorageFile(bucket, INSP_UPLOAD_DIR, destination1); // find the upload
+    expect(actual).to.equal(undefined, 'removed upload file 1');
+
+    actual = yield findStorageFile(bucket, INSP_UPLOAD_DIR, destination2); // find the upload
+    expect(actual).to.equal(undefined, 'removed upload file 2');
   }));
 });
