@@ -1,11 +1,58 @@
 const co = require('co');
 const { expect } = require('chai');
 const uuid = require('../../test-helpers/uuid');
-const { cleanDb } = require('../../test-helpers/firebase');
-const { db, test, cloudFunctions } = require('./setup');
+const { cleanDb, findStorageFile } = require('../../test-helpers/firebase');
+const { db, test, storage, cloudFunctions } = require('./setup');
+
+const SRC_PROFILE_IMG = 'test-image.jpg';
+const PROP_UPLOAD_DIR = 'propertyImagesTest';
+const INSP_UPLOAD_DIR = 'inspectionItemImagesTest';
 
 describe('Property Delete', () => {
   afterEach(() => cleanDb(db));
+
+  it('should remove a property\'s profile image from storage', () => co(function *() {
+    const propertyId = uuid();
+    const bucket =  storage.bucket();
+
+    // Setup database
+    const destination = `${PROP_UPLOAD_DIR}/${propertyId}-${Date.now()}-${SRC_PROFILE_IMG}`;
+    yield bucket.upload(`${__dirname}/${SRC_PROFILE_IMG}`, { gzip: true, destination }); // upload file
+    const uploadedFile = yield findStorageFile(bucket, PROP_UPLOAD_DIR, destination); // find the file
+    const [url] = yield uploadedFile.getSignedUrl({ action: 'read', expires: '01-01-2491' }); // get download URL
+    yield db.ref(`/properties/${propertyId}`).set({ name: 'test', photoURL: url }); // Create property /w profile
+    const propertyAfterSnap = yield db.ref(`/properties/${propertyId}`).once('value');
+
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.propertyDelete);
+    yield wrapped(propertyAfterSnap, { params: { propertyId } });
+
+    // Test results
+    const actual = yield findStorageFile(bucket, PROP_UPLOAD_DIR, destination); // find the profile
+    expect(actual).to.equal(undefined);
+  }));
+
+  it('should remove a property\'s banner image from storage', () => co(function *() {
+    const propertyId = uuid();
+    const bucket =  storage.bucket();
+
+    // Setup database
+    let destination = `${PROP_UPLOAD_DIR}/${propertyId}-${Date.now()}-${SRC_PROFILE_IMG}`.split('.');
+    destination = `${destination[0]}_banner.${destination[1]}`;
+    yield bucket.upload(`${__dirname}/${SRC_PROFILE_IMG}`, { gzip: true, destination }); // upload file
+    const uploadedFile = yield findStorageFile(bucket, PROP_UPLOAD_DIR, destination); // find the file
+    const [url] = yield uploadedFile.getSignedUrl({ action: 'read', expires: '01-01-2491' }); // get download URL
+    yield db.ref(`/properties/${propertyId}`).set({ name: 'test', bannerPhotoURL: url }); // Create property /w banner
+    const snap = yield db.ref(`/properties/${propertyId}`).once('value');
+
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.propertyDelete);
+    yield wrapped(snap, { params: { propertyId } });
+
+    // Test results
+    const actual = yield findStorageFile(bucket, PROP_UPLOAD_DIR, destination); // find the banner
+    expect(actual).to.equal(undefined);
+  }));
 
   it('should remove all a property\'s /inspections', () => co(function *() {
     const insp1Id = uuid();
@@ -32,6 +79,56 @@ describe('Property Delete', () => {
 
     // Assertions
     expect(actual.map(snap => snap.exists())).to.deep.equal([false, false]);
+  }));
+
+  it('should remove all its\' inspection\'s uploaded images from storage', () => co(function *() {
+    const propertyId = uuid();
+    const inspection1Id = uuid();
+    const inspection2Id = uuid();
+    const bucket =  storage.bucket();
+
+    // Setup database
+    const destination1 = `${INSP_UPLOAD_DIR}/${inspection1Id}-${Date.now()}-${SRC_PROFILE_IMG}`;
+    const destination2 = `${INSP_UPLOAD_DIR}/${inspection2Id}-${Date.now()}-${SRC_PROFILE_IMG}`;
+    yield bucket.upload(`${__dirname}/${SRC_PROFILE_IMG}`, { gzip: true, destination: destination1 }); // upload file
+    const uploadedFile1 = yield findStorageFile(bucket, INSP_UPLOAD_DIR, destination1); // find the file
+    const [url1] = yield uploadedFile1.getSignedUrl({ action: 'read', expires: '01-01-2491' }); // get download URL
+    yield bucket.upload(`${__dirname}/${SRC_PROFILE_IMG}`, { gzip: true, destination: destination2 }); // upload file
+    const uploadedFile2 = yield findStorageFile(bucket, INSP_UPLOAD_DIR, destination2); // find the file
+    const [url2] = yield uploadedFile2.getSignedUrl({ action: 'read', expires: '01-01-2491' }); // get download URL
+    yield db.ref(`/properties/${propertyId}`).set({ name: 'test' }); // Create property
+    // Create inspection #1
+    yield db.ref(`/inspections/${inspection1Id}`).set({
+      name: inspection1Id,
+      property: propertyId,
+      template: {
+        items: {
+          [uuid()]: { photosData: { [Date.now()]: { downloadURL: url1 } } }
+        }
+      }
+    });
+    // Create inspection #2
+    yield db.ref(`/inspections/${inspection2Id}`).set({
+      name: inspection2Id,
+      property: propertyId,
+      template: {
+        items: {
+          [uuid()]: { photosData: { [Date.now()]: { downloadURL: url2 } } }
+        }
+      }
+    });
+    const snap = yield db.ref(`/properties/${propertyId}`).once('value');
+
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.propertyDelete);
+    yield wrapped(snap, { params: { propertyId } });
+
+    // Test results
+    let actual = yield findStorageFile(bucket, INSP_UPLOAD_DIR, destination1); // find the upload
+    expect(actual).to.equal(undefined, 'removed inspection 1 upload');
+
+    actual = yield findStorageFile(bucket, INSP_UPLOAD_DIR, destination2); // find the upload
+    expect(actual).to.equal(undefined, 'removed inspection 2 upload');
   }));
 
   it('should remove all a property\'s /propertyInspectionsList proxies', () => co(function *() {

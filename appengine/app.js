@@ -19,7 +19,7 @@ app.get('/publish/:topic', createPublishTopicHandler(pubsubClient));
 
 // Index page, just to make it easy to see if the app is working.
 app.get('/', (req, res) => {
-    res.status(200).send('[functions-cron]: Hello, world!').end();
+  res.status(200).send('[functions-cron]: Hello, world!').end();
 });
 
 // Start the server
