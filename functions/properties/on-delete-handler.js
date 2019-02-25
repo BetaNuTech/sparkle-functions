@@ -19,16 +19,23 @@ module.exports = function createOnDeleteHandler(db, storage) {
     const inspUpdates = yield inspections.removeForProperty(db, propertyId);
     yield propertyTemplates.removeForProperty(db, propertyId);
 
-    // Cleanup deleted property's profile image
-    try {
-      const property = propertySnap.val();
-      if (property && property.photoURL) {
-        const fileName = (decodeURIComponent(property.photoURL).split('?')[0] || '').split('/').pop();
-        yield storage.bucket().file(`${PROPERTY_BUCKET_NAME}/${fileName}`).delete();
-        log.info(`${LOG_PREFIX} property ${propertyId} profile image removal succeeded`);
+    // Cleanup deleted property's images
+    const property = propertySnap.val() || {};
+    const imgUrls = [property.photoURL, property.bannerPhotoURL].filter(Boolean);
+
+    if (imgUrls.length) {
+      for (let i = 0; i < imgUrls.length; i++) {
+        const url = imgUrls[i];
+        const imgType = ['profile', 'banner'][i];
+
+        try {
+          const fileName = (decodeURIComponent(url).split('?')[0] || '').split('/').pop();
+          yield storage.bucket().file(`${PROPERTY_BUCKET_NAME}/${fileName}`).delete();
+          log.info(`${LOG_PREFIX} property: ${propertyId} ${imgType} removal succeeded`);
+        } catch (e) {
+          log.error(`${LOG_PREFIX} property: ${propertyId} ${imgType} removal at ${url} failed ${e}`);
+        }
       }
-    } catch (e) {
-      log.error(`${LOG_PREFIX} property ${propertyId} profile image removal failed ${e}`);
     }
 
     // Remove all property template proxies
