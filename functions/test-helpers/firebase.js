@@ -1,3 +1,5 @@
+const assert = require('assert');
+
 module.exports = {
   /**
    * Create a Firebase database stub resolving provided data snapshot
@@ -55,5 +57,23 @@ module.exports = {
 
   cleanDb(db) {
     return db.ref('/').set(null);
+  },
+
+  /**
+   * Find an image in a test directory's images bucket
+   * @param  {firebaseAdmin.storage} bucket
+   * @param  {String} prefix
+   * @param  {String} fileName
+   * @return {Promise} - resolves {Object} file reference
+   */
+  findStorageFile(bucket, prefix, fileName) {
+    assert('has storage bucket', bucket);
+    assert('has test directory prefix', prefix && `${prefix}`.search(/Test$/) !== -1);
+    assert('has filename', fileName && typeof fileName === 'string');
+
+    return bucket.getFiles({ prefix })
+      .then(([files]) =>
+        files.filter(f => f.name.search(fileName) > -1)[0]
+      );
   }
 };
