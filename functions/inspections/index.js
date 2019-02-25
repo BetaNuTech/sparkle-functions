@@ -4,6 +4,7 @@ const adminUtils = require('../utils/firebase-admin');
 const processWrite = require('./process-write');
 const createOnAttributeWriteHandler = require('./on-attribute-write-handler');
 const createOnWriteHandler = require('./on-write-handler');
+const createOnDeleteHandler = require('./on-delete-handler');
 
 const LOG_PREFIX = 'inspections:';
 
@@ -175,7 +176,8 @@ module.exports = {
 
   processWrite,
   createOnAttributeWriteHandler,
-  createOnWriteHandler
+  createOnWriteHandler,
+  createOnDeleteHandler
 };
 
 function flatten(arr) {

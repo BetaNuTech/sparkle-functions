@@ -8,52 +8,6 @@ const { db, test, cloudFunctions } = require('./setup');
 describe('Inspection Write', () => {
   afterEach(() => cleanDb(db));
 
-  it('should remove proxy records of a deleted inspection', () => co(function *() {
-    const inspId = uuid();
-    const propertyId = uuid();
-    const now = Date.now() / 1000;
-    const inspectionData = {
-      templateName: `name${inspId}`,
-      inspector: '23423423',
-      inspectorName: 'testor',
-      creationDate: now - 100000,
-      score: 10,
-      deficienciesExist: false,
-      itemsCompleted: 10,
-      totalItems: 10,
-      property: propertyId,
-      updatedLastDate: now,
-      inspectionCompleted: true
-    };
-
-    // Setup database
-    yield db.ref(`/inspections/${inspId}`).set(inspectionData); // Add inspection
-    yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
-    yield db.ref(`/completedInspections/${inspId}`).set(inspectionData); // Add completedInspections
-    yield db.ref(`/completedInspectionsList/${inspId}`).set(inspectionData); // Add completedInspectionsList
-    yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).set(inspectionData); // Add propertyInspections
-    yield db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).set(inspectionData); // Add propertyInspectionsList
-    const beforeSnap = yield db.ref(`/inspections/${inspId}`).once('value'); // Create before
-    yield db.ref(`/inspections/${inspId}`).remove(); // Remove inspection
-    const afterSnap = yield db.ref(`/inspections/${inspId}`).once('value'); // Create after
-
-    // Execute
-    const changeSnap = test.makeChange(beforeSnap, afterSnap);
-    const wrapped = test.wrap(cloudFunctions.inspectionWrite);
-    yield wrapped(changeSnap, { params: { objectId: inspId } });
-
-    // Test result
-    const actual = yield Promise.all([
-      db.ref(`/completedInspections/${inspId}`).once('value'),
-      db.ref(`/completedInspectionsList/${inspId}`).once('value'),
-      db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value'),
-      db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).once('value')
-    ]);
-
-    // Assertions
-    expect(actual.map((ds) => ds.exists())).to.deep.equal([false, false, false, false]);
-  }));
-
   it('should set an invalid score value to zero', () => co(function *() {
     const inspId = uuid();
     const propertyId = uuid();

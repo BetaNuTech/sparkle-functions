@@ -1,5 +1,6 @@
 const co = require('co');
 const log = require('../utils/logger');
+const processPropertyMeta = require('./process-property-meta');
 
 const LOG_PREFIX = 'inspections: process-write:';
 
@@ -79,63 +80,10 @@ module.exports = function processWrite(db, inspectionId, inspection) {
       updates[`/completedInspectionsList/${inspectionId}`] = 'removed';
     }
 
-    // Pull all inspections for the same property
-    const inspectionsSnapshot = yield db.ref('/inspections').orderByChild('property').equalTo(propertyId).once('value');
-
-    if (!inspectionsSnapshot.exists()) {
-      return updates;
-    }
-
-    try {
-      var latestInspection = null;
-      var latestInspectionTmp = null;
-      var numOfInspectionsCompleted = 0;
-      const inspections = [];
-
-      if (inspectionsSnapshot.hasChildren()) {
-        inspectionsSnapshot.forEach((childSnapshot) => {
-          // key will be 'ada' the first time and 'alan' the second time
-          latestInspectionTmp = childSnapshot.val();
-
-          // childData will be the actual contents of the child
-          //var childData = childSnapshot.val();
-          if (latestInspectionTmp.inspectionCompleted) {
-            inspections.push(latestInspectionTmp);
-            numOfInspectionsCompleted++;
-          }
-        });
-
-        if (inspections.length) {
-          latestInspection = inspections.sort((a, b) => b.creationDate - a.creationDate)[0]; // DESC
-        }
-      } else {
-        latestInspectionTmp = inspectionsSnapshot.val();
-
-        if (latestInspectionTmp.inspectionCompleted) {
-          latestInspection = latestInspectionTmp;
-          numOfInspectionsCompleted++;
-        }
-      }
-
-      // Update `numOfInspections` for the property
-      yield db.ref(`/properties/${propertyId}/numOfInspections`).set(numOfInspectionsCompleted);
-      log.info(`${LOG_PREFIX} property numOfInspections updated`);
-      updates[`/properties/${propertyId}/numOfInspections`] = 'updated';
-
-      if (latestInspection) {
-        yield db.ref(`/properties/${propertyId}`).update({
-          lastInspectionScore: latestInspection.score,
-          lastInspectionDate: latestInspection.creationDate
-        });
-
-        log.info(`${LOG_PREFIX} property lastInspectionScore & lastInspectionDate updated`);
-        updates[`/properties/${propertyId}/lastInspectionScore`] = 'updated';
-        updates[`/properties/${propertyId}/lastInspectionDate`] = 'updated';
-      }
-    } catch(error) {
-      log.error(`${LOG_PREFIX} Unable to access inspections ${error}`);
-      return null;
-    }
+    // Update property attributes related
+    // to completed inspection meta data
+    const metaUpdates = yield processPropertyMeta(db, propertyId);
+    Object.assign(updates, metaUpdates); // combine updates
 
     return updates;
   });

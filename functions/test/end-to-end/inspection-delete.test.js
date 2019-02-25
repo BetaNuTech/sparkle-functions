@@ -1,0 +1,98 @@
+const co = require('co');
+const { expect } = require('chai');
+const uuid = require('../../test-helpers/uuid');
+const mocking = require('../../test-helpers/mocking');
+const { cleanDb } = require('../../test-helpers/firebase');
+const { db, test, cloudFunctions } = require('./setup');
+
+describe('Inspection Delete', () => {
+  afterEach(() => cleanDb(db));
+
+  it('should remove proxy records of a deleted inspection', () => co(function *() {
+    const inspId = uuid();
+    const propertyId = uuid();
+    const now = Date.now() / 1000;
+    const inspectionData = {
+      templateName: `name${inspId}`,
+      inspector: '23423423',
+      inspectorName: 'testor',
+      creationDate: now - 100000,
+      score: 10,
+      deficienciesExist: false,
+      itemsCompleted: 10,
+      totalItems: 10,
+      property: propertyId,
+      updatedLastDate: now,
+      inspectionCompleted: true
+    };
+
+    // Setup database
+    yield db.ref(`/inspections/${inspId}`).set(inspectionData); // Add inspection
+    yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
+    yield db.ref(`/completedInspections/${inspId}`).set(inspectionData); // Add completedInspections
+    yield db.ref(`/completedInspectionsList/${inspId}`).set(inspectionData); // Add completedInspectionsList
+    yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).set(inspectionData); // Add propertyInspections
+    yield db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).set(inspectionData); // Add propertyInspectionsList
+    const snap = yield db.ref(`/inspections/${inspId}`).once('value'); // Create snap
+    yield db.ref(`/inspections/${inspId}`).remove(); // Remove inspection
+
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.inspectionDelete);
+    yield wrapped(snap, { params: { inspectionId: inspId } });
+
+    // Test result
+    const actual = yield Promise.all([
+      db.ref(`/completedInspections/${inspId}`).once('value'),
+      db.ref(`/completedInspectionsList/${inspId}`).once('value'),
+      db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value'),
+      db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).once('value')
+    ]);
+
+    // Assertions
+    expect(actual.map((ds) => ds.exists())).to.deep.equal([false, false, false, false]);
+  }));
+
+  it('should update property meta data when a completed inspection is removed', () => co(function *() {
+    const insp1Id = uuid();
+    const insp2Id = uuid();
+    const propertyId = uuid();
+    const newest = (Date.now() / 1000);
+    const oldest = (Date.now() / 1000) - 100000;
+    const inspectionOne = mocking.createInspection({ property: propertyId, inspectionCompleted: true, creationDate: newest, score: 65 });
+    const inspectionTwo = mocking.createInspection({ property: propertyId, inspectionCompleted: true, creationDate: oldest, score: 25 });
+    const expected = {
+      numOfInspections: 1,
+      lastInspectionScore: inspectionTwo.score,
+      lastInspectionDate: inspectionTwo.creationDate
+    };
+
+    // Setup database
+    yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
+    yield db.ref(`/inspections/${insp1Id}`).set(inspectionOne); // Add inspection #1
+    yield db.ref(`/inspections/${insp2Id}`).set(inspectionTwo); // Add inspection #2
+    const snap = yield db.ref(`/inspections/${insp1Id}`).once('value'); // Create snap
+    yield db.ref(`/inspections/${insp1Id}`).remove(); // remove inspection #1
+
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.inspectionDelete);
+    yield wrapped(snap, { params: { inspectionId: insp1Id } });
+
+    // Test result
+    const propertySnap = yield db.ref(`/properties/${propertyId}`).once('value');
+    const actual = propertySnap.val();
+
+    // Assertions
+    expect(actual.numOfInspections).to.equal(
+      expected.numOfInspections,
+      'updated property\'s `numOfInspections`'
+    );
+    expect(actual.lastInspectionScore).to.equal(
+      expected.lastInspectionScore,
+      'updated property\'s `lastInspectionScore`'
+    );
+    expect(actual.lastInspectionDate).to.equal(
+      expected.lastInspectionDate,
+      'updated property\'s `lastInspectionDate`'
+    );
+  }));
+});
