@@ -250,10 +250,10 @@ exports.inspectionWriteStaging = functionsStagingDatabase.ref('/inspections/{obj
 
 // Inspection onDelete
 exports.inspectionDelete = functions.database.ref('/inspections/{inspectionId}').onDelete(
-  inspections.createOnDeleteHandler(db)
+  inspections.createOnDeleteHandler(db, storage)
 );
 exports.inspectionDeleteStaging = functionsStagingDatabase.ref('/inspections/{inspectionId}').onDelete(
-  inspections.createOnDeleteHandler(dbStaging)
+  inspections.createOnDeleteHandler(dbStaging, storage)
 );
 
 // Template Category Delete

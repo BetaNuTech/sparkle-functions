@@ -1,15 +1,17 @@
 const co = require('co');
 const log = require('../utils/logger');
 const processPropertyMeta = require('./process-property-meta');
+const deleteUploads = require('./delete-uploads');
 
 const LOG_PREFIX = 'inspections: on-delete:';
 
 /**
  * Factory for inspection onDelete handler
- * @param  {firebaseAdmin.database} - Firebase Admin DB instance
+ * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+ * @param  {firebaseAdmin.storage} storage - Firebase Admin Storage instance
  * @return {Function} - inspection onDelete handler
  */
-module.exports = function createOnDeleteHandler(db) {
+module.exports = function createOnDeleteHandler(db, storage) {
   return (inspectionSnap, event) => co(function *() {
     const { inspectionId } = event.params;
     const inspection = inspectionSnap.val() || {};
@@ -58,6 +60,11 @@ module.exports = function createOnDeleteHandler(db) {
       const metaUpdates = yield processPropertyMeta(db, propertyId);
       Object.assign(updates, metaUpdates); // combine updates
     }
+
+    // Removal all uploads, ignoring errors
+    try {
+      yield deleteUploads(db, storage, inspectionId);
+    } catch (e) {}
 
     return updates
   });
