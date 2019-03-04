@@ -6,14 +6,13 @@ const log = require('../utils/logger');
  * @param {firebaseAdmin.database} db
  * @param {firebaseAdmin.messaging} messaging
  * @param {String} recipientId
- * @param {String} messageId
  * @param {Object} pushMessage
  * @return {Promise} - resolves {String[]} recipient's registration tokens
  */
-module.exports = function sendToRecipient(db, messaging, recipientId, messageId, pushMessage = {}) {
+module.exports = function sendToRecipient(db, messaging, recipientId, pushMessage = {}) {
   return co(function *() {
-    var registrationTokens = [];
-    const dataSnapshot = yield db.ref('/registrationTokens').child(recipientId).once('value');
+    const registrationTokens = [];
+    const dataSnapshot = yield db.ref(`/registrationTokens/${recipientId}`).once('value');
 
     if (!dataSnapshot.exists()) {
       // Recipient has no tokens
