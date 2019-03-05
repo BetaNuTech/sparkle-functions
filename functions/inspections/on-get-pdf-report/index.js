@@ -39,6 +39,8 @@ module.exports = function createOnGetPDFReportHandler(db, messaging) {
       inspection.id = req.params.inspection;
       const adminEditor = req.query.adminEditor || '';
 
+      log.info(`${LOG_PREFIX} generating property: ${property.id} inspection report PDF for: ${inspection.id}`);
+
       // Generate inspection PDF and get it's download link
       let inspectionReportURL = yield createAndUploadInspection(property, inspection);
       [inspectionReportURL] = inspectionReportURL
@@ -62,12 +64,12 @@ module.exports = function createOnGetPDFReportHandler(db, messaging) {
           messaging,
           title: property.name,
           message: `${creationDate} Inspection Report ${actionType} by ${author}`,
-          excludes: [req.user.id], // remove sender from message recipients
+          // excludes: [req.user.id], // TODO: remove sender from message recipients
           allowCorp: true,
           property: property.id
         });
       } catch(e) {
-        log.error(`${LOG_PREFIX} ${e}`); // proceed with error
+        log.error(`${LOG_PREFIX} send-to-users: ${e}`); // proceed with error
       }
 
       // Resolve URL to download inspection report PDF

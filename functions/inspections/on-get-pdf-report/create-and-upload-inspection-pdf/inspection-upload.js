@@ -5,7 +5,6 @@ const CONFIG = require('../../../config');
 
 /**
  * Upload a local file to the inspection report S3 bucket
- * @-param  {String} filePath local temporary file path
  * @param  {Buffer} file
  * @param  {String} destPath
  * @return {Promise} - resolves {String} Url to inspection PDF
@@ -27,14 +26,9 @@ module.exports = function uploadInspectionPromise(file, destPath) {
         resolve(
           `https://${CONFIG.s3.inspectionReportBucket}.${
             CONFIG.s3.endpoint
-          }/${uploadPath}`
+          }/${destPath}`
         );
       }
     );
-
-    // fs.readFile(filePath, (err, file) => {
-      // if (err) return reject(err);
-      // Removed
-    // });
   });
 }

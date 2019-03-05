@@ -21,7 +21,6 @@ module.exports = function createAndUploadInspection(property, inspection) {
     const src = inspectionPdf(inspection, property);
     const steps = src.toSteps();
     const pdf = new JsPDF({format: 'letter'});
-    // let pdfFile;
 
     // Add steps to PDF
     for (let i = 0; i < steps.length; i++) {
@@ -32,10 +31,8 @@ module.exports = function createAndUploadInspection(property, inspection) {
       });
     }
 
-    // Convert PDF source to tmp file
+    // Convert PDF source to buffer
     const output = toBuffer(pdf.output('arraybuffer'));
-    // pdfFile = tmpFile(output, src.filename);
-    // const tmpFilePath = await pdfFile.create();
 
     // Upload tmp PDF file to S3
     return inspectionUpload(
