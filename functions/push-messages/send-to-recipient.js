@@ -3,8 +3,8 @@ const log = require('../utils/logger');
 
 /**
  * Send a given push notifcation message to a recipient ID
- * @param {firebaseAdmin.database} db
- * @param {firebaseAdmin.messaging} messaging
+ * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+ * @param  {firebaseAdmin.messaging} messaging - Firebase Admin messaging service instance
  * @param {String} recipientId
  * @param {Object} pushMessage
  * @return {Promise} - resolves {String[]} recipient's registration tokens
@@ -53,6 +53,7 @@ module.exports = function sendToRecipient(db, messaging, recipientId, pushMessag
       log.info(`Successfully sent message: ${response}`);
     } catch (e) {
       log.error(`Error sending message: ${e}`);
+      return e;
     }
 
     return registrationTokens;
