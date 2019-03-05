@@ -265,6 +265,14 @@ exports.templateCategoryDeleteStaging = functionsStagingDatabase.ref('/templateC
   templateCategories.onDeleteHandler(dbStaging)
 );
 
+// GET Inspection PDF Report
+
+exports.inspectionPdfReport = functions.https.onRequest(
+  inspections.createOnGetPDFReportHandler(db, admin.messaging())
+);
+exports.inspectionPdfReportStaging = functions.https.onRequest(
+  inspections.createOnGetPDFReportHandler(dbStaging, admin.messaging())
+);
 
 // Message Subscribers
 
