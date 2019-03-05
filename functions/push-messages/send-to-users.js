@@ -1,4 +1,5 @@
 const co = require('co');
+const assert = require('assert');
 const sendToRecipient = require('./send-to-recipient');
 const createSendMessage = require('./create-send-message');
 const {fetchRecordIds} = require('../utils/firebase-admin');
@@ -19,7 +20,7 @@ const LOG_PREFIX = 'push-messages: send-to-users:';
  * @param  {Boolean} allowCorp
  * @return {Promise} - resolves {Object[]} messages
  */
-module.exports = function messageUsers({
+module.exports = function sendToUsers({
   db,
   messaging,
   title,
@@ -39,6 +40,7 @@ module.exports = function messageUsers({
     // Request and flatten response hash to array
     let users = yield db.ref('/users').once('value');
     users = users.val();
+    if (!users) return [];
     users = keys(users).map(id => assign({id}, users[id]));
     const recipients = getRecepients({users, property, excludes, allowCorp});
 
@@ -53,30 +55,36 @@ module.exports = function messageUsers({
         createdAt
       })));
     } catch (e) {
-      throw new Error(`${LOG_PREFIX} ${e}`); // wrap error
+      throw new Error(`${LOG_PREFIX} create-send-messages: ${e}`); // wrap error
     }
 
     // Collect results of sending push notifications
-    const results = yield Promise.all(recipients.map(recipientId =>
-      sendToRecipient(
-        db,
-        messaging,
-        recipientId,
-        {
-          title,
-          message
-        }
-      ).then((r) => r instanceof Error ? false : true) // failed : succeeded
-    ));
+    try {
+      const results = yield Promise.all(recipients.map(recipientId =>
+        sendToRecipient(
+          db,
+          messaging,
+          recipientId,
+          {
+            title,
+            message
+          }
+        ).then((r) => r instanceof Error ? false : true) // failed : succeeded
+      ));
+    } catch (e) {
+      throw new Error(`${LOG_PREFIX} send-to-recipient: ${e}`); // wrap error
+    }
 
     try {
       // Cleanup sent messages
       // Allow unsent messages to linger to retry during push notification sync
       yield Promise.all(results.map((result, i) =>
-        result === false ? Promise.resolve() : db.ref(`/sendMessages/${messages[i].id}`).remove()
+        result === false || !messages[i] ?
+          Promise.resolve() :
+          db.ref(`/sendMessages/${messages[i].id}`).remove()
       ));
     } catch (e) {
-      throw new Error(`${LOG_PREFIX} ${e}`); // wrap error
+      throw new Error(`${LOG_PREFIX} remove-send-messages: ${e}`); // wrap error
     }
 
     return messages;
