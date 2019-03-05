@@ -10,7 +10,7 @@ const LOG_PREFIX = 'push-messages: create-send-message:';
  * @param  {Number} createdAt   UNIX timestamp
  * @return {Promise} - resolves {Object} {id, message}
  */
-export default function createSendMessage(db, {title, message, recipientId, createdAt}) {
+module.exports = function createSendMessage(db, {title, message, recipientId, createdAt}) {
   assert(Boolean(db), `${LOG_PREFIX} has Firebase Admin database instance`);
   assert(title && typeof title === 'string', `${LOG_PREFIX} has record title string`);
   assert(message && typeof message === 'string', `${LOG_PREFIX} has record message string`);

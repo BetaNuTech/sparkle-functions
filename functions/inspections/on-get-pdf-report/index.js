@@ -3,7 +3,7 @@ const Jimp = require('jimp');
 const moment = require('moment');
 const express = require('express');
 const base64ItemImage = require('./base-64-item-image');
-const createAndUploadInspection = require('./create-and-upload-inspection');
+const createAndUploadInspection = require('./create-and-upload-inspection-pdf');
 const sendToUsers = require('../../push-messages/send-to-users');
 const log = require('../../utils/logger');
 
@@ -35,7 +35,7 @@ module.exports = function createOnGetPDFReportHandler(db, messaging) {
       const property = propertyReq.val();
       property.id = req.params.property;
       const inspectionReq = yield db.ref(req.params.inspection).once('value');
-      const inspection = insertInspectionItemImageUris(inspectionReq.val());
+      const inspection = yield insertInspectionItemImageUris(inspectionReq.val());
       inspection.id = req.params.inspection;
       const adminEditor = req.query.adminEditor || '';
 
@@ -105,77 +105,79 @@ function capitalize(str) {
  * Insert datauri's into an inspections items
  * NOTE: creates side effects on inspection
  * @param  {Object} inspection
- * @return {Object} inspection
+ * @return {Promise} - resolves {Object} inspection
  */
 function insertInspectionItemImageUris(inspection) {
-  // All items with upload(s) or signature image
-  const items = keys(inspection.template.items || {})
-    .map(id => assign({id}, inspection.template.items[id]))
-    .filter(item => item.photosData || item.signatureDownloadURL);
+  return co(function *() {
+    // All items with upload(s) or signature image
+    const items = keys(inspection.template.items || {})
+      .map(id => assign({id}, inspection.template.items[id]))
+      .filter(item => item.photosData || item.signatureDownloadURL);
 
-  // Flatten image photos into single array
-  const imagePhotoUrls = []
-    .concat(
-      ...items.map(item => {
-        if (item.photosData) {
-          // Create list of item's upload(s) configs
-          return keys(item.photosData).map(id => ({
-            id,
-            itemId: item.id,
-            url: item.photosData[id].downloadURL
-          }));
+    // Flatten image photos into single array
+    const imagePhotoUrls = []
+      .concat(
+        ...items.map(item => {
+          if (item.photosData) {
+            // Create list of item's upload(s) configs
+            return keys(item.photosData).map(id => ({
+              id,
+              itemId: item.id,
+              url: item.photosData[id].downloadURL
+            }));
+          } else {
+            // Create signature image configs
+            return [{
+              id: item.signatureTimestampKey,
+              itemId: item.id,
+              url: item.signatureDownloadURL
+            }];
+          }
+        })
+      )
+      .filter(({url}) => Boolean(url)); // remove empty uploads
+
+    const imageuris = yield Promise.all(
+      imagePhotoUrls.map(({url, itemId}) => {
+        const itemSrc = inspection.template.items[itemId];
+        const isSignatureItem = Boolean(itemSrc.signatureDownloadURL);
+
+        if (isSignatureItem) {
+          return base64ItemImage(url, [600, 180], Jimp.PNG_FILTER_AUTO);
         } else {
-          // Create signature image configs
-          return [{
-            id: item.signatureTimestampKey,
-            itemId: item.id,
-            url: item.signatureDownloadURL
-          }];
+          return base64ItemImage(url);
         }
       })
-    )
-    .filter(({url}) => Boolean(url)); // remove empty uploads
+    );
 
-  const imageuris = yield Promise.all(
-    imagePhotoUrls.map(({url, itemId}) => {
-      const itemSrc = inspection.template.items[itemId];
+    // Insert base64 image JSON into original
+    // items' `photoData` JSON or `signatureDownloadURL`
+    imagePhotoUrls.forEach(img => {
+      // Find image's base64 JSON
+      const [base64img] = imageuris.filter(
+        imguri => imguri.downloadURL === img.url
+      );
+      const itemSrc = inspection.template.items[img.itemId];
       const isSignatureItem = Boolean(itemSrc.signatureDownloadURL);
 
-      if (isSignatureItem) {
-        return base64ItemImage(url, [600, 180], Jimp.PNG_FILTER_AUTO);
-      } else {
-        return base64ItemImage(url);
+      // Remove undiscovered image reference
+      if (!base64img) {
+        if (itemSrc.photosData) delete itemSrc.photosData[img.id];
+        if (isSignatureItem) delete itemSrc.signatureDownloadURL;
+        return;
       }
-    })
-  );
 
-  // Insert base64 image JSON into original
-  // items' `photoData` JSON or `signatureDownloadURL`
-  imagePhotoUrls.forEach(img => {
-    // Find image's base64 JSON
-    const [base64img] = imageuris.filter(
-      imguri => imguri.downloadURL === img.url
-    );
-    const itemSrc = inspection.template.items[img.itemId];
-    const isSignatureItem = Boolean(itemSrc.signatureDownloadURL);
+      // Merge base64 data into image hash
+      if (isSignatureItem) {
+        itemSrc.signatureData = assign({}, base64img);
+      } else {
+        assign(
+          itemSrc.photosData[img.id],
+          base64img
+        );
+      }
+    });
 
-    // Remove undiscovered image reference
-    if (!base64img) {
-      if (itemSrc.photosData) delete itemSrc.photosData[img.id];
-      if (isSignatureItem) delete itemSrc.signatureDownloadURL;
-      return;
-    }
-
-    // Merge base64 data into image hash
-    if (isSignatureItem) {
-      itemSrc.signatureData = assign({}, base64img);
-    } else {
-      assign(
-        itemSrc.photosData[img.id],
-        base64img
-      );
-    }
+    return inspection;
   });
-
-  return inspection;
 }

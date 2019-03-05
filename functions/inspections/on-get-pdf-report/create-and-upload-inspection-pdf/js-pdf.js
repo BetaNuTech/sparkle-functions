@@ -17365,4 +17365,4 @@ var FlateStream = (function() {
 
 })(typeof self !== "undefined" && self || typeof window !== "undefined" && window || undefined);
 
-export default jsPDF;
+module.exports = jsPDF;

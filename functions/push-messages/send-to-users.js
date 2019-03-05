@@ -51,7 +51,7 @@ module.exports = function messageUsers({
         message,
         recipientId,
         createdAt
-      }))
+      })));
     } catch (e) {
       throw new Error(`${LOG_PREFIX} ${e}`); // wrap error
     }
@@ -66,7 +66,7 @@ module.exports = function messageUsers({
           title,
           message
         }
-      }).then((r) => r instanceof Error ? false : true) // failed : succeeded
+      ).then((r) => r instanceof Error ? false : true) // failed : succeeded
     ));
 
     try {
@@ -74,7 +74,7 @@ module.exports = function messageUsers({
       // Allow unsent messages to linger to retry during push notification sync
       yield Promise.all(results.map((result, i) =>
         result === false ? Promise.resolve() : db.ref(`/sendMessages/${messages[i].id}`).remove()
-      );
+      ));
     } catch (e) {
       throw new Error(`${LOG_PREFIX} ${e}`); // wrap error
     }
