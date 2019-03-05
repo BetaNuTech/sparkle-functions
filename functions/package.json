@@ -8,6 +8,9 @@
     "dev": "./node_modules/.bin/nodemon -i node_modules -e js,json --exec 'npm test --silent'",
     "coverage": "./node_modules/.bin/nyc npm test --silent"
   },
+  "engines": {
+    "node": "8"
+  },
   "dependencies": {
     "atob": "^2.0.3",
     "aws-sdk": "^2.94.0",
@@ -17,6 +20,7 @@
     "firebase-admin": "^6.0.0",
     "firebase-functions": "^2.0.5",
     "jimp": "0.2",
+    "jsdom": "^11.1.0",
     "lodash": "^4.15.0",
     "moment": "^2.22.2",
     "navigator": "^1.0.1",
