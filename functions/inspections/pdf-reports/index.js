@@ -2,6 +2,7 @@ const co = require('co');
 const Jimp = require('jimp');
 const moment = require('moment');
 const base64ItemImage = require('./base-64-item-image');
+const createAndUploadInspection = require('./create-and-upload-inspection');
 const sendToUsers = require('../../push-messages/send-to-users');
 const log = require('../../utils/logger');
 
@@ -13,7 +14,7 @@ const LOG_PREFIX = 'inspections: pdf-reports:';
  * Factory for inspection PDF generator endpoint
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
  * @param  {firebaseAdmin.messaging} messaging - Firebase Admin messaging service instance
- * @return {Function}
+ * @return {Function} - onRequest handler
  */
 module.exports = function createPDFReportHandler(db, messaging) {
   /**
@@ -24,19 +25,21 @@ module.exports = function createPDFReportHandler(db, messaging) {
    * - Send result: base 64 PDF document
    * @param  {Object}   req Express req
    * @param  {Object}   res Express res
-   * @param  {Function} next Express next
    * @return {Promise}  response
    */
-  return function getInspectionPDF(req, res, next) {
+  return function getInspectionPDF(req, res) {
     return co(function* () {
+      // Lookup & adjust property / inspection records
       const propertyReq = yield db.ref(req.params.property).once('value');
       const property = propertyReq.val();
+      property.id = req.params.property;
       const inspectionReq = yield db.ref(req.params.inspection).once('value');
       const inspection = insertInspectionItemImageUris(inspectionReq.val());
+      inspection.id = req.params.inspection;
       const adminEditor = req.query.adminEditor || '';
 
       // Generate inspection PDF and get it's download link
-      let inspectionReportURL = []; // TODO integrate /scripts/create-and-upload-inspection-pdf
+      let inspectionReportURL = yield createAndUploadInspection(property, inspection);
       [inspectionReportURL] = inspectionReportURL
         .split(/\n/)
         .map(s => s.trim())
@@ -51,15 +54,20 @@ module.exports = function createPDFReportHandler(db, messaging) {
       const author = capitalize(adminEditor || inspection.inspectorName);
       const actionType = adminEditor ? 'updated' : 'created';
 
-      sendToUsers({
-        db,
-        messaging,
-        title: property.name,
-        message: `${creationDate} Inspection Report ${actionType} by ${author}`,
-        excludes: [req.user.id], // remove sender from message recipients
-        allowCorp: true,
-        property: property.id
-      });
+      try {
+       // Notify recipients of new inspection report
+        yield sendToUsers({
+          db,
+          messaging,
+          title: property.name,
+          message: `${creationDate} Inspection Report ${actionType} by ${author}`,
+          excludes: [req.user.id], // remove sender from message recipients
+          allowCorp: true,
+          property: property.id
+        });
+      } catch(e) {
+        log.error(`${LOG_PREFIX} ${e}`); // proceed with error
+      }
 
       // Resolve URL to download inspection report PDF
       res.send({inspectionReportURL});
