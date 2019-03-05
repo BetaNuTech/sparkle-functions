@@ -35,6 +35,7 @@ services:
   test-e2e-fn:
     image: "circleci/node:8"
     working_dir: /src/functions
+    env_file: .env
     command: [sh, -c, "yarn && yarn test-e2e"]
     volumes:
       - ./auth.json:/src/auth.json
