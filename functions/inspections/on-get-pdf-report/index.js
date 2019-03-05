@@ -31,10 +31,10 @@ module.exports = function createOnGetPDFReportHandler(db, messaging) {
   const getInspectionPDFHandler = (req, res) => {
     return co(function* () {
       // Lookup & adjust property / inspection records
-      const propertyReq = yield db.ref(req.params.property).once('value');
+      const propertyReq = yield db.ref(`/properties/${req.params.property}`).once('value');
       const property = propertyReq.val();
       property.id = req.params.property;
-      const inspectionReq = yield db.ref(req.params.inspection).once('value');
+      const inspectionReq = yield db.ref(`/inspections/${req.params.inspection}`).once('value');
       const inspection = yield insertInspectionItemImageUris(inspectionReq.val());
       inspection.id = req.params.inspection;
       const adminEditor = req.query.adminEditor || '';
