@@ -2,11 +2,31 @@ const { expect } = require('chai');
 const request = require('supertest');
 const createApp = require('../../inspections/on-get-pdf-report');
 const uuid = require('../../test-helpers/uuid');
+const mocking = require('../../test-helpers/mocking');
 const { cleanDb } = require('../../test-helpers/firebase');
-const { db } = require('./setup');
+const { db, auth } = require('./setup');
+
+const {assign} = Object;
 
 describe('Inspection PDF Report', () => {
   afterEach(() => cleanDb(db));
+
+  it('should reject request without authorization', async function() {
+    const inspId = uuid();
+    const propertyId = uuid();
+
+    // Setup database
+    await db.ref(`/inspections/${inspId}`).set({}); // Add inspection
+    await db.ref(`/properties/${propertyId}`).set({}); // Add property
+
+    // Execute & Get Result
+    const app = createApp(db, {}, auth);
+    return request(app)
+      .get(`/${propertyId}/${inspId}`)
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(401);
+  });
 
   it('should resolve an uploaded PDF\'s download link', async function() {
     const inspId = uuid();
@@ -14,45 +34,17 @@ describe('Inspection PDF Report', () => {
     const itemId = uuid();
     const sectionId = uuid();
     const now = Date.now() / 1000;
-    const inspection = {
-      inspectorName: `author${propertyId}`,
-      creationDate: now - 100000,
-      deficienciesExist: false,
-      itemsCompleted: 10,
-      totalItems: 10,
+    const inspection = mocking.createInspection({
       property: propertyId,
-      updatedLastDate: now,
-      inspectionCompleted: true,
       score: 100,
-      totalItems: 11,
+      totalItems: 1,
+      inspectionCompleted: true,
       template: {
         name: `template${inspId}`,
-        items: {
-          [itemId]: {
-            index: 0,
-            isItemNA: false,
-            isTextInputItem: true,
-            mainInputFourValue: 0,
-            mainInputOneValue: 0,
-            mainInputSelected: true,
-            mainInputThreeValue: 0,
-            mainInputTwoValue: 0,
-            mainInputZeroValue: 3,
-            sectionId,
-            textInputValue: '1',
-            title: 'Unit #:'
-          }
-        },
-        sections: {
-          [sectionId]: {
-            added_multi_section: false,
-            index: 0,
-            section_type: 'single',
-            title: 'Intro'
-          }
-        }
+        items: { [itemId]: mocking.createItem({ sectionId }) },
+        sections: { [sectionId]: mocking.createSection() }
       }
-    };
+    });
     const property = {
       name: `name${propertyId}`,
       inspections: { [inspId]: true }

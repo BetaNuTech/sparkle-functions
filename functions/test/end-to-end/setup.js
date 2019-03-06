@@ -17,6 +17,7 @@ const admin = require('firebase-admin');
 
 admin.initializeApp(testConfig);
 const db = admin.database();
+const auth = admin.auth();
 const storage = admin.storage();
 
 // Stub admin.initializeApp & `database()` to avoid live data access
@@ -26,6 +27,7 @@ Object.defineProperty(admin, 'storage', { writable: true, value: () => storage }
 
 module.exports = {
   db,
+  auth,
   test,
   storage,
   cloudFunctions: require('../../index')

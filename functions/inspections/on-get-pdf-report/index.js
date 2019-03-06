@@ -1,10 +1,12 @@
 const co = require('co');
 const Jimp = require('jimp');
+const assert = require('assert');
 const moment = require('moment');
 const express = require('express');
 const base64ItemImage = require('./base-64-item-image');
 const createAndUploadInspection = require('./create-and-upload-inspection-pdf');
 const sendToUsers = require('../../push-messages/send-to-users');
+const authUser = require('../../utils/auth-firebase-user');
 const log = require('../../utils/logger');
 
 const {keys, assign} = Object;
@@ -15,9 +17,14 @@ const LOG_PREFIX = 'inspections: pdf-reports:';
  * Factory for inspection PDF generator endpoint
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
  * @param  {firebaseAdmin.messaging} messaging - Firebase Admin messaging service instance
+ * @param  {firebaseAdmin.auth?} auth - Firebase Admin auth service instance (optional for testing)
  * @return {Function} - onRequest handler
  */
-module.exports = function createOnGetPDFReportHandler(db, messaging) {
+module.exports = function createOnGetPDFReportHandler(db, messaging, auth) {
+  assert(Boolean(db), 'has firebase database instance');
+  assert(Boolean(messaging), 'has firebase messaging instance');
+  if (process.env.NODE_ENV !== 'test') assert(Boolean(auth), 'has firebase auth instance');
+
   /**
    * Generate an inspection report PDF from an inspection
    * - Convert all inspection item Photos to base64 encoded
@@ -76,17 +83,15 @@ module.exports = function createOnGetPDFReportHandler(db, messaging) {
       res.send({inspectionReportURL});
     }).catch(e => {
       log.error(`${LOG_PREFIX} ${e}`);
-      res.status(500).send({
-        statusCode: 500,
-        message: 'PDF generation failed'
-      });
+      res.status(500).send({message: 'PDF generation failed'});
     });
   }
 
   // Create express app with single endpoint
   // that configures required url params
   const app = express();
-  app.get('/:property/:inspection', getInspectionPDFHandler);
+  const middleware = [auth ? authUser(db, auth) : null, getInspectionPDFHandler].filter(Boolean);
+  app.get('/:property/:inspection', ...middleware);
   return app;
 }
 

@@ -13,6 +13,7 @@ var config = functions.config().firebase;
 var defaultApp = admin.initializeApp(config);
 
 var db = defaultApp.database();
+const auth = admin.auth();
 
 // Staging
 var functionsStagingDatabase = functions.database.instance('staging-sapphire-inspections');
@@ -268,10 +269,10 @@ exports.templateCategoryDeleteStaging = functionsStagingDatabase.ref('/templateC
 // GET Inspection PDF Report
 
 exports.inspectionPdfReport = functions.https.onRequest(
-  inspections.createOnGetPDFReportHandler(db, admin.messaging())
+  inspections.createOnGetPDFReportHandler(db, admin.messaging(), auth)
 );
 exports.inspectionPdfReportStaging = functions.https.onRequest(
-  inspections.createOnGetPDFReportHandler(dbStaging, admin.messaging())
+  inspections.createOnGetPDFReportHandler(dbStaging, admin.messaging(), auth)
 );
 
 // Message Subscribers
