@@ -45,7 +45,6 @@ module.exports = function createCRONHandler(topic = '', pubSub, db, messaging) {
            db,
            messaging,
            messageData.recipientId,
-           id,
            messageData
          );
          yield db.ref(path).remove();

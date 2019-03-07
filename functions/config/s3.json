@@ -1,0 +1,4 @@
+{
+  "endpoint": "s3.amazonaws.com",
+  "inspectionReportBucket": "sapphireinspections"
+}

@@ -6,6 +6,7 @@ const deleteUploads = require('./delete-uploads');
 const createOnAttributeWriteHandler = require('./on-attribute-write-handler');
 const createOnWriteHandler = require('./on-write-handler');
 const createOnDeleteHandler = require('./on-delete-handler');
+const createOnGetPDFReportHandler = require('./on-get-pdf-report');
 
 const LOG_PREFIX = 'inspections:';
 
@@ -191,7 +192,8 @@ module.exports = {
   processWrite,
   createOnAttributeWriteHandler,
   createOnWriteHandler,
-  createOnDeleteHandler
+  createOnDeleteHandler,
+  createOnGetPDFReportHandler
 };
 
 function flatten(arr) {

@@ -16,16 +16,15 @@ module.exports = function createPushMessagesOnWriteHandler(db, messaging) {
 
     const pushMessage = change.after.val();
     const recipientId = pushMessage.recipientId;
-    const objectId = event.params.objectId;
+    const messageId = event.params.objectId;
 
     yield sendToRecipient(
       db,
       messaging,
       recipientId,
-      objectId,
       pushMessage
     );
 
-    return db.ref(`/sendMessages/${objectId}`).remove();
+    return db.ref(`/sendMessages/${messageId}`).remove();
   });
 }

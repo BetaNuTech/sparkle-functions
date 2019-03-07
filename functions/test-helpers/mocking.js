@@ -1,3 +1,5 @@
+const assert = require('assert');
+
 module.exports = {
  /**
   * Create a randomized inspection object
@@ -5,9 +7,7 @@ module.exports = {
   * @return {Object}
   */
   createInspection(config) {
-    if (!config.property) {
-      throw new Error('createInspection requires a `property`');
-    }
+    assert(Boolean(config.property, 'has a `config.property` id'))
 
     const now = Date.now() / 1000;
     const offset = Math.floor(Math.random() * 100);
@@ -25,6 +25,34 @@ module.exports = {
       templateName: `test-${offset * 3}`,
       totalItems: items,
       updatedLastDate: (now - (offset / 2))
+    }, config);
+  },
+
+  createItem(config = {}) {
+    assert(Boolean(config.sectionId), 'has config with sectionId');
+
+    return Object.assign({
+      index: 0,
+      isItemNA: false,
+      isTextInputItem: true,
+      mainInputFourValue: 0,
+      mainInputOneValue: 0,
+      mainInputSelected: true,
+      mainInputThreeValue: 0,
+      mainInputTwoValue: 0,
+      mainInputZeroValue: 3,
+      sectionId: config.sectionId,
+      textInputValue: '1',
+      title: 'Unit #:'
+    }, config);
+  },
+
+  createSection(config = {}) {
+    return Object.assign({
+      added_multi_section: false,
+      index: 0,
+      section_type: 'single',
+      title: 'Intro'
     }, config);
   }
 }

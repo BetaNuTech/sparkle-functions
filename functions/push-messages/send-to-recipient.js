@@ -3,17 +3,16 @@ const log = require('../utils/logger');
 
 /**
  * Send a given push notifcation message to a recipient ID
- * @param {firebaseAdmin.database} db
- * @param {firebaseAdmin.messaging} messaging
+ * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+ * @param  {firebaseAdmin.messaging} messaging - Firebase Admin messaging service instance
  * @param {String} recipientId
- * @param {String} messageId
  * @param {Object} pushMessage
  * @return {Promise} - resolves {String[]} recipient's registration tokens
  */
-module.exports = function sendToRecipient(db, messaging, recipientId, messageId, pushMessage = {}) {
+module.exports = function sendToRecipient(db, messaging, recipientId, pushMessage = {}) {
   return co(function *() {
-    var registrationTokens = [];
-    const dataSnapshot = yield db.ref('/registrationTokens').child(recipientId).once('value');
+    const registrationTokens = [];
+    const dataSnapshot = yield db.ref(`/registrationTokens/${recipientId}`).once('value');
 
     if (!dataSnapshot.exists()) {
       // Recipient has no tokens
@@ -51,9 +50,10 @@ module.exports = function sendToRecipient(db, messaging, recipientId, messageId,
     // registration token with the provided options.
     try {
       const response = yield messaging.sendToDevice(registrationTokens, payload, {});
-      log.info(`Successfully sent message: ${response}`);
+      log.info(`Successfully sent message: ${response.multicastId}`);
     } catch (e) {
       log.error(`Error sending message: ${e}`);
+      return e;
     }
 
     return registrationTokens;
