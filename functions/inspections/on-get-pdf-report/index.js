@@ -71,7 +71,7 @@ module.exports = function createOnGetPDFReportHandler(db, messaging, auth) {
           messaging,
           title: property.name,
           message: `${creationDate} Inspection Report ${actionType} by ${author}`,
-          excludes: [req.user.id],
+          excludes: req.user ? [req.user.id] : [],
           allowCorp: true,
           property: property.id
         });
