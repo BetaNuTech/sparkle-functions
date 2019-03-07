@@ -49,7 +49,16 @@ module.exports = function createOnGetPDFReportHandler(db, messaging, auth) {
       log.info(`${LOG_PREFIX} generating property: ${property.id} inspection report PDF for: ${inspection.id}`);
 
       if (inspection.inspectionReportStatus === 'generating') {
-        return res.status(200).send({status: inspection.inspectionReportStatus});
+        return res.status(200).send({
+          status: inspection.inspectionReportStatus,
+          message: 'report is being generated'
+        });
+      } else if (inspectionReportUpToDate(inspection)) {
+        return res.status(200).send({
+          status: inspection.inspectionReportStatus,
+          message: 'report already up to date',
+          inspectionReportURL: inspection.inspectionReportURL
+        });
       }
 
       // Set report generation status
@@ -205,4 +214,19 @@ function insertInspectionItemImageUris(inspection) {
 
     return inspection;
   });
+}
+
+/**
+ * Inspections' PDF report is up to
+ * date with its' last update date
+ * @param  {Number} inspectionReportUpdateLastDate
+ * @param  {Number} updatedLastDate
+ * @return {Boolean}
+ */
+function inspectionReportUpToDate({ inspectionReportUpdateLastDate, updatedLastDate }) {
+  return (
+    updatedLastDate && typeof updatedLastDate === 'number' &&
+    inspectionReportUpdateLastDate && typeof inspectionReportUpdateLastDate === 'number' &&
+    inspectionReportUpdateLastDate > updatedLastDate
+  );
 }

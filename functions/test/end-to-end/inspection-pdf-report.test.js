@@ -116,5 +116,29 @@ describe('Inspection PDF Report', () => {
 
     // Assertions
     expect(result.body.status).to.equal('generating');
+    expect(result.body.message).to.include('is being generated');
+  });
+
+  it('should return immediately when inspection report up to date', async function() {
+    // Setup database
+    const inspectionData = Object.assign({}, INSPECTION_DATA, {
+      inspectionReportStatus: 'completed_success',
+      inspectionReportUpdateLastDate: Date.now() / 1000, // occured after
+      updatedLastDate: (Date.now() - 1000) / 1000 // occured before
+    });
+    await db.ref(`/inspections/${INSP_ID}`).set(inspectionData); // Add generating inspection
+    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
+
+    // Execute & Get Result
+    const app = createApp(db, { sendToDevice: () => Promise.resolve() });
+    const result = await request(app)
+      .get(`/${PROPERTY_ID}/${INSP_ID}`)
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    // Assertions
+    expect(result.body.status).to.equal('completed_success');
+    expect(result.body.message).to.include('already up to date');
   });
 });
