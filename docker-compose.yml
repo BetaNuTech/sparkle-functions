@@ -19,22 +19,23 @@ services:
       - ./appengine:/src
 
   yarn-fn:
-    image: "node:6.11-alpine"
+    image: "node:8-alpine"
     working_dir: /src/functions
     entrypoint: yarn
     volumes:
       - ./functions:/src/functions
 
   test-unit-fn:
-    image: "node:6.11-alpine"
+    image: "node:8-alpine"
     working_dir: /src/functions
     command: [sh, -c, "yarn test-unit"]
     volumes:
       - ./functions:/src/functions
 
   test-e2e-fn:
-    image: "circleci/node:6.11"
+    image: "circleci/node:8"
     working_dir: /src/functions
+    env_file: .env
     command: [sh, -c, "yarn && yarn test-e2e"]
     volumes:
       - ./auth.json:/src/auth.json

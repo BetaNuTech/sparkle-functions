@@ -41,22 +41,38 @@ Follow all instructions, using the user with credentials for Firebase app
 - Ensure you set permissions for users pushing to [Storage buckets](https://console.cloud.google.com/storage/browser)
 
 7. Add `.env` file for local development with following options:
+
 ```
 GOOGLE_CLOUD_PROJECT=project-id
 PORT=3000
+
+AWS_S3_ACCESS_KEY_ID=abc
+AWS_S3_SECRET_ACCESS_KEY=123
 ```
 
-8. Install Appengine dependencies
+8. Add environment variables to production for HTTP endpoints:
+  - inspectionPdfReport
+  - inspectionPdfReportStaging
+
+**To add their ENV variables:**
+  - In the Google Cloud Platform Console, select Cloud Functions from the left menu.
+  - Select each function by clicking on its name in the functions list.
+  - Click the Edit icon in the top menu.
+  - Click More to display the advanced options, and enter `AWS_S3_ACCESS_KEY_ID` & `AWS_S3_SECRET_ACCESS_KEY` variables
+  - Also a good idea to increase its max timeout by following instructions below
+  - Click Save to update the function.
+
+9. Install Appengine dependencies
 ```sh
 docker-compose run yarn
 ```
 
-9. Local Appengine Server
+10. Local Appengine Server
 ```sh
 docker-compose up start
 ```
 
-10. Deploy Appengine
+11. Deploy Appengine
 ```sh
 docker-compose run deploy
 ```
