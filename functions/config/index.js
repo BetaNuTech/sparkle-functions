@@ -1,5 +1,4 @@
 const s3Config = require('./s3.json');
-const log = require('../utils/logger');
 
 const env = (process.env.NODE_ENV || 'production');
 
@@ -26,12 +25,10 @@ module.exports = Object.assign(
 
       if (sapphireinspections.aws_s3_access_key_id) {
         this.s3.accessKeyId = sapphireinspections.aws_s3_access_key_id;
-        log.info('configured custom s3 access key id');
       }
 
       if (sapphireinspections.aws_s3_secret_access_key) {
         this.s3.secretAccessKey = sapphireinspections.aws_s3_secret_access_key;
-        log.info('configured custom s3 secret access key');
       }
 
       return this;
