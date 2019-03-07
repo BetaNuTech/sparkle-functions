@@ -50,7 +50,7 @@ module.exports = function sendToRecipient(db, messaging, recipientId, pushMessag
     // registration token with the provided options.
     try {
       const response = yield messaging.sendToDevice(registrationTokens, payload, {});
-      log.info(`Successfully sent message: ${response}`);
+      log.info(`Successfully sent message: ${response.multicastId}`);
     } catch (e) {
       log.error(`Error sending message: ${e}`);
       return e;
