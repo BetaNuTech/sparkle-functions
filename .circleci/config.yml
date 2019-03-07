@@ -34,7 +34,7 @@ jobs:
 
   deploy-production:
     docker:
-      - image: mj3000/firebase-tools
+      - image: okuyan/firebase-tools
     steps:
       - checkout
       - run:
