@@ -33,8 +33,8 @@ module.exports = function authFirebaseUser(db, auth) {
     const idToken = (`${authorization}`).split(' ').pop(); // take token
 
     try {
-      const decodedUser = await auth.verifyIdToken(idToken);
-      const userResult = await getUserById(db, decodedUser);
+      const decodedToken = await auth.verifyIdToken(idToken);
+      const userResult = await getUserById(db, decodedToken.uid);
 
       // set request user
       req.user = (req.user || {});
@@ -61,7 +61,7 @@ module.exports = function authFirebaseUser(db, auth) {
  */
 function getUserById(db, userId) {
   assert(Boolean(db), 'has firebase database instance');
-  assert(userId && typeof userId === 'string', 'has user id');
+  assert(userId && typeof userId === 'string', `has valid user id got: ${userId}`);
 
   return new Promise((resolve, reject) =>
     db.ref(`/users/${userId}`)
