@@ -1,4 +1,6 @@
 const fs = require('fs');
+const s3Client = require('../../utils/s3-client');
+const CONFIG = require('../../config');
 const AUTH_FILE_PATH = '../auth.json';
 
 // Write firbase auth file from environment if non-existent
@@ -30,5 +32,24 @@ module.exports = {
   auth,
   test,
   storage,
-  cloudFunctions: require('../../index')
+  cloudFunctions: require('../../index'),
+
+  /**
+   * Delete an inspection PDF from S3 Bucket
+   * @param  {String} destPath
+   * @return {Promise} - resolves {Object} success response
+   */
+  deletePDFInspection(destPath) {
+    const [,finalPath] = destPath.split(`${CONFIG.s3.inspectionReportBucket}.s3.amazonaws.com/`);
+
+    return new Promise((resolve, reject) => {
+      s3Client.deleteObject(
+        {
+          Bucket: CONFIG.s3.inspectionReportBucket,
+          Key: finalPath,
+        },
+        (err, result) => err ? reject(err) : resolve(result)
+      );
+    });
+  }
 }
