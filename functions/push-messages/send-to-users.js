@@ -58,9 +58,11 @@ module.exports = function sendToUsers({
       throw new Error(`${LOG_PREFIX} create-send-messages: ${e}`); // wrap error
     }
 
-    // Collect results of sending push notifications
+    let results = [];
+
     try {
-      const results = yield Promise.all(recipients.map(recipientId =>
+      // Collect results of sending push notifications
+      results = yield Promise.all(recipients.map(recipientId =>
         sendToRecipient(
           db,
           messaging,
