@@ -55,6 +55,11 @@ module.exports = function createOnGetPDFReportHandler(db, messaging, auth) {
       .map(s => s.trim())
       .filter(s => s.search(HTTPS_URL) > -1);
 
+      // Set the report's last updated data
+      yield db.ref(`/inspections/${inspection.id}/inspectionReportUpdateLastDate`).set(
+        Date.now() / 1000
+      );
+
       // Create firebase `sendMessages` records about
       // inspection PDF for each relevant user
       const creationDate = moment(
