@@ -44,19 +44,28 @@ Follow all instructions, using the user with credentials for Firebase app
 ```
 GOOGLE_CLOUD_PROJECT=project-id
 PORT=3000
+
+AWS_S3_ACCESS_KEY_ID=<s3-bucket-key-id>
+AWS_S3_SECRET_ACCESS_KEY=<s3-secret-access-key>
 ```
 
-8. Install Appengine dependencies
+8. Add environment variables to production:
+```sh
+firebase functions:config:set sapphireinspections.aws_s3_access_key_id=...
+firebase functions:config:set sapphireinspections.aws_s3_secret_access_key=...
+```
+
+9. Install Appengine dependencies
 ```sh
 docker-compose run yarn
 ```
 
-9. Local Appengine Server
+10. Local Appengine Server
 ```sh
 docker-compose up start
 ```
 
-10. Deploy Appengine
+11. Deploy Appengine
 ```sh
 docker-compose run deploy
 ```
