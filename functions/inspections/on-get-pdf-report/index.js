@@ -48,6 +48,10 @@ module.exports = function createOnGetPDFReportHandler(db, messaging, auth) {
 
       log.info(`${LOG_PREFIX} generating property: ${property.id} inspection report PDF for: ${inspection.id}`);
 
+      if (inspection.inspectionReportStatus === 'generating') {
+        return res.status(200).send({status: inspection.inspectionReportStatus});
+      }
+
       // Set report generation status
       yield db.ref(`/inspections/${inspection.id}/inspectionReportStatus`).set('generating');
 

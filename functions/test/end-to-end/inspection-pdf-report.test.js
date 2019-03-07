@@ -6,8 +6,6 @@ const mocking = require('../../test-helpers/mocking');
 const { cleanDb } = require('../../test-helpers/firebase');
 const { db, auth } = require('./setup');
 
-const {assign} = Object;
-
 // Avoid creating lots of PDF's
 const INSP_ID = uuid();
 const PROPERTY_ID = uuid();
@@ -100,5 +98,23 @@ describe('Inspection PDF Report', () => {
 
     // Assertions
     expect(actual.val()).to.equal('completed_success');
+  });
+
+  it('should return immediately when inspection status is generating', async function() {
+    // Setup database
+    const inspectionData = Object.assign({}, INSPECTION_DATA, {inspectionReportStatus: 'generating'});
+    await db.ref(`/inspections/${INSP_ID}`).set(inspectionData); // Add generating inspection
+    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
+
+    // Execute & Get Result
+    const app = createApp(db, { sendToDevice: () => Promise.resolve() });
+    const result = await request(app)
+      .get(`/${PROPERTY_ID}/${INSP_ID}`)
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    // Assertions
+    expect(result.body.status).to.equal('generating');
   });
 });
