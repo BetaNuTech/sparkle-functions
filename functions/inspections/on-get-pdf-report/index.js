@@ -48,6 +48,9 @@ module.exports = function createOnGetPDFReportHandler(db, messaging, auth) {
 
       log.info(`${LOG_PREFIX} generating property: ${property.id} inspection report PDF for: ${inspection.id}`);
 
+      // Set report generation status
+      yield db.ref(`/inspections/${inspection.id}/inspectionReportStatus`).set('generating');
+
       // Generate inspection PDF and get it's download link
       let inspectionReportURL = yield createAndUploadInspection(property, inspection);
       [inspectionReportURL] = inspectionReportURL
@@ -56,9 +59,10 @@ module.exports = function createOnGetPDFReportHandler(db, messaging, auth) {
       .filter(s => s.search(HTTPS_URL) > -1);
 
       // Set the report's last updated data
-      yield db.ref(`/inspections/${inspection.id}/inspectionReportUpdateLastDate`).set(
-        Date.now() / 1000
-      );
+      yield db.ref(`/inspections/${inspection.id}`).update({
+        inspectionReportUpdateLastDate: Date.now() / 1000,
+        inspectionReportStatus: 'completed_success'
+      });
 
       // Create firebase `sendMessages` records about
       // inspection PDF for each relevant user
@@ -88,6 +92,11 @@ module.exports = function createOnGetPDFReportHandler(db, messaging, auth) {
       res.send({inspectionReportURL});
     }).catch(e => {
       log.error(`${LOG_PREFIX} ${e}`);
+
+      // Update report status for failure
+      db.ref(`/inspections/${inspection.id}/inspectionReportStatus`).set('completed_failure');
+
+      // Send failed response
       res.status(500).send({message: 'PDF generation failed'});
     });
   }
