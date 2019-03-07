@@ -10,7 +10,6 @@ const inspections = require('./inspections');
 const properties = require('./properties');
 const propertyTemplates = require('./property-templates');
 const config = functions.config().firebase;
-require('./config').configure(functions.config()); // Configure app w/ firebase variables
 const defaultApp = admin.initializeApp(config);
 
 const db = defaultApp.database();
