@@ -78,7 +78,7 @@ module.exports = function createOnGetPDFReportHandler(db, messaging, auth) {
       yield db.ref(`/inspections/${inspection.id}`).update({
         inspectionReportUpdateLastDate: Date.now() / 1000,
         inspectionReportStatus: 'completed_success',
-        inspectionReportURL: inspection.inspectionReportURL
+        inspectionReportURL
       });
 
       // Create firebase `sendMessages` records about
