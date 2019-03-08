@@ -4,7 +4,7 @@ const createApp = require('../../inspections/on-get-pdf-report');
 const uuid = require('../../test-helpers/uuid');
 const mocking = require('../../test-helpers/mocking');
 const { cleanDb } = require('../../test-helpers/firebase');
-const { db, auth } = require('./setup');
+const { db, auth, deletePDFInspection } = require('./setup');
 
 // Avoid creating lots of PDF's
 const INSP_ID = uuid();
@@ -27,7 +27,18 @@ const PROPERTY_DATA = {
 };
 
 describe('Inspection PDF Report', () => {
-  afterEach(() => cleanDb(db));
+  afterEach(async () => {
+    const reportURL = await db.ref(`/inspections/${INSP_ID}/inspectionReportURL`).once('value');
+
+    // Delete any generated PDF
+    if (reportURL.val()) {
+      try {
+        await deletePDFInspection(reportURL.val());
+      } catch (e) {}
+    }
+
+    return cleanDb(db);
+  });
 
   it('should reject request without authorization', async function() {
     // Setup database
