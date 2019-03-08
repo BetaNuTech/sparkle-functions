@@ -4,7 +4,7 @@ const createApp = require('../../inspections/on-get-pdf-report');
 const uuid = require('../../test-helpers/uuid');
 const mocking = require('../../test-helpers/mocking');
 const { cleanDb } = require('../../test-helpers/firebase');
-const { db, auth } = require('./setup');
+const { db, auth, deletePDFInspection } = require('./setup');
 
 // Avoid creating lots of PDF's
 const INSP_ID = uuid();
@@ -27,7 +27,18 @@ const PROPERTY_DATA = {
 };
 
 describe('Inspection PDF Report', () => {
-  afterEach(() => cleanDb(db));
+  afterEach(async () => {
+    const reportURL = await db.ref(`/inspections/${INSP_ID}/inspectionReportURL`).once('value');
+
+    // Delete any generated PDF
+    if (reportURL.val()) {
+      try {
+        await deletePDFInspection(reportURL.val());
+      } catch (e) {}
+    }
+
+    return cleanDb(db);
+  });
 
   it('should reject request without authorization', async function() {
     // Setup database
@@ -78,6 +89,29 @@ describe('Inspection PDF Report', () => {
 
     // Assertions
     expect(actual.val()).to.be.a('number');
+  });
+
+  it('should add an `inspectionReportURL` to inspection', async function() {
+    // Setup database
+    const inspectionData = Object.assign({}, INSPECTION_DATA);
+    delete inspectionData.inspectionReportURL;
+    await db.ref(`/inspections/${INSP_ID}`).set(inspectionData); // Add inspection
+    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
+
+    // Execute
+    const app = createApp(db, { sendToDevice: () => Promise.resolve() });
+    const response = await request(app)
+      .get(`/${PROPERTY_ID}/${INSP_ID}`)
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    // Get Result
+    const actual = await db.ref(`/inspections/${INSP_ID}/inspectionReportURL`).once('value');
+    const expected = response.body.inspectionReportURL;
+
+    // Assertions
+    expect(actual.val()).to.equal(expected);
   });
 
   it('should update `inspectionReportStatus` on inspection', async function() {

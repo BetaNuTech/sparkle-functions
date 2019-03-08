@@ -42,7 +42,7 @@ services:
       - ./functions:/src/functions
 
   deploy-staging-fn:
-    image: "mj3000/firebase-tools"
+    image: okuyan/firebase-tools
     working_dir: /src/functions
     env_file: .env
     command: [sh, -c, "../scripts/deploy-functions.sh staging"]

@@ -3,6 +3,7 @@ const Jimp = require('jimp');
 const assert = require('assert');
 const moment = require('moment');
 const express = require('express');
+const cors = require('cors');
 const base64ItemImage = require('./base-64-item-image');
 const createAndUploadInspection = require('./create-and-upload-inspection-pdf');
 const sendToUsers = require('../../push-messages/send-to-users');
@@ -46,6 +47,10 @@ module.exports = function createOnGetPDFReportHandler(db, messaging, auth) {
       inspection.id = req.params.inspection;
       const adminEditor = req.query.adminEditor || '';
 
+      // Optional incognito mode query
+      // defaults to false
+      const incognitoMode = req.query.incognitoMode ? (req.query.incognitoMode.search(/true/i) > -1 ? true : false) : false;
+
       log.info(`${LOG_PREFIX} generating property: ${property.id} inspection report PDF for: ${inspection.id}`);
 
       if (inspection.inspectionReportStatus === 'generating') {
@@ -76,31 +81,34 @@ module.exports = function createOnGetPDFReportHandler(db, messaging, auth) {
       // Set the report's last updated data
       yield db.ref(`/inspections/${inspection.id}`).update({
         inspectionReportUpdateLastDate: Date.now() / 1000,
-        inspectionReportStatus: 'completed_success'
+        inspectionReportStatus: 'completed_success',
+        inspectionReportURL
       });
 
-      // Create firebase `sendMessages` records about
-      // inspection PDF for each relevant user
-      const creationDate = moment(
-        parseInt(inspection.creationDate * 1000, 10)
-      ).format('MMMM D');
+      if (!incognitoMode) {
+        // Create firebase `sendMessages` records about
+        // inspection PDF for each relevant user
+        const creationDate = moment(
+          parseInt(inspection.creationDate * 1000, 10)
+        ).format('MMMM D');
 
-      const author = capitalize(adminEditor || inspection.inspectorName);
-      const actionType = adminEditor ? 'updated' : 'created';
+        const author = capitalize(decodeURIComponent(adminEditor || inspection.inspectorName));
+        const actionType = adminEditor ? 'updated' : 'created';
 
-      try {
-        // Notify recipients of new inspection report
-        yield sendToUsers({
-          db,
-          messaging,
-          title: property.name,
-          message: `${creationDate} Inspection Report ${actionType} by ${author}`,
-          excludes: req.user ? [req.user.id] : [],
-          allowCorp: true,
-          property: property.id
-        });
-      } catch(e) {
-        log.error(`${LOG_PREFIX} send-to-users: ${e}`); // proceed with error
+        try {
+          // Notify recipients of new inspection report
+          yield sendToUsers({
+            db,
+            messaging,
+            title: property.name,
+            message: `${creationDate} Inspection Report ${actionType} by ${author}`,
+            excludes: req.user ? [req.user.id] : [],
+            allowCorp: true,
+            property: property.id
+          });
+        } catch(e) {
+          log.error(`${LOG_PREFIX} send-to-users: ${e}`); // proceed with error
+        }
       }
 
       // Resolve URL to download inspection report PDF
@@ -119,6 +127,7 @@ module.exports = function createOnGetPDFReportHandler(db, messaging, auth) {
   // Create express app with single endpoint
   // that configures required url params
   const app = express();
+  app.use(cors());
   const middleware = [auth ? authUser(db, auth) : null, getInspectionPDFHandler].filter(Boolean);
   app.get('/:property/:inspection', ...middleware);
   return app;
