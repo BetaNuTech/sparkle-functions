@@ -87,7 +87,7 @@ module.exports = function createOnGetPDFReportHandler(db, messaging, auth) {
         parseInt(inspection.creationDate * 1000, 10)
       ).format('MMMM D');
 
-      const author = capitalize(adminEditor || inspection.inspectorName);
+      const author = capitalize(decodeURIComponent(adminEditor || inspection.inspectorName));
       const actionType = adminEditor ? 'updated' : 'created';
 
       try {
