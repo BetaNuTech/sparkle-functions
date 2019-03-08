@@ -3,6 +3,7 @@ const Jimp = require('jimp');
 const assert = require('assert');
 const moment = require('moment');
 const express = require('express');
+const cors = require('cors');
 const base64ItemImage = require('./base-64-item-image');
 const createAndUploadInspection = require('./create-and-upload-inspection-pdf');
 const sendToUsers = require('../../push-messages/send-to-users');
@@ -119,6 +120,7 @@ module.exports = function createOnGetPDFReportHandler(db, messaging, auth) {
   // Create express app with single endpoint
   // that configures required url params
   const app = express();
+  app.use(cors());
   const middleware = [auth ? authUser(db, auth) : null, getInspectionPDFHandler].filter(Boolean);
   app.get('/:property/:inspection', ...middleware);
   return app;
