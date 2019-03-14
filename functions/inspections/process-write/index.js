@@ -1,5 +1,7 @@
 // const compose = require('lodash/fp/compose');
 const processPropertyMeta = require('../process-property-meta');
+const propertyInspectionsList = require('./property-inspections-list');
+const completedInspectionsList = require('./completed-inspections-list');
 
 const LOG_PREFIX = 'inspections: process-write:';
 
@@ -13,72 +15,51 @@ const LOG_PREFIX = 'inspections: process-write:';
  */
 module.exports = async function processWrite(db, inspectionId, inspection) {
   const updates = {};
-  const propertyId = inspection.property;
 
-  if (!propertyId) {
+  if (!inspection.property) {
     throw new Error(`${LOG_PREFIX} property relationship missing`);
   }
 
   // Stop if inspection dead (belongs to archived property)
-  const property = await db.ref(`/properties/${propertyId}`).once('value');
-  if (!property.exists()) {
+  const propertySnap = await db.ref(`/properties/${inspection.property}`).once('value');
+  if (!propertySnap.exists()) {
     throw new Error(`${LOG_PREFIX} inspection belongs to archived property`);
   }
 
   const templateName = inspection.templateName || inspection.template.name;
   const score = inspection.score && typeof inspection.score === 'number' ? inspection.score : 0;
 
-  // Update property/inspections
-  const inspectionData = {
+  // Update property inspections proxy
+  await propertyInspectionsList({
+    db,
+    inspectionId,
+    inspection,
     score,
-    inspector: inspection.inspector,
-    inspectorName: inspection.inspectorName,
-    creationDate: inspection.creationDate,
-    updatedLastDate: inspection.updatedLastDate,
-    templateName: templateName,
-    deficienciesExist: inspection.deficienciesExist,
-    inspectionCompleted: inspection.inspectionCompleted,
-    itemsCompleted: inspection.itemsCompleted,
-    totalItems: inspection.totalItems
-  };
+    templateName
+  });
+  updates[`/propertyInspections/${inspection.property}/inspections/${inspectionId}`] = 'upserted'; // TODO remove #53
+  updates[`/propertyInspectionsList/${inspection.property}/inspections/${inspectionId}`] = 'upserted';
 
-  // Add optional template category
-  if (inspection.templateCategory) {
-    inspectionData.templateCategory = inspection.templateCategory;
-  }
+  // Upsert / remove completed inspections proxy
+  const addedCompleted = await completedInspectionsList({
+    db,
+    inspectionId,
+    templateName,
+    inspection,
+    score
+  });
 
-  await db.ref(`/propertyInspections/${propertyId}/inspections/${inspectionId}`).set(inspectionData);
-  await db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`).set(inspectionData);
-  updates[`/propertyInspections/${propertyId}/inspections/${inspectionId}`] = 'upserted';
-  updates[`/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`] = 'upserted';
-
-  if (inspection.inspectionCompleted) {
-    const completedInspectionData = {
-      score,
-      inspector: inspection.inspector,
-      inspectorName: inspection.inspectorName,
-      creationDate: inspection.creationDate,
-      updatedLastDate: inspection.updatedLastDate,
-      templateName: templateName,
-      deficienciesExist: inspection.deficienciesExist,
-      inspectionCompleted: inspection.inspectionCompleted,
-      property: inspection.property
-    };
-
-    await db.ref(`/completedInspections/${inspectionId}`).set(completedInspectionData);
-    await db.ref(`/completedInspectionsList/${inspectionId}`).set(completedInspectionData);
-    updates[`/completedInspections/${inspectionId}`] = completedInspectionData;
-    updates[`/completedInspectionsList/${inspectionId}`] = completedInspectionData;
+  if (addedCompleted) {
+    updates[`/completedInspections/${inspectionId}`] = addedCompleted; // TODO remove #53
+    updates[`/completedInspectionsList/${inspectionId}`] = addedCompleted;
   } else {
-    await db.ref(`/completedInspections/${inspectionId}`).remove();
-    await db.ref(`/completedInspectionsList/${inspectionId}`).remove();
-    updates[`/completedInspections/${inspectionId}`] = 'removed';
+    updates[`/completedInspections/${inspectionId}`] = 'removed'; // TODO remove #53
     updates[`/completedInspectionsList/${inspectionId}`] = 'removed';
   }
 
   // Update property attributes related
   // to completed inspection meta data
-  const metaUpdates = await processPropertyMeta(db, propertyId);
+  const metaUpdates = await processPropertyMeta(db, inspection.property);
   Object.assign(updates, metaUpdates); // combine updates
 
   return updates;
