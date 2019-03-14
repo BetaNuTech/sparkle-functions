@@ -283,6 +283,9 @@ exports.pushMessageSyncStaging = pushMessages.createCRONHandler('staging-push-me
 exports.templatesSync = templates.createPublishHandler('templates-sync', functions.pubsub, db);
 exports.templatesSyncStaging = templates.createPublishHandler('staging-templates-sync', functions.pubsub, dbStaging);
 
+exports.templatesListSync = templates.cron.syncTemplatesList('templates-sync', functions.pubsub, db);
+exports.templatesListSyncStaging = templates.cron.syncTemplatesList('staging-templates-sync', functions.pubsub, dbStaging);
+
 exports.inspectionsSync = inspections.createPublishHandler('inspections-sync', functions.pubsub, db);
 exports.inspectionsSyncStaging = inspections.createPublishHandler('staging-inspections-sync', functions.pubsub, dbStaging);
 
