@@ -1,4 +1,4 @@
-const log = require('../../utils/logger');
+// const compose = require('lodash/fp/compose');
 const processPropertyMeta = require('../process-property-meta');
 
 const LOG_PREFIX = 'inspections: process-write:';
@@ -16,15 +16,13 @@ module.exports = async function processWrite(db, inspectionId, inspection) {
   const propertyId = inspection.property;
 
   if (!propertyId) {
-    log.error(`${LOG_PREFIX} property relationship missing`);
-    return updates;
+    throw new Error(`${LOG_PREFIX} property relationship missing`);
   }
 
   // Stop if inspection dead (belongs to archived property)
   const property = await db.ref(`/properties/${propertyId}`).once('value');
   if (!property.exists()) {
-    log.error(`${LOG_PREFIX} inspection belonging to archived property, stopping`);
-    return updates;
+    throw new Error(`${LOG_PREFIX} inspection belongs to archived property`);
   }
 
   const templateName = inspection.templateName || inspection.template.name;

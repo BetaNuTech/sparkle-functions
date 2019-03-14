@@ -9,14 +9,23 @@ const LOG_PREFIX = 'inspections: on-write:';
  * @return {Function} - inspection onWrite handler
  */
 module.exports = function createOnWriteHandler(db) {
-  return (change, event) => {
-    const { objectId } = event.params;
+  return async function onWriteHandler(change, event) {
+    const { objectId: inspectionId } = event.params;
 
-    // Inspection added/updated
-    if (change.after.exists()) {
-      const inspection = change.after.val();
-      log.info(`${LOG_PREFIX} inspection ${objectId} upserted`);
-      return processWrite(db, objectId, inspection);
+    // Inspection removed
+    if (!change.after.exists()) {
+      return;
     }
+
+    log.info(`${LOG_PREFIX} inspection ${inspectionId} upserted`);
+
+    let updates = {};
+    try {
+      updates = await processWrite(db, inspectionId, change.after.val());
+    } catch (e) {
+      log.error(`${LOG_PREFIX} ${e}`);
+    }
+
+    return updates;
   };
 }

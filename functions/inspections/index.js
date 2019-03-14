@@ -138,7 +138,11 @@ module.exports = {
 
       if (outdatedInspectionCount > 0) {
         // Discovered outdated proxy(ies) perform sync
-        yield self.processWrite(db, inspectionId, inspectionData);
+        try {
+          yield self.processWrite(db, inspectionId, inspectionData);
+        } catch (e) {
+          log.error(`${LOG_PREFIX} ${e}`);
+        }
         return true;
       }
 
