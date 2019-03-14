@@ -1,4 +1,3 @@
-const co = require('co');
 const { expect } = require('chai');
 const uuid = require('../../test-helpers/uuid');
 const { cleanDb } = require('../../test-helpers/firebase');
@@ -7,7 +6,7 @@ const { db, test, cloudFunctions } = require('./setup');
 describe('Property Inspections List Sync', () => {
   afterEach(() => cleanDb(db));
 
-  it('should create new inspection proxy records', () => co(function *() {
+  it('should create new inspection proxy records', async () => {
     const inspId = uuid();
     const propertyId = uuid();
     const categoryId = uuid();
@@ -28,25 +27,25 @@ describe('Property Inspections List Sync', () => {
     };
 
     // Setup database
-    yield db.ref(`/inspections/${inspId}`).set(inspectionData);
-    yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
-    yield db.ref(`/templateCategories/${categoryId}`).set({ name: `name${categoryId}` }); // sanity check
+    await db.ref(`/inspections/${inspId}`).set(inspectionData);
+    await db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
+    await db.ref(`/templateCategories/${categoryId}`).set({ name: `name${categoryId}` }); // sanity check
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.propertyInspectionsListSync);
-    yield wrapped();
+    await wrapped();
 
     // Test result
-    const actual = yield Promise.all([
+    const actual = await Promise.all([
       db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value'), // TODO remove #53
       db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).once('value'),
     ]);
 
     // Assertions
     expect(actual.map(proxy => proxy.exists())).to.deep.equal([true, true]);
-  }));
+  });
 
-  it('should update all an inspections\' outdated proxy records', () => co(function *() {
+  it('should update all an inspections\' outdated proxy records', async () => {
     const inspId = uuid();
     const propertyId = uuid();
     const categoryId = uuid();
@@ -69,30 +68,30 @@ describe('Property Inspections List Sync', () => {
     delete oldInspection.templateCategory;
 
     // Setup database
-    yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
-    yield db.ref(`/templateCategories/${categoryId}`).set({ name: `name${categoryId}` }); // sanity check
-    yield db.ref(`/inspections/${inspId}`).set(newInspection);
-    yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).set(oldInspection);
-    yield db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).set(oldInspection);
-    yield db.ref(`/completedInspections/${inspId}`).set(oldInspection);
-    yield db.ref(`/completedInspectionsList/${inspId}`).set(oldInspection);
+    await db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
+    await db.ref(`/templateCategories/${categoryId}`).set({ name: `name${categoryId}` }); // sanity check
+    await db.ref(`/inspections/${inspId}`).set(newInspection);
+    await db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).set(oldInspection);
+    await db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).set(oldInspection);
+    await db.ref(`/completedInspections/${inspId}`).set(oldInspection);
+    await db.ref(`/completedInspectionsList/${inspId}`).set(oldInspection);
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.propertyInspectionsListSync);
-    yield wrapped();
+    await wrapped();
 
     // Test result
-    const propertyInspection = yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value'); // TODO remove #53
-    const propertyInspectionList = yield db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).once('value');
+    const propertyInspection = await db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value'); // TODO remove #53
+    const propertyInspectionList = await db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).once('value');
 
     // Assertions
     const expected = Object.assign({}, newInspection);
     delete expected.property;
     expect(propertyInspection.val()).to.deep.equal(expected, 'updated /propertyInspections proxy');
     expect(propertyInspectionList.val()).to.deep.equal(expected, 'updated /propertyInspectionsList proxy');
-  }));
+  });
 
-  it('should not create proxy records for inspections belonging to a deleted property', () => co(function *() {
+  it('should not create proxy records for inspections belonging to a deleted property', async () => {
     const inspId = uuid();
     const propertyId = uuid();
     const now = Date.now() / 1000;
@@ -111,19 +110,19 @@ describe('Property Inspections List Sync', () => {
     };
 
     // Setup database
-    yield db.ref(`/inspections/${inspId}`).set(inspectionData);
+    await db.ref(`/inspections/${inspId}`).set(inspectionData);
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.propertyInspectionsListSync);
-    yield wrapped();
+    await wrapped();
 
     // Test results
-    const actual = yield Promise.all([
+    const actual = await Promise.all([
       db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value'), // TODO remove #53
       db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).once('value')
     ]);
 
     // Assertions
     expect(actual.map(proxy => proxy.exists())).to.deep.equal([false, false]);
-  }));
+  });
 });

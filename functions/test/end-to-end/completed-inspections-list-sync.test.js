@@ -1,4 +1,3 @@
-const co = require('co');
 const { expect } = require('chai');
 const uuid = require('../../test-helpers/uuid');
 const mocking = require('../../test-helpers/mocking');
