@@ -1,7 +1,7 @@
-// const compose = require('lodash/fp/compose');
 const processPropertyMeta = require('../process-property-meta');
 const propertyInspectionsList = require('./property-inspections-list');
 const completedInspectionsList = require('./completed-inspections-list');
+const { isInspectionWritable } = require('./utils');
 
 const LOG_PREFIX = 'inspections: process-write:';
 
@@ -16,26 +16,15 @@ const LOG_PREFIX = 'inspections: process-write:';
 module.exports = async function processWrite(db, inspectionId, inspection) {
   const updates = {};
 
-  if (!inspection.property) {
-    throw new Error(`${LOG_PREFIX} property relationship missing`);
-  }
-
-  // Stop if inspection dead (belongs to archived property)
-  const propertySnap = await db.ref(`/properties/${inspection.property}`).once('value');
-  if (!propertySnap.exists()) {
-    throw new Error(`${LOG_PREFIX} inspection belongs to archived property`);
-  }
-
-  const templateName = inspection.templateName || inspection.template.name;
-  const score = inspection.score && typeof inspection.score === 'number' ? inspection.score : 0;
+  // Throw errors if inspection
+  // cannot write a proxies
+  await isInspectionWritable(db, inspection, LOG_PREFIX);
 
   // Update property inspections proxy
   await propertyInspectionsList({
     db,
     inspectionId,
-    inspection,
-    score,
-    templateName
+    inspection
   });
   updates[`/propertyInspections/${inspection.property}/inspections/${inspectionId}`] = 'upserted'; // TODO remove #53
   updates[`/propertyInspectionsList/${inspection.property}/inspections/${inspectionId}`] = 'upserted';
@@ -44,9 +33,7 @@ module.exports = async function processWrite(db, inspectionId, inspection) {
   const addedCompleted = await completedInspectionsList({
     db,
     inspectionId,
-    templateName,
-    inspection,
-    score
+    inspection
   });
 
   if (addedCompleted) {

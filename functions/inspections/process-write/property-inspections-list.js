@@ -1,24 +1,21 @@
 const assert = require('assert');
+const { getTemplateName, getScore } = require('./utils');
 
 /**
  * Write an inspection's `propertyInspectionsList`
  * @param  {firebaseAdmin.database} db
  * @param  {String} inspectionId
  * @param  {Object} inspection
- * @param  {Number} score
- * @param  {String} templateName
  * @return {Promise} - resolves {Object} property inspection proxy
  */
-module.exports = async function propertyInspectionsList({ db, inspectionId, inspection, score, templateName }) {
+module.exports = async function propertyInspectionsList({ db, inspectionId, inspection }) {
   assert(Boolean(db), 'has firebase database reference');
   assert(inspectionId && typeof inspectionId === 'string', 'has inspection ID');
   assert(Boolean(inspection), 'has inspection data');
-  assert(score === score && typeof score === 'number', 'has inspection score');
-  assert(templateName && typeof templateName === 'string', 'has template name');
 
   const inspectionData = {
-    score,
-    templateName,
+    score: getScore(inspection),
+    templateName: getTemplateName(inspection),
     inspector: inspection.inspector,
     inspectorName: inspection.inspectorName,
     creationDate: inspection.creationDate,

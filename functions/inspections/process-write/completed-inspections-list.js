@@ -1,4 +1,5 @@
 const assert = require('assert');
+const { getTemplateName, getScore } = require('./utils');
 
 /**
  * Write an inspection's `completedInspectionsList`
@@ -12,15 +13,11 @@ const assert = require('assert');
 module.exports = async function completedInspectionsList({
   db,
   inspectionId,
-  templateName,
-  inspection,
-  score
+  inspection
 }) {
   assert(Boolean(db), 'has firebase database reference');
   assert(inspectionId && typeof inspectionId === 'string', 'has inspection ID');
-  assert(templateName && typeof templateName === 'string', 'has template name');
   assert(Boolean(inspection), 'has inspection data');
-  assert(score === score && typeof score === 'number', 'has inspection score');
 
   if (!inspection.inspectionCompleted) {
     await db.ref(`/completedInspections/${inspectionId}`).remove(); // TODO remove #53
@@ -29,8 +26,8 @@ module.exports = async function completedInspectionsList({
   }
 
   const completedInspectionData = {
-    score,
-    templateName,
+    score: getScore(inspection),
+    templateName: getTemplateName(inspection),
     inspector: inspection.inspector,
     inspectorName: inspection.inspectorName,
     creationDate: inspection.creationDate,
