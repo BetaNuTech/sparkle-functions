@@ -6,7 +6,7 @@ const { isInspectionOutdated, forEachInspection } = require('./utils');
 const LOG_PREFIX = 'inspections: cron: sync-property-inspection-proxies:';
 
 /**
- * sync inspection / propertyInspections
+ * sync inspection's propertyInspectionsList
  * @param  {string} topic
  * @param  {functions.pubsub} pubsub
  * @param  {firebaseadmin.database} db
@@ -15,7 +15,7 @@ const LOG_PREFIX = 'inspections: cron: sync-property-inspection-proxies:';
 module.exports = function createSyncPropertyInspectionProxieshandler(topic = '', pubsub, db) {
   return pubsub
   .topic(topic)
-  .onPublish(() => async function syncPropertyInspectionProxiesHandler() {
+  .onPublish(async function syncPropertyInspectionProxiesHandler() {
     const updates = {};
     log.info(`${LOG_PREFIX} received ${Date.now()}`);
 
@@ -30,7 +30,7 @@ module.exports = function createSyncPropertyInspectionProxieshandler(topic = '',
           db,
           inspection,
           `/propertyInspectionsList/${inspection.property}/inspections/${inspectionId}`
-        )
+        );
 
         if (isProxyOutdated) {
           // Update inspections' propertyInspectionsList proxy

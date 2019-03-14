@@ -33,7 +33,7 @@ module.exports = {
     let inspectionIds = [];
 
     // Fetch first inspection ID in database
-    var lastInspectionId = await db.ref('/inspections').orderByKey().limitToFirst(1).once('value');
+    let lastInspectionId = await db.ref('/inspections').orderByKey().limitToFirst(1).once('value');
     lastInspectionId = Object.keys(lastInspectionId.val())[0];
 
     // Has no inspections
@@ -43,7 +43,7 @@ module.exports = {
 
     do {
       // Load inspections 10 at a time
-      var queuedInspections = await db.ref('/inspections').orderByKey().startAt(lastInspectionId).limitToFirst(11).once('value');
+      let queuedInspections = await db.ref('/inspections').orderByKey().startAt(lastInspectionId).limitToFirst(11).once('value');
       queuedInspections = queuedInspections.val();
 
       // Remove last itterations' last inspection
@@ -55,7 +55,7 @@ module.exports = {
       inspectionIds = Object.keys(queuedInspections);
       lastInspectionId = inspectionIds[inspectionIds.length - 1];
 
-      var i, updatedInspectionProxies;
+      let i, updatedInspectionProxies;
 
       // Sync inspection data to propertyInspectionsList,
       for (i = 0; i < inspectionIds.length; i++) {
@@ -68,5 +68,6 @@ module.exports = {
         );
       }
     } while (inspectionIds.length > 0);
+    return;
   }
 }

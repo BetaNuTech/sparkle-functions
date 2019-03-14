@@ -33,7 +33,7 @@ describe('Property Inspections List Sync', () => {
     yield db.ref(`/templateCategories/${categoryId}`).set({ name: `name${categoryId}` }); // sanity check
 
     // Execute
-    const wrapped = test.wrap(cloudFunctions.inspectionsSync);
+    const wrapped = test.wrap(cloudFunctions.propertyInspectionsListSync);
     yield wrapped();
 
     // Test result
@@ -78,7 +78,7 @@ describe('Property Inspections List Sync', () => {
     yield db.ref(`/completedInspectionsList/${inspId}`).set(oldInspection);
 
     // Execute
-    const wrapped = test.wrap(cloudFunctions.inspectionsSync);
+    const wrapped = test.wrap(cloudFunctions.propertyInspectionsListSync);
     yield wrapped();
 
     // Test result
@@ -114,7 +114,7 @@ describe('Property Inspections List Sync', () => {
     yield db.ref(`/inspections/${inspId}`).set(inspectionData);
 
     // Execute
-    const wrapped = test.wrap(cloudFunctions.inspectionsSync);
+    const wrapped = test.wrap(cloudFunctions.propertyInspectionsListSync);
     yield wrapped();
 
     // Test results
