@@ -286,6 +286,9 @@ exports.templatesSyncStaging = templates.createPublishHandler('staging-templates
 exports.inspectionsSync = inspections.createPublishHandler('inspections-sync', functions.pubsub, db);
 exports.inspectionsSyncStaging = inspections.createPublishHandler('staging-inspections-sync', functions.pubsub, dbStaging);
 
+exports.propertyInspectionsListSync = inspections.cron.syncPropertyInspectionproxies('inspections-sync', functions.pubsub, db);
+exports.propertyInspectionsListSyncStaging = inspections.cron.syncPropertyInspectionproxies('staging-inspections-sync', functions.pubsub, dbStaging);
+
 // Local Functions
 
 function latestInspectionResponseData(date, propertyKey, latestInspection, latestInspectionKey) {
