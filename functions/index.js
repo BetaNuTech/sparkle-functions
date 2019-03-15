@@ -9,6 +9,7 @@ const templates = require('./templates');
 const inspections = require('./inspections');
 const properties = require('./properties');
 const propertyTemplates = require('./property-templates');
+const regTokens = require('./reg-tokens');
 const config = functions.config().firebase;
 const defaultApp = admin.initializeApp(config);
 
@@ -294,6 +295,9 @@ exports.propertyInspectionsListSyncStaging = inspections.cron.syncPropertyInspec
 
 exports.completedInspectionsListSync = inspections.cron.syncCompletedInspectionproxies('inspections-sync', functions.pubsub, db);
 exports.completedInspectionsListSyncStaging = inspections.cron.syncCompletedInspectionproxies('staging-inspections-sync', functions.pubsub, dbStaging);
+
+exports.regTokensSync = regTokens.cron.syncOutdated('registration-tokens-sync', functions.pubsub, db);
+exports.regTokensSyncStaging = regTokens.cron.syncOutdated('staging-registration-tokens-sync', functions.pubsub, dbStaging);
 
 // Local Functions
 

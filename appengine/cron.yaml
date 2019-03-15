@@ -22,3 +22,11 @@ cron:
 - description: Trigger sync of all staging /templates
   url: /publish/staging-templates-sync
   schedule: every 24 hours from 00:00 to 01:00
+
+- description: Trigger sync of all /registrationTokens
+  url: /publish/registration-tokens-sync
+  schedule: every saturday 00:00
+
+- description: Trigger sync of all staging /registrationTokens
+  url: /publish/staging-registration-tokens-sync
+  schedule: every saturday 00:00
