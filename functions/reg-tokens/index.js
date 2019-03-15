@@ -1,3 +1,3 @@
 const cron = require('./cron');
 
-return { cron };
+module.exports = { cron };

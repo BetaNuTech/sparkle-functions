@@ -1,4 +1,5 @@
 const log = require('../../utils/logger');
+const adminUtils = require('../../utils/firebase-admin');
 
 const LOG_PREFIX = 'reg-tokens: cron: sync-outdated:';
 
@@ -16,5 +17,25 @@ module.exports = function createSyncOudatedHandler(topic = '', pubSub, db) {
   .onPublish(async () => {
     const updates = {};
     log.info(`${LOG_PREFIX} received ${Date.now()}`);
+
+    // Collect boolean tokens to updates hash
+    await adminUtils.forEachChild(db, '/registrationTokens', async function tokenTimestampWrite(userId, tokens) {
+      const now = Date.now() / 1000;
+      const booleanTokenIds = Object.keys(tokens).filter(tokenId => typeof tokens[tokenId] === 'boolean');
+
+      // Set boolean token to updates
+      booleanTokenIds.forEach(tokenId => updates[`/registrationTokens/${userId}/${tokenId}`] = now);
+    });
+
+    // Add timestamps to boolean value device tokens
+    try {
+      Object.keys(updates).forEach(updatePath =>
+        log.info(`${LOG_PREFIX} set timestamp at: ${updatePath}`));
+      await db.ref().update(updates);
+    } catch (e) {
+      log.error(`${LOG_PREFIX} ${e}`);
+    }
+
+    return updates;
   });
 }
