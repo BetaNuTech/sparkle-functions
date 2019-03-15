@@ -3,6 +3,7 @@ const log = require('../utils/logger');
 const adminUtils = require('../utils/firebase-admin');
 const processWrite = require('./process-write');
 const deleteUploads = require('./delete-uploads');
+const cron = require('./cron');
 const createOnAttributeWriteHandler = require('./on-attribute-write-handler');
 const createOnWriteHandler = require('./on-write-handler');
 const createOnDeleteHandler = require('./on-delete-handler');
@@ -138,7 +139,11 @@ module.exports = {
 
       if (outdatedInspectionCount > 0) {
         // Discovered outdated proxy(ies) perform sync
-        yield self.processWrite(db, inspectionId, inspectionData);
+        try {
+          yield self.processWrite(db, inspectionId, inspectionData);
+        } catch (e) {
+          log.error(`${LOG_PREFIX} ${e}`);
+        }
         return true;
       }
 
@@ -189,6 +194,7 @@ module.exports = {
     );
   },
 
+  cron,
   processWrite,
   createOnAttributeWriteHandler,
   createOnWriteHandler,
