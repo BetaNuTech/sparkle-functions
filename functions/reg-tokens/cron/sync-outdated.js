@@ -2,6 +2,7 @@ const log = require('../../utils/logger');
 const adminUtils = require('../../utils/firebase-admin');
 
 const LOG_PREFIX = 'reg-tokens: cron: sync-outdated:';
+const OUTDATED_OFFSET = 15778800; // seconds in 6 months
 
 /**
  * Sync registration tokens with booleans
@@ -27,14 +28,36 @@ module.exports = function createSyncOudatedHandler(topic = '', pubSub, db) {
       booleanTokenIds.forEach(tokenId => updates[`/registrationTokens/${userId}/${tokenId}`] = now);
     });
 
-    // Add timestamps to boolean value device tokens
     try {
+      // Update boolean device tokens to timestamps
       Object.keys(updates).forEach(updatePath =>
         log.info(`${LOG_PREFIX} set timestamp at: ${updatePath}`));
       await db.ref().update(updates);
     } catch (e) {
       log.error(`${LOG_PREFIX} ${e}`);
     }
+
+    // Remove old & unused device tokens
+    await adminUtils.forEachChild(db, '/registrationTokens', async function outdatedTokenWrite(userId, tokens) {
+      const maxDate = (Date.now() / 1000) - OUTDATED_OFFSET;
+      const tokenIds = Object.keys(tokens);
+
+      for (let i = 0; i < tokenIds.length; i++) {
+        const tokenId = tokenIds[i];
+        const tokenCreationDate = tokens[tokenId];
+
+        if (typeof tokenCreationDate === 'number' && tokenCreationDate <= maxDate) {
+          const updatePath = `/registrationTokens/${userId}/${tokenId}`;
+          try {
+            await db.ref(updatePath).remove();
+            updates[updatePath] = 'removed';
+            log.info(`${LOG_PREFIX} removed outdated registration token at: ${updatePath}`);
+          } catch (e) {
+            log.error(`${LOG_PREFIX} ${e}`);
+          }
+        }
+      }
+    });
 
     return updates;
   });

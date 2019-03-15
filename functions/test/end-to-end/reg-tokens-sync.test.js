@@ -3,6 +3,8 @@ const uuid = require('../../test-helpers/uuid');
 const { cleanDb } = require('../../test-helpers/firebase');
 const { db, test, cloudFunctions } = require('./setup');
 
+const SIX_MONTHS_AGO_SEC = 15778800;
+
 describe('Registration Token Sync', () => {
   afterEach(() => cleanDb(db));
 
@@ -40,5 +42,31 @@ describe('Registration Token Sync', () => {
 
     const actualUnchangedToken = results[userId][unchangedTokenId];
     expect(actualUnchangedToken).to.equal(actualUnchangedToken, 'existing timestamp unchanged');
+  });
+
+  it('should remove device tokens older than 6 months', async () => {
+    const nowUnix = Date.now() / 1000;
+    const userId = uuid();
+    const deletedTokenId = uuid();
+    const unchangedTokenId = uuid();
+
+    // Setup database
+    await db.ref('/registrationTokens').set({
+      [userId]: {
+        [deletedTokenId]: nowUnix - SIX_MONTHS_AGO_SEC,
+        [unchangedTokenId]: nowUnix
+      }
+    });
+
+    // Execute
+    await test.wrap(cloudFunctions.regTokensSync)();
+
+    // Test results
+    const resultsSnap = await db.ref('/registrationTokens').once('value');
+    const results = resultsSnap.val();
+
+    // Assertions
+    expect(results[userId][deletedTokenId]).to.be.undefined;
+    expect(results[userId][unchangedTokenId]).to.exist;
   });
 });
