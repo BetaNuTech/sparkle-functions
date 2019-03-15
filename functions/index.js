@@ -280,9 +280,6 @@ exports.inspectionPdfReportStaging = functions.https.onRequest(
 exports.pushMessageSync = pushMessages.createCRONHandler('push-messages-sync', functions.pubsub, db, admin.messaging());
 exports.pushMessageSyncStaging = pushMessages.createCRONHandler('staging-push-messages-sync', functions.pubsub, dbStaging, admin.messaging());
 
-exports.templatesSync = templates.createPublishHandler('templates-sync', functions.pubsub, db);
-exports.templatesSyncStaging = templates.createPublishHandler('staging-templates-sync', functions.pubsub, dbStaging);
-
 exports.templatesListSync = templates.cron.syncTemplatesList('templates-sync', functions.pubsub, db);
 exports.templatesListSyncStaging = templates.cron.syncTemplatesList('staging-templates-sync', functions.pubsub, dbStaging);
 
