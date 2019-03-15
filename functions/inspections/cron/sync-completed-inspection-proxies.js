@@ -1,7 +1,8 @@
 const log = require('../../utils/logger');
+const adminUtils = require('../../utils/firebase-admin');
 const { isInspectionWritable } = require('../process-write/utils');
 const completedInspectionsList = require('../process-write/completed-inspections-list');
-const { isInspectionOutdated, forEachInspection } = require('./utils');
+const { isInspectionOutdated } = require('./utils');
 
 const LOG_PREFIX = 'inspections: cron: sync-completed-inspection-proxies:';
 
@@ -19,7 +20,7 @@ module.exports = function createSyncCompletedInspectionProxieshandler(topic = ''
     const updates = {};
     log.info(`${LOG_PREFIX} received ${Date.now()}`);
 
-    await forEachInspection(db, async function proccessCompletedInspectionProxyWrite(
+    await adminUtils.forEachChild(db, '/inspections', async function proccessCompletedInspectionProxyWrite(
       inspectionId,
       inspection) {
       try {
