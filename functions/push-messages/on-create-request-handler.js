@@ -14,7 +14,7 @@ const LOG_PREFIX = 'push-messages: create:';
  */
 module.exports = function createOnCreatePushNotificationHandler(db, auth) {
   assert(Boolean(db), 'has firebase database instance');
-  if (process.env.NODE_ENV !== 'test') assert(Boolean(auth), 'has firebase auth instance');
+  assert(Boolean(auth), 'has firebase auth instance');
 
   /**
    * Write /sendMessages records for recipient users
@@ -23,16 +23,23 @@ module.exports = function createOnCreatePushNotificationHandler(db, auth) {
    * @return {Promise}
    */
   const createPushNotificationHandler = async (req, res) => {
-    const userId = req.user ? req.user.id : '';
+    if (!req.user) {
+      return res.status(401).send({ message: 'request not authorized' });
+    }
+
+    if (!req.user.admin) {
+      return res.status(403).send({ message: 'requester not admin' });
+    }
+
+    const userId = req.user.id;
     log.info(`${LOG_PREFIX} push notification requested by user: ${userId}`);
+
     res.status(201).send({ success: true });
   };
 
-  // Create express app with single endpoint
-  // that configures required url params
+  // Create express app with single POST endpoint
   const app = express();
   app.use(cors());
-  const middleware = [auth ? authUser(db, auth) : null, createPushNotificationHandler].filter(Boolean);
-  app.post('/', ...middleware);
+  app.post('/', authUser(db, auth), createPushNotificationHandler);
   return app;
 }
