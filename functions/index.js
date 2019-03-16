@@ -169,6 +169,14 @@ exports.sendPushMessageStaging = functionsStagingDatabase.ref('/sendMessages/{ob
   pushMessages.createOnWriteHandler(dbStaging, admin.messaging())
 );
 
+// POST /sendMessages
+
+exports.createSendMessages = functions.https.onRequest(
+  pushMessages.onCreateRequestHandler(db, auth)
+);
+exports.createSendMessagesStaging = functions.https.onRequest(
+  pushMessages.onCreateRequestHandler(dbStaging, auth)
+);
 
 // For migrating to a new architecture only, setting a newer date
 // This allow the updatedLastDate to stay as-is (make sure client doesn't update it though)
