@@ -1,6 +1,7 @@
 const assert = require('assert');
 const express = require('express');
 const cors = require('cors');
+const bodyParser = require('body-parser');
 const authUser = require('../utils/auth-firebase-user');
 const log = require('../utils/logger');
 
@@ -23,23 +24,52 @@ module.exports = function createOnCreatePushNotificationHandler(db, auth) {
    * @return {Promise}
    */
   const createPushNotificationHandler = async (req, res) => {
-    if (!req.user) {
-      return res.status(401).send({ message: 'request not authorized' });
+    const {user, body} = req;
+    const {notification} = body;
+
+    if (!user) {
+      return res.status(401).send({message: 'request not authorized'});
     }
 
-    if (!req.user.admin) {
-      return res.status(403).send({ message: 'requester not admin' });
+    const userId = user.id;
+    log.info(`${LOG_PREFIX} requested by user: ${userId}`);
+
+    if (!user.admin) {
+      log.error(`${LOG_PREFIX} requested by non-admin user: ${userId}`);
+      return res.status(403).send({message: 'requester not admin'});
     }
 
-    const userId = req.user.id;
-    log.info(`${LOG_PREFIX} push notification requested by user: ${userId}`);
+    // Reject impropertly stuctured request body
+    if (!notification || !notification.title || !notification.message) {
+      let message = '';
+
+      if (!notification) {
+        message = 'invalid request';
+        log.error(`${LOG_PREFIX} request badly formed`);
+      } else {
+        message += 'notification requires:';
+
+        if (!notification.title) {
+          message += ' title';
+          log.error(`${LOG_PREFIX} request body missing notification title`);
+        }
+
+        if (!notification.message) {
+          message += ' message';
+          log.error(`${LOG_PREFIX} request body missing notification message`);
+        }
+      }
+
+      return res.status(400).send({message});
+    }
+
 
     res.status(201).send({ success: true });
   };
 
   // Create express app with single POST endpoint
   const app = express();
-  app.use(cors());
+  app.use(cors(), bodyParser.json());
   app.post('/', authUser(db, auth), createPushNotificationHandler);
   return app;
 }
