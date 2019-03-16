@@ -70,6 +70,47 @@ describe('Create Send Messages', () => {
       .expect('Content-Type', /json/)
       .expect(400);
   });
+
+  it('should write a sendMessage record for all other admins', async function() {
+    const requesterId = uuid();
+    const admin1Id = uuid();
+    const admin2Id = uuid();
+    const corporateUserId = uuid();
+    const propertyUserId = uuid();
+    const adminUser = { admin: true, corporate: false };
+    const expected = { title: `title-${requesterId}`,  message: `message-${requesterId}` };
+
+    // Setup database
+    await db.ref(`/users/${requesterId}`).set(adminUser); // set requesting admin user
+    await db.ref(`/users/${admin1Id}`).set(adminUser); // set other admin user
+    await db.ref(`/users/${admin2Id}`).set(adminUser); // set other admin user
+    await db.ref(`/users/${corporateUserId}`).set({ admin: false, corporate: true }); // set corporate user
+    await db.ref(`/users/${propertyUserId}`).set({ admin: false, corporate: false, properties: {[uuid()]: true}}); // set property user
+
+    // Execute
+    const app = createApp(db, stubFirbaseAuth(requesterId));
+    await request(app)
+      .post('/')
+      .send({notification: expected})
+      .set('Accept', 'application/json')
+      .set('Authorization', 'fb-jwt stubbed-by-auth')
+      .expect('Content-Type', /json/)
+      .expect(201);
+
+    // Get Result
+    const resultSnap = await db.ref('/sendMessages').once('value');
+    const results = resultSnap.val();
+
+    // Assertions
+    const adminIds = [admin1Id, admin2Id];
+    Object.keys(results).forEach(messageId => {
+      const {title, message, recipientId, createdAt} = results[messageId];
+      expect(adminIds).to.include(admin1Id, 'wrote only messages to admins');
+      expect(title).to.equal(expected.title, 'has expected title');
+      expect(message).to.equal(expected.message, 'has expected message');
+      expect(createdAt).to.be.a('number', 'has created at timestamp');
+    });
+  });
 });
 
 /**

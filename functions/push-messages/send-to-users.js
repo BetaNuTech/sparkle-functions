@@ -3,6 +3,7 @@ const assert = require('assert');
 const sendToRecipient = require('./send-to-recipient');
 const createSendMessage = require('./create-send-message');
 const {fetchRecordIds} = require('../utils/firebase-admin');
+const {getRecepients} = require('../utils/firebase-messaging');
 const log = require('../utils/logger');
 
 const {assign, keys} = Object;
@@ -91,39 +92,4 @@ module.exports = function sendToUsers({
 
     return messages;
   });
-};
-
-/**
- * Create an array of valid recepient ID's
- * @param  {Object[]} users
- * @param  {Array}    excludes
- * @param  {Boolean}  allowCorp
- * @param  {String}   property
- * @return {String[]}
- */
-function getRecepients({
-  users,
-  excludes = [],
-  allowCorp = false,
-  property,
-}) {
-  return users.map((user) => {
-    const {admin, corporate} = user;
-    const properties = keys(user.properties || {});
-
-    // Add all admins
-    if (admin) {
-      return user.id;
-
-    // Add whitelisted corporate users
-    } else if (allowCorp && corporate) {
-      return user.id;
-
-    // Add whitelisted user-group of specified property
-    } else if (property && properties.includes(property)) {
-      return user.id;
-    }
-  })
-  // Remove falsey or excluded users
-  .filter((id) => id && !excludes.includes(id));
 };
