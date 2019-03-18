@@ -37,7 +37,8 @@ describe('Property Meta Sync', () => {
     const results = propertiesSnap.val();
 
     // Assertions
-    Object.keys(results).forEach(actual => {
+    Object.keys(results).forEach(propertyId => {
+      const actual = results[propertyId];
       expect(actual.numOfInspections).to.equal(
         expected.numOfInspections,
         'updated property\'s `numOfInspections`'
