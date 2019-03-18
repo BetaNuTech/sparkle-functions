@@ -30,3 +30,11 @@ cron:
 - description: Trigger sync of all staging /registrationTokens
   url: /publish/staging-registration-tokens-sync
   schedule: every saturday 00:00
+
+- description: Trigger sync of all /properties
+  url: /publish/properties-sync
+  schedule: every 1 hours
+
+- description: Trigger sync of all staging /properties
+  url: /publish/staging-properties-sync
+  schedule: every 1 hours
