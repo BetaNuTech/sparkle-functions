@@ -286,6 +286,9 @@ exports.inspectionPdfReportStaging = functions.https.onRequest(
 
 // Message Subscribers
 
+exports.propertyMetaSync = properties.cron.createSyncMeta('properties-sync', functions.pubsub, db);
+exports.propertyMetaSyncStaging = properties.cron.createSyncMeta('staging-properties-sync', functions.pubsub, dbStaging);
+
 exports.pushMessageSync = pushMessages.createCRONHandler('push-messages-sync', functions.pubsub, db, admin.messaging());
 exports.pushMessageSyncStaging = pushMessages.createCRONHandler('staging-push-messages-sync', functions.pubsub, dbStaging, admin.messaging());
 
