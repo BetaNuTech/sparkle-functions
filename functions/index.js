@@ -298,9 +298,6 @@ exports.templatesListSyncStaging = templates.cron.syncTemplatesList('staging-tem
 exports.propertyTemplatesListSync = templates.cron.syncPropertyTemplatesList('templates-sync', functions.pubsub, db);
 exports.propertyTemplatesListSyncStaging = templates.cron.syncPropertyTemplatesList('staging-templates-sync', functions.pubsub, dbStaging);
 
-exports.inspectionsSync = inspections.createPublishHandler('inspections-sync', functions.pubsub, db);
-exports.inspectionsSyncStaging = inspections.createPublishHandler('staging-inspections-sync', functions.pubsub, dbStaging);
-
 exports.propertyInspectionsListSync = inspections.cron.syncPropertyInspectionproxies('inspections-sync', functions.pubsub, db);
 exports.propertyInspectionsListSyncStaging = inspections.cron.syncPropertyInspectionproxies('staging-inspections-sync', functions.pubsub, dbStaging);
 
