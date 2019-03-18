@@ -3,6 +3,7 @@ const log = require('../utils/logger');
 const propertyTemplates = require('../property-templates');
 const createOnWriteHandler = require('./on-write-handler');
 const createOnDeleteHandler = require('./on-delete-handler');
+const cron = require('./cron');
 
 module.exports = {
   /**
@@ -29,6 +30,7 @@ module.exports = {
     });
   },
 
+  cron,
   createOnDeleteHandler,
   createOnWriteHandler
 }
