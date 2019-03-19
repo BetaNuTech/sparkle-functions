@@ -48,7 +48,7 @@ module.exports = {
     do {
       // Load records 10 at a time
       let queuedRecords = await db.ref(`${childName}`).orderByKey().startAt(lastRecordId).limitToFirst(11).once('value');
-      queuedRecords = queuedRecords.val();
+      queuedRecords = queuedRecords.val() || {};
 
       // Remove last itterations' last record
       // that's been already upserted
