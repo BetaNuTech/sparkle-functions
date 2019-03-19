@@ -59,11 +59,7 @@ module.exports = function createOnGetPDFReportHandler(db, messaging, auth) {
           message: 'report is being generated'
         });
       } else if (inspectionReportUpToDate(inspection)) {
-        return res.status(200).send({
-          status: inspection.inspectionReportStatus,
-          message: 'report already up to date',
-          inspectionReportURL: inspection.inspectionReportURL
-        });
+        return res.status(304).send();
       }
 
       // Set report generation status
