@@ -1,5 +1,5 @@
 const log = require('../../utils/logger');
-const adminUtils = require('../../utils/firebase-admin');
+const { fetchRecordIds, forEachChild }= require('../../utils/firebase-admin');
 const { isInspectionWritable } = require('../process-write/utils');
 const completedInspectionsList = require('../process-write/completed-inspections-list');
 const { isInspectionOutdated } = require('./utils');
@@ -19,6 +19,10 @@ module.exports = function createCleanupProxyOrphansHandler(topic = '', pubsub, d
   .onPublish(async function syncCleanupProxyOrphansHandler() {
     const updates = {};
     log.info(`${LOG_PREFIX} received ${Date.now()}`);
+
+    // Collect all inspection ID's
+    const activeInspectionIds = await fetchRecordIds(db, '/inspections');
+
     return updates;
   });
 }
