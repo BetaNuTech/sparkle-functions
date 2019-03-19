@@ -98,16 +98,16 @@ describe('Inspections Migration Date Sync', () => {
     const actual = propertySnap.val();
 
     // Assertions
-    expect(expected.numOfInspections).to.equal(
-      actual.numOfInspections,
+    expect(actual.numOfInspections).to.equal(
+      expected.numOfInspections,
       'updated property\'s `numOfInspections`'
     );
-    expect(expected.lastInspectionScore).to.equal(
-      actual.lastInspectionScore,
+    expect(actual.lastInspectionScore).to.equal(
+      expected.lastInspectionScore,
       'updated property\'s `lastInspectionScore`'
     );
-    expect(expected.lastInspectionDate).to.equal(
-      actual.lastInspectionDate,
+    expect(actual.lastInspectionDate).to.equal(
+      expected.lastInspectionDate,
       'updated property\'s `lastInspectionDate`'
     );
   }));
