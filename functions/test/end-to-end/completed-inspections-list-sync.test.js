@@ -1,6 +1,5 @@
 const { expect } = require('chai');
 const uuid = require('../../test-helpers/uuid');
-const mocking = require('../../test-helpers/mocking');
 const { cleanDb } = require('../../test-helpers/firebase');
 const { db, test, cloudFunctions } = require('./setup');
 
