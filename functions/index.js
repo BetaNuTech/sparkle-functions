@@ -304,8 +304,8 @@ exports.propertyInspectionsListSyncStaging = inspections.cron.syncPropertyInspec
 exports.completedInspectionsListSync = inspections.cron.syncCompletedInspectionproxies('inspections-sync', functions.pubsub, db);
 exports.completedInspectionsListSyncStaging = inspections.cron.syncCompletedInspectionproxies('staging-inspections-sync', functions.pubsub, dbStaging);
 
-exports.cleanupProxyOrphansSync = inspections.cron.cleanupProxyOrphans('inspections-sync', functions.pubsub, db);
-exports.cleanupProxyOrphansSyncStaging = inspections.cron.cleanupProxyOrphans('staging-inspections-sync', functions.pubsub, dbStaging);
+exports.cleanupInspectionProxyOrphansSync = inspections.cron.cleanupProxyOrphans('inspections-sync', functions.pubsub, db);
+exports.cleanupInspectionProxyOrphansSyncStaging = inspections.cron.cleanupProxyOrphans('staging-inspections-sync', functions.pubsub, dbStaging);
 
 exports.regTokensSync = regTokens.cron.syncOutdated('registration-tokens-sync', functions.pubsub, db);
 exports.regTokensSyncStaging = regTokens.cron.syncOutdated('staging-registration-tokens-sync', functions.pubsub, dbStaging);
