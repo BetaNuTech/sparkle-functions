@@ -163,16 +163,11 @@ describe('Inspection PDF Report', () => {
     await db.ref(`/inspections/${INSP_ID}`).set(inspectionData); // Add generating inspection
     await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
-    // Execute & Get Result
+    // Execute, get result, and assertion
     const app = createApp(db, { sendToDevice: () => Promise.resolve() });
     const result = await request(app)
       .get(`/${PROPERTY_ID}/${INSP_ID}`)
       .set('Accept', 'application/json')
-      .expect('Content-Type', /json/)
-      .expect(200);
-
-    // Assertions
-    expect(result.body.status).to.equal('completed_success');
-    expect(result.body.message).to.include('already up to date');
+      .expect(304);
   });
 });
