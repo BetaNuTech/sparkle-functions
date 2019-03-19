@@ -59,15 +59,12 @@ module.exports = function createOnGetPDFReportHandler(db, messaging, auth) {
           message: 'report is being generated'
         });
       } else if (inspectionReportUpToDate(inspection)) {
-        return res.status(200).send({
-          status: inspection.inspectionReportStatus,
-          message: 'report already up to date',
-          inspectionReportURL: inspection.inspectionReportURL
-        });
+        return res.status(304).send();
       }
 
       // Set report generation status
       yield db.ref(`/inspections/${inspection.id}/inspectionReportStatus`).set('generating');
+      log.info(`${LOG_PREFIX} updated ${inspection.id} report status to generating`);
 
       // Generate inspection PDF and get it's download link
       let inspectionReportURL = yield createAndUploadInspection(property, inspection);
@@ -79,11 +76,12 @@ module.exports = function createOnGetPDFReportHandler(db, messaging, auth) {
       log.info(`${LOG_PREFIX} inspection ${inspection.id} PDF report successfully generated`);
 
       // Set the report's last updated data
-      yield db.ref(`/inspections/${inspection.id}`).update({
-        inspectionReportUpdateLastDate: Date.now() / 1000,
-        inspectionReportStatus: 'completed_success',
-        inspectionReportURL
-      });
+      yield db.ref(`/inspections/${inspection.id}/inspectionReportURL`).set(inspectionReportURL);
+      log.info(`${LOG_PREFIX} updated ${inspection.id} report url`);
+      yield db.ref(`/inspections/${inspection.id}/inspectionReportUpdateLastDate`).set(Date.now() / 1000);
+      log.info(`${LOG_PREFIX} updated ${inspection.id} report last update date`);
+      yield db.ref(`/inspections/${inspection.id}/inspectionReportStatus`).set('completed_success');
+      log.info(`${LOG_PREFIX} updated ${inspection.id} report status to successful`);
 
       if (!incognitoMode) {
         // Create firebase `sendMessages` records about
@@ -112,7 +110,7 @@ module.exports = function createOnGetPDFReportHandler(db, messaging, auth) {
       }
 
       // Resolve URL to download inspection report PDF
-      res.send({inspectionReportURL});
+      res.status(200).send({inspectionReportURL});
     }).catch(e => {
       log.error(`${LOG_PREFIX} ${e}`);
 
