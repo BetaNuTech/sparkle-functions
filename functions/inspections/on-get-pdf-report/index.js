@@ -114,7 +114,7 @@ module.exports = function createOnGetPDFReportHandler(db, messaging, auth) {
       }
 
       // Resolve URL to download inspection report PDF
-      res.send({inspectionReportURL});
+      res.status(200).send({inspectionReportURL});
     }).catch(e => {
       log.error(`${LOG_PREFIX} ${e}`);
 
