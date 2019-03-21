@@ -8,11 +8,28 @@ const { db } = require('./setup');
 describe('Latest Complete Inspection', () => {
   afterEach(() => cleanDb(db));
 
-  it('should reject request without cobalt code', async function() {
+  it('should reject request without cobalt code', function(done) {
     // Execute & Get Result
     const app = createApp(db);
-    return request(app)
+
+    request(app)
       .get('/')
-      .expect(400);
+      .expect(400)
+      .end((err, res) => {
+        expect(res.text.toLowerCase()).to.have.string('missing parameters');
+        done();
+      });
+  });
+
+  it('should reject request without property matching cobalt code', function(done) {
+    // Execute & Get Result
+    const app = createApp(db);
+    request(app)
+      .get('/?cobalt_code=1')
+      .expect(404)
+      .end((err, res) => {
+        expect(res.text.toLowerCase()).to.have.string('not found');
+        done();
+      });
   });
 });
