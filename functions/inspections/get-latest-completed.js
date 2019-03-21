@@ -43,12 +43,7 @@ module.exports = function createGetLatestCompletedInspection(db, auth) {
 
     let propertyKey;
     if (propertySnapshot.hasChildren()) {
-      propertySnapshot.forEach(function(childSnapshot) {
-        propertyKey = childSnapshot.key;
-
-        // Cancel enumeration
-        return true;
-      });
+      propertySnapshot.forEach(childSnapshot => propertyKey = childSnapshot.key);
     } else {
       propertyKey = propertySnapshot.key
     }
@@ -122,7 +117,7 @@ function findLatestInspectionData(inspectionsSnapshot, dateForInspection) {
   }
 
   // Has many inspections
-  inspectionsSnapshot.forEach(function(childSnapshot) {
+  inspectionsSnapshot.forEach(childSnapshot => {
     // key will be 'ada' the first time and 'alan' the second time
     const insp = childSnapshot.val();
     const { key } = childSnapshot;
@@ -137,13 +132,13 @@ function findLatestInspectionData(inspectionsSnapshot, dateForInspection) {
   });
 
   if (inspections.length > 0) {
-    const sortedInspections = inspections.sort(function(a,b) { return b.inspection.creationDate-a.inspection.creationDate })  // DESC
+    const sortedInspections = inspections.sort((a, b) => b.inspection.creationDate - a.inspection.creationDate);  // DESC
     result.latestInspection = sortedInspections[0].inspection;
     result.latestInspectionKey = sortedInspections[0].key;
 
     // Latest Inspection by provided date
     if (dateForInspection) {
-      sortedInspections.forEach(function(keyInspection) {
+      sortedInspections.forEach(keyInspection => {
         if (!latestInspectionByDate && keyInspection.inspection.creationDate <= dateForInspection && keyInspection.inspection.completionDate <= dateForInspection) {
           result.latestInspectionByDate = keyInspection.inspection;
           result.latestInspectionByDateKey = keyInspection.key;
