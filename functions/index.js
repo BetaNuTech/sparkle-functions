@@ -29,11 +29,11 @@ exports.latestVersion = functions.https.onRequest((request, response) =>
 // Latest Completed Inspections
 
 exports.latestCompleteInspection = functions.https.onRequest(
-  inspections.getLatestCompleted(db, auth)
+  inspections.getLatestCompleted(db)
 );
 
 exports.latestCompleteInspectionStaging = functions.https.onRequest(
-  inspections.getLatestCompleted(dbStaging, auth)
+  inspections.getLatestCompleted(dbStaging)
 );
 
 

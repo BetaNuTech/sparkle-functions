@@ -9,12 +9,10 @@ const TEMP_NAME_LOOKUP = 'Blueshift Product Inspection';
 /**
  * Factory for getting the latest completed inspection
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
- * @param  {firebaseAdmin.auth} auth - Firebase Admin auth service instance
  * @return {Function} - onRequest handler
  */
-module.exports = function createGetLatestCompletedInspection(db, auth) {
+module.exports = function createGetLatestCompletedInspection(db) {
   assert(Boolean(db), 'has firebase database instance');
-  assert(Boolean(auth), 'has firebase auth instance');
 
   /**
    * Lookup the latest completed inspection for a property
@@ -86,7 +84,7 @@ module.exports = function createGetLatestCompletedInspection(db, auth) {
   // that configures a required url param
   const app = express();
   app.use(cors());
-  app.get('/', authUser(db, auth), getlatestCompletedInspectionHandler);
+  app.get('/', getlatestCompletedInspectionHandler);
   return app;
 }
 
