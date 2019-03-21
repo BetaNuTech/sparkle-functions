@@ -22,14 +22,9 @@ module.exports = function createGetLatestCompletedInspection(db, auth) {
    * @return {Promise}
    */
   const getlatestCompletedInspectionHandler = (req, res) => {
-    var propertyCode = req.params.property;
-    var other_date = req.query.other_date;
-    var dateForInspection, otherDate;
-
-    if (other_date) {
-      otherDate = new Date(other_date);
-      dateForInspection = otherDate.getTime() / 1000;
-    }
+    const propertyCode = req.params.property;
+    const otherDate = req.query.other_date;
+    const dateForInspection = otherDate ? new Date(otherDate).getTime() / 1000 : null;
 
     log.info(`${LOG_PREFIX} requesting latest completed inspection of cobalt code: ${propertyCode}`);
 
@@ -38,7 +33,7 @@ module.exports = function createGetLatestCompletedInspection(db, auth) {
         res.status(404).send('code lookup, not found.');
         return;
       } else {
-        var propertyKey;
+        let propertyKey;
         if (propertySnapshot.hasChildren()) {
           propertySnapshot.forEach(function(childSnapshot) {
             propertyKey = childSnapshot.key;
@@ -49,33 +44,38 @@ module.exports = function createGetLatestCompletedInspection(db, auth) {
         } else {
           propertyKey = propertySnapshot.key
         }
+
         db.ref('inspections').orderByChild('property').equalTo(propertyKey).once('value').then(inspectionsSnapshot => {
-          var latestInspection;
-          var latestInspectionKey;
-          var latestInspectionByDate;
-          var latestInspectionByDateKey;
-          var templateNameSubStringLookup = 'Blueshift Product Inspection'
+          let inspection;
+          let responseData;
+          let latestInspection;
+          let latestInspectionKey;
+          let latestInspectionByDate;
+          let latestInspectionByDateKey;
+          const templateNameSubStringLookup = 'Blueshift Product Inspection';
           if (!inspectionsSnapshot.exists()) {
             res.status(404).send('no inspections exist yet.');
             return;
           } else if (inspectionsSnapshot.hasChildren()) {
-            var inspections = [];
+            const inspections = [];
             inspectionsSnapshot.forEach(function(childSnapshot) {
               // key will be 'ada' the first time and 'alan' the second time
-              var inspection = childSnapshot.val();
-              var key = childSnapshot.key;
+              const insp = childSnapshot.val();
+              const { key } = childSnapshot;
+
               // childData will be the actual contents of the child
               //var childData = childSnapshot.val();
-              if (inspection.inspectionCompleted) {
-                console.log(propertyCode, ' - Completed Inspection Template Name: ', inspection.template.name);
+              if (insp.inspectionCompleted) {
+                console.log(propertyCode, ' - Completed Inspection Template Name: ', insp.template.name);
               }
-              if (inspection.inspectionCompleted && inspection.template.name.indexOf(templateNameSubStringLookup) > -1) {
-                inspections.push({'inspection':inspection, 'key':key});
+
+              if (insp.inspectionCompleted && insp.template.name.indexOf(templateNameSubStringLookup) > -1) {
+                inspections.push({inspection: insp, key});
               }
             });
 
             if (inspections.length > 0) {
-              var sortedInspections = inspections.sort(function(a,b) { return b.inspection.creationDate-a.inspection.creationDate })  // DESC
+              const sortedInspections = inspections.sort(function(a,b) { return b.inspection.creationDate-a.inspection.creationDate })  // DESC
               latestInspection = sortedInspections[0].inspection;
               latestInspectionKey = sortedInspections[0].key;
 
@@ -97,7 +97,7 @@ module.exports = function createGetLatestCompletedInspection(db, auth) {
               // }
             }
           } else {
-            var inspection = inspectionsSnapshot.val();
+            inspection = inspectionsSnapshot.val();
             if (inspection.inspectionCompleted && inspection.template.name.indexOf(templateNameSubStringLookup) > -1) {
               latestInspection = inspection;
               latestInspectionKey = inspectionsSnapshot.key;
@@ -105,12 +105,12 @@ module.exports = function createGetLatestCompletedInspection(db, auth) {
           }
 
           if (latestInspection) {
-            var today = new Date();
-            var responseData = latestInspectionResponseData(today, propertyKey, latestInspection, latestInspectionKey);
+            responseData = latestInspectionResponseData(new Date(), propertyKey, latestInspection, latestInspectionKey);
+
             if (latestInspectionByDate) {
-              var otherDate = new Date(other_date);
-              responseData['latest_inspection_by_date'] = latestInspectionResponseData(otherDate, propertyKey, latestInspectionByDate, latestInspectionByDateKey);
+              responseData['latest_inspection_by_date'] = latestInspectionResponseData(new Date(otherDate), propertyKey, latestInspectionByDate, latestInspectionByDateKey);
             }
+
             res.status(200).send(responseData);
           } else {
             res.status(404).send('No completed inspections exist yet.');
