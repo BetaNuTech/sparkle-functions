@@ -23,7 +23,7 @@ module.exports = function createGetLatestCompletedInspection(db, auth) {
    * @return {Promise}
    */
   const getlatestCompletedInspectionHandler = async (req, res) => {
-    const propertyCode = req.params.property;
+    const propertyCode = req.query.cobalt_code;
     const otherDate = req.query.other_date;
     const dateForInspection = otherDate ? new Date(otherDate).getTime() / 1000 : 0;
 
@@ -86,7 +86,7 @@ module.exports = function createGetLatestCompletedInspection(db, auth) {
   // that configures a required url param
   const app = express();
   app.use(cors());
-  app.get('/:cobalt_code', authUser(db, auth), getlatestCompletedInspectionHandler);
+  app.get('/', authUser(db, auth), getlatestCompletedInspectionHandler);
   return app;
 }
 
