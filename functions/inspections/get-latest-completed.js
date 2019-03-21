@@ -4,6 +4,7 @@ const moment = require('moment');
 const log = require('./utils/logger');
 
 const LOG_PREFIX = 'inspections: get-latest-completed:';
+const TEMP_NAME_LOOKUP = 'Blueshift Product Inspection';
 
 /**
  * Factory for getting the latest completed inspection
@@ -24,7 +25,7 @@ module.exports = function createGetLatestCompletedInspection(db, auth) {
   const getlatestCompletedInspectionHandler = async (req, res) => {
     const propertyCode = req.params.property;
     const otherDate = req.query.other_date;
-    const dateForInspection = otherDate ? new Date(otherDate).getTime() / 1000 : null;
+    const dateForInspection = otherDate ? new Date(otherDate).getTime() / 1000 : 0;
 
     log.info(`${LOG_PREFIX} requesting latest completed inspection of cobalt code: ${propertyCode}`);
 
@@ -62,68 +63,19 @@ module.exports = function createGetLatestCompletedInspection(db, auth) {
       res.status(500).send('No inspections found.');
     }
 
-    let inspection;
-    let responseData;
-    let latestInspection;
-    let latestInspectionKey;
-    let latestInspectionByDate;
-    let latestInspectionByDateKey;
-    const templateNameSubStringLookup = 'Blueshift Product Inspection';
-
     if (!inspectionsSnapshot.exists()) {
       return res.status(404).send('no inspections exist yet.');
     }
 
-    if (inspectionsSnapshot.hasChildren()) {
-      const inspections = [];
-      inspectionsSnapshot.forEach(function(childSnapshot) {
-        // key will be 'ada' the first time and 'alan' the second time
-        const insp = childSnapshot.val();
-        const { key } = childSnapshot;
-
-        // childData will be the actual contents of the child
-        //var childData = childSnapshot.val();
-        if (insp.inspectionCompleted) {
-          console.log(`${propertyCode} - Completed Inspection Template Name: ${insp.template.name}`);
-        }
-
-        if (insp.inspectionCompleted && insp.template.name.indexOf(templateNameSubStringLookup) > -1) {
-          inspections.push({inspection: insp, key});
-        }
-      });
-
-      if (inspections.length > 0) {
-        const sortedInspections = inspections.sort(function(a,b) { return b.inspection.creationDate-a.inspection.creationDate })  // DESC
-        latestInspection = sortedInspections[0].inspection;
-        latestInspectionKey = sortedInspections[0].key;
-
-        // Latest Inspection by provided date
-        if (dateForInspection) {
-          sortedInspections.forEach(function(keyInspection) {
-            if (!latestInspectionByDate && keyInspection.inspection.creationDate <= dateForInspection && keyInspection.inspection.completionDate <= dateForInspection) {
-              latestInspectionByDate = keyInspection.inspection;
-              latestInspectionByDateKey = keyInspection.key;
-            }
-          });
-        }
-
-        // Remove inspection by date, if same inspection
-        // Alert could be different, so allowing both
-        // if (latestInspectionByDateKey && latestInspectionKey && latestInspectionKey == latestInspectionByDateKey) {
-        //     latestInspectionByDate = null;
-        //     latestInspectionByDateKey = null;
-        // }
-      }
-    } else {
-      inspection = inspectionsSnapshot.val();
-      if (inspection.inspectionCompleted && inspection.template.name.indexOf(templateNameSubStringLookup) > -1) {
-        latestInspection = inspection;
-        latestInspectionKey = inspectionsSnapshot.key;
-      }
-    }
+    const {
+      latestInspection,
+      latestInspectionKey,
+      latestInspectionByDate,
+      latestInspectionByDateKey
+    } = findLatestInspectionData(inspectionsSnapshot, dateForInspection);
 
     if (latestInspection) {
-      responseData = latestInspectionResponseData(new Date(), propertyKey, latestInspection, latestInspectionKey);
+      const responseData = latestInspectionResponseData(new Date(), propertyKey, latestInspection, latestInspectionKey);
 
       if (latestInspectionByDate) {
         responseData.latest_inspection_by_date = latestInspectionResponseData(new Date(otherDate), propertyKey, latestInspectionByDate, latestInspectionByDateKey);
@@ -141,6 +93,66 @@ module.exports = function createGetLatestCompletedInspection(db, auth) {
   app.use(cors());
   app.get('/:cobalt_code', authUser(db, auth), getlatestCompletedInspectionHandler);
   return app;
+}
+
+/**
+ * Find latest inspection from inspections snapshot
+ * - provide any available meta data about the latest inspection
+ * @param  {firebase.DataSnapshot} inspectionsSnapshot
+ * @param  {Number} dateForInspection
+ * @return {Object}
+ */
+function findLatestInspectionData(inspectionsSnapshot, dateForInspection) {
+  const result = {
+    latestInspection: null,
+    latestInspectionKey: null,
+    latestInspectionByDate: null,
+    latestInspectionByDateKey: null
+  };
+  const inspections = [];
+
+  // Top level, single, inspection
+  if (!inspectionsSnapshot.hasChildren()) {
+    let inspection = inspectionsSnapshot.val();
+
+    if (inspection.inspectionCompleted && inspection.template.name.indexOf(TEMP_NAME_LOOKUP) > -1) {
+      result.latestInspection = inspection;
+      result.latestInspectionKey = inspectionsSnapshot.key;
+    }
+  }
+
+  // Has many inspections
+  inspectionsSnapshot.forEach(function(childSnapshot) {
+    // key will be 'ada' the first time and 'alan' the second time
+    const insp = childSnapshot.val();
+    const { key } = childSnapshot;
+
+    if (insp.inspectionCompleted) {
+      console.log(`${propertyCode} - Completed Inspection Template Name: ${insp.template.name}`);
+    }
+
+    if (insp.inspectionCompleted && insp.template.name.indexOf(TEMP_NAME_LOOKUP) > -1) {
+      inspections.push({inspection: insp, key});
+    }
+  });
+
+  if (inspections.length > 0) {
+    const sortedInspections = inspections.sort(function(a,b) { return b.inspection.creationDate-a.inspection.creationDate })  // DESC
+    result.latestInspection = sortedInspections[0].inspection;
+    result.latestInspectionKey = sortedInspections[0].key;
+
+    // Latest Inspection by provided date
+    if (dateForInspection) {
+      sortedInspections.forEach(function(keyInspection) {
+        if (!latestInspectionByDate && keyInspection.inspection.creationDate <= dateForInspection && keyInspection.inspection.completionDate <= dateForInspection) {
+          result.latestInspectionByDate = keyInspection.inspection;
+          result.latestInspectionByDateKey = keyInspection.key;
+        }
+      });
+    }
+  }
+
+  return result;
 }
 
 function latestInspectionResponseData(date, propertyKey, latestInspection, latestInspectionKey) {
