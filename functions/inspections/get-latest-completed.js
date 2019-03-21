@@ -1,7 +1,8 @@
+const assert = require('assert');
 const express = require('express');
 const cors = require('cors');
 const moment = require('moment');
-const log = require('./utils/logger');
+const log = require('../utils/logger');
 
 const LOG_PREFIX = 'inspections: get-latest-completed:';
 const TEMP_NAME_LOOKUP = 'Blueshift Product Inspection';
@@ -24,6 +25,10 @@ module.exports = function createGetLatestCompletedInspection(db) {
     const propertyCode = req.query.cobalt_code;
     const otherDate = req.query.other_date;
     const dateForInspection = otherDate ? new Date(otherDate).getTime() / 1000 : 0;
+
+    if (!propertyCode) {
+      return res.status(400).send('Bad Request. Missing Parameters.');
+    }
 
     log.info(`${LOG_PREFIX} requesting latest completed inspection of cobalt code: ${propertyCode}`);
 
