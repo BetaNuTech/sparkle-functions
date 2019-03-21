@@ -137,27 +137,33 @@ module.exports = function createGetLatestCompletedInspection(db, auth) {
 }
 
 function latestInspectionResponseData(date, propertyKey, latestInspection, latestInspectionKey) {
-  var currentTime_secs = date.getTime() / 1000;
-  var currentDay = currentTime_secs / 60 / 60 / 24;
-  var creationDate_day = latestInspection.creationDate / 60 / 60 / 24; // Unixtime already
-  var difference_days = currentDay - creationDate_day;
+  const currentTimeSecs = date.getTime() / 1000;
+  const currentDay = currentTimeSecs / 60 / 60 / 24;
+  const creationDateDay = latestInspection.creationDate / 60 / 60 / 24; // Unixtime already
+  const differenceDays = currentDay - creationDateDay;
+  const score = Math.round(Number(latestInspection.score));
+  const inspectionURL = `https://sparkle-production.herokuapp.com/properties/${propertyKey}/update-inspection/${latestInspectionKey}`;
+
+  let alert;
+  let responseData;
+  let complianceAlert;
+  let completionDateDay;
+
   // If completionDate exists, use it
   if (latestInspection.completionDate) {
-    var completionDate_day = latestInspection.completionDate / 60 / 60 / 24; // Unixtime already
-    if ((currentDay - completionDate_day) > 3) {
-      difference_days = currentDay - (creationDate_day + 3);
+    completionDateDay = latestInspection.completionDate / 60 / 60 / 24; // Unixtime already
+    if ((currentDay - completionDateDay) > 3) {
+      differenceDays = currentDay - (creationDateDay + 3);
     } else {
-      difference_days = currentDay - completionDate_day;
+      differenceDays = currentDay - completionDateDay;
     }
   }
-  var score = Math.round(Number(latestInspection.score));
-  var alert;
-  var complianceAlert;
-  console.log(`Days since last inspection = ${difference_days}`);
 
-  if (difference_days > 7) {
+  console.log(`Days since last inspection = ${differenceDays}`);
+
+  if (differenceDays > 7) {
     if (latestInspection.completionDate) { // 10 days or more old
-      var completionDate_day = latestInspection.completionDate / 60 / 60 / 24; // Unixtime already
+      completionDateDay = latestInspection.completionDate / 60 / 60 / 24; // Unixtime already
       alert = [
         'Blueshift Product Inspection OVERDUE (Last: ',
         moment(latestInspection.creationDate * 1000).format('MM/DD/YY'),
@@ -166,7 +172,7 @@ function latestInspectionResponseData(date, propertyKey, latestInspection, lates
         ').'
       ].join('');
 
-      if ((completionDate_day - creationDate_day) > 3) {
+      if ((completionDateDay - creationDateDay) > 3) {
         alert += ' Over 3-day max duration, please start and complete inspection within 3 days.';
       }
 
@@ -190,8 +196,7 @@ function latestInspectionResponseData(date, propertyKey, latestInspection, lates
     }
   }
 
-  var inspectionURL = `https://sparkle-production.herokuapp.com/properties/${propertyKey}/update-inspection/${latestInspectionKey}`;
-  var responseData = { creationDate: moment(latestInspection.creationDate * 1000).format('MM/DD/YY'), score: `${score}%`, inspectionReportURL: latestInspection.inspectionReportURL, alert, complianceAlert, inspectionURL};
+  responseData = { creationDate: moment(latestInspection.creationDate * 1000).format('MM/DD/YY'), score: `${score}%`, inspectionReportURL: latestInspection.inspectionReportURL, alert, complianceAlert, inspectionURL};
 
   if (latestInspection.completionDate) {
     responseData = { creationDate: moment(latestInspection.creationDate * 1000).format('MM/DD/YY'), completionDate: moment(latestInspection.completionDate * 1000).format('MM/DD/YY'), score: `${score}%`, inspectionReportURL: latestInspection.inspectionReportURL, alert, complianceAlert, inspectionURL};
