@@ -30,98 +30,97 @@ module.exports = function createGetLatestCompletedInspection(db, auth) {
 
     db.ref('properties').orderByChild('code').equalTo(propertyCode).once('value').then(propertySnapshot => {
       if (!propertySnapshot.exists()) {
-        res.status(404).send('code lookup, not found.');
-        return;
-      } else {
-        let propertyKey;
-        if (propertySnapshot.hasChildren()) {
-          propertySnapshot.forEach(function(childSnapshot) {
-            propertyKey = childSnapshot.key;
+        return res.status(404).send('code lookup, not found.');
+      }
 
-            // Cancel enumeration
-            return true;
+      let propertyKey;
+      if (propertySnapshot.hasChildren()) {
+        propertySnapshot.forEach(function(childSnapshot) {
+          propertyKey = childSnapshot.key;
+
+          // Cancel enumeration
+          return true;
+        });
+      } else {
+        propertyKey = propertySnapshot.key
+      }
+
+      db.ref('inspections').orderByChild('property').equalTo(propertyKey).once('value').then(inspectionsSnapshot => {
+        let inspection;
+        let responseData;
+        let latestInspection;
+        let latestInspectionKey;
+        let latestInspectionByDate;
+        let latestInspectionByDateKey;
+        const templateNameSubStringLookup = 'Blueshift Product Inspection';
+        if (!inspectionsSnapshot.exists()) {
+          res.status(404).send('no inspections exist yet.');
+          return;
+        } else if (inspectionsSnapshot.hasChildren()) {
+          const inspections = [];
+          inspectionsSnapshot.forEach(function(childSnapshot) {
+            // key will be 'ada' the first time and 'alan' the second time
+            const insp = childSnapshot.val();
+            const { key } = childSnapshot;
+
+            // childData will be the actual contents of the child
+            //var childData = childSnapshot.val();
+            if (insp.inspectionCompleted) {
+              console.log(`${propertyCode} - Completed Inspection Template Name: ${insp.template.name}`);
+            }
+
+            if (insp.inspectionCompleted && insp.template.name.indexOf(templateNameSubStringLookup) > -1) {
+              inspections.push({inspection: insp, key});
+            }
           });
+
+          if (inspections.length > 0) {
+            const sortedInspections = inspections.sort(function(a,b) { return b.inspection.creationDate-a.inspection.creationDate })  // DESC
+            latestInspection = sortedInspections[0].inspection;
+            latestInspectionKey = sortedInspections[0].key;
+
+            // Latest Inspection by provided date
+            if (dateForInspection) {
+              sortedInspections.forEach(function(keyInspection) {
+                if (!latestInspectionByDate && keyInspection.inspection.creationDate <= dateForInspection && keyInspection.inspection.completionDate <= dateForInspection) {
+                  latestInspectionByDate = keyInspection.inspection;
+                  latestInspectionByDateKey = keyInspection.key;
+                }
+              });
+            }
+
+            // Remove inspection by date, if same inspection
+            // Alert could be different, so allowing both
+            // if (latestInspectionByDateKey && latestInspectionKey && latestInspectionKey == latestInspectionByDateKey) {
+            //     latestInspectionByDate = null;
+            //     latestInspectionByDateKey = null;
+            // }
+          }
         } else {
-          propertyKey = propertySnapshot.key
+          inspection = inspectionsSnapshot.val();
+          if (inspection.inspectionCompleted && inspection.template.name.indexOf(templateNameSubStringLookup) > -1) {
+            latestInspection = inspection;
+            latestInspectionKey = inspectionsSnapshot.key;
+          }
         }
 
-        db.ref('inspections').orderByChild('property').equalTo(propertyKey).once('value').then(inspectionsSnapshot => {
-          let inspection;
-          let responseData;
-          let latestInspection;
-          let latestInspectionKey;
-          let latestInspectionByDate;
-          let latestInspectionByDateKey;
-          const templateNameSubStringLookup = 'Blueshift Product Inspection';
-          if (!inspectionsSnapshot.exists()) {
-            res.status(404).send('no inspections exist yet.');
-            return;
-          } else if (inspectionsSnapshot.hasChildren()) {
-            const inspections = [];
-            inspectionsSnapshot.forEach(function(childSnapshot) {
-              // key will be 'ada' the first time and 'alan' the second time
-              const insp = childSnapshot.val();
-              const { key } = childSnapshot;
+        if (latestInspection) {
+          responseData = latestInspectionResponseData(new Date(), propertyKey, latestInspection, latestInspectionKey);
 
-              // childData will be the actual contents of the child
-              //var childData = childSnapshot.val();
-              if (insp.inspectionCompleted) {
-                console.log(propertyCode, ' - Completed Inspection Template Name: ', insp.template.name);
-              }
-
-              if (insp.inspectionCompleted && insp.template.name.indexOf(templateNameSubStringLookup) > -1) {
-                inspections.push({inspection: insp, key});
-              }
-            });
-
-            if (inspections.length > 0) {
-              const sortedInspections = inspections.sort(function(a,b) { return b.inspection.creationDate-a.inspection.creationDate })  // DESC
-              latestInspection = sortedInspections[0].inspection;
-              latestInspectionKey = sortedInspections[0].key;
-
-              // Latest Inspection by provided date
-              if (dateForInspection) {
-                sortedInspections.forEach(function(keyInspection) {
-                  if (!latestInspectionByDate && keyInspection.inspection.creationDate <= dateForInspection && keyInspection.inspection.completionDate <= dateForInspection) {
-                    latestInspectionByDate = keyInspection.inspection;
-                    latestInspectionByDateKey = keyInspection.key;
-                  }
-                });
-              }
-
-              // Remove inspection by date, if same inspection
-              // Alert could be different, so allowing both
-              // if (latestInspectionByDateKey && latestInspectionKey && latestInspectionKey == latestInspectionByDateKey) {
-              //     latestInspectionByDate = null;
-              //     latestInspectionByDateKey = null;
-              // }
-            }
-          } else {
-            inspection = inspectionsSnapshot.val();
-            if (inspection.inspectionCompleted && inspection.template.name.indexOf(templateNameSubStringLookup) > -1) {
-              latestInspection = inspection;
-              latestInspectionKey = inspectionsSnapshot.key;
-            }
+          if (latestInspectionByDate) {
+            responseData.latest_inspection_by_date = latestInspectionResponseData(new Date(otherDate), propertyKey, latestInspectionByDate, latestInspectionByDateKey);
           }
 
-          if (latestInspection) {
-            responseData = latestInspectionResponseData(new Date(), propertyKey, latestInspection, latestInspectionKey);
+          res.status(200).send(responseData);
+        } else {
+          res.status(404).send('No completed inspections exist yet.');
+        }
 
-            if (latestInspectionByDate) {
-              responseData['latest_inspection_by_date'] = latestInspectionResponseData(new Date(otherDate), propertyKey, latestInspectionByDate, latestInspectionByDateKey);
-            }
-
-            res.status(200).send(responseData);
-          } else {
-            res.status(404).send('No completed inspections exist yet.');
-          }
-
-        }).catch(function(error) {
-          // Handle any errors
-          console.log(error);
-          res.status(500).send('No inspections found.');
-        });
-      }
+      }).catch(function(error) {
+        // Handle any errors
+        console.log(error);
+        res.status(500).send('No inspections found.');
+      });
     }).catch(function(error) {
       // Handle any errors
       console.log(error);
@@ -154,37 +153,48 @@ function latestInspectionResponseData(date, propertyKey, latestInspection, lates
   var score = Math.round(Number(latestInspection.score));
   var alert;
   var complianceAlert;
-  console.log('Days since last inspection = ', difference_days);
+  console.log(`Days since last inspection = ${difference_days}`);
+
   if (difference_days > 7) {
     if (latestInspection.completionDate) { // 10 days or more old
       var completionDate_day = latestInspection.completionDate / 60 / 60 / 24; // Unixtime already
-      alert = 'Blueshift Product Inspection OVERDUE (Last: ';
-      alert = alert + moment(latestInspection.creationDate*1000).format('MM/DD/YY');
-      alert = alert + ', Completed: ';
-      alert = alert + moment(latestInspection.completionDate*1000).format('MM/DD/YY');
-      alert = alert + ').';
+      alert = [
+        'Blueshift Product Inspection OVERDUE (Last: ',
+        moment(latestInspection.creationDate * 1000).format('MM/DD/YY'),
+        ', Completed: ',
+        moment(latestInspection.completionDate * 1000).format('MM/DD/YY'),
+        ').'
+      ].join('');
+
       if ((completionDate_day - creationDate_day) > 3) {
-        alert = alert + ' Over 3-day max duration, please start and complete inspection within 3 days.';
+        alert += ' Over 3-day max duration, please start and complete inspection within 3 days.';
       }
+
       complianceAlert = alert;
     } else {
-      alert = 'Blueshift Product Inspection OVERDUE (Last: ';
-      alert = alert + moment(latestInspection.creationDate*1000).format('MM/DD/YY');
-      alert = alert + ').';
+      alert = [
+        'Blueshift Product Inspection OVERDUE (Last: ',
+        moment(latestInspection.creationDate * 1000).format('MM/DD/YY'),
+        ').'
+      ].join('');
       complianceAlert = alert;
     }
   }
-  if (score < 90) { // Less than 30 days ago, but Score less than 90%?
+
+  // Less than 30 days ago, but Score less than 90%?
+  if (score < 90) {
     if (alert) {
-      alert = alert + ' POOR RECENT INSPECTION RESULTS. DOUBLE CHECK PRODUCT PROBLEM!';
+      alert += ' POOR RECENT INSPECTION RESULTS. DOUBLE CHECK PRODUCT PROBLEM!';
     } else {
       alert = 'POOR RECENT INSPECTION RESULTS. DOUBLE CHECK PRODUCT PROBLEM!';
     }
   }
-  var inspectionURL = 'https://sparkle-production.herokuapp.com/properties/' + propertyKey + '/update-inspection/' + latestInspectionKey;
-  var responseData = { 'creationDate': moment(latestInspection.creationDate*1000).format('MM/DD/YY'), 'score': score + '%', 'inspectionReportURL': latestInspection.inspectionReportURL, 'alert': alert, 'complianceAlert': complianceAlert, 'inspectionURL': inspectionURL};
+
+  var inspectionURL = `https://sparkle-production.herokuapp.com/properties/${propertyKey}/update-inspection/${latestInspectionKey}`;
+  var responseData = { creationDate: moment(latestInspection.creationDate * 1000).format('MM/DD/YY'), score: `${score}%`, inspectionReportURL: latestInspection.inspectionReportURL, alert, complianceAlert, inspectionURL};
+
   if (latestInspection.completionDate) {
-    responseData = { 'creationDate': moment(latestInspection.creationDate*1000).format('MM/DD/YY'), 'completionDate': moment(latestInspection.completionDate*1000).format('MM/DD/YY'), 'score': score + '%', 'inspectionReportURL': latestInspection.inspectionReportURL, 'alert': alert, 'complianceAlert': complianceAlert, 'inspectionURL': inspectionURL};
+    responseData = { creationDate: moment(latestInspection.creationDate * 1000).format('MM/DD/YY'), completionDate: moment(latestInspection.completionDate * 1000).format('MM/DD/YY'), score: `${score}%`, inspectionReportURL: latestInspection.inspectionReportURL, alert, complianceAlert, inspectionURL};
   }
 
   console.log(responseData);
