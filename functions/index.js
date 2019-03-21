@@ -32,6 +32,10 @@ exports.latestCompleteInspection = functions.https.onRequest(
   inspections.getLatestCompleted(db, auth)
 );
 
+exports.latestCompleteInspectionStaging = functions.https.onRequest(
+  inspections.getLatestCompleted(dbStaging, auth)
+);
+
 
 // Default Database Functions
 
