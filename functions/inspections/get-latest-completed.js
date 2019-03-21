@@ -33,7 +33,7 @@ module.exports = function createGetLatestCompletedInspection(db, auth) {
     try {
       propertySnapshot = await db.ref('properties').orderByChild('code').equalTo(propertyCode).once('value');
     } catch(e) {
-      console.log(e);
+      log.error(`${LOG_PREFIX} ${e}`);
       return retres.status(500).send('Unable to retrieve data');
     }
 
@@ -59,7 +59,7 @@ module.exports = function createGetLatestCompletedInspection(db, auth) {
       inspectionsSnapshot = await db.ref('inspections').orderByChild('property').equalTo(propertyKey).once('value');
     } catch (e) {
       // Handle any errors
-      console.log(e);
+      log.error(`${LOG_PREFIX} ${e}`);
       res.status(500).send('No inspections found.');
     }
 
@@ -128,7 +128,7 @@ function findLatestInspectionData(inspectionsSnapshot, dateForInspection) {
     const { key } = childSnapshot;
 
     if (insp.inspectionCompleted) {
-      console.log(`${propertyCode} - Completed Inspection Template Name: ${insp.template.name}`);
+      log.info(`${LOG_PREFIX} ${propertyCode} - Completed Inspection Template Name: ${insp.template.name}`);
     }
 
     if (insp.inspectionCompleted && insp.template.name.indexOf(TEMP_NAME_LOOKUP) > -1) {
@@ -178,7 +178,7 @@ function latestInspectionResponseData(date, propertyKey, latestInspection, lates
     }
   }
 
-  console.log(`Days since last inspection = ${differenceDays}`);
+  log.info(`${LOG_PREFIX} days since last inspection: ${differenceDays}`);
 
   if (differenceDays > 7) {
     if (latestInspection.completionDate) { // 10 days or more old
@@ -221,6 +221,5 @@ function latestInspectionResponseData(date, propertyKey, latestInspection, lates
     responseData = { creationDate: moment(latestInspection.creationDate * 1000).format('MM/DD/YY'), completionDate: moment(latestInspection.completionDate * 1000).format('MM/DD/YY'), score: `${score}%`, inspectionReportURL: latestInspection.inspectionReportURL, alert, complianceAlert, inspectionURL};
   }
 
-  console.log(responseData);
   return responseData;
 }
