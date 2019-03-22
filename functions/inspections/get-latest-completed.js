@@ -126,10 +126,6 @@ function findLatestInspectionData(inspectionsSnapshot, propertyCode, dateForInsp
     const insp = childSnapshot.val();
     const { key } = childSnapshot;
 
-    if (insp.inspectionCompleted) {
-      log.info(`${LOG_PREFIX} ${propertyCode} - Completed Inspection Template Name: ${insp.template.name}`);
-    }
-
     if (insp.inspectionCompleted && insp.template.name.indexOf(TEMP_NAME_LOOKUP) > -1) {
       inspections.push({inspection: insp, key});
     }
@@ -159,18 +155,17 @@ function latestInspectionResponseData(date, propertyKey, latestInspection, lates
   const currentTimeSecs = date.getTime() / 1000;
   const currentDay = currentTimeSecs / 60 / 60 / 24;
   const creationDateDay = latestInspection.creationDate / 60 / 60 / 24; // Unixtime already
-  const differenceDays = currentDay - creationDateDay;
   const score = Math.round(Number(latestInspection.score));
   const inspectionURL = `https://sparkle-production.herokuapp.com/properties/${propertyKey}/update-inspection/${latestInspectionKey}`;
+  const completionDateDay = latestInspection.completionDate ? (latestInspection.completionDate / 60 / 60 / 24) : 0; // Unixtime already
+  let differenceDays = currentDay - creationDateDay;
 
-  let alert;
+  let alert = '';
   let responseData;
   let complianceAlert;
-  let completionDateDay;
 
   // If completionDate exists, use it
-  if (latestInspection.completionDate) {
-    completionDateDay = latestInspection.completionDate / 60 / 60 / 24; // Unixtime already
+  if (completionDateDay) {
     if ((currentDay - completionDateDay) > 3) {
       differenceDays = currentDay - (creationDateDay + 3);
     } else {
@@ -181,29 +176,28 @@ function latestInspectionResponseData(date, propertyKey, latestInspection, lates
   log.info(`${LOG_PREFIX} days since last inspection: ${differenceDays}`);
 
   if (differenceDays > 7) {
-    if (latestInspection.completionDate) { // 10 days or more old
-      completionDateDay = latestInspection.completionDate / 60 / 60 / 24; // Unixtime already
-      alert = [
-        'Blueshift Product Inspection OVERDUE (Last: ',
-        moment(latestInspection.creationDate * 1000).format('MM/DD/YY'),
-        ', Completed: ',
-        moment(latestInspection.completionDate * 1000).format('MM/DD/YY'),
-        ').'
-      ].join('');
+    alert = [
+      'Blueshift Product Inspection OVERDUE (Last: ',
+      moment(latestInspection.creationDate * 1000).format('MM/DD/YY'),
+      ').'
+    ];
 
-      if ((completionDateDay - creationDateDay) > 3) {
-        alert += ' Over 3-day max duration, please start and complete inspection within 3 days.';
-      }
-
-      complianceAlert = alert;
-    } else {
-      alert = [
-        'Blueshift Product Inspection OVERDUE (Last: ',
-        moment(latestInspection.creationDate * 1000).format('MM/DD/YY'),
-        ').'
-      ].join('');
-      complianceAlert = alert;
+    // Insert any completion date to alert
+    if (latestInspection.completionDate) {
+      alert.splice(
+        2,
+        0,
+        `, Completed: ${moment(latestInspection.completionDate * 1000).format('MM/DD/YY')}`,
+      );
     }
+
+    // Append extra alert for past max duration warning
+    if (completionDateDay && (completionDateDay - creationDateDay) > 3) {
+      alert.push(' Over 3-day max duration, please start and complete inspection within 3 days.');
+    }
+
+    alert = alert.join(''); // convert back to string
+    complianceAlert = alert;
   }
 
   // Less than 30 days ago, but Score less than 90%?
