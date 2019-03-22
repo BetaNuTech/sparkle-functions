@@ -13,6 +13,7 @@ module.exports = {
     const offset = Math.floor(Math.random() * 100);
     const items = Math.floor(Math.random() * 100);
     const completed = config.inspectionCompleted || false;
+    const templateName = `test-${offset * 3}`;
 
     return Object.assign({
       creationDate: (now - offset),
@@ -22,7 +23,8 @@ module.exports = {
       inspectorName: 'test-user',
       itemsCompleted: completed ? items : (items / 2),
       score: Math.random() > .5 ? 100 : Math.random(),
-      templateName: `test-${offset * 3}`,
+      templateName,
+      template: { name: templateName },
       totalItems: items,
       updatedLastDate: (now - (offset / 2))
     }, config);

@@ -70,19 +70,19 @@ module.exports = function createGetLatestCompletedInspection(db) {
       latestInspectionKey,
       latestInspectionByDate,
       latestInspectionByDateKey
-    } = findLatestInspectionData(inspectionsSnapshot, dateForInspection);
+    } = findLatestInspectionData(inspectionsSnapshot, propertyCode, dateForInspection);
 
-    if (latestInspection) {
-      const responseData = latestInspectionResponseData(new Date(), propertyKey, latestInspection, latestInspectionKey);
-
-      if (latestInspectionByDate) {
-        responseData.latest_inspection_by_date = latestInspectionResponseData(new Date(otherDate), propertyKey, latestInspectionByDate, latestInspectionByDateKey);
-      }
-
-      res.status(200).send(responseData);
-    } else {
-      res.status(404).send('No completed inspections exist yet.');
+    if (!latestInspection) {
+      return res.status(404).send('No completed latest inspection found.');
     }
+
+    // Successful response
+    const responseData = latestInspectionResponseData(new Date(), propertyKey, latestInspection, latestInspectionKey);
+    if (latestInspectionByDate) {
+      responseData.latest_inspection_by_date = latestInspectionResponseData(new Date(otherDate), propertyKey, latestInspectionByDate, latestInspectionByDateKey);
+    }
+
+    res.status(200).send(responseData);
   };
 
   // Create express app with single endpoint
@@ -97,10 +97,11 @@ module.exports = function createGetLatestCompletedInspection(db) {
  * Find latest inspection from inspections snapshot
  * - provide any available meta data about the latest inspection
  * @param  {firebase.DataSnapshot} inspectionsSnapshot
+ * @param  {String} propertyCode
  * @param  {Number} dateForInspection
  * @return {Object}
  */
-function findLatestInspectionData(inspectionsSnapshot, dateForInspection) {
+function findLatestInspectionData(inspectionsSnapshot, propertyCode, dateForInspection) {
   const result = {
     latestInspection: null,
     latestInspectionKey: null,
@@ -142,7 +143,8 @@ function findLatestInspectionData(inspectionsSnapshot, dateForInspection) {
     // Latest Inspection by provided date
     if (dateForInspection) {
       sortedInspections.forEach(keyInspection => {
-        if (!latestInspectionByDate && keyInspection.inspection.creationDate <= dateForInspection && keyInspection.inspection.completionDate <= dateForInspection) {
+        const {creationDate, completionDate} = keyInspection.inspection;
+        if (creationDate <= dateForInspection && completionDate <= dateForInspection) {
           result.latestInspectionByDate = keyInspection.inspection;
           result.latestInspectionByDateKey = keyInspection.key;
         }
