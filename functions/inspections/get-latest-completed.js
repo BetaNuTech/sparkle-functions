@@ -70,7 +70,7 @@ module.exports = function createGetLatestCompletedInspection(db) {
       latestInspectionKey,
       latestInspectionByDate,
       latestInspectionByDateKey
-    } = findLatestInspectionData(inspectionsSnapshot, propertyCode, dateForInspection);
+    } = findLatestInspectionData(inspectionsSnapshot, dateForInspection);
 
     if (!latestInspection) {
       return res.status(404).send('No completed latest inspection found.');
@@ -97,11 +97,10 @@ module.exports = function createGetLatestCompletedInspection(db) {
  * Find latest inspection from inspections snapshot
  * - provide any available meta data about the latest inspection
  * @param  {firebase.DataSnapshot} inspectionsSnapshot
- * @param  {String} propertyCode
  * @param  {Number} dateForInspection
  * @return {Object}
  */
-function findLatestInspectionData(inspectionsSnapshot, propertyCode, dateForInspection) {
+function findLatestInspectionData(inspectionsSnapshot, dateForInspection) {
   const result = {
     latestInspection: null,
     latestInspectionKey: null,
@@ -111,10 +110,14 @@ function findLatestInspectionData(inspectionsSnapshot, propertyCode, dateForInsp
   const inspections = [];
 
   // Top level, single, inspection
+  // TODO: remove inspections snapshot always has children
   if (!inspectionsSnapshot.hasChildren()) {
     let inspection = inspectionsSnapshot.val();
 
-    if (inspection.inspectionCompleted && inspection.template.name.indexOf(TEMP_NAME_LOOKUP) > -1) {
+    if (
+      inspection.inspectionCompleted &&
+      inspection.completionDate &&
+      inspection.template.name.indexOf(TEMP_NAME_LOOKUP) > -1) {
       result.latestInspection = inspection;
       result.latestInspectionKey = inspectionsSnapshot.key;
     }
@@ -126,7 +129,10 @@ function findLatestInspectionData(inspectionsSnapshot, propertyCode, dateForInsp
     const insp = childSnapshot.val();
     const { key } = childSnapshot;
 
-    if (insp.inspectionCompleted && insp.template.name.indexOf(TEMP_NAME_LOOKUP) > -1) {
+    if (
+      insp.inspectionCompleted &&
+      inspection.completionDate &&
+      insp.template.name.indexOf(TEMP_NAME_LOOKUP) > -1) {
       inspections.push({inspection: insp, key});
     }
   });
@@ -154,46 +160,31 @@ function findLatestInspectionData(inspectionsSnapshot, propertyCode, dateForInsp
 function latestInspectionResponseData(date, propertyKey, latestInspection, latestInspectionKey) {
   const currentTimeSecs = date.getTime() / 1000;
   const currentDay = currentTimeSecs / 60 / 60 / 24;
-  const creationDateDay = latestInspection.creationDate / 60 / 60 / 24; // Unixtime already
+  const creationDateDay = latestInspection.creationDate / 60 / 60 / 24; // days since Unix Epoch
   const score = Math.round(Number(latestInspection.score));
   const inspectionURL = `https://sparkle-production.herokuapp.com/properties/${propertyKey}/update-inspection/${latestInspectionKey}`;
-  const completionDateDay = latestInspection.completionDate ? (latestInspection.completionDate / 60 / 60 / 24) : 0; // Unixtime already
-  let differenceDays = currentDay - creationDateDay;
+  const completionDateDay = latestInspection.completionDate / 60 / 60 / 24; // days since Unix Epoch
 
   let alert = '';
-  let responseData;
   let complianceAlert;
 
-  // If completionDate exists, use it
-  if (completionDateDay) {
-    if ((currentDay - completionDateDay) > 3) {
-      differenceDays = currentDay - (creationDateDay + 3);
-    } else {
-      differenceDays = currentDay - completionDateDay;
-    }
+  let differenceDays;
+  if ((currentDay - completionDateDay) > 3) {
+    differenceDays = currentDay - (creationDateDay + 3);
+  } else {
+    differenceDays = currentDay - completionDateDay;
   }
 
   log.info(`${LOG_PREFIX} days since last inspection: ${differenceDays}`);
 
   if (differenceDays > 7) {
-    alert = [
-      'Blueshift Product Inspection OVERDUE (Last: ',
-      moment(latestInspection.creationDate * 1000).format('MM/DD/YY'),
-      ').'
-    ];
-
-    // Insert any completion date to alert
-    if (latestInspection.completionDate) {
-      alert.splice(
-        2,
-        0,
-        `, Completed: ${moment(latestInspection.completionDate * 1000).format('MM/DD/YY')}`,
-      );
-    }
+    alert = 'Blueshift Product Inspection OVERDUE (Last: ';
+    alert += moment(latestInspection.creationDate * 1000).format('MM/DD/YY');
+    alert += `, Completed: ${moment(latestInspection.completionDate * 1000).format('MM/DD/YY')}).`;
 
     // Append extra alert for past max duration warning
-    if (completionDateDay && (completionDateDay - creationDateDay) > 3) {
-      alert.push(' Over 3-day max duration, please start and complete inspection within 3 days.');
+    if ((completionDateDay - creationDateDay) > 3) {
+      alert += ' Over 3-day max duration, please start and complete inspection within 3 days.';
     }
 
     alert = alert.join(''); // convert back to string
@@ -209,18 +200,13 @@ function latestInspectionResponseData(date, propertyKey, latestInspection, lates
     }
   }
 
-  responseData = {
+  return {
     creationDate: moment(latestInspection.creationDate * 1000).format('MM/DD/YY'),
+    completionDate: moment(latestInspection.completionDate * 1000).format('MM/DD/YY'),
     score: `${score}%`,
     inspectionReportURL: latestInspection.inspectionReportURL,
     alert,
     complianceAlert,
     inspectionURL
   };
-
-  if (latestInspection.completionDate) {
-    responseData.completionDate = moment(latestInspection.completionDate * 1000).format('MM/DD/YY');
-  }
-
-  return responseData;
 }
