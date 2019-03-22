@@ -131,7 +131,7 @@ function findLatestInspectionData(inspectionsSnapshot, dateForInspection) {
 
     if (
       insp.inspectionCompleted &&
-      inspection.completionDate &&
+      insp.completionDate &&
       insp.template.name.indexOf(TEMP_NAME_LOOKUP) > -1) {
       inspections.push({inspection: insp, key});
     }
@@ -164,20 +164,14 @@ function latestInspectionResponseData(date, propertyKey, latestInspection, lates
   const score = Math.round(Number(latestInspection.score));
   const inspectionURL = `https://sparkle-production.herokuapp.com/properties/${propertyKey}/update-inspection/${latestInspectionKey}`;
   const completionDateDay = latestInspection.completionDate / 60 / 60 / 24; // days since Unix Epoch
-
-  let alert = '';
-  let complianceAlert;
-
-  let differenceDays;
-  if ((currentDay - completionDateDay) > 3) {
-    differenceDays = currentDay - (creationDateDay + 3);
-  } else {
-    differenceDays = currentDay - completionDateDay;
-  }
+  const differenceDays = currentDay - completionDateDay;
 
   log.info(`${LOG_PREFIX} days since last inspection: ${differenceDays}`);
 
-  if (differenceDays > 7) {
+  let alert = '';
+  let complianceAlert = '';
+
+  if (differenceDays >= 10) {
     alert = 'Blueshift Product Inspection OVERDUE (Last: ';
     alert += moment(latestInspection.creationDate * 1000).format('MM/DD/YY');
     alert += `, Completed: ${moment(latestInspection.completionDate * 1000).format('MM/DD/YY')}).`;
@@ -187,7 +181,6 @@ function latestInspectionResponseData(date, propertyKey, latestInspection, lates
       alert += ' Over 3-day max duration, please start and complete inspection within 3 days.';
     }
 
-    alert = alert.join(''); // convert back to string
     complianceAlert = alert;
   }
 
