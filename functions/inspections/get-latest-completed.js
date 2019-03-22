@@ -215,10 +215,17 @@ function latestInspectionResponseData(date, propertyKey, latestInspection, lates
     }
   }
 
-  responseData = { creationDate: moment(latestInspection.creationDate * 1000).format('MM/DD/YY'), score: `${score}%`, inspectionReportURL: latestInspection.inspectionReportURL, alert, complianceAlert, inspectionURL};
+  responseData = {
+    creationDate: moment(latestInspection.creationDate * 1000).format('MM/DD/YY'),
+    score: `${score}%`,
+    inspectionReportURL: latestInspection.inspectionReportURL,
+    alert,
+    complianceAlert,
+    inspectionURL
+  };
 
   if (latestInspection.completionDate) {
-    responseData = { creationDate: moment(latestInspection.creationDate * 1000).format('MM/DD/YY'), completionDate: moment(latestInspection.completionDate * 1000).format('MM/DD/YY'), score: `${score}%`, inspectionReportURL: latestInspection.inspectionReportURL, alert, complianceAlert, inspectionURL};
+    responseData.completionDate = moment(latestInspection.completionDate * 1000).format('MM/DD/YY');
   }
 
   return responseData;
