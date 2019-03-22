@@ -19,6 +19,7 @@ describe('Latest Complete Inspection', () => {
       .get('/')
       .expect(400);
 
+    // Assertions
     expect(response.text.toLowerCase()).to.have.string('missing parameters');
   });
 
@@ -29,6 +30,7 @@ describe('Latest Complete Inspection', () => {
       .get('/?cobalt_code=1')
       .expect(404)
 
+    // Assertions
     expect(response.text.toLowerCase()).to.have.string('not found');
   });
 
@@ -39,15 +41,18 @@ describe('Latest Complete Inspection', () => {
     const inspection2Id = uuid();
     const newest = (Date.now() / 1000);
     const oldest = (Date.now() / 1000) - 1000000;
+    const expected = {creationDate: newest, score: 95, inspectionReportURL: 'google.com'}
     const inspectionBase = {property: propertyId, inspectionCompleted: true, template: { name: TEMP_NAME_LOOKUP }};
-    const inspectionOne = mocking.createInspection(Object.assign({creationDate: newest}, inspectionBase));
-    const inspectionTwo = mocking.createInspection(Object.assign({creationDate: oldest}, inspectionBase));
-    const expectedDate = moment(inspectionOne.creationDate * 1000).format('MM/DD/YY');
+    const latestInspection = mocking.createInspection(Object.assign({}, expected, inspectionBase));
+    const oldestInspection = mocking.createInspection(Object.assign({creationDate: oldest}, inspectionBase));
+    const expectedDate = moment(expected.creationDate * 1000).format('MM/DD/YY');
+    const expectedScore = `${expected.score}%`;
+    const expectedUrl = expected.inspectionReportURL;
 
     // Setup database
     await db.ref(`/properties/${propertyId}`).set({name: `test${propertyId}`, code});
-    await db.ref(`/inspections/${inspection2Id}`).set(inspectionTwo);
-    await db.ref(`/inspections/${inspection1Id}`).set(inspectionOne);
+    await db.ref(`/inspections/${inspection2Id}`).set(oldestInspection);
+    await db.ref(`/inspections/${inspection1Id}`).set(latestInspection);
 
     // Execute & Get Result
     const app = createApp(db);
@@ -55,6 +60,11 @@ describe('Latest Complete Inspection', () => {
       .get(`/?cobalt_code=${code}`)
       .expect(200);
 
-    expect(response.body.creationDate).to.equal(expectedDate, 'sent latest creation date');
+    // Assertions
+    expect(response.body.creationDate).to.equal(expectedDate, 'latest creation date');
+    expect(response.body.score).to.equal(expectedScore, 'latest score');
+    expect(response.body.inspectionReportURL).to.equal(expectedUrl, 'latest report URL');
+    expect(response.body.inspectionURL).to.have.string(propertyId, 'latest app URL has property ID');
+    expect(response.body.inspectionURL).to.have.string(inspection1Id, 'latest app URL has latest inspection ID');
   });
 });
