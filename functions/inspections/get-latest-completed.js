@@ -161,23 +161,24 @@ function latestInspectionResponseData(date, propertyKey, latestInspection, lates
   const currentTimeSecs = date.getTime() / 1000;
   const currentDay = currentTimeSecs / 60 / 60 / 24;
   const creationDateDay = latestInspection.creationDate / 60 / 60 / 24; // days since Unix Epoch
+  const completionDateDay = latestInspection.completionDate / 60 / 60 / 24; // days since Unix Epoch
   const score = Math.round(Number(latestInspection.score));
   const inspectionURL = `https://sparkle-production.herokuapp.com/properties/${propertyKey}/update-inspection/${latestInspectionKey}`;
-  const completionDateDay = latestInspection.completionDate / 60 / 60 / 24; // days since Unix Epoch
   const differenceDays = currentDay - completionDateDay;
+  const inspectionOverdue = isInspectionOverdue(currentDay, creationDateDay, completionDateDay);
 
   log.info(`${LOG_PREFIX} days since last inspection: ${differenceDays}`);
 
   let alert = '';
   let complianceAlert = '';
 
-  if (differenceDays >= 10) {
+  if (inspectionOverdue) {
     alert = 'Blueshift Product Inspection OVERDUE (Last: ';
     alert += moment(latestInspection.creationDate * 1000).format('MM/DD/YY');
     alert += `, Completed: ${moment(latestInspection.completionDate * 1000).format('MM/DD/YY')}).`;
 
     // Append extra alert for past max duration warning
-    if ((completionDateDay - creationDateDay) > 3) {
+    if (completionDateDay - creationDateDay > 3) {
       alert += ' Over 3-day max duration, please start and complete inspection within 3 days.';
     }
 
@@ -202,4 +203,26 @@ function latestInspectionResponseData(date, propertyKey, latestInspection, lates
     complianceAlert,
     inspectionURL
   };
+}
+
+/**
+ * Determine if inspection is "overdue"
+ * @param  {Number} currentDay - Days since UNIX Epoch
+ * @param  {Number} creationDateDay - Days since UNIX Epoch
+ * @param  {Number} completionDateDay - Days since UNIX Epoch
+ * @return {Boolean}
+ */
+function isInspectionOverdue(currentDay, creationDateDay, completionDateDay) {
+  var differenceDays;
+
+  if (currentDay - completionDateDay > 3) {
+    // Formula when completed more than 3 days ago
+    differenceDays = currentDay - (creationDateDay + 3); // days since creation + 3
+  } else {
+    // Formula when completed less than 3 days ago
+    differenceDays = currentDay - completionDateDay; // days since completion
+  }
+
+  console.log('Days since last inspection = ', differenceDays);
+  return differenceDays > 7;
 }

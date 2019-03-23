@@ -70,22 +70,78 @@ describe('Latest Complete Inspection', () => {
     expect(response.body.inspectionURL).to.have.string(inspection1Id, 'latest app URL has latest inspection ID');
   });
 
-  it('should create overdue alert after 10+ days since creation date', async () => {
+  it('should create overdue alert when inspection dates meet criteria', async () => {
+    const code = uuid();
+    const propertyId = uuid();
+    const nowDay = unixToUnixDays(Date.now() / 1000); // days since Unix Epoch
+    const inspectionBase = {property: propertyId, inspectionCompleted: true, score: 100, template: { name: TEMP_NAME_LOOKUP }};
+
+    const insp1Data = mocking.createInspection(Object.assign({}, {
+      completionDate: unixDaysToUnix(nowDay - 9), // 9 days ago in seconds
+      creationDate: unixDaysToUnix(nowDay - 11), // 11 days ago in seconds
+    }, inspectionBase));
+    const insp2Data = mocking.createInspection(Object.assign({}, {
+      completionDate: unixDaysToUnix(nowDay - 4), // 4 days ago in seconds
+      creationDate: unixDaysToUnix(nowDay - 6), // 6 days ago in seconds
+    }, inspectionBase));
+    const insp3Data = mocking.createInspection(Object.assign({}, {
+      completionDate: unixDaysToUnix(nowDay - 2), // 2 days ago in seconds
+      creationDate: unixDaysToUnix(nowDay - 20), // 20 days ago in seconds
+    }, inspectionBase));
+
+    const inspections = [
+      {
+        data: insp1Data,
+        expected: createOverdueAlertMsg(insp1Data),
+        message: 'Has overdue alert when completed > 3 days ago & created > 10 days ago'
+      },
+      {
+        data: insp2Data,
+        expected: '',
+        message: 'Has no overdue alert when completed > 3 days ago & created < 10 days ago'
+      },
+      {
+        data: insp3Data,
+        expected: '',
+        message: 'Has no overdue alert when completed < 3 days ago'
+      }
+    ];
+
+    // Setup database
+    await db.ref(`/properties/${propertyId}`).set({name: `test${propertyId}`, code: code});
+
+    for (let i = 0; i < inspections.length; i++) {
+      const {data, expected, message} = inspections[i];
+      await db.ref(`/inspections/${uuid()}`).set(data);
+
+      // Execute & Get Result
+      const app = createApp(db);
+      const response = await request(app).get(`/?cobalt_code=${code}`).expect(200);
+
+      // Assertions
+      const actual = response.body.alert;
+      expect(actual).to.equal(expected, message);
+    }
+  });
+
+  it('should alert 3-day max after 3+ days between creation and completion', async () => {
     const code = uuid();
     const propertyId = uuid();
     const inspectionId = uuid();
-    const now = Date.now() / 1000;
-    const nowDay = now / 60 / 60 / 24; // days since Unix Epoch
-    const createdAt = (nowDay - 11) * 60 * 60 * 24; // 7 days ago in seconds
+    const nowDay = unixToUnixDays(Date.now() / 1000); // days since Unix Epoch
+    const completedDay = nowDay - 11
+    const createdDay = completedDay - 4;
+    const createdAt = unixDaysToUnix(createdDay); // 14 days ago in seconds
+    const completedAt = unixDaysToUnix(completedDay); // 11 days ago in seconds
     const inspectionData = mocking.createInspection({
       property: propertyId,
       creationDate: createdAt,
       inspectionCompleted: true,
-      completionDate: createdAt + 1000,
+      completionDate: completedAt,
       score: 100, // avoid score alert
       template: { name: TEMP_NAME_LOOKUP }
     });
-    const expected = `Blueshift Product Inspection OVERDUE (Last: ${moment(createdAt * 1000).format('MM/DD/YY')}, Completed: ${moment((createdAt + 1000) * 1000).format('MM/DD/YY')}).`;
+    const expected = `Blueshift Product Inspection OVERDUE (Last: ${moment(createdAt * 1000).format('MM/DD/YY')}, Completed: ${moment(completedAt * 1000).format('MM/DD/YY')}). Over 3-day max duration, please start and complete inspection within 3 days.`;
 
     // Setup database
     await db.ref(`/properties/${propertyId}`).set({name: `test${propertyId}`, code: code});
@@ -97,6 +153,20 @@ describe('Latest Complete Inspection', () => {
 
     // Assertions
     const actual = response.body.alert;
-    expect(actual).to.equal(expected, 'has overdue alert');
+    expect(actual).to.equal(expected, 'has 3-day max alert');
   });
 });
+
+// Helpers
+
+function createOverdueAlertMsg(inspection) {
+  return `Blueshift Product Inspection OVERDUE (Last: ${moment(inspection.creationDate * 1000).format('MM/DD/YY')}, Completed: ${moment((inspection.completionDate + 1000) * 1000).format('MM/DD/YY')}).`;
+}
+
+function unixDaysToUnix(unixDays) {
+  return unixDays * 60 * 60 * 24;
+}
+
+function unixToUnixDays(unix) {
+  return unix / 60 / 60 / 24; // days since Unix Epoch
+}
