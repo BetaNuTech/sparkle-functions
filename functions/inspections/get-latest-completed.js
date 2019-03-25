@@ -164,10 +164,7 @@ function latestInspectionResponseData(date, propertyKey, latestInspection, lates
   const completionDateDay = latestInspection.completionDate / 60 / 60 / 24; // days since Unix Epoch
   const score = Math.round(Number(latestInspection.score));
   const inspectionURL = `https://sparkle-production.herokuapp.com/properties/${propertyKey}/update-inspection/${latestInspectionKey}`;
-  const differenceDays = currentDay - completionDateDay;
   const inspectionOverdue = isInspectionOverdue(currentDay, creationDateDay, completionDateDay);
-
-  log.info(`${LOG_PREFIX} days since last inspection: ${differenceDays}`);
 
   let alert = '';
   let complianceAlert = '';
@@ -223,6 +220,6 @@ function isInspectionOverdue(currentDay, creationDateDay, completionDateDay) {
     differenceDays = currentDay - completionDateDay; // days since completion
   }
 
-  console.log('Days since last inspection = ', differenceDays);
+  log.info(`Days since last inspection = ${differenceDays}`);
   return differenceDays > 7;
 }
