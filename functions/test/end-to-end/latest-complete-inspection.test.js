@@ -12,7 +12,9 @@ const NOW_DAY = unixToUnixDays(Date.now() / 1000); // days since Unix Epoch
 const AGE = Object.freeze({
   oneDayAgo: unixDaysToUnix(NOW_DAY - 1),
   twoDaysAgo: unixDaysToUnix(NOW_DAY - 2),
+  threeDaysAgo: unixDaysToUnix(NOW_DAY - 3),
   fourDaysAgo: unixDaysToUnix(NOW_DAY - 4),
+  fiveDaysAgo: unixDaysToUnix(NOW_DAY - 5),
   sixDaysAgo: unixDaysToUnix(NOW_DAY - 6),
   nineDaysAgo: unixDaysToUnix(NOW_DAY - 9),
   elevenDaysAgo: unixDaysToUnix(NOW_DAY - 11),
@@ -216,6 +218,77 @@ describe('Latest Complete Inspection', () => {
       expect(actual).to.equal(expected, message);
     }
   });
+
+  it('should embed the newest inspection completed before an optional "other_date" parameter', async () => {
+    const inspectionBase = {
+      score: 100,
+      inspectionCompleted: true,
+      template: { name: TEMP_NAME_LOOKUP }
+    };
+
+    const inspections = {
+      latest: Object.assign({}, {
+        inspectorName: 'latest',
+        completionDate: AGE.oneDayAgo,
+        creationDate: AGE.twoDaysAgo
+      }, inspectionBase),
+
+      middle: Object.assign({}, {
+        inspectorName: 'middle',
+        completionDate: AGE.threeDaysAgo,
+        creationDate: AGE.twoDaysAgo
+      }, inspectionBase),
+
+      oldest: Object.assign({}, {
+        inspectorName: 'oldest',
+        completionDate: AGE.threeDaysAgo,
+        creationDate: AGE.fiveDaysAgo
+      }, inspectionBase)
+    };
+
+    const tests = [
+      {
+        data: [inspections.latest],
+        query: AGE.twoDaysAgo,
+        expected: undefined,
+        message: 'no latest by date when all inspections newer than date'
+      },
+      {
+        data: [inspections.latest, inspections.middle, inspections.oldest],
+        query: inspections.middle.completionDate,
+        expected: moment(inspections.middle.completionDate * 1000).format('MM/DD/YY'),
+        message: 'found latest by date created before a date'
+      },
+      {
+        data: [inspections.latest, inspections.middle, inspections.oldest],
+        query: inspections.latest.completionDate,
+        expected: moment(inspections.middle.completionDate * 1000).format('MM/DD/YY'),
+        message: 'allow latest to also be latest by date'
+      }
+    ];
+
+    for (let i = 0; i < tests.length; i++) {
+      const code = uuid();
+      const propertyId = uuid();
+      const {data, query, expected, message} = tests[i];
+
+      // Setup database
+      await db.ref(`/properties/${propertyId}`).set({name: `test${propertyId}`, code});
+      for (let k = 0; k < data.length; k++) {
+        const inspData = mocking.createInspection(Object.assign({property: propertyId}, data[k]));
+        await db.ref(`/inspections/${uuid()}`).set(inspData);
+      }
+
+      // Get results
+      const app = createApp(db);
+      const otherDate = new Date(query * 1000).toString();
+      const response = await request(app).get(`/?cobalt_code=${code}&other_date=${otherDate}`).expect(200);
+
+      // Assertions
+      const actual = response.body.latest_inspection_by_date ? response.body.latest_inspection_by_date.completionDate : undefined;
+      expect(actual).to.equal(expected, message);
+    }
+  });
 });
 
 // Helpers
@@ -233,7 +306,7 @@ function createScoreAlertMsg() {
 }
 
 function unixDaysToUnix(unixDays) {
-  return unixDays * 60 * 60 * 24;
+  return Math.round(unixDays * 60 * 60 * 24);
 }
 
 function unixToUnixDays(unix) {

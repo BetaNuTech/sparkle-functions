@@ -144,13 +144,14 @@ function findLatestInspectionData(inspectionsSnapshot, dateForInspection) {
 
     // Latest Inspection by provided date
     if (dateForInspection) {
-      sortedInspections.forEach(keyInspection => {
-        const {creationDate, completionDate} = keyInspection.inspection;
-        if (creationDate <= dateForInspection && completionDate <= dateForInspection) {
-          result.latestInspectionByDate = keyInspection.inspection;
-          result.latestInspectionByDateKey = keyInspection.key;
-        }
-      });
+      const [latestByDate] = sortedInspections.filter(keyInspection =>
+        keyInspection.inspection.completionDate <= dateForInspection
+      );
+
+      if (latestByDate) {
+        result.latestInspectionByDate = latestByDate.inspection;
+        result.latestInspectionByDateKey = latestByDate.key;
+      }
     }
   }
 
