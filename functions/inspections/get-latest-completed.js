@@ -62,9 +62,9 @@ module.exports = function createGetLatestCompletedInspection(db) {
 
     const {
       latestInspection,
-      latestInspectionKey,
+      latestInspectionId,
       latestInspectionByDate,
-      latestInspectionByDateKey
+      latestInspectionByDateId
     } = findLatestInspectionData(inspectionsSnapshot, dateForInspection);
 
     if (!latestInspection) {
@@ -72,9 +72,9 @@ module.exports = function createGetLatestCompletedInspection(db) {
     }
 
     // Successful response
-    const responseData = latestInspectionResponseData(new Date(), propertyId, latestInspection, latestInspectionKey);
+    const responseData = latestInspectionResponseData(new Date(), propertyId, latestInspection, latestInspectionId);
     if (latestInspectionByDate) {
-      responseData.latest_inspection_by_date = latestInspectionResponseData(new Date(otherDate), propertyId, latestInspectionByDate, latestInspectionByDateKey);
+      responseData.latest_inspection_by_date = latestInspectionResponseData(new Date(otherDate), propertyId, latestInspectionByDate, latestInspectionByDateId);
     }
 
     res.status(200).send(responseData);
@@ -98,9 +98,9 @@ module.exports = function createGetLatestCompletedInspection(db) {
 function findLatestInspectionData(inspectionsSnapshot, dateForInspection) {
   const result = {
     latestInspection: null,
-    latestInspectionKey: null,
+    latestInspectionId: null,
     latestInspectionByDate: null,
-    latestInspectionByDateKey: null
+    latestInspectionByDateId: null
   };
   const inspections = [];
 
@@ -114,7 +114,7 @@ function findLatestInspectionData(inspectionsSnapshot, dateForInspection) {
       inspection.completionDate &&
       inspection.template.name.indexOf(TEMP_NAME_LOOKUP) > -1) {
       result.latestInspection = inspection;
-      result.latestInspectionKey = inspectionsSnapshot.key;
+      result.latestInspectionId = inspectionsSnapshot.key;
     }
   }
 
@@ -135,7 +135,7 @@ function findLatestInspectionData(inspectionsSnapshot, dateForInspection) {
   if (inspections.length > 0) {
     const sortedInspections = inspections.sort((a, b) => b.inspection.creationDate - a.inspection.creationDate);  // DESC
     result.latestInspection = sortedInspections[0].inspection;
-    result.latestInspectionKey = sortedInspections[0].key;
+    result.latestInspectionId = sortedInspections[0].key;
 
     // Latest Inspection by provided date
     if (dateForInspection) {
@@ -145,7 +145,7 @@ function findLatestInspectionData(inspectionsSnapshot, dateForInspection) {
 
       if (latestByDate) {
         result.latestInspectionByDate = latestByDate.inspection;
-        result.latestInspectionByDateKey = latestByDate.key;
+        result.latestInspectionByDateId = latestByDate.key;
       }
     }
   }
@@ -153,13 +153,21 @@ function findLatestInspectionData(inspectionsSnapshot, dateForInspection) {
   return result;
 }
 
-function latestInspectionResponseData(date, propertyId, latestInspection, latestInspectionKey) {
+/**
+ * Configure response JSON for an inspection
+ * @param  {Date} date
+ * @param  {String} propertyId
+ * @param  {Object} latestInspection
+ * @param  {String} latestInspectionId
+ * @return {Object} - response JSON
+ */
+function latestInspectionResponseData(date, propertyId, latestInspection, latestInspectionId) {
   const currentTimeSecs = date.getTime() / 1000;
   const currentDay = currentTimeSecs / 60 / 60 / 24;
   const creationDateDay = latestInspection.creationDate / 60 / 60 / 24; // days since Unix Epoch
   const completionDateDay = latestInspection.completionDate / 60 / 60 / 24; // days since Unix Epoch
   const score = Math.round(Number(latestInspection.score));
-  const inspectionURL = `https://sparkle-production.herokuapp.com/properties/${propertyId}/update-inspection/${latestInspectionKey}`;
+  const inspectionURL = `https://sparkle-production.herokuapp.com/properties/${propertyId}/update-inspection/${latestInspectionId}`;
   const inspectionOverdue = isInspectionOverdue(currentDay, creationDateDay, completionDateDay);
 
   let alert = '';
