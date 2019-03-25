@@ -93,17 +93,17 @@ describe('Latest Complete Inspection', () => {
       {
         data: insp1Data,
         expected: createOverdueAlertMsg(insp1Data),
-        message: 'Has overdue alert when completed > 3 days ago & created > 10 days ago'
+        message: 'has overdue alert when completed > 3 days ago & created > 10 days ago'
       },
       {
         data: insp2Data,
         expected: '',
-        message: 'Has no overdue alert when completed > 3 days ago & created < 10 days ago'
+        message: 'has no overdue alert when completed > 3 days ago & created < 10 days ago'
       },
       {
         data: insp3Data,
         expected: '',
-        message: 'Has no overdue alert when completed < 3 days ago'
+        message: 'has no overdue alert when completed < 3 days ago'
       }
     ];
 
@@ -119,8 +119,8 @@ describe('Latest Complete Inspection', () => {
       const response = await request(app).get(`/?cobalt_code=${code}`).expect(200);
 
       // Assertions
-      const actual = response.body.alert;
-      expect(actual).to.equal(expected, message);
+      expect(response.body.alert).to.equal(expected, `alert: ${message}`);
+      expect(response.body.complianceAlert).to.equal(expected, `compliance alert: ${message}`);
     }
   });
 
