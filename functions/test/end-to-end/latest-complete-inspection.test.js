@@ -71,23 +71,21 @@ describe('Latest Complete Inspection', () => {
   });
 
   it('should create overdue alert when inspection dates meet criteria', async () => {
-    const code = uuid();
-    const propertyId = uuid();
     const nowDay = unixToUnixDays(Date.now() / 1000); // days since Unix Epoch
-    const inspectionBase = {property: propertyId, inspectionCompleted: true, score: 100, template: { name: TEMP_NAME_LOOKUP }};
+    const inspectionBase = {inspectionCompleted: true, score: 100, template: { name: TEMP_NAME_LOOKUP }};
 
-    const insp1Data = mocking.createInspection(Object.assign({}, {
+    const insp1Data = Object.assign({}, {
       completionDate: unixDaysToUnix(nowDay - 9), // 9 days ago in seconds
       creationDate: unixDaysToUnix(nowDay - 11), // 11 days ago in seconds
-    }, inspectionBase));
-    const insp2Data = mocking.createInspection(Object.assign({}, {
+    }, inspectionBase);
+    const insp2Data = Object.assign({}, {
       completionDate: unixDaysToUnix(nowDay - 4), // 4 days ago in seconds
       creationDate: unixDaysToUnix(nowDay - 6), // 6 days ago in seconds
-    }, inspectionBase));
-    const insp3Data = mocking.createInspection(Object.assign({}, {
+    }, inspectionBase);
+    const insp3Data = Object.assign({}, {
       completionDate: unixDaysToUnix(nowDay - 2), // 2 days ago in seconds
       creationDate: unixDaysToUnix(nowDay - 20), // 20 days ago in seconds
-    }, inspectionBase));
+    }, inspectionBase);
 
     const inspections = [
       {
@@ -107,12 +105,16 @@ describe('Latest Complete Inspection', () => {
       }
     ];
 
-    // Setup database
-    await db.ref(`/properties/${propertyId}`).set({name: `test${propertyId}`, code: code});
-
     for (let i = 0; i < inspections.length; i++) {
+      const code = uuid();
+      const propertyId = uuid();
       const {data, expected, message} = inspections[i];
-      await db.ref(`/inspections/${uuid()}`).set(data);
+      data.property = propertyId;
+      const inspectionData = mocking.createInspection(data);
+
+      // Setup database
+      await db.ref(`/properties/${propertyId}`).set({name: `test${propertyId}`, code});
+      await db.ref(`/inspections/${uuid()}`).set(inspectionData);
 
       // Execute & Get Result
       const app = createApp(db);
@@ -141,10 +143,10 @@ describe('Latest Complete Inspection', () => {
       score: 100, // avoid score alert
       template: { name: TEMP_NAME_LOOKUP }
     });
-    const expected = `Blueshift Product Inspection OVERDUE (Last: ${moment(createdAt * 1000).format('MM/DD/YY')}, Completed: ${moment(completedAt * 1000).format('MM/DD/YY')}). Over 3-day max duration, please start and complete inspection within 3 days.`;
+    const expected = `${createOverdueAlertMsg(inspectionData)} ${create3DayMaxAlert()}`;
 
     // Setup database
-    await db.ref(`/properties/${propertyId}`).set({name: `test${propertyId}`, code: code});
+    await db.ref(`/properties/${propertyId}`).set({name: `test${propertyId}`, code});
     await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
 
     // Execute & Get Result
@@ -155,12 +157,82 @@ describe('Latest Complete Inspection', () => {
     const actual = response.body.alert;
     expect(actual).to.equal(expected, 'has 3-day max alert');
   });
+
+  it('should create alert when score is below 90%', async () => {
+    const nowDay = unixToUnixDays(Date.now() / 1000); // days since Unix Epoch
+    const inspectionBase = {
+      inspectionCompleted: true,
+      template: { name: TEMP_NAME_LOOKUP }
+    };
+
+    const insp1Data = Object.assign({}, {
+      score: 91, // satisfactory score
+      completionDate: unixDaysToUnix(nowDay - 1), // 1 days ago in seconds
+      creationDate: unixDaysToUnix(nowDay - 2), // 2 days ago in seconds
+    }, inspectionBase);
+    const insp2Data = Object.assign({}, {
+      score: 89, // deficient score
+      completionDate: unixDaysToUnix(nowDay - 9), // 9 days ago in seconds
+      creationDate: unixDaysToUnix(nowDay - 11), // 11 days ago in seconds
+    }, inspectionBase);
+    const insp3Data = Object.assign({}, {
+      score: 89, // deficient score
+      completionDate: unixDaysToUnix(nowDay - 11), // 11 days ago in seconds
+      creationDate: unixDaysToUnix(nowDay - 15), // 15 days ago in seconds
+    }, inspectionBase);
+
+    const inspections = [
+      {
+        data: insp1Data,
+        expected: '',
+        message: 'has no alert for score, overdue, or 3-day max'
+      },
+      {
+        data: insp2Data,
+        expected: `${createOverdueAlertMsg(insp2Data)} ${createScoreAlertMsg()}`,
+        message: 'has alert for score and overdue'
+      },
+      {
+        data: insp3Data,
+        expected: `${createOverdueAlertMsg(insp3Data)} ${create3DayMaxAlert()} ${createScoreAlertMsg()}`,
+        message: 'has alert for score, overdue, and 3-day max'
+      }
+    ];
+
+    for (let i = 0; i < inspections.length; i++) {
+      const code = uuid();
+      const propertyId = uuid();
+      const {data, expected, message} = inspections[i];
+      data.property = propertyId;
+      const inspectionData = mocking.createInspection(data);
+
+      // Setup database
+      await db.ref(`/properties/${propertyId}`).set({name: `test${propertyId}`, code});
+      await db.ref(`/inspections/${uuid()}`).set(inspectionData);
+
+      // Execute & Get Result
+      const app = createApp(db);
+      const response = await request(app).get(`/?cobalt_code=${code}`).expect(200);
+
+      // Assertions
+      const actual = response.body.alert;
+      expect(actual).to.equal(expected, message);
+    }
+  });
 });
 
 // Helpers
 
 function createOverdueAlertMsg(inspection) {
   return `Blueshift Product Inspection OVERDUE (Last: ${moment(inspection.creationDate * 1000).format('MM/DD/YY')}, Completed: ${moment((inspection.completionDate + 1000) * 1000).format('MM/DD/YY')}).`;
+}
+
+function create3DayMaxAlert() {
+  return 'Over 3-day max duration, please start and complete inspection within 3 days.';
+}
+
+function createScoreAlertMsg() {
+  return 'POOR RECENT INSPECTION RESULTS. DOUBLE CHECK PRODUCT PROBLEM!';
 }
 
 function unixDaysToUnix(unixDays) {
