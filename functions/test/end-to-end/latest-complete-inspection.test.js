@@ -8,6 +8,19 @@ const { cleanDb } = require('../../test-helpers/firebase');
 const { db } = require('./setup');
 
 const TEMP_NAME_LOOKUP = 'Blueshift Product Inspection';
+const NOW_DAY = unixToUnixDays(Date.now() / 1000); // days since Unix Epoch
+const AGE = Object.freeze({
+  oneDayAgo: unixDaysToUnix(NOW_DAY - 1),
+  twoDaysAgo: unixDaysToUnix(NOW_DAY - 2),
+  fourDaysAgo: unixDaysToUnix(NOW_DAY - 4),
+  sixDaysAgo: unixDaysToUnix(NOW_DAY - 6),
+  nineDaysAgo: unixDaysToUnix(NOW_DAY - 9),
+  elevenDaysAgo: unixDaysToUnix(NOW_DAY - 11),
+  fourteenDaysAgo: unixDaysToUnix(NOW_DAY - 14),
+  fifteenDaysAgo: unixDaysToUnix(NOW_DAY- 15),
+  twentyDaysAgo: unixDaysToUnix(NOW_DAY - 20)
+});
+
 
 describe('Latest Complete Inspection', () => {
   afterEach(() => cleanDb(db));
@@ -71,35 +84,29 @@ describe('Latest Complete Inspection', () => {
   });
 
   it('should create overdue alert when inspection dates meet criteria', async () => {
-    const nowDay = unixToUnixDays(Date.now() / 1000); // days since Unix Epoch
     const inspectionBase = {inspectionCompleted: true, score: 100, template: { name: TEMP_NAME_LOOKUP }};
-
-    const insp1Data = Object.assign({}, {
-      completionDate: unixDaysToUnix(nowDay - 9), // 9 days ago in seconds
-      creationDate: unixDaysToUnix(nowDay - 11), // 11 days ago in seconds
-    }, inspectionBase);
-    const insp2Data = Object.assign({}, {
-      completionDate: unixDaysToUnix(nowDay - 4), // 4 days ago in seconds
-      creationDate: unixDaysToUnix(nowDay - 6), // 6 days ago in seconds
-    }, inspectionBase);
-    const insp3Data = Object.assign({}, {
-      completionDate: unixDaysToUnix(nowDay - 2), // 2 days ago in seconds
-      creationDate: unixDaysToUnix(nowDay - 20), // 20 days ago in seconds
-    }, inspectionBase);
-
     const inspections = [
       {
-        data: insp1Data,
-        expected: createOverdueAlertMsg(insp1Data),
+        data: Object.assign({}, {
+          completionDate: AGE.nineDaysAgo,
+          creationDate: AGE.elevenDaysAgo,
+        }, inspectionBase),
+        expected: createOverdueAlertMsg({completionDate: AGE.nineDaysAgo, creationDate: AGE.elevenDaysAgo}),
         message: 'has overdue alert when completed > 3 days ago & created > 10 days ago'
       },
       {
-        data: insp2Data,
+        data: Object.assign({}, {
+          completionDate: AGE.fourDaysAgo,
+          creationDate: AGE.sixDaysAgo,
+        }, inspectionBase),
         expected: '',
         message: 'has no overdue alert when completed > 3 days ago & created < 10 days ago'
       },
       {
-        data: insp3Data,
+        data: Object.assign({}, {
+          completionDate: AGE.twoDaysAgo,
+          creationDate: AGE.twentyDaysAgo,
+        }, inspectionBase),
         expected: '',
         message: 'has no overdue alert when completed < 3 days ago'
       }
@@ -130,16 +137,11 @@ describe('Latest Complete Inspection', () => {
     const code = uuid();
     const propertyId = uuid();
     const inspectionId = uuid();
-    const nowDay = unixToUnixDays(Date.now() / 1000); // days since Unix Epoch
-    const completedDay = nowDay - 11
-    const createdDay = completedDay - 4;
-    const createdAt = unixDaysToUnix(createdDay); // 14 days ago in seconds
-    const completedAt = unixDaysToUnix(completedDay); // 11 days ago in seconds
     const inspectionData = mocking.createInspection({
       property: propertyId,
-      creationDate: createdAt,
       inspectionCompleted: true,
-      completionDate: completedAt,
+      creationDate: AGE.fourteenDaysAgo,
+      completionDate: AGE.nineDaysAgo,
       score: 100, // avoid score alert
       template: { name: TEMP_NAME_LOOKUP }
     });
@@ -159,42 +161,37 @@ describe('Latest Complete Inspection', () => {
   });
 
   it('should create alert when score is below 90%', async () => {
-    const nowDay = unixToUnixDays(Date.now() / 1000); // days since Unix Epoch
     const inspectionBase = {
       inspectionCompleted: true,
       template: { name: TEMP_NAME_LOOKUP }
     };
 
-    const insp1Data = Object.assign({}, {
-      score: 91, // satisfactory score
-      completionDate: unixDaysToUnix(nowDay - 1), // 1 days ago in seconds
-      creationDate: unixDaysToUnix(nowDay - 2), // 2 days ago in seconds
-    }, inspectionBase);
-    const insp2Data = Object.assign({}, {
-      score: 89, // deficient score
-      completionDate: unixDaysToUnix(nowDay - 9), // 9 days ago in seconds
-      creationDate: unixDaysToUnix(nowDay - 11), // 11 days ago in seconds
-    }, inspectionBase);
-    const insp3Data = Object.assign({}, {
-      score: 89, // deficient score
-      completionDate: unixDaysToUnix(nowDay - 11), // 11 days ago in seconds
-      creationDate: unixDaysToUnix(nowDay - 15), // 15 days ago in seconds
-    }, inspectionBase);
-
     const inspections = [
       {
-        data: insp1Data,
+        data: Object.assign({}, {
+          score: 91, // satisfactory score
+          completionDate: AGE.oneDayAgo,
+          creationDate: AGE.twoDaysAgo
+        }, inspectionBase),
         expected: '',
         message: 'has no alert for score, overdue, or 3-day max'
       },
       {
-        data: insp2Data,
-        expected: `${createOverdueAlertMsg(insp2Data)} ${createScoreAlertMsg()}`,
+        data: Object.assign({}, {
+          score: 89, // deficient score
+          completionDate: AGE.nineDaysAgo,
+          creationDate: AGE.elevenDaysAgo
+        }, inspectionBase),
+        expected: `${createOverdueAlertMsg({completionDate: AGE.nineDaysAgo, creationDate: AGE.elevenDaysAgo})} ${createScoreAlertMsg()}`,
         message: 'has alert for score and overdue'
       },
       {
-        data: insp3Data,
-        expected: `${createOverdueAlertMsg(insp3Data)} ${create3DayMaxAlert()} ${createScoreAlertMsg()}`,
+        data: Object.assign({}, {
+          score: 89, // deficient score
+          completionDate: AGE.elevenDaysAgo,
+          creationDate: AGE.fifteenDaysAgo
+        }, inspectionBase),
+        expected: `${createOverdueAlertMsg({completionDate: AGE.elevenDaysAgo, creationDate: AGE.fifteenDaysAgo})} ${create3DayMaxAlert()} ${createScoreAlertMsg()}`,
         message: 'has alert for score, overdue, and 3-day max'
       }
     ];
