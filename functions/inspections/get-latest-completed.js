@@ -45,11 +45,11 @@ module.exports = function createGetLatestCompletedInspection(db) {
     }
 
     // Get first and only property id from results
-    const [propertyKey] = Object.keys(propertySnap.val());
+    const [propertyId] = Object.keys(propertySnap.val());
 
     let inspectionsSnapshot;
     try {
-      inspectionsSnapshot = await db.ref('inspections').orderByChild('property').equalTo(propertyKey).once('value');
+      inspectionsSnapshot = await db.ref('inspections').orderByChild('property').equalTo(propertyId).once('value');
     } catch (e) {
       // Handle any errors
       log.error(`${LOG_PREFIX} ${e}`);
@@ -72,9 +72,9 @@ module.exports = function createGetLatestCompletedInspection(db) {
     }
 
     // Successful response
-    const responseData = latestInspectionResponseData(new Date(), propertyKey, latestInspection, latestInspectionKey);
+    const responseData = latestInspectionResponseData(new Date(), propertyId, latestInspection, latestInspectionKey);
     if (latestInspectionByDate) {
-      responseData.latest_inspection_by_date = latestInspectionResponseData(new Date(otherDate), propertyKey, latestInspectionByDate, latestInspectionByDateKey);
+      responseData.latest_inspection_by_date = latestInspectionResponseData(new Date(otherDate), propertyId, latestInspectionByDate, latestInspectionByDateKey);
     }
 
     res.status(200).send(responseData);
@@ -153,13 +153,13 @@ function findLatestInspectionData(inspectionsSnapshot, dateForInspection) {
   return result;
 }
 
-function latestInspectionResponseData(date, propertyKey, latestInspection, latestInspectionKey) {
+function latestInspectionResponseData(date, propertyId, latestInspection, latestInspectionKey) {
   const currentTimeSecs = date.getTime() / 1000;
   const currentDay = currentTimeSecs / 60 / 60 / 24;
   const creationDateDay = latestInspection.creationDate / 60 / 60 / 24; // days since Unix Epoch
   const completionDateDay = latestInspection.completionDate / 60 / 60 / 24; // days since Unix Epoch
   const score = Math.round(Number(latestInspection.score));
-  const inspectionURL = `https://sparkle-production.herokuapp.com/properties/${propertyKey}/update-inspection/${latestInspectionKey}`;
+  const inspectionURL = `https://sparkle-production.herokuapp.com/properties/${propertyId}/update-inspection/${latestInspectionKey}`;
   const inspectionOverdue = isInspectionOverdue(currentDay, creationDateDay, completionDateDay);
 
   let alert = '';
