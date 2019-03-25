@@ -32,27 +32,22 @@ module.exports = function createGetLatestCompletedInspection(db) {
 
     log.info(`${LOG_PREFIX} requesting latest completed inspection of cobalt code: ${propertyCode}`);
 
-    let propertySnapshot;
+    let propertySnap;
     try {
-      propertySnapshot = await db.ref('properties').orderByChild('code').equalTo(propertyCode).once('value');
+      propertySnap = await db.ref('properties').orderByChild('code').equalTo(propertyCode).limitToFirst(1).once('value');
     } catch(e) {
       log.error(`${LOG_PREFIX} ${e}`);
       return retres.status(500).send('Unable to retrieve data');
     }
 
-    if (!propertySnapshot.exists()) {
+    if (!propertySnap.exists()) {
       return res.status(404).send('code lookup, not found.');
     }
 
-    let propertyKey;
-    if (propertySnapshot.hasChildren()) {
-      propertySnapshot.forEach(childSnapshot => propertyKey = childSnapshot.key);
-    } else {
-      propertyKey = propertySnapshot.key
-    }
+    // Get first and only property id from results
+    const [propertyKey] = Object.keys(propertySnap.val());
 
     let inspectionsSnapshot;
-
     try {
       inspectionsSnapshot = await db.ref('inspections').orderByChild('property').equalTo(propertyKey).once('value');
     } catch (e) {
