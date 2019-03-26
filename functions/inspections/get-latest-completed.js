@@ -218,7 +218,7 @@ function isInspectionOverdue(currentDay, creationDateDay, completionDateDay) {
 
   if (currentDay - completionDateDay > 3) {
     // Formula when completed more than 3 days ago
-    differenceDays = currentDay - (creationDateDay + 3); // days since creation + 3
+    differenceDays = currentDay - (creationDateDay + 3); // assume 3 days instead
   } else {
     // Formula when completed less than 3 days ago
     differenceDays = currentDay - completionDateDay; // days since completion
