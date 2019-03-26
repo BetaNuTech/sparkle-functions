@@ -8,6 +8,7 @@ const createOnAttributeWriteHandler = require('./on-attribute-write-handler');
 const createOnWriteHandler = require('./on-write-handler');
 const createOnDeleteHandler = require('./on-delete-handler');
 const createOnGetPDFReportHandler = require('./on-get-pdf-report');
+const getLatestCompleted = require('./get-latest-completed');
 
 const LOG_PREFIX = 'inspections:';
 
@@ -57,6 +58,7 @@ module.exports = {
 
   cron,
   processWrite,
+  getLatestCompleted,
   createOnAttributeWriteHandler,
   createOnWriteHandler,
   createOnDeleteHandler,
