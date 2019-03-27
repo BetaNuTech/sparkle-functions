@@ -200,8 +200,8 @@ function latestInspectionResponseData(date, propertyId, latestInspection, latest
     completionDate: moment(latestInspection.completionDate * 1000).format('MM/DD/YY'),
     score: `${score}%`,
     inspectionReportURL: latestInspection.inspectionReportURL,
-    alert,
-    complianceAlert,
+    alert: alert || undefined,
+    complianceAlert: complianceAlert || undefined ,
     inspectionURL
   };
 }

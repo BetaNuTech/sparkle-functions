@@ -49,6 +49,32 @@ describe('Latest Complete Inspection', () => {
     expect(response.text.toLowerCase()).to.have.string('not found');
   });
 
+  it('should set alert and compliance alert to undefined when unset', async () => {
+    const code = uuid();
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const inspectionData = mocking.createInspection({
+      property: propertyId,
+      inspectionCompleted: true,
+      completionDate: AGE.oneDayAgo, // avoid overdue alert
+      creationDate: AGE.twoDaysAgo, // avoid 3-day alert
+      score: 100, // avoid score alert
+      template: { name: TEMP_NAME_LOOKUP }
+    });
+
+    // Setup database
+    await db.ref(`/properties/${propertyId}`).set({name: `test${propertyId}`, code});
+    await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
+
+    // Execute & Get Result
+    const app = createApp(db);
+    const response = await request(app).get(`/?cobalt_code=${code}`).expect(200);
+
+    // Assertions
+    expect(response.body.alert).to.equal(undefined, 'has alert set to undefined');
+    expect(response.body.complianceAlert).to.equal(undefined, 'has compliance alert set to undefined');
+  });
+
   it('should return latest completed inspection data', async function() {
     const code = uuid();
     const propertyId = uuid();
@@ -101,7 +127,7 @@ describe('Latest Complete Inspection', () => {
           completionDate: AGE.fourDaysAgo,
           creationDate: AGE.sixDaysAgo,
         }, inspectionBase),
-        expected: '',
+        expected: undefined,
         message: 'has no overdue alert when completed > 3 days ago & created < 10 days ago'
       },
       {
@@ -109,7 +135,7 @@ describe('Latest Complete Inspection', () => {
           completionDate: AGE.twoDaysAgo,
           creationDate: AGE.twentyDaysAgo,
         }, inspectionBase),
-        expected: '',
+        expected: undefined,
         message: 'has no overdue alert when completed < 3 days ago'
       }
     ];
@@ -175,7 +201,7 @@ describe('Latest Complete Inspection', () => {
           completionDate: AGE.oneDayAgo,
           creationDate: AGE.twoDaysAgo
         }, inspectionBase),
-        expected: '',
+        expected: undefined,
         message: 'has no alert for score, overdue, or 3-day max'
       },
       {
