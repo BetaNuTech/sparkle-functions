@@ -4,13 +4,13 @@ const log = require('../utils/logger');
 const LOG_PREFIX = 'inspections: process-property-meta:';
 
 /**
- * Process changes to a properties meta properties when it's
+ * Process changes to a property's meta properties when it's
  * completed inspections' chanages
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
  * @param  {String} propertyId
  * @return {Promise} - resolves {Object} updates
  */
-module.exports = function processPropertyMeta(db, propertyId) {
+module.exports = async function processMeta(db, propertyId) {
   const updates = Object.create(null);
 
   return co(function *() {
