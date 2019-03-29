@@ -113,6 +113,12 @@ module.exports = {
     );
   },
 
+  createDeficientItem(item = {}) {
+    return Object.assign({
+      state: 'requires-action' // TODO #81
+    }, item);
+  },
+
   createSection(config = {}) {
     return Object.assign({
       added_multi_section: false,

@@ -20,19 +20,25 @@ const propertyMetaUpdates = pipe([
  */
 module.exports = async function processMeta(db, propertyId) {
   try {
-    // Pull all property's inspections
-    const inspectionsSnapshot = await db.ref('/inspections').orderByChild('property').equalTo(propertyId).once('value');
-    const inspectionsData = inspectionsSnapshot.exists() ? inspectionsSnapshot.val() : {};
+    // Find all property's inspections
+    const inspectionsSnap = await db.ref('/inspections').orderByChild('property').equalTo(propertyId).once('value');
+    const inspectionsData = inspectionsSnap.exists() ? inspectionsSnap.val() : {};
     const inspections = Object.keys(inspectionsData).map(inspId => Object.assign({id: inspId}, inspectionsData[inspId]));
 
     if (!inspections.length) {
       return {};
     }
 
+    // Find any deficient items data for property
+    const propertyDeficientItemsSnap = await db.ref(`/propertyDeficientItems/${propertyId}`).once('value');
+    const propertyDeficientItemsData = propertyDeficientItemsSnap.exists() ? propertyDeficientItemsSnap.val() : {};
+    const deficientItems = Object.keys(propertyDeficientItemsData).map(itemId => Object.assign({id: itemId}, propertyDeficientItemsData[itemId]));
+
     // Collect updates to write to propety's metadata attrs
     const { updates } = propertyMetaUpdates({
       propertyId,
       inspections,
+      deficientItems,
       updates: Object.create(null)
     });
 
@@ -94,28 +100,41 @@ function updateLastInspectionAttrs(config = { propertyId: '', inspections: [], u
 /**
  * Configure update for a property's
  * inspection's deficient items attrs
+ *
+ * NOTE: property's deficient items are first calculated from
+ * inspections to mitigate race conditions with `/propertyDeficientItems`,
+ * which is also used if available
+ *
  * @param  {String} propertyId
  * @param  {Object[]} inspections
+ * @param  {Object[]} deficientItems
  * @param  {Object} updates
  * @return {Object} - configuration
  */
-function updateDeficientItemsAttrs(config = { propertyId: '', inspections: [], updates: {} }) {
-  const deficientInspections = config.inspections
+function updateDeficientItemsAttrs(config = { propertyId: '', inspections: [], deficientItems: [], updates: {} }) {
+  const deficientInspectionItems = config.inspections
     .filter(({ inspectionCompleted, template }) => inspectionCompleted && Boolean(template.items)) // only completed /w items
     .map(inspection => createDeficientItems(inspection)) // create inspection's deficient items
-    .filter(deficientItems => Object.keys(deficientItems).length); // remove non-deficient inspections
-
-  // TODO: merge in state data from: `/propertyDeficientItems/<property_id>/<inspection_item_id>`
-  //       into each deficientInspections items if they match
+    .filter(calcDeficientItems => Object.keys(calcDeficientItems).length) // remove  non-deficient inspections
+    .map(defItems => {
+      // Merge latest state from:
+      // `/propertyDeficientItems/...` into
+      // deficient items calculated from inspections
+      Object.keys(defItems).forEach(itemId => {
+        const [latest] = config.deficientItems.filter(({id}) => id === itemId);
+        Object.assign(defItems[itemId], latest || {}); // merge latest state
+      });
+      return defItems;
+    });
 
   // Count all deficient items
-  config.updates[`/properties/${config.propertyId}/numOfDeficientItems`] = deficientInspections.reduce((acc, deficientItems) =>
-    acc + Object.keys(deficientItems).length
+  config.updates[`/properties/${config.propertyId}/numOfDeficientItems`] = deficientInspectionItems.reduce((acc, defItems) =>
+    acc + Object.keys(defItems).length
   , 0);
 
   // Count all deficient items where state is `requires-action`
-  config.updates[`/properties/${config.propertyId}/numOfRequiredActionsForDeficientItems`] = deficientInspections.reduce((acc, deficientItems) =>
-    acc + Object.keys(deficientItems).filter(itemId => deficientItems[itemId].state === 'requires-action').length
+  config.updates[`/properties/${config.propertyId}/numOfRequiredActionsForDeficientItems`] = deficientInspectionItems.reduce((acc, defItems) =>
+    acc + Object.keys(defItems).filter(itemId => defItems[itemId].state === 'requires-action').length
   , 0);
 
   return config;
