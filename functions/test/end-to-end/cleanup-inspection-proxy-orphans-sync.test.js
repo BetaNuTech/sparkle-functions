@@ -51,6 +51,7 @@ describe('Cleanup Inspection Proxy Orphans Sync', () => {
     const propertyId = uuid();
     const activeInspection = mocking.createInspection({property: propertyId});
     const archivedInspection = mocking.createInspection({property: propertyId});
+    delete activeInspection.template; // template non included in proxies
     const expected = { [insp1Id]: activeInspection };
 
     // Setup database
