@@ -63,6 +63,17 @@ describe('Inspections | Utils | Create Deficient Items', () => {
       expect(actual).to.deep.equal(expected, message);
     });
   });
+
+  it('should set the default state of deficient items to "requires-action"', () => {
+    const itemId = uuid();
+    const expected = 'requires-action';
+    const actual = createDeficientItems(
+      createInspection({},
+        { [itemId]: createItem('twoactions_checkmarkx', true) }
+      )
+    )[itemId].state;
+    expect(actual).to.equal(expected);
+  });
 });
 
 /**

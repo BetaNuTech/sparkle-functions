@@ -4,7 +4,9 @@ const config = require('../../config');
 
 const LOG_PREFIX = 'inspections: utils: create-deficient-items';
 const DEFICIENT_ITEM_ELIGIBLE = config.inspectionItems.deficientListEligible;
-const DEFAULT_DEFICIENT_ITEM = Object.freeze({}); // TODO #81
+const DEFAULT_DEFICIENT_ITEM = Object.freeze({
+  state: 'requires-action'
+}); // TODO #81
 
 /**
  * Factory for an inspections deficient items
