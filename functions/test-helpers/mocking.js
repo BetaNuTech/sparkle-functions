@@ -28,7 +28,11 @@ module.exports = {
       itemsCompleted: completed ? items : (items / 2),
       score: Math.random() > .5 ? 100 : Math.random(),
       templateName,
-      template: { name: templateName },
+      template: {
+        name: templateName,
+        sections: {},
+        items: {}
+      },
       totalItems: items,
       updatedLastDate: (now - (offset / 2))
     }, config);

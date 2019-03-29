@@ -77,7 +77,9 @@ describe('Inspections Migration Date Sync', () => {
     const expected = {
       numOfInspections: 2,
       lastInspectionScore: inspectionOne.score,
-      lastInspectionDate: inspectionOne.creationDate
+      lastInspectionDate: inspectionOne.creationDate,
+      numOfDeficientItems: 0,
+      numOfRequiredActionsForDeficientItems: 0
     };
 
     // Setup database
@@ -109,6 +111,14 @@ describe('Inspections Migration Date Sync', () => {
     expect(actual.lastInspectionDate).to.equal(
       expected.lastInspectionDate,
       'updated property\'s `lastInspectionDate`'
+    );
+    expect(actual.numOfDeficientItems).to.equal(
+      expected.numOfDeficientItems,
+      'updated property\'s `numOfDeficientItems`'
+    );
+    expect(actual.numOfRequiredActionsForDeficientItems).to.equal(
+      expected.numOfRequiredActionsForDeficientItems,
+      'updated property\'s `numOfRequiredActionsForDeficientItems`'
     );
   }));
 });

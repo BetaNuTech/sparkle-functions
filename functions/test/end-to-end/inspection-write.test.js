@@ -218,12 +218,30 @@ describe('Inspection Write', () => {
     const propertyId = uuid();
     const newest = (Date.now() / 1000);
     const oldest = (Date.now() / 1000) - 100000;
-    const inspectionOne = mocking.createInspection({ property: propertyId, inspectionCompleted: true, creationDate: newest, score: 65 });
-    const inspectionTwo = mocking.createInspection({ property: propertyId, inspectionCompleted: true, creationDate: oldest, score: 25 });
+    const deficientInspItems = {
+    }
+    const inspectionOne = mocking.createInspection({
+      property: propertyId,
+      inspectionCompleted: true,
+      creationDate: newest,
+      score: 65,
+      // Create template w/ 1 deficient item
+      template: { items: { [uuid()]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) } }
+    });
+    const inspectionTwo = mocking.createInspection({
+      property: propertyId,
+      inspectionCompleted: true,
+      creationDate: oldest,
+      score: 25,
+      // Create template w/ 1 deficient item
+      template: { items: { [uuid()]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) } }
+    });
     const expected = {
       numOfInspections: 2,
       lastInspectionScore: inspectionOne.score,
-      lastInspectionDate: inspectionOne.creationDate
+      lastInspectionDate: inspectionOne.creationDate,
+      numOfDeficientItems: 2,
+      numOfRequiredActionsForDeficientItems: 2
     };
 
     // Setup database
@@ -253,6 +271,14 @@ describe('Inspection Write', () => {
     expect(actual.lastInspectionDate).to.equal(
       expected.lastInspectionDate,
       'updated property\'s `lastInspectionDate`'
+    );
+    expect(actual.numOfDeficientItems).to.equal(
+      expected.numOfDeficientItems,
+      'updated property\'s `numOfDeficientItems`'
+    );
+    expect(actual.numOfRequiredActionsForDeficientItems).to.equal(
+      expected.numOfRequiredActionsForDeficientItems,
+      'updated property\'s `numOfRequiredActionsForDeficientItems`'
     );
   }));
 });
