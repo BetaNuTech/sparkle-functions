@@ -28,12 +28,16 @@ module.exports = function createOnInspectionWriteHandler(db) {
         // Remove deleted Inspections' deficient items
         await db.ref(`/propertyDeficientItems/${propertyId}/${inspectionId}`).remove();
         updates[`/propertyDeficientItems/${propertyId}/${inspectionId}`] = 'removed';
+        log.info(`${LOG_PREFIX} removing deficient items: "/propertyDeficientItems/${propertyId}/${inspectionId}"`);
       }
 
       return updates;
     }
 
-    // TODO
+    // Inspection has deficient list disabled
+    if (!inspection.trackDeficientItems) {
+      return updates;
+    }
 
     return updates;
   };
