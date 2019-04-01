@@ -65,6 +65,7 @@ describe('Inspection Delete', () => {
     const inspectionTwo = mocking.createInspection({
       property: propertyId,
       inspectionCompleted: true,
+      deficientItemsList: true,
       creationDate: oldest,
       score: 25,
       // Create template w/ 1 deficient item

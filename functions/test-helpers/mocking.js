@@ -22,6 +22,7 @@ module.exports = {
     return Object.assign({
       creationDate: (now - offset),
       deficienciesExist: Math.random() > .5 ? true : false,
+      deficientItemsList: false,
       inspectionCompleted: completed,
       inspector: `user-${offset * 2}`,
       inspectorName: 'test-user',

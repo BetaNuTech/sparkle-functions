@@ -7,7 +7,7 @@ const { db, test, cloudFunctions } = require('./setup');
 
 const { assign } = Object;
 
-describe('Inspections Migration Date Sync', () => {
+describe('Inspections Migration Date Write', () => {
   afterEach(() => cleanDb(db));
 
   it('should migrate all an inspections\' outdated proxy records', () => co(function *() {

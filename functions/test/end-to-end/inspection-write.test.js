@@ -218,22 +218,19 @@ describe('Inspection Write', () => {
     const propertyId = uuid();
     const newest = (Date.now() / 1000);
     const oldest = (Date.now() / 1000) - 100000;
-    const inspectionOne = mocking.createInspection({
-      property: propertyId,
-      inspectionCompleted: true,
+    const inspectionBase = { property: propertyId, inspectionCompleted: true, deficientItemsList: true };
+    const inspectionOne = mocking.createInspection(Object.assign({
       creationDate: newest,
       score: 65,
       // Create template w/ 1 deficient item
       template: { items: { [uuid()]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) } }
-    });
-    const inspectionTwo = mocking.createInspection({
-      property: propertyId,
-      inspectionCompleted: true,
+    }, inspectionBase));
+    const inspectionTwo = mocking.createInspection(Object.assign({
       creationDate: oldest,
       score: 25,
       // Create template w/ 1 deficient item
       template: { items: { [uuid()]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) } }
-    });
+    }, inspectionBase));
     const expected = {
       numOfInspections: 2,
       lastInspectionScore: inspectionOne.score,
