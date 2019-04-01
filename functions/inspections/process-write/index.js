@@ -1,4 +1,4 @@
-const processPropertyMeta = require('../process-property-meta');
+const processPropertyMeta = require('../../properties/process-meta');
 const propertyInspectionsList = require('./property-inspections-list');
 const completedInspectionsList = require('./completed-inspections-list');
 const { isInspectionWritable } = require('./utils');

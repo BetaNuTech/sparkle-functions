@@ -1,6 +1,6 @@
 const co = require('co');
 const log = require('../utils/logger');
-const processPropertyMeta = require('./process-property-meta');
+const processPropertyMeta = require('../properties/process-meta');
 const deleteUploads = require('./delete-uploads');
 
 const LOG_PREFIX = 'inspections: on-delete:';

@@ -55,18 +55,28 @@ describe('Inspection Delete', () => {
     expect(actual.map((ds) => ds.exists())).to.deep.equal([false, false, false, false]);
   }));
 
-  it('should update property meta data when a completed inspection is removed', () => co(function *() {
+  it('should update property meta data when latest completed inspection is removed', () => co(function *() {
     const insp1Id = uuid();
     const insp2Id = uuid();
     const propertyId = uuid();
     const newest = (Date.now() / 1000);
     const oldest = (Date.now() / 1000) - 100000;
     const inspectionOne = mocking.createInspection({ property: propertyId, inspectionCompleted: true, creationDate: newest, score: 65 });
-    const inspectionTwo = mocking.createInspection({ property: propertyId, inspectionCompleted: true, creationDate: oldest, score: 25 });
+    const inspectionTwo = mocking.createInspection({
+      property: propertyId,
+      inspectionCompleted: true,
+      trackDeficientItems: true,
+      creationDate: oldest,
+      score: 25,
+      // Create template w/ 1 deficient item
+      template: { items: { [uuid()]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) } }
+    });
     const expected = {
       numOfInspections: 1,
       lastInspectionScore: inspectionTwo.score,
-      lastInspectionDate: inspectionTwo.creationDate
+      lastInspectionDate: inspectionTwo.creationDate,
+      numOfDeficientItems: 1,
+      numOfRequiredActionsForDeficientItems: 1
     };
 
     // Setup database
@@ -96,6 +106,14 @@ describe('Inspection Delete', () => {
     expect(actual.lastInspectionDate).to.equal(
       expected.lastInspectionDate,
       'updated property\'s `lastInspectionDate`'
+    );
+    expect(actual.numOfDeficientItems).to.equal(
+      expected.numOfDeficientItems,
+      'updated property\'s `numOfDeficientItems`'
+    );
+    expect(actual.numOfRequiredActionsForDeficientItems).to.equal(
+      expected.numOfRequiredActionsForDeficientItems,
+      'updated property\'s `numOfRequiredActionsForDeficientItems`'
     );
   }));
 

@@ -1,6 +1,6 @@
 const log = require('../../utils/logger');
 const {forEachChild} = require('../../utils/firebase-admin');
-const processPropertyMeta = require('../../inspections/process-property-meta');
+const processPropertyMeta = require('../process-meta');
 
 const LOG_PREFIX = 'properties: cron: sync-meta:';
 
