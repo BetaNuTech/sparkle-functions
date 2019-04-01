@@ -218,7 +218,7 @@ describe('Inspection Write', () => {
     const propertyId = uuid();
     const newest = (Date.now() / 1000);
     const oldest = (Date.now() / 1000) - 100000;
-    const inspectionBase = { property: propertyId, inspectionCompleted: true, deficientItemsList: true };
+    const inspectionBase = { property: propertyId, inspectionCompleted: true, trackDeficientItems: true };
     const inspectionOne = mocking.createInspection(Object.assign({
       creationDate: newest,
       score: 65,

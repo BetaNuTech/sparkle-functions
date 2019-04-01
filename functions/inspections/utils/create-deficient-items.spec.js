@@ -86,7 +86,7 @@ function createInspection(inspection = {}, items = {}) {
   return Object.assign({
     id: uuid(),
     inspectionCompleted: true,
-    deficientItemsList: true,
+    trackDeficientItems: true,
     updatedLastDate: Date.now() / 1000,
     template: {
       items: Object.assign({}, items)

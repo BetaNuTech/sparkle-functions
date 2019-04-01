@@ -37,7 +37,7 @@ describe('Property Meta Sync', () => {
     await db.ref(`/inspections/${uuid()}`).set(mocking.createInspection({
       property: property1Id,
       inspectionCompleted: true,
-      deficientItemsList: true,
+      trackDeficientItems: true,
       creationDate: newerDate,
       score: newerScore,
       // Create template w/ 1 deficient item
@@ -46,7 +46,7 @@ describe('Property Meta Sync', () => {
     await db.ref(`/inspections/${uuid()}`).set(mocking.createInspection({
       property: property1Id,
       inspectionCompleted: true,
-      deficientItemsList: true,
+      trackDeficientItems: true,
       creationDate: olderDate,
       score: olderScore,
       // Create template w/ 1 deficient item
@@ -105,7 +105,7 @@ describe('Property Meta Sync', () => {
     const inspectionOne = mocking.createInspection({
       property: propertyId,
       inspectionCompleted: true,
-      deficientItemsList: true,
+      trackDeficientItems: true,
       creationDate: newest,
       score: 65,
       // Create template w/ 1 deficient item
@@ -115,7 +115,7 @@ describe('Property Meta Sync', () => {
     const inspectionTwo = mocking.createInspection({
       property: propertyId,
       inspectionCompleted: true,
-      deficientItemsList: true,
+      trackDeficientItems: true,
       creationDate: oldest,
       score: 25,
       // Create template w/ 1 deficient item
