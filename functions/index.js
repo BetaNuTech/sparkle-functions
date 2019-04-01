@@ -6,6 +6,7 @@ const templates = require('./templates');
 const inspections = require('./inspections');
 const properties = require('./properties');
 const propertyTemplates = require('./property-templates');
+const deficientItems = require('./deficient-items');
 const regTokens = require('./reg-tokens');
 const config = functions.config().firebase;
 const defaultApp = admin.initializeApp(config);
@@ -94,6 +95,16 @@ exports.propertyDelete = functions.database.ref('/properties/{propertyId}').onDe
 
 exports.propertyDeleteStaging = functionsStagingDatabase.ref('/properties/{propertyId}').onDelete(
   properties.createOnDeleteHandler(dbStaging, storage)
+);
+
+
+// Deficient Items
+exports.deficientItemsCreateDelete = functions.database.ref('/inspections/{inspectionId}/updatedLastDate').onWrite(
+  deficientItems.createOnInspectionWrite(db)
+);
+
+exports.deficientItemsCreateDelete = functions.database.ref('/inspections/{inspectionId}/updatedLastDate').onWrite(
+  deficientItems.createOnInspectionWrite(dbStaging)
 );
 
 
