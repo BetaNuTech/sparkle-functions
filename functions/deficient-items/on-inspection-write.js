@@ -1,5 +1,7 @@
 const assert = require('assert');
 const log = require('../utils/logger');
+const createDeficientItems = require('../inspections/utils/create-deficient-items');
+const findRemovedKeys = require('../utils/find-removed-keys');
 
 const LOG_PREFIX = 'deficient-items: on-inspection-write:';
 
@@ -18,25 +20,39 @@ module.exports = function createOnInspectionWriteHandler(db) {
     assert(Boolean(inspectionId), 'has inspection ID');
     log.info(`${LOG_PREFIX} inspection ${inspectionId}`);
 
-    const inspectionSnap = await change.after.ref.parent.once('value');
-    const inspection = inspectionSnap.val();
-
-    if (!inspection) {
+    try {
+      const inspectionSnap = await change.after.ref.parent.once('value');
       const propertyId = await lookupPropertyIdByInspectionId(db, inspectionId);
+      const inspection = inspectionSnap.exists() ? Object.assign({ id: inspectionId }, inspectionSnap.val()) : null;
 
-      if (propertyId) {
-        // Remove deleted Inspections' deficient items
+      // Remove deleted Inspections'
+      // possible deficient items
+      if (!inspection && propertyId) {
         await db.ref(`/propertyDeficientItems/${propertyId}/${inspectionId}`).remove();
         updates[`/propertyDeficientItems/${propertyId}/${inspectionId}`] = 'removed';
-        log.info(`${LOG_PREFIX} removing deficient items: "/propertyDeficientItems/${propertyId}/${inspectionId}"`);
+        log.info(`${LOG_PREFIX} removing possible deficient items for deleted inspection`);
       }
 
-      return updates;
-    }
+      // Inspection deleted, incomplete, or deficient list disabled
+      if (!inspection || !inspection.inspectionCompleted || !inspection.trackDeficientItems) {
+        return updates;
+      }
 
-    // Inspection has deficient list disabled
-    if (!inspection.trackDeficientItems) {
-      return updates;
+      // Remove any deficient items belonging
+      // to inspection items that are no longer deficient
+      const expectedDeficientItems = createDeficientItems(inspection);
+      const createdDeficientItemsSnap = await db.ref(`/propertyDeficientItems/${propertyId}/${inspectionId}`).once('value');
+      const createdDeficientItems = createdDeficientItemsSnap.val();
+      const oldDeficientItemIds = findRemovedKeys(createdDeficientItems, expectedDeficientItems);
+
+      for (let i = 0; i < oldDeficientItemIds.length; i++) {
+        const oldDeficientItemId = oldDeficientItemIds[i];
+        await db.ref(`/propertyDeficientItems/${propertyId}/${inspectionId}/${oldDeficientItemId}`).remove();
+        updates[`/propertyDeficientItems/${propertyId}/${inspectionId}/${oldDeficientItemId}`] = 'removed';
+        log.info(`${LOG_PREFIX} removed no longer deficient item ${oldDeficientItemId}`);
+      }
+    } catch (e) {
+      log.error(`${LOG_PREFIX} ${e}`);
     }
 
     return updates;

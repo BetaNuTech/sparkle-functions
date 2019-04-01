@@ -14,12 +14,15 @@ describe('Deficient Items Create and Delete', () => {
     const otherInspItemId = uuid();
     const beforeData = mocking.createInspection({
       deficienciesExist: true,
+      inspectionCompleted: true,
       trackDeficientItems: true,
       property: propertyId,
 
       // Create single deficient item on inspection
       template: {
-        [itemId]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true)
+        items: {
+          [itemId]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true)
+        }
       }
     });
 
@@ -41,5 +44,51 @@ describe('Deficient Items Create and Delete', () => {
 
     // Assertions
     expect(actual).to.equal(null, 'removed all inspection deficient items');
+  });
+
+  it('should remove each deficient item that belongs to an approved inspection items', async () => {
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const item1Id = uuid();
+    const item2Id = uuid();
+    const beforeData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      trackDeficientItems: true,
+      property: propertyId,
+
+      // Create two deficient items on inspection
+      template: {
+        items: {
+          [item1Id]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true), // target to make non-deficient
+          [item2Id]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true)
+        }
+      }
+    });
+
+    const expected = { [item2Id]: { state: 'required-action' } };
+    const removedDeficientItem = { state: 'required-action' };
+
+    // Setup database
+    await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
+    await db.ref(`/propertyDeficientItems/${propertyId}/${inspectionId}`).set(expected); // Setup expected DI
+    await db.ref(`/propertyDeficientItems/${propertyId}/${inspectionId}/${item1Id}`).set(removedDeficientItem);
+    const beforeSnap = await db.ref(`/inspections/${inspectionId}/updatedLastDate`).once('value'); // Create before
+    await db.ref(`/inspections/${inspectionId}/template/items/${item1Id}`).set(
+      mocking.createCompletedMainInputItem('twoactions_checkmarkx', false) // Mark 1st item as non-deficient
+    );
+    const afterSnap = await db.ref(`/inspections/${inspectionId}/updatedLastDate`).once('value'); // Create after
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.deficientItemsCreateDelete);
+    await wrapped(changeSnap, { params: { inspectionId } });
+
+    // Test result
+    const actualSnap = await db.ref(`/propertyDeficientItems/${propertyId}/${inspectionId}`).once('value');
+    const actual = actualSnap.val();
+
+    // Assertions
+    expect(actual).to.deep.equal(expected);
   });
 });
