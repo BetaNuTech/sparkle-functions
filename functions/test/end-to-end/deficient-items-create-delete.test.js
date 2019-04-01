@@ -91,4 +91,54 @@ describe('Deficient Items Create and Delete', () => {
     // Assertions
     expect(actual).to.deep.equal(expected);
   });
+
+  it('should create deficient items for a newly deficient inspection', async () => {
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const item1Id = uuid();
+    const item2Id = uuid();
+    const beforeData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      trackDeficientItems: true,
+      property: propertyId,
+
+      // Create two NON-deficient items on inspection
+      template: {
+        items: {
+          [item1Id]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', false),
+          [item2Id]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', false)
+        }
+      }
+    });
+
+    const expected = [item1Id, item2Id];
+
+    // Setup database
+    await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
+    const beforeSnap = await db.ref(`/inspections/${inspectionId}/updatedLastDate`).once('value'); // Create before
+    await db.ref(`/inspections/${inspectionId}/template/items/${item1Id}`).set(
+      mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) // Mark 1st item as deficient
+    );
+    await db.ref(`/inspections/${inspectionId}/template/items/${item2Id}`).set(
+      mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) // Mark 2nd item as deficient
+    );
+    const afterSnap = await db.ref(`/inspections/${inspectionId}/updatedLastDate`).once('value'); // Create after
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.deficientItemsCreateDelete);
+    await wrapped(changeSnap, { params: { inspectionId } });
+
+    // Test result
+    const actualSnap = await db.ref(`/propertyDeficientItems/${propertyId}/${inspectionId}`).once('value');
+    const actual = Object.keys(actualSnap.val() || {});
+
+    // Assertions
+    expect(actual.includes(item1Id)).to.equal(true, 'created deficient item #1');
+    expect(actual.includes(item2Id)).to.equal(true, 'created deficient item #2');
+  });
+
+  // TODO:
+  // it('should create a new deficient item for a newly deficient inspection item', async () => {});
 });

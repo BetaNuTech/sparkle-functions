@@ -38,11 +38,11 @@ module.exports = function createOnInspectionWriteHandler(db) {
         return updates;
       }
 
-      // Remove any deficient items belonging
+      // Remove any deficient item(s) belonging
       // to inspection items that are no longer deficient
       const expectedDeficientItems = createDeficientItems(inspection);
       const createdDeficientItemsSnap = await db.ref(`/propertyDeficientItems/${propertyId}/${inspectionId}`).once('value');
-      const createdDeficientItems = createdDeficientItemsSnap.val();
+      const createdDeficientItems = createdDeficientItemsSnap.val() || {};
       const oldDeficientItemIds = findRemovedKeys(createdDeficientItems, expectedDeficientItems);
 
       for (let i = 0; i < oldDeficientItemIds.length; i++) {
@@ -50,6 +50,17 @@ module.exports = function createOnInspectionWriteHandler(db) {
         await db.ref(`/propertyDeficientItems/${propertyId}/${inspectionId}/${oldDeficientItemId}`).remove();
         updates[`/propertyDeficientItems/${propertyId}/${inspectionId}/${oldDeficientItemId}`] = 'removed';
         log.info(`${LOG_PREFIX} removed no longer deficient item ${oldDeficientItemId}`);
+      }
+
+      // Add new deficient item(s) to DI
+      const createdDeficientItemIds = Object.keys(createdDeficientItems);
+      const expectedDeficientItemIds = Object.keys(expectedDeficientItems).filter(itemId => !createdDeficientItemIds.includes(itemId));
+
+      for (let i = 0; i < expectedDeficientItemIds.length; i++) {
+        const newDeficientItemId = expectedDeficientItemIds[i];
+        await db.ref(`/propertyDeficientItems/${inspection.property}/${inspectionId}/${newDeficientItemId}`).set(expectedDeficientItems[newDeficientItemId]);
+        updates[`/propertyDeficientItems/${inspection.property}/${inspectionId}/${newDeficientItemId}`] = 'created';
+        log.info(`${LOG_PREFIX} added new deficient item ${newDeficientItemId}`);
       }
     } catch (e) {
       log.error(`${LOG_PREFIX} ${e}`);
