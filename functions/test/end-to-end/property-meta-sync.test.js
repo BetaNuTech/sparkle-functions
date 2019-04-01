@@ -101,6 +101,7 @@ describe('Property Meta Sync', () => {
     const propertyId = uuid();
     const newest = (Date.now() / 1000);
     const oldest = (Date.now() / 1000) - 100000;
+    const defItem1Id = uuid();
     const inspectionOne = mocking.createInspection({
       property: propertyId,
       inspectionCompleted: true,
@@ -108,9 +109,9 @@ describe('Property Meta Sync', () => {
       creationDate: newest,
       score: 65,
       // Create template w/ 1 deficient item
-      template: { items: { [uuid()]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) } }
+      template: { items: { [defItem1Id]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) } }
     });
-    const defItemId = uuid();
+    const defItem2Id = uuid();
     const inspectionTwo = mocking.createInspection({
       property: propertyId,
       inspectionCompleted: true,
@@ -118,7 +119,7 @@ describe('Property Meta Sync', () => {
       creationDate: oldest,
       score: 25,
       // Create template w/ 1 deficient item
-      template: { items: { [defItemId]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) } }
+      template: { items: { [defItem2Id]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) } }
     });
     const expected = {
       numOfRequiredActionsForDeficientItems: 1 // updated via latest state from `/propertyDeficientItems`
@@ -128,7 +129,8 @@ describe('Property Meta Sync', () => {
     await db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
     await db.ref(`/inspections/${insp1Id}`).set(inspectionOne); // Add inspection #1
     await db.ref(`/inspections/${insp2Id}`).set(inspectionTwo); // Add inspection #2
-    await db.ref(`/propertyDeficientItems/${propertyId}/${defItemId}`).set(mocking.createDeficientItem({ state: 'pending' })); // remove required action state
+    await db.ref(`/propertyDeficientItems/${propertyId}/${defItem1Id}`).set(mocking.createDeficientItem({ state: 'go-back' })); // non-default required action state
+    await db.ref(`/propertyDeficientItems/${propertyId}/${defItem2Id}`).set(mocking.createDeficientItem({ state: 'pending' })); // remove required action state
     const snap = await db.ref(`/inspections/${insp1Id}`).once('value'); // Create snapshot
 
     // Execute

@@ -3,6 +3,7 @@ const log = require('../utils/logger');
 const { createDeficientItems } = require('../inspections/utils');
 
 const LOG_PREFIX = 'properties: process-meta:';
+const REQUIRED_ACTIONS_VALUES = ['requires-action', 'go-back'];
 
 // Pipeline of steps to update metadata
 const propertyMetaUpdates = pipe([
@@ -135,7 +136,7 @@ function updateDeficientItemsAttrs(config = { propertyId: '', inspections: [], d
 
   // Count all deficient items where state is `requires-action`
   config.updates[`/properties/${config.propertyId}/numOfRequiredActionsForDeficientItems`] = deficientInspectionItems.reduce((acc, defItems) =>
-    acc + Object.keys(defItems).filter(itemId => defItems[itemId].state === 'requires-action').length
+    acc + Object.keys(defItems).filter(itemId => REQUIRED_ACTIONS_VALUES.includes(defItems[itemId].state)).length
   , 0);
 
   return config;
