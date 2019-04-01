@@ -35,7 +35,7 @@ module.exports = async function processMeta(db, propertyId) {
     const propertyDeficientItemsData = propertyDeficientItemsSnap.exists() ? propertyDeficientItemsSnap.val() : {};
     const deficientItems = Object.keys(propertyDeficientItemsData).map(itemId => Object.assign({id: itemId}, propertyDeficientItemsData[itemId]));
 
-    // Collect updates to write to propety's metadata attrs
+    // Collect updates to write to property's metadata attrs
     const { updates } = propertyMetaUpdates({
       propertyId,
       inspections,
