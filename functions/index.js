@@ -103,7 +103,7 @@ exports.deficientItemsCreateDelete = functions.database.ref('/inspections/{inspe
   deficientItems.createOnInspectionWrite(db)
 );
 
-exports.deficientItemsCreateDelete = functions.database.ref('/inspections/{inspectionId}/updatedLastDate').onWrite(
+exports.deficientItemsCreateDeleteStaging = functionsStagingDatabase.ref('/inspections/{inspectionId}/updatedLastDate').onWrite(
   deficientItems.createOnInspectionWrite(dbStaging)
 );
 
