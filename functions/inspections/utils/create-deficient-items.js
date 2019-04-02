@@ -18,8 +18,7 @@ const DEFAULT_DEFICIENT_ITEM = Object.freeze({
   progressNotes: null,
   reasonsIncomplete: null,
   currentReasonIncomplete: '',
-  completedPhotos: null,
-  inspectionRefAndItemData: null
+  completedPhotos: null
 });
 
 /**
@@ -56,18 +55,16 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
   // Configure result w/ default deficient items
   deficientItems.forEach(item => {
     const section = inspection.template.sections ? inspection.template.sections[item.sectionId] || {} : {};
-    const itemRef = {
-      inspectionRef : inspection.id,
-      itemDataLastUpdatedTimestamp: inspection.updatedLastDate,
-      itemData: _.omit(item, 'id'),
-      sectionTitle: section.title || '',
-      sectionType: section.section_type || ''
-    }
 
     result[item.id] = Object.assign(
       {},
       DEFAULT_DEFICIENT_ITEM,
-      { inspectionRefAndItemData: itemRef }
+      {
+        itemDataLastUpdatedTimestamp: inspection.updatedLastDate,
+        itemData: _.omit(item, 'id'),
+        sectionTitle: section.title || '',
+        sectionType: section.section_type || ''
+      }
     );
   });
 
