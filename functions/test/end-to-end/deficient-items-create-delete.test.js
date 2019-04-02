@@ -139,6 +139,46 @@ describe('Deficient Items Create and Delete', () => {
     expect(actual.includes(item2Id)).to.equal(true, 'created deficient item #2');
   });
 
-  // TODO:
-  // it('should create a new deficient item for a newly deficient inspection item', async () => {});
+  it('should add a newly deficient item to existing deficient items', async () => {
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const item1Id = uuid();
+    const item2Id = uuid();
+    const beforeData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      trackDeficientItems: true,
+      property: propertyId,
+
+      // Create two deficient items on inspection
+      template: {
+        items: {
+          [item1Id]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true),
+          [item2Id]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', false) // target to make deficient
+        }
+      }
+    });
+
+    const expected = [item1Id, item2Id];
+
+    // Setup database
+    await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
+    await db.ref(`/propertyDeficientItems/${propertyId}/${inspectionId}/${item1Id}`).set({ state: 'required-action' });
+    const beforeSnap = await db.ref(`/inspections/${inspectionId}/updatedLastDate`).once('value'); // Create before
+    await db.ref(`/inspections/${inspectionId}/template/items/${item2Id}`).set(
+      mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) // Mark 2nd item as deficient
+    );
+    const afterSnap = await db.ref(`/inspections/${inspectionId}/updatedLastDate`).once('value'); // Create after
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.deficientItemsCreateDelete);
+    await wrapped(changeSnap, { params: { inspectionId } });
+
+    // Test result
+    const actual = await db.ref(`/propertyDeficientItems/${propertyId}/${inspectionId}/${item2Id}`).once('value');
+
+    // Assertions
+    expect(actual.exists()).to.equal(true, 'created deficient item #2');
+  });
 });
