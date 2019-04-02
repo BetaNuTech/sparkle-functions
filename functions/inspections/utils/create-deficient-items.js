@@ -5,8 +5,22 @@ const config = require('../../config');
 const LOG_PREFIX = 'inspections: utils: create-deficient-items';
 const DEFICIENT_ITEM_ELIGIBLE = config.inspectionItems.deficientListEligible;
 const DEFAULT_DEFICIENT_ITEM = Object.freeze({
-  state: 'requires-action'
-}); // TODO #81
+  state: 'requires-action',
+  startTimestamps: null,
+  currentStartTimestamp: 0,
+  dueDates: null,
+  currentDueDate: 0,
+  deficientTimestamp: 0,
+  plansToFix: null,
+  currentPlanToFix: '',
+  responsibilityGroups: null,
+  currentResponsibilityGroup: '',
+  progressNotes: null,
+  reasonsIncomplete: null,
+  currentReasonIncomplete: '',
+  completedPhotos: null,
+  inspectionRefAndItemData: null
+});
 
 /**
  * Factory for an inspections deficient items
@@ -41,10 +55,12 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
 
   // Configure result w/ default deficient items
   deficientItems.forEach(item => {
+    const section = inspection.template.sections ? inspection.template.sections[item.sectionId] || {} : {};
     const itemRef = {
       inspectionRef : inspection.id,
       itemDataLastUpdatedTimestamp: inspection.updatedLastDate,
-      itemData: _.omit(item, 'id')
+      itemData: _.omit(item, 'id'),
+      sectionTitle: section.title || ''
     }
 
     result[item.id] = Object.assign(

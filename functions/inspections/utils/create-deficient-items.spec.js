@@ -74,6 +74,19 @@ describe('Inspections | Utils | Create Deficient Items', () => {
     )[itemId].state;
     expect(actual).to.equal(expected);
   });
+
+  it('should set any available section title', () => {
+    const itemId = uuid();
+    const sectionId = uuid()
+    const expected = 'section-title-test';
+    const actual = createDeficientItems(
+      createInspection({},
+        { [itemId]: createItem('twoactions_checkmarkx', true, { sectionId }) },
+        { [sectionId]: { title: expected } }
+      )
+    )[itemId].inspectionRefAndItemData.sectionTitle;
+    expect(actual).to.equal(expected);
+  });
 });
 
 /**
@@ -82,13 +95,14 @@ describe('Inspections | Utils | Create Deficient Items', () => {
  * @param  {Object} items
  * @return {Object} - inspection
  */
-function createInspection(inspection = {}, items = {}) {
+function createInspection(inspection = {}, items = {}, sections = {}) {
   return Object.assign({
     id: uuid(),
     inspectionCompleted: true,
     trackDeficientItems: true,
     updatedLastDate: Date.now() / 1000,
     template: {
+      sections: Object.assign({}, sections),
       items: Object.assign({}, items)
     }
   }, inspection);
