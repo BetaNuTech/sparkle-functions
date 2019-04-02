@@ -64,13 +64,16 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
       if (firstItem.itemType === 'text_input' && firstItem.title) sectionSubtitle = firstItem.title;
     }
 
+    // Use latest admin edit or inspection's last update date
+    const itemDataLastUpdatedTimestamp = getLatestItemAdminEditTimestamp(item) || inspection.updatedLastDate;
+
     result[item.id] = Object.assign(
       {},
       DEFAULT_DEFICIENT_ITEM,
       {
-        itemDataLastUpdatedTimestamp: inspection.updatedLastDate,
         itemData: _.omit(item, 'id'),
         sectionTitle: section.title || '',
+        itemDataLastUpdatedTimestamp,
         sectionSubtitle,
         sectionType
       }
@@ -95,4 +98,16 @@ function getSectionItems(sectionId, inspection) {
     .map(itemId => Object.assign({}, inspection.template.items[itemId])) // Item hash to array
     .filter(item => item.sectionId === sectionId) // only section items
     .sort((a, b) => a.index - b.index); // sort ascending
+}
+
+/**
+ * Find latest admin edit of an item
+ * @param  {Object} item
+ * @return {Number} - admin edit timestamp or `0`
+ */
+function getLatestItemAdminEditTimestamp({ adminEdits }) {
+  const [result] = Object.keys(adminEdits || {})
+    .map(adminEditId => adminEdits[adminEditId]) // Create admin edit array
+    .sort((a, b) => b.edit_date - a.edit_date); // Descending
+  return result ? result.edit_date : 0;
 }

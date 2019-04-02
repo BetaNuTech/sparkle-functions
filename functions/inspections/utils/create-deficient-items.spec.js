@@ -167,6 +167,59 @@ describe('Inspections | Utils | Create Deficient Items', () => {
       expect(actual.sectionSubtitle).to.equal(expected, message);
     });
   });
+
+  it('should use last admin edit date as timestamp or fallback to inspection\'s last update date', () => {
+    const itemId = uuid();
+    const sectionId = uuid();
+    const now = Date.now() / 1000;
+    const newer = now;
+    const older = now - 100000;
+
+    [
+      {
+        data: createInspection(
+          { updatedLastDate: now },
+          { [itemId]: createItem('twoactions_checkmarkx', true, { sectionId, adminEdits: null }) }
+        ),
+        expected: now,
+        message: 'used inspection update date as timestamp fallback'
+      },
+      {
+        data: createInspection(
+          { updatedLastDate: older },
+          { [itemId]: createItem('twoactions_checkmarkx', true, { sectionId, adminEdits: { [uuid()]: { edit_date: newer } } }) }
+        ),
+        expected: newer,
+        message: 'used only admit edit date as timestamp'
+      },
+      {
+        data: createInspection(
+          { updatedLastDate: older },
+          {
+            [itemId]: createItem(
+              'twoactions_checkmarkx',
+              true,
+              {
+                sectionId,
+                adminEdits: {
+                  [uuid()]: { edit_date: older },
+                  [uuid()]: { edit_date: older },
+                  [uuid()]: { edit_date: older },
+                  [uuid()]: { edit_date: newer },
+                  [uuid()]: { edit_date: older }
+                }
+              }
+            )
+          }
+        ),
+        expected: newer,
+        message: 'used latest admin edit as timestamp'
+      }
+    ].forEach(({ data, expected, message }) => {
+      const actual = createDeficientItems(data)[itemId];
+      expect(actual.itemDataLastUpdatedTimestamp).to.equal(expected, message);
+    });
+  });
 });
 
 /**
