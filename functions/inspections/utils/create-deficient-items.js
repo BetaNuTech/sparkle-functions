@@ -58,7 +58,7 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
     const sectionType = section.section_type || 'single';
 
     // Add multi section sub title if present
-    let sectionSubtitle = '';
+    let sectionSubtitle = undefined;
     if (sectionType === 'multi') {
       const [firstItem] = getSectionItems(item.sectionId, inspection);
       if (firstItem.itemType === 'text_input' && firstItem.title) sectionSubtitle = firstItem.title;
@@ -72,12 +72,17 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
       DEFAULT_DEFICIENT_ITEM,
       {
         itemData: _.omit(item, 'id'),
-        sectionTitle: section.title || '',
+        sectionTitle: section.title || undefined,
         itemDataLastUpdatedTimestamp,
         sectionSubtitle,
         sectionType
       }
     );
+
+    // Cleanup falsey values for item
+    Object.keys(result[item.id]).forEach(attr => {
+      if (!result[item.id][attr]) delete result[item.id][attr];
+    });
   });
 
   return result;

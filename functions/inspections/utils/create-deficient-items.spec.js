@@ -115,7 +115,7 @@ describe('Inspections | Utils | Create Deficient Items', () => {
           { [itemId]: createItem('twoactions_checkmarkx', true, { sectionId, index: 1 }) },
           { [sectionId]: { title: '', section_type: 'multi' } }
         ),
-        expected: '',
+        expected: undefined,
         message: 'non-existent text input item yields no sub title'
       },
       {
@@ -126,7 +126,7 @@ describe('Inspections | Utils | Create Deficient Items', () => {
           },
           { [sectionId]: { title: '', section_type: 'multi' } }
         ),
-        expected: '',
+        expected: undefined,
         message: 'non text input item yields no sub title'
       },
       {
@@ -137,7 +137,7 @@ describe('Inspections | Utils | Create Deficient Items', () => {
           },
           { [sectionId]: { title: '', section_type: 'multi' } }
         ),
-        expected: '',
+        expected: undefined,
         message: 'text input without title item yields no sub title'
       },
       {
@@ -148,7 +148,7 @@ describe('Inspections | Utils | Create Deficient Items', () => {
           },
           { [sectionId]: { title: '', section_type: 'multi' } }
         ),
-        expected: '',
+        expected: undefined,
         message: 'non-first text input item yields no sub title'
       },
       {
@@ -219,6 +219,17 @@ describe('Inspections | Utils | Create Deficient Items', () => {
       const actual = createDeficientItems(data)[itemId];
       expect(actual.itemDataLastUpdatedTimestamp).to.equal(expected, message);
     });
+  });
+
+  it('should not return any falsey attributes on the top level of each item payload', () => {
+    const itemId = uuid();
+    const actual = createDeficientItems(
+      createInspection({},
+        { [itemId]: createItem('twoactions_checkmarkx', true) }
+      )
+    )[itemId];
+
+    Object.keys(actual).forEach(attr => expect(actual[attr], `field ${attr} is truthy`).to.be.ok);
   });
 });
 
