@@ -31,9 +31,9 @@ module.exports = async function processMeta(db, propertyId) {
     }
 
     // Find any deficient items data for property
-    const propertyDeficientItemsSnap = await db.ref(`/propertyDeficientItems/${propertyId}`).once('value');
-    const propertyDeficientItemsData = propertyDeficientItemsSnap.exists() ? propertyDeficientItemsSnap.val() : {};
-    const deficientItems = Object.keys(propertyDeficientItemsData).map(itemId => Object.assign({id: itemId}, propertyDeficientItemsData[itemId]));
+    const propertyInspectionDeficientItemsSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}`).once('value');
+    const propertyInspectionDeficientItemsData = propertyInspectionDeficientItemsSnap.exists() ? propertyInspectionDeficientItemsSnap.val() : {};
+    const deficientItems = Object.keys(propertyInspectionDeficientItemsData).map(itemId => Object.assign({id: itemId}, propertyInspectionDeficientItemsData[itemId]));
 
     // Collect updates to write to property's metadata attrs
     const { updates } = propertyMetaUpdates({
@@ -103,7 +103,7 @@ function updateLastInspectionAttrs(config = { propertyId: '', inspections: [], u
  * inspection's deficient items attrs
  *
  * NOTE: property's deficient items are first calculated from
- * inspections to mitigate race conditions with `/propertyDeficientItems`,
+ * inspections to mitigate race conditions with `/propertyInspectionDeficientItems`,
  * which is also used if available
  *
  * @param  {String} propertyId
@@ -120,7 +120,7 @@ function updateDeficientItemsAttrs(config = { propertyId: '', inspections: [], d
     .filter(calcDeficientItems => Object.keys(calcDeficientItems).length) // remove  non-deficient inspections
     .map(defItems => {
       // Merge latest state from:
-      // `/propertyDeficientItems/...` into
+      // `/propertyInspectionDeficientItems/...` into
       // deficient items calculated from inspections
       Object.keys(defItems).forEach(itemId => {
         const [latest] = config.deficientItems.filter(({id}) => id === itemId);

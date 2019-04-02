@@ -28,7 +28,7 @@ describe('Deficient Items Create and Delete', () => {
 
     // Setup database
     await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
-    await db.ref(`/propertyDeficientItems/${propertyId}/${inspectionId}/${itemId}`).set({ state: 'required-action' });
+    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}`).set({ state: 'required-action' });
     const beforeSnap = await db.ref(`/inspections/${inspectionId}/updatedLastDate`).once('value'); // Create before
     await db.ref(`/inspections/${inspectionId}`).remove(); // remove inspection
     const afterSnap = await db.ref(`/inspections/${inspectionId}/updatedLastDate`).once('value'); // Create after
@@ -39,7 +39,7 @@ describe('Deficient Items Create and Delete', () => {
     await wrapped(changeSnap, { params: { inspectionId } });
 
     // Test result
-    const actualSnap = await db.ref(`/propertyDeficientItems/${propertyId}/${inspectionId}`).once('value');
+    const actualSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}`).once('value');
     const actual = actualSnap.val();
 
     // Assertions
@@ -71,8 +71,8 @@ describe('Deficient Items Create and Delete', () => {
 
     // Setup database
     await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
-    await db.ref(`/propertyDeficientItems/${propertyId}/${inspectionId}`).set(expected); // Setup expected DI
-    await db.ref(`/propertyDeficientItems/${propertyId}/${inspectionId}/${item1Id}`).set(removedDeficientItem);
+    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}`).set(expected); // Setup expected DI
+    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${item1Id}`).set(removedDeficientItem);
     const beforeSnap = await db.ref(`/inspections/${inspectionId}/updatedLastDate`).once('value'); // Create before
     await db.ref(`/inspections/${inspectionId}/template/items/${item1Id}`).set(
       mocking.createCompletedMainInputItem('twoactions_checkmarkx', false) // Mark 1st item as non-deficient
@@ -85,7 +85,7 @@ describe('Deficient Items Create and Delete', () => {
     await wrapped(changeSnap, { params: { inspectionId } });
 
     // Test result
-    const actualSnap = await db.ref(`/propertyDeficientItems/${propertyId}/${inspectionId}`).once('value');
+    const actualSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}`).once('value');
     const actual = actualSnap.val();
 
     // Assertions
@@ -131,7 +131,7 @@ describe('Deficient Items Create and Delete', () => {
     await wrapped(changeSnap, { params: { inspectionId } });
 
     // Test result
-    const actualSnap = await db.ref(`/propertyDeficientItems/${propertyId}/${inspectionId}`).once('value');
+    const actualSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}`).once('value');
     const actual = Object.keys(actualSnap.val() || {});
 
     // Assertions
@@ -163,7 +163,7 @@ describe('Deficient Items Create and Delete', () => {
 
     // Setup database
     await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
-    await db.ref(`/propertyDeficientItems/${propertyId}/${inspectionId}/${item1Id}`).set({ state: 'required-action' });
+    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${item1Id}`).set({ state: 'required-action' });
     const beforeSnap = await db.ref(`/inspections/${inspectionId}/updatedLastDate`).once('value'); // Create before
     await db.ref(`/inspections/${inspectionId}/template/items/${item2Id}`).set(
       mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) // Mark 2nd item as deficient
@@ -176,7 +176,7 @@ describe('Deficient Items Create and Delete', () => {
     await wrapped(changeSnap, { params: { inspectionId } });
 
     // Test result
-    const actual = await db.ref(`/propertyDeficientItems/${propertyId}/${inspectionId}/${item2Id}`).once('value');
+    const actual = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${item2Id}`).once('value');
 
     // Assertions
     expect(actual.exists()).to.equal(true, 'created deficient item #2');
