@@ -107,11 +107,11 @@ exports.deficientItemsCreateDeleteStaging = functionsStagingDatabase.ref('/inspe
   deficientItems.createOnInspectionWrite(dbStaging)
 );
 
-exports.deficientItemsPropertyMetaSync = functions.database.ref('`/propertyInspectionDeficientItems/{propertyId}/{inspectionId}/{itemId}/state').onUpdate(
+exports.deficientItemsPropertyMetaSync = functions.database.ref('/propertyInspectionDeficientItems/{propertyId}/{inspectionId}/{itemId}/state').onUpdate(
   deficientItems.createOnDiStateUpdate(db)
 );
 
-exports.deficientItemsPropertyMetaSyncStaging = functionsStagingDatabase.ref('`/propertyInspectionDeficientItems/{propertyId}/{inspectionId}/{itemId}/state').onUpdate(
+exports.deficientItemsPropertyMetaSyncStaging = functionsStagingDatabase.ref('/propertyInspectionDeficientItems/{propertyId}/{inspectionId}/{itemId}/state').onUpdate(
   deficientItems.createOnDiStateUpdate(dbStaging)
 );
 

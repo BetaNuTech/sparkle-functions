@@ -28,7 +28,7 @@ describe('Deficient Items Create and Delete', () => {
 
     // Setup database
     await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
-    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}`).set({ state: 'required-action' });
+    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}`).set({ state: 'requires-action' });
     const beforeSnap = await db.ref(`/inspections/${inspectionId}/updatedLastDate`).once('value'); // Create before
     await db.ref(`/inspections/${inspectionId}`).remove(); // remove inspection
     const afterSnap = await db.ref(`/inspections/${inspectionId}/updatedLastDate`).once('value'); // Create after
@@ -66,8 +66,8 @@ describe('Deficient Items Create and Delete', () => {
       }
     });
 
-    const expected = { [item2Id]: { state: 'required-action' } };
-    const removedDeficientItem = { state: 'required-action' };
+    const expected = { [item2Id]: { state: 'requires-action' } };
+    const removedDeficientItem = { state: 'requires-action' };
 
     // Setup database
     await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
@@ -163,7 +163,7 @@ describe('Deficient Items Create and Delete', () => {
 
     // Setup database
     await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
-    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${item1Id}`).set({ state: 'required-action' });
+    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${item1Id}`).set({ state: 'requires-action' });
     const beforeSnap = await db.ref(`/inspections/${inspectionId}/updatedLastDate`).once('value'); // Create before
     await db.ref(`/inspections/${inspectionId}/template/items/${item2Id}`).set(
       mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) // Mark 2nd item as deficient
