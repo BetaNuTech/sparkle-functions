@@ -1,7 +1,10 @@
 const { expect } = require('chai');
 const createDeficientItems = require('./create-deficient-items');
 const uuid = require('../../test-helpers/uuid');
-const { createCompletedMainInputItem: createItem } = require('../../test-helpers/mocking');
+const {
+  createCompletedMainInputItem: createItem,
+  createItem: createTextInputItem
+} = require('../../test-helpers/mocking');
 
 describe('Inspections | Utils | Create Deficient Items', () => {
   it('should return an deficent items configuration object', () => {
@@ -99,6 +102,70 @@ describe('Inspections | Utils | Create Deficient Items', () => {
       )
     )[itemId].sectionType;
     expect(actual).to.equal(expected);
+  });
+
+  it('should set a subtitle from a multi-sections\' first text input title', () => {
+    const itemId = uuid();
+    const sectionId = uuid()
+    const expected = 'multi';
+
+    [
+      {
+        data: createInspection({},
+          { [itemId]: createItem('twoactions_checkmarkx', true, { sectionId, index: 1 }) },
+          { [sectionId]: { title: '', section_type: 'multi' } }
+        ),
+        expected: '',
+        message: 'non-existent text input item yields no sub title'
+      },
+      {
+        data: createInspection({},
+          {
+            [itemId]: createItem('twoactions_checkmarkx', true, { sectionId, index: 1 }),
+            [uuid()]: createItem('twoactions_checkmarkx', false, { sectionId, index: 0 })
+          },
+          { [sectionId]: { title: '', section_type: 'multi' } }
+        ),
+        expected: '',
+        message: 'non text input item yields no sub title'
+      },
+      {
+        data: createInspection({},
+          {
+            [itemId]: createItem('twoactions_checkmarkx', true, { sectionId, index: 1 }),
+            [uuid()]: createTextInputItem({ sectionId, itemType: 'text_input', index: 0, title: '' })
+          },
+          { [sectionId]: { title: '', section_type: 'multi' } }
+        ),
+        expected: '',
+        message: 'text input without title item yields no sub title'
+      },
+      {
+        data: createInspection({},
+          {
+            [itemId]: createItem('twoactions_checkmarkx', true, { sectionId, index: 0 }),
+            [uuid()]: createTextInputItem({ sectionId, itemType: 'text_input', index: 1, title: 'title' })
+          },
+          { [sectionId]: { title: '', section_type: 'multi' } }
+        ),
+        expected: '',
+        message: 'non-first text input item yields no sub title'
+      },
+      {
+        data: createInspection({},
+          {
+            [itemId]: createItem('twoactions_checkmarkx', true, { sectionId, index: 1 }),
+            [uuid()]: createTextInputItem({ sectionId, itemType: 'text_input', index: 0, title: 'title' })
+          },
+          { [sectionId]: { title: '', section_type: 'multi' } }
+        ),
+        expected: 'title',
+        message: 'first text input item with title yields expected sub title'
+      }
+    ].forEach(({ data, expected, message }) => {
+      const actual = createDeficientItems(data)[itemId];
+      expect(actual.sectionSubtitle).to.equal(expected, message);
+    });
   });
 });
 

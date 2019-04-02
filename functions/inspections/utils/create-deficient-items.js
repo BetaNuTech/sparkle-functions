@@ -55,6 +55,14 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
   // Configure result w/ default deficient items
   deficientItems.forEach(item => {
     const section = inspection.template.sections ? inspection.template.sections[item.sectionId] || {} : {};
+    const sectionType = section.section_type || 'single';
+
+    // Add multi section sub title if present
+    let sectionSubtitle = '';
+    if (sectionType === 'multi') {
+      const [firstItem] = getSectionItems(item.sectionId, inspection);
+      if (firstItem.itemType === 'text_input' && firstItem.title) sectionSubtitle = firstItem.title;
+    }
 
     result[item.id] = Object.assign(
       {},
@@ -63,10 +71,28 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
         itemDataLastUpdatedTimestamp: inspection.updatedLastDate,
         itemData: _.omit(item, 'id'),
         sectionTitle: section.title || '',
-        sectionType: section.section_type || ''
+        sectionSubtitle,
+        sectionType
       }
     );
   });
 
   return result;
 };
+
+/**
+ * Collect all items for a section sorted
+ * by their index
+ * @param  {String} sectionId
+ * @param  {Object} inspection
+ * @return {Object[]} - section's items
+ */
+function getSectionItems(sectionId, inspection) {
+  assert(sectionId && typeof sectionId === 'string', 'has section ID');
+  assert(inspection && inspection.template && inspection.template.items, 'has inspection template with items');
+
+  return Object.keys(inspection.template.items)
+    .map(itemId => Object.assign({}, inspection.template.items[itemId])) // Item hash to array
+    .filter(item => item.sectionId === sectionId) // only section items
+    .sort((a, b) => a.index - b.index); // sort ascending
+}
