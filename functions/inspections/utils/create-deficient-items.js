@@ -60,7 +60,8 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
       inspectionRef : inspection.id,
       itemDataLastUpdatedTimestamp: inspection.updatedLastDate,
       itemData: _.omit(item, 'id'),
-      sectionTitle: section.title || ''
+      sectionTitle: section.title || '',
+      sectionType: section.section_type || ''
     }
 
     result[item.id] = Object.assign(

@@ -87,6 +87,19 @@ describe('Inspections | Utils | Create Deficient Items', () => {
     )[itemId].inspectionRefAndItemData.sectionTitle;
     expect(actual).to.equal(expected);
   });
+
+  it('should set any available section type', () => {
+    const itemId = uuid();
+    const sectionId = uuid()
+    const expected = 'multi';
+    const actual = createDeficientItems(
+      createInspection({},
+        { [itemId]: createItem('twoactions_checkmarkx', true, { sectionId }) },
+        { [sectionId]: { title: '', section_type: expected } }
+      )
+    )[itemId].inspectionRefAndItemData.sectionType;
+    expect(actual).to.equal(expected);
+  });
 });
 
 /**
