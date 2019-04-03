@@ -164,7 +164,20 @@ describe('Inspections | Utils | Create Deficient Items', () => {
       )
     )[itemId].itemAdminEdits;
     expect(actual).to.not.equal(expected, 'cloned new object');
-    expect(actual).to.deep.equal(expected, 'cloned admin edits match');
+    expect(actual).to.deep.equal(expected, 'cloned admin edits matches');
+  });
+
+  it('should deeply clone any available item photos data', () => {
+    const itemId = uuid();
+    const sectionId = uuid()
+    const expected = { '1554325519707': { caption: 'a caption!', downloadURL: 'google.com' } };
+    const actual = createDeficientItems(
+      createInspection({},
+        { [itemId]: createItem('twoactions_checkmarkx', true, { photosData: expected }) }
+      )
+    )[itemId].itemPhotosData;
+    expect(actual).to.not.equal(expected, 'cloned new object');
+    expect(actual).to.deep.equal(expected, 'cloned photos data matches');
   });
 
   it('should set a subtitle from a multi-sections\' first text input title', () => {

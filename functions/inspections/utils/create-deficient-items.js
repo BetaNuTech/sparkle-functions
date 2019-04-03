@@ -81,6 +81,7 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
         itemTitle: item.title,
         itemInspectorNotes: item.inspectorNotes,
         itemAdminEdits: item.adminEdits ? deepClone(item.adminEdits) : null,
+        itemPhotosData: item.photosData ? deepClone(item.photosData) : null,
         itemMainInputSelection: item.mainInputSelection,
         itemDataLastUpdatedTimestamp,
         sectionSubtitle,
