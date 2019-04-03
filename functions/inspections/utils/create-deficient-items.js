@@ -18,7 +18,13 @@ const DEFAULT_DEFICIENT_ITEM = Object.freeze({
   progressNotes: null,
   reasonsIncomplete: null,
   currentReasonIncomplete: '',
-  completedPhotos: null
+  completedPhotos: null,
+  itemAdminEdits: null,
+  itemInspectorNotes: '',
+  itemTitle: '',
+  itemMainInputType: '',
+  itemMainInputSelection: 0,
+  itemPhotosData: null
 });
 
 /**
@@ -73,6 +79,7 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
       {
         itemData: _.omit(item, 'id'),
         sectionTitle: section.title || undefined,
+        itemTitle: item.title,
         itemDataLastUpdatedTimestamp,
         sectionSubtitle,
         sectionType
