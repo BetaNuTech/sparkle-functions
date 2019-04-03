@@ -140,6 +140,18 @@ describe('Inspections | Utils | Create Deficient Items', () => {
     expect(actual).to.equal(expected);
   });
 
+  it('should set any available, falsey, item input selection', () => {
+    const itemId = uuid();
+    const sectionId = uuid()
+    const expected = 0;
+    const actual = createDeficientItems(
+      createInspection({},
+        { [itemId]: createItem('fiveactions_onetofive', true, { mainInputSelection: expected }) }
+      )
+    )[itemId];
+    expect(actual.itemMainInputSelection).to.equal(expected);
+  });
+
   it('should deeply clone any available item admin edits', () => {
     const itemId = uuid();
     const sectionId = uuid()
@@ -272,7 +284,7 @@ describe('Inspections | Utils | Create Deficient Items', () => {
     });
   });
 
-  it('should not return any falsey attributes on the top level of each item payload', () => {
+  it('should not return falsey fields, except "itemMainInputSelection", on the top level of an item\'s JSON', () => {
     const itemId = uuid();
     const actual = createDeficientItems(
       createInspection({},
@@ -280,7 +292,11 @@ describe('Inspections | Utils | Create Deficient Items', () => {
       )
     )[itemId];
 
-    Object.keys(actual).forEach(attr => expect(actual[attr], `field ${attr} is truthy`).to.be.ok);
+    Object.keys(actual).forEach(attr => {
+      if (attr !== 'itemMainInputSelection') {
+        expect(actual[attr], `field ${attr} is truthy`).to.be.ok;
+      }
+    });
   });
 });
 

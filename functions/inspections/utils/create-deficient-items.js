@@ -81,15 +81,19 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
         itemTitle: item.title,
         itemInspectorNotes: item.inspectorNotes,
         itemAdminEdits: item.adminEdits ? deepClone(item.adminEdits) : null,
+        itemMainInputSelection: item.mainInputSelection,
         itemDataLastUpdatedTimestamp,
         sectionSubtitle,
         sectionType,
       }
     );
 
-    // Cleanup falsey values for item
+    // Cleanup falsey values for item, except
+    // "itemMainInputSelection" which may be 0
     Object.keys(result[item.id]).forEach(attr => {
-      if (!result[item.id][attr]) delete result[item.id][attr];
+      if (!result[item.id][attr] && attr !== 'itemMainInputSelection') {
+        delete result[item.id][attr];
+      }
     });
   });
 
