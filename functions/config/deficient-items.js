@@ -1,3 +1,3 @@
 module.exports = {
-  requiredActionStates: ['requires-action', 'go-back']
+  requiredActionStates: ['requires-action', 'go-back', 'overdue']
 };

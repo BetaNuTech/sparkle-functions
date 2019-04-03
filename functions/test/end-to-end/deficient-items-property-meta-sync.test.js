@@ -1,8 +1,11 @@
 const { expect } = require('chai');
+const config = require('../../config');
 const uuid = require('../../test-helpers/uuid');
 const mocking = require('../../test-helpers/mocking');
 const { cleanDb } = require('../../test-helpers/firebase');
 const { db, test, cloudFunctions } = require('./setup');
+
+const REQUIRED_ACTIONS_VALUES = config.deficientItems.requiredActionStates;
 
 describe('Deficient Items Property Meta Sync', () => {
   afterEach(() => cleanDb(db));
@@ -25,24 +28,30 @@ describe('Deficient Items Property Meta Sync', () => {
       }
     });
 
-    // Setup database
-    await db.ref(`/properties/${propertyId}`).set({ name: 'test' });
-    await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
-    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}`).set({ state: 'requires-action' }); // obvs requires action
-    const beforeSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/state`).once('value'); // Create before
-    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}`).set({ state: 'go-back' }); // still requires action
-    const afterSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/state`).once('value'); // Create after
+    // Test updates between all required action states
+    for (let i = 0; i < REQUIRED_ACTIONS_VALUES.length; i++) {
+      const initalReqActionState = REQUIRED_ACTIONS_VALUES[i];
+      const updatedReqActionState = REQUIRED_ACTIONS_VALUES[i + 1] || REQUIRED_ACTIONS_VALUES[0]; // next or first required action
 
-    // Execute
-    const changeSnap = test.makeChange(beforeSnap, afterSnap);
-    const wrapped = test.wrap(cloudFunctions.deficientItemsPropertyMetaSync);
-    await wrapped(changeSnap, { params: { propertyId, inspectionId, itemId } });
+      // Setup database
+      await db.ref(`/properties/${propertyId}`).set({ name: 'test' });
+      await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
+      await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}`).set({ state: initalReqActionState }); // obvs requires action
+      const beforeSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/state`).once('value'); // Create before
+      await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}`).set({ state: updatedReqActionState }); // still requires action
+      const afterSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/state`).once('value'); // Create after
 
-    // Test result
-    const actual = await db.ref(`/properties/${propertyId}/numOfRequiredActionsForDeficientItems`).once('value');
+      // Execute
+      const changeSnap = test.makeChange(beforeSnap, afterSnap);
+      const wrapped = test.wrap(cloudFunctions.deficientItemsPropertyMetaSync);
+      await wrapped(changeSnap, { params: { propertyId, inspectionId, itemId } });
 
-    // Assertions
-    expect(actual.exists()).to.equal(false, 'did not update property\'s "numOfRequiredActionsForDeficientItems"');
+      // Test result
+      const actual = await db.ref(`/properties/${propertyId}/numOfRequiredActionsForDeficientItems`).once('value');
+
+      // Assertions
+      expect(actual.exists()).to.equal(false, 'did not update property\'s "numOfRequiredActionsForDeficientItems"');
+    }
   });
 
   it('should update property meta when an item\'s required action status changes', async () => {
