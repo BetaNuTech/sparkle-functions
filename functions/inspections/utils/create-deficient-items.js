@@ -5,8 +5,21 @@ const config = require('../../config');
 const LOG_PREFIX = 'inspections: utils: create-deficient-items';
 const DEFICIENT_ITEM_ELIGIBLE = config.inspectionItems.deficientListEligible;
 const DEFAULT_DEFICIENT_ITEM = Object.freeze({
-  state: 'requires-action'
-}); // TODO #81
+  state: 'requires-action',
+  startTimestamps: null,
+  currentStartTimestamp: 0,
+  dueDates: null,
+  currentDueDate: 0,
+  deficientTimestamp: 0,
+  plansToFix: null,
+  currentPlanToFix: '',
+  responsibilityGroups: null,
+  currentResponsibilityGroup: '',
+  progressNotes: null,
+  reasonsIncomplete: null,
+  currentReasonIncomplete: '',
+  completedPhotos: null
+});
 
 /**
  * Factory for an inspections deficient items
@@ -41,18 +54,65 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
 
   // Configure result w/ default deficient items
   deficientItems.forEach(item => {
-    const itemRef = {
-      inspectionRef : inspection.id,
-      itemDataLastUpdatedTimestamp: inspection.updatedLastDate,
-      itemData: _.omit(item, 'id')
+    const section = inspection.template.sections ? inspection.template.sections[item.sectionId] || {} : {};
+    const sectionType = section.section_type || 'single';
+
+    // Add multi section sub title if present
+    let sectionSubtitle = undefined;
+    if (sectionType === 'multi') {
+      const [firstItem] = getSectionItems(item.sectionId, inspection);
+      if (firstItem.itemType === 'text_input' && firstItem.title) sectionSubtitle = firstItem.title;
     }
+
+    // Use latest admin edit or inspection's last update date
+    const itemDataLastUpdatedTimestamp = getLatestItemAdminEditTimestamp(item) || inspection.updatedLastDate;
 
     result[item.id] = Object.assign(
       {},
       DEFAULT_DEFICIENT_ITEM,
-      { inspectionRefAndItemData: itemRef }
+      {
+        itemData: _.omit(item, 'id'),
+        sectionTitle: section.title || undefined,
+        itemDataLastUpdatedTimestamp,
+        sectionSubtitle,
+        sectionType
+      }
     );
+
+    // Cleanup falsey values for item
+    Object.keys(result[item.id]).forEach(attr => {
+      if (!result[item.id][attr]) delete result[item.id][attr];
+    });
   });
 
   return result;
 };
+
+/**
+ * Collect all items for a section sorted
+ * by their index
+ * @param  {String} sectionId
+ * @param  {Object} inspection
+ * @return {Object[]} - section's items
+ */
+function getSectionItems(sectionId, inspection) {
+  assert(sectionId && typeof sectionId === 'string', 'has section ID');
+  assert(inspection && inspection.template && inspection.template.items, 'has inspection template with items');
+
+  return Object.keys(inspection.template.items)
+    .map(itemId => Object.assign({}, inspection.template.items[itemId])) // Item hash to array
+    .filter(item => item.sectionId === sectionId) // only section items
+    .sort((a, b) => a.index - b.index); // sort ascending
+}
+
+/**
+ * Find latest admin edit of an item
+ * @param  {Object} item
+ * @return {Number} - admin edit timestamp or `0`
+ */
+function getLatestItemAdminEditTimestamp({ adminEdits }) {
+  const [result] = Object.keys(adminEdits || {})
+    .map(adminEditId => adminEdits[adminEditId]) // Create admin edit array
+    .sort((a, b) => b.edit_date - a.edit_date); // Descending
+  return result ? result.edit_date : 0;
+}

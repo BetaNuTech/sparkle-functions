@@ -1,7 +1,10 @@
 const { expect } = require('chai');
 const createDeficientItems = require('./create-deficient-items');
 const uuid = require('../../test-helpers/uuid');
-const { createCompletedMainInputItem: createItem } = require('../../test-helpers/mocking');
+const {
+  createCompletedMainInputItem: createItem,
+  createItem: createTextInputItem
+} = require('../../test-helpers/mocking');
 
 describe('Inspections | Utils | Create Deficient Items', () => {
   it('should return an deficent items configuration object', () => {
@@ -59,7 +62,7 @@ describe('Inspections | Utils | Create Deficient Items', () => {
       const items = {};
       data.forEach(item => items[uuid()] = createItem(...item));
       const result = createDeficientItems(createInspection({}, items));
-      const actual = Object.keys(result).map(itemId => result[itemId].inspectionRefAndItemData.itemData.mainInputType);
+      const actual = Object.keys(result).map(itemId => result[itemId].itemData.mainInputType);
       expect(actual).to.deep.equal(expected, message);
     });
   });
@@ -74,6 +77,160 @@ describe('Inspections | Utils | Create Deficient Items', () => {
     )[itemId].state;
     expect(actual).to.equal(expected);
   });
+
+  it('should set any available section title', () => {
+    const itemId = uuid();
+    const sectionId = uuid()
+    const expected = 'section-title-test';
+    const actual = createDeficientItems(
+      createInspection({},
+        { [itemId]: createItem('twoactions_checkmarkx', true, { sectionId }) },
+        { [sectionId]: { title: expected } }
+      )
+    )[itemId].sectionTitle;
+    expect(actual).to.equal(expected);
+  });
+
+  it('should set any available section type', () => {
+    const itemId = uuid();
+    const sectionId = uuid()
+    const expected = 'multi';
+    const actual = createDeficientItems(
+      createInspection({},
+        { [itemId]: createItem('twoactions_checkmarkx', true, { sectionId }) },
+        { [sectionId]: { title: '', section_type: expected } }
+      )
+    )[itemId].sectionType;
+    expect(actual).to.equal(expected);
+  });
+
+  it('should set a subtitle from a multi-sections\' first text input title', () => {
+    const itemId = uuid();
+    const sectionId = uuid()
+    const expected = 'multi';
+
+    [
+      {
+        data: createInspection({},
+          { [itemId]: createItem('twoactions_checkmarkx', true, { sectionId, index: 1 }) },
+          { [sectionId]: { title: '', section_type: 'multi' } }
+        ),
+        expected: undefined,
+        message: 'non-existent text input item yields no sub title'
+      },
+      {
+        data: createInspection({},
+          {
+            [itemId]: createItem('twoactions_checkmarkx', true, { sectionId, index: 1 }),
+            [uuid()]: createItem('twoactions_checkmarkx', false, { sectionId, index: 0 })
+          },
+          { [sectionId]: { title: '', section_type: 'multi' } }
+        ),
+        expected: undefined,
+        message: 'non text input item yields no sub title'
+      },
+      {
+        data: createInspection({},
+          {
+            [itemId]: createItem('twoactions_checkmarkx', true, { sectionId, index: 1 }),
+            [uuid()]: createTextInputItem({ sectionId, itemType: 'text_input', index: 0, title: '' })
+          },
+          { [sectionId]: { title: '', section_type: 'multi' } }
+        ),
+        expected: undefined,
+        message: 'text input without title item yields no sub title'
+      },
+      {
+        data: createInspection({},
+          {
+            [itemId]: createItem('twoactions_checkmarkx', true, { sectionId, index: 0 }),
+            [uuid()]: createTextInputItem({ sectionId, itemType: 'text_input', index: 1, title: 'title' })
+          },
+          { [sectionId]: { title: '', section_type: 'multi' } }
+        ),
+        expected: undefined,
+        message: 'non-first text input item yields no sub title'
+      },
+      {
+        data: createInspection({},
+          {
+            [itemId]: createItem('twoactions_checkmarkx', true, { sectionId, index: 1 }),
+            [uuid()]: createTextInputItem({ sectionId, itemType: 'text_input', index: 0, title: 'title' })
+          },
+          { [sectionId]: { title: '', section_type: 'multi' } }
+        ),
+        expected: 'title',
+        message: 'first text input item with title yields expected sub title'
+      }
+    ].forEach(({ data, expected, message }) => {
+      const actual = createDeficientItems(data)[itemId];
+      expect(actual.sectionSubtitle).to.equal(expected, message);
+    });
+  });
+
+  it('should use last admin edit date as timestamp or fallback to inspection\'s last update date', () => {
+    const itemId = uuid();
+    const sectionId = uuid();
+    const now = Date.now() / 1000;
+    const newer = now;
+    const older = now - 100000;
+
+    [
+      {
+        data: createInspection(
+          { updatedLastDate: now },
+          { [itemId]: createItem('twoactions_checkmarkx', true, { sectionId, adminEdits: null }) }
+        ),
+        expected: now,
+        message: 'used inspection update date as timestamp fallback'
+      },
+      {
+        data: createInspection(
+          { updatedLastDate: older },
+          { [itemId]: createItem('twoactions_checkmarkx', true, { sectionId, adminEdits: { [uuid()]: { edit_date: newer } } }) }
+        ),
+        expected: newer,
+        message: 'used only admit edit date as timestamp'
+      },
+      {
+        data: createInspection(
+          { updatedLastDate: older },
+          {
+            [itemId]: createItem(
+              'twoactions_checkmarkx',
+              true,
+              {
+                sectionId,
+                adminEdits: {
+                  [uuid()]: { edit_date: older },
+                  [uuid()]: { edit_date: older },
+                  [uuid()]: { edit_date: older },
+                  [uuid()]: { edit_date: newer },
+                  [uuid()]: { edit_date: older }
+                }
+              }
+            )
+          }
+        ),
+        expected: newer,
+        message: 'used latest admin edit as timestamp'
+      }
+    ].forEach(({ data, expected, message }) => {
+      const actual = createDeficientItems(data)[itemId];
+      expect(actual.itemDataLastUpdatedTimestamp).to.equal(expected, message);
+    });
+  });
+
+  it('should not return any falsey attributes on the top level of each item payload', () => {
+    const itemId = uuid();
+    const actual = createDeficientItems(
+      createInspection({},
+        { [itemId]: createItem('twoactions_checkmarkx', true) }
+      )
+    )[itemId];
+
+    Object.keys(actual).forEach(attr => expect(actual[attr], `field ${attr} is truthy`).to.be.ok);
+  });
 });
 
 /**
@@ -82,13 +239,14 @@ describe('Inspections | Utils | Create Deficient Items', () => {
  * @param  {Object} items
  * @return {Object} - inspection
  */
-function createInspection(inspection = {}, items = {}) {
+function createInspection(inspection = {}, items = {}, sections = {}) {
   return Object.assign({
     id: uuid(),
     inspectionCompleted: true,
     trackDeficientItems: true,
     updatedLastDate: Date.now() / 1000,
     template: {
+      sections: Object.assign({}, sections),
       items: Object.assign({}, items)
     }
   }, inspection);
