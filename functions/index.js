@@ -115,6 +115,7 @@ exports.deficientItemsPropertyMetaSyncStaging = functionsStagingDatabase.ref('/p
   deficientItems.createOnDiStateUpdate(dbStaging)
 );
 
+
 // Template onWrite
 exports.templateWrite = functions.database.ref('/templates/{objectId}').onWrite(
   templates.createOnWriteHandler(db)
