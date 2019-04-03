@@ -1,5 +1,6 @@
 const s3Config = require('./s3.json');
 const inspectionItems = require('./inspection-items');
+const deficientItems = require('./deficient-items');
 
 const env = (process.env.NODE_ENV || 'production');
 
@@ -15,5 +16,6 @@ s3Config.secretAccessKey = process.env.AWS_S3_SECRET_ACCESS_KEY;
 module.exports = Object.assign(
   {env},
   {s3: s3Config},
-  {inspectionItems}
+  {inspectionItems},
+  {deficientItems}
 );

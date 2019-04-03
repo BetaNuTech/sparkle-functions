@@ -1,9 +1,10 @@
 const pipe = require('lodash/fp/flow');
 const log = require('../utils/logger');
+const config = require('../config');
 const { createDeficientItems } = require('../inspections/utils');
 
 const LOG_PREFIX = 'properties: process-meta:';
-const REQUIRED_ACTIONS_VALUES = ['requires-action', 'go-back'];
+const REQUIRED_ACTIONS_VALUES = config.deficientItems.requiredActionStates;
 
 // Pipeline of steps to update metadata
 const propertyMetaUpdates = pipe([
