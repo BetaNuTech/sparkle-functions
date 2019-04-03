@@ -116,6 +116,18 @@ describe('Inspections | Utils | Create Deficient Items', () => {
     expect(actual).to.equal(expected);
   });
 
+  it('should set any available item inspector notes', () => {
+    const itemId = uuid();
+    const sectionId = uuid()
+    const expected = 'notes';
+    const actual = createDeficientItems(
+      createInspection({},
+        { [itemId]: createItem('twoactions_checkmarkx', true, { inspectorNotes: expected }) },
+      )
+    )[itemId].itemInspectorNotes;
+    expect(actual).to.equal(expected);
+  });
+
   it('should set a subtitle from a multi-sections\' first text input title', () => {
     const itemId = uuid();
     const sectionId = uuid()

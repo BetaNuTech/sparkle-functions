@@ -80,6 +80,7 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
         itemData: _.omit(item, 'id'),
         sectionTitle: section.title || undefined,
         itemTitle: item.title,
+        itemInspectorNotes: item.inspectorNotes,
         itemDataLastUpdatedTimestamp,
         sectionSubtitle,
         sectionType
