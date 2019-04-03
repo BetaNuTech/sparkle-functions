@@ -77,7 +77,7 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
       {},
       DEFAULT_DEFICIENT_ITEM,
       {
-        itemData: _.omit(item, 'id'),
+        itemMainInputType: item.mainInputType,
         sectionTitle: section.title || undefined,
         itemTitle: item.title,
         itemInspectorNotes: item.inspectorNotes,

@@ -62,7 +62,7 @@ describe('Inspections | Utils | Create Deficient Items', () => {
       const items = {};
       data.forEach(item => items[uuid()] = createItem(...item));
       const result = createDeficientItems(createInspection({}, items));
-      const actual = Object.keys(result).map(itemId => result[itemId].itemData.mainInputType);
+      const actual = Object.keys(result).map(itemId => result[itemId].itemMainInputType);
       expect(actual).to.deep.equal(expected, message);
     });
   });
@@ -125,6 +125,18 @@ describe('Inspections | Utils | Create Deficient Items', () => {
         { [itemId]: createItem('twoactions_checkmarkx', true, { inspectorNotes: expected }) },
       )
     )[itemId].itemInspectorNotes;
+    expect(actual).to.equal(expected);
+  });
+
+  it('should set any available item main input type', () => {
+    const itemId = uuid();
+    const sectionId = uuid()
+    const expected = 'twoactions_checkmarkx';
+    const actual = createDeficientItems(
+      createInspection({},
+        { [itemId]: createItem(expected, true) },
+      )
+    )[itemId].itemMainInputType;
     expect(actual).to.equal(expected);
   });
 
