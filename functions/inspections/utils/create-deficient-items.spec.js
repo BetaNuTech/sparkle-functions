@@ -110,7 +110,7 @@ describe('Inspections | Utils | Create Deficient Items', () => {
     const expected = 'title';
     const actual = createDeficientItems(
       createInspection({},
-        { [itemId]: createItem('twoactions_checkmarkx', true, { title: expected }) },
+        { [itemId]: createItem('twoactions_checkmarkx', true, { title: expected }) }
       )
     )[itemId].itemTitle;
     expect(actual).to.equal(expected);
@@ -122,7 +122,7 @@ describe('Inspections | Utils | Create Deficient Items', () => {
     const expected = 'notes';
     const actual = createDeficientItems(
       createInspection({},
-        { [itemId]: createItem('twoactions_checkmarkx', true, { inspectorNotes: expected }) },
+        { [itemId]: createItem('twoactions_checkmarkx', true, { inspectorNotes: expected }) }
       )
     )[itemId].itemInspectorNotes;
     expect(actual).to.equal(expected);
@@ -134,10 +134,25 @@ describe('Inspections | Utils | Create Deficient Items', () => {
     const expected = 'twoactions_checkmarkx';
     const actual = createDeficientItems(
       createInspection({},
-        { [itemId]: createItem(expected, true) },
+        { [itemId]: createItem(expected, true) }
       )
     )[itemId].itemMainInputType;
     expect(actual).to.equal(expected);
+  });
+
+  it('should deeply clone any available item admin edits', () => {
+    const itemId = uuid();
+    const sectionId = uuid()
+    const expected = {
+      [uuid()]: { action: 'selected B', admin_name: 'test', admin_uid: uuid(), edit_date: 1554227737 }
+    };
+    const actual = createDeficientItems(
+      createInspection({},
+        { [itemId]: createItem('twoactions_checkmarkx', true, { adminEdits: expected }) }
+      )
+    )[itemId].itemAdminEdits;
+    expect(actual).to.not.equal(expected, 'cloned new object');
+    expect(actual).to.deep.equal(expected, 'cloned admin edits match');
   });
 
   it('should set a subtitle from a multi-sections\' first text input title', () => {

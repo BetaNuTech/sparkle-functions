@@ -1,4 +1,3 @@
-const _ = require('lodash');
 const assert = require('assert');
 const config = require('../../config');
 
@@ -81,9 +80,10 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
         sectionTitle: section.title || undefined,
         itemTitle: item.title,
         itemInspectorNotes: item.inspectorNotes,
+        itemAdminEdits: item.adminEdits ? deepClone(item.adminEdits) : null,
         itemDataLastUpdatedTimestamp,
         sectionSubtitle,
-        sectionType
+        sectionType,
       }
     );
 
@@ -123,4 +123,13 @@ function getLatestItemAdminEditTimestamp({ adminEdits }) {
     .map(adminEditId => adminEdits[adminEditId]) // Create admin edit array
     .sort((a, b) => b.edit_date - a.edit_date); // Descending
   return result ? result.edit_date : 0;
+}
+
+/**
+ * Clone an object
+ * @param  {Object} obj
+ * @return {Object} - cloned
+ */
+function deepClone(obj = {}) {
+  return JSON.parse(JSON.stringify(obj));
 }
