@@ -1,10 +1,10 @@
 const pipe = require('lodash/fp/flow');
 const log = require('../utils/logger');
-const config = require('../config');
+const { deficientItems } = require('../config');
 const { createDeficientItems } = require('../inspections/utils');
 
 const LOG_PREFIX = 'properties: process-meta:';
-const REQUIRED_ACTIONS_VALUES = config.deficientItems.requiredActionStates;
+const REQUIRED_ACTIONS_VALUES = deficientItems.requiredActionStates;
 
 // Pipeline of steps to update metadata
 const propertyMetaUpdates = pipe([
@@ -34,7 +34,11 @@ module.exports = async function processMeta(db, propertyId) {
     // Find any deficient items data for property
     const propertyInspectionDeficientItemsSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}`).once('value');
     const propertyInspectionDeficientItemsData = propertyInspectionDeficientItemsSnap.exists() ? propertyInspectionDeficientItemsSnap.val() : {};
-    const deficientItems = Object.keys(propertyInspectionDeficientItemsData).map(itemId => Object.assign({id: itemId}, propertyInspectionDeficientItemsData[itemId]));
+    const deficientItems = [].concat(...Object.keys(propertyInspectionDeficientItemsData) // Flatten into single level items
+      .map(inspectionId =>
+        Object.keys(propertyInspectionDeficientItemsData[inspectionId])
+          .map(itemId => Object.assign({id: itemId}, propertyInspectionDeficientItemsData[inspectionId][itemId]))
+      ));
 
     // Collect updates to write to property's metadata attrs
     const { updates } = propertyMetaUpdates({
@@ -135,7 +139,7 @@ function updateDeficientItemsAttrs(config = { propertyId: '', inspections: [], d
     acc + Object.keys(defItems).length
   , 0);
 
-  // Count all deficient items where state is `requires-action`
+  // Count all deficient items where state requires action
   config.updates[`/properties/${config.propertyId}/numOfRequiredActionsForDeficientItems`] = deficientInspectionItems.reduce((acc, defItems) =>
     acc + Object.keys(defItems).filter(itemId => REQUIRED_ACTIONS_VALUES.includes(defItems[itemId].state)).length
   , 0);
