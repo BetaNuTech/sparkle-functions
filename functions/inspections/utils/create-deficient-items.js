@@ -1,5 +1,6 @@
 const assert = require('assert');
 const config = require('../../config');
+const getLatestItemAdminEditTimestamp = require('./get-latest-admin-edit-timestamp');
 
 const LOG_PREFIX = 'inspections: utils: create-deficient-items';
 const DEFICIENT_ITEM_ELIGIBLE = config.inspectionItems.deficientListEligible;
@@ -116,18 +117,6 @@ function getSectionItems(sectionId, inspection) {
     .map(itemId => Object.assign({}, inspection.template.items[itemId])) // Item hash to array
     .filter(item => item.sectionId === sectionId) // only section items
     .sort((a, b) => a.index - b.index); // sort ascending
-}
-
-/**
- * Find latest admin edit of an item
- * @param  {Object} item
- * @return {Number} - admin edit timestamp or `0`
- */
-function getLatestItemAdminEditTimestamp({ adminEdits }) {
-  const [result] = Object.keys(adminEdits || {})
-    .map(adminEditId => adminEdits[adminEditId]) // Create admin edit array
-    .sort((a, b) => b.edit_date - a.edit_date); // Descending
-  return result ? result.edit_date : 0;
 }
 
 /**
