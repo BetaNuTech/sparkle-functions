@@ -3,6 +3,7 @@ const log = require('../utils/logger');
 const config = require('../config');
 const createDeficientItems = require('../inspections/utils/create-deficient-items');
 const findRemovedKeys = require('../utils/find-removed-keys');
+const getLatestItemAdminEditTimestamp = require('../inspections/utils/get-latest-admin-edit-timestamp');
 
 const LOG_PREFIX = 'deficient-items: on-inspection-write:';
 const DEFICIENT_ITEM_PROXY_ATTRS = config.deficientItems.inspectionItemProxyAttrs;
@@ -65,7 +66,14 @@ module.exports = function createOnInspectionWriteHandler(db) {
         const deficientItem = currentDeficientItems[updateDeficientItemId];
         const sourceItem = inspection.template.items[updateDeficientItemId] || {};
         const itemUpdates = getDefItemDiffs(sourceItem, deficientItem, DEFICIENT_ITEM_PROXY_ATTRS);
+        const latestAdminEditTimestamp = getLatestItemAdminEditTimestamp(sourceItem) || 0;
 
+        // Set any latest admin edit as the last updated timestamp
+        if (latestAdminEditTimestamp && latestAdminEditTimestamp > deficientItem.itemDataLastUpdatedTimestamp) {
+          itemUpdates.itemDataLastUpdatedTimestamp = latestAdminEditTimestamp;
+        }
+
+        // Write, log, and set in memory w/ any updates
         if (Object.keys(itemUpdates).length) {
           await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${updateDeficientItemId}`).update(itemUpdates);
           updates[`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${updateDeficientItemId}`] = 'updated';

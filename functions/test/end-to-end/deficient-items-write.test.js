@@ -210,6 +210,57 @@ describe('Deficient Items Create and Delete', () => {
     }
   });
 
+  it('should update deficient item\'s last update date with any newest inspection item\'s admin edit timestamp', async () => {
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const itemId = uuid();
+    const newer = Date.now() / 1000;
+    const older = newer - 100000;
+    const newerAdminEdit = { action: 'selected A', admin_name: 'test', admin_uid: uuid(), edit_date: newer };
+    const olderAdminEdit = { action: 'selected B', admin_name: 'test', admin_uid: uuid(), edit_date: older };
+    const beforeData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      trackDeficientItems: true,
+      property: propertyId,
+
+      // Create single deficient item on inspection
+      template: {
+        items: {
+          [itemId]: mocking.createCompletedMainInputItem(
+            'fiveactions_onetofive',
+            true,
+            { adminEdits: { [uuid()]: olderAdminEdit } }
+          )
+        }
+      }
+    });
+    const expected = newerAdminEdit.edit_date;
+
+    // Setup database
+    await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
+    const beforeSnap = await db.ref(`/inspections/${inspectionId}/updatedLastDate`).once('value'); // Create before
+    const afterSnap = await db.ref(`/inspections/${inspectionId}/updatedLastDate`).once('value'); // Create after
+
+    // Execute for initial DI add
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.deficientItemsWrite);
+    await wrapped(changeSnap, { params: { inspectionId } });
+
+    // Update source item's proxyable attribute
+    await db.ref(`/inspections/${inspectionId}/template/items/${itemId}/adminEdits/${uuid()}`).set(newerAdminEdit); // Add source item update
+
+    // Execute again for DI update
+    await wrapped(changeSnap, { params: { inspectionId } });
+
+    // Test result
+    const actualSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/itemDataLastUpdatedTimestamp`).once('value');
+    const actual = actualSnap.val();
+
+    // Assertions
+    expect(actual).to.equal(expected);
+  });
+
   it('should add a newly deficient item to existing deficient items', async () => {
     const propertyId = uuid();
     const inspectionId = uuid();
