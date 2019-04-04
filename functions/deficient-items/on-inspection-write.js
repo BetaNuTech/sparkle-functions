@@ -1,9 +1,11 @@
 const assert = require('assert');
 const log = require('../utils/logger');
+const config = require('../config');
 const createDeficientItems = require('../inspections/utils/create-deficient-items');
 const findRemovedKeys = require('../utils/find-removed-keys');
 
 const LOG_PREFIX = 'deficient-items: on-inspection-write:';
+const DEFICIENT_ITEM_PROXY_ATTRS = config.deficientItems.inspectionItemProxyAttrs;
 
 /**
  * Factory for Deficient Items sync on Inspection write
@@ -38,29 +40,48 @@ module.exports = function createOnInspectionWriteHandler(db) {
         return updates;
       }
 
+      // Calculate expected and lookup current DI's
+      const expectedDeficientItems = createDeficientItems(inspection);
+      const currentDeficientItemsSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}`).once('value');
+      const currentDeficientItems = currentDeficientItemsSnap.val() || {};
+
       // Remove any deficient item(s) belonging
       // to inspection items that are no longer deficient
-      const expectedDeficientItems = createDeficientItems(inspection);
-      const createdDeficientItemsSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}`).once('value');
-      const createdDeficientItems = createdDeficientItemsSnap.val() || {};
-      const oldDeficientItemIds = findRemovedKeys(createdDeficientItems, expectedDeficientItems);
+      const removeDeficientItemIds = findRemovedKeys(currentDeficientItems, expectedDeficientItems);
 
-      for (let i = 0; i < oldDeficientItemIds.length; i++) {
-        const oldDeficientItemId = oldDeficientItemIds[i];
-        await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${oldDeficientItemId}`).remove();
-        updates[`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${oldDeficientItemId}`] = 'removed';
-        log.info(`${LOG_PREFIX} removed no longer deficient item ${oldDeficientItemId}`);
+      for (let i = 0; i < removeDeficientItemIds.length; i++) {
+        const removeDeficientItemId = removeDeficientItemIds[i];
+        await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${removeDeficientItemId}`).remove();
+        updates[`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${removeDeficientItemId}`] = 'removed';
+        log.info(`${LOG_PREFIX} removed no longer deficient item ${removeDeficientItemId}`);
+      }
+
+      // Update each existing deficient items'
+      // proxy data from its' source inspection item
+      const updateDeficientItemIds = Object.keys(currentDeficientItems).filter(itemId => expectedDeficientItems[itemId]);
+
+      for (let i = 0; i < updateDeficientItemIds.length; i++) {
+        const updateDeficientItemId = updateDeficientItemIds[i];
+        const deficientItem = currentDeficientItems[updateDeficientItemId];
+        const sourceItem = inspection.template.items[updateDeficientItemId] || {};
+        const itemUpdates = getDefItemDiffs(sourceItem, deficientItem, DEFICIENT_ITEM_PROXY_ATTRS);
+
+        if (Object.keys(itemUpdates).length) {
+          await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${updateDeficientItemId}`).update(itemUpdates);
+          updates[`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${updateDeficientItemId}`] = 'updated';
+          log.info(`${LOG_PREFIX} updating out of date deficient item ${updateDeficientItemId}`);
+          Object.assign(currentDeficientItems[updateDeficientItemId], itemUpdates); // update current snapshot value
+        }
       }
 
       // Add new deficient item(s) to DI
-      const createdDeficientItemIds = Object.keys(createdDeficientItems);
-      const expectedDeficientItemIds = Object.keys(expectedDeficientItems).filter(itemId => !createdDeficientItemIds.includes(itemId));
+      const addDeficientItemIds = Object.keys(expectedDeficientItems).filter(itemId => !currentDeficientItems[itemId]);
 
-      for (let i = 0; i < expectedDeficientItemIds.length; i++) {
-        const newDeficientItemId = expectedDeficientItemIds[i];
-        await db.ref(`/propertyInspectionDeficientItems/${inspection.property}/${inspectionId}/${newDeficientItemId}`).set(expectedDeficientItems[newDeficientItemId]);
-        updates[`/propertyInspectionDeficientItems/${inspection.property}/${inspectionId}/${newDeficientItemId}`] = 'created';
-        log.info(`${LOG_PREFIX} added new deficient item ${newDeficientItemId}`);
+      for (let i = 0; i < addDeficientItemIds.length; i++) {
+        const addDeficientItemId = addDeficientItemIds[i];
+        await db.ref(`/propertyInspectionDeficientItems/${inspection.property}/${inspectionId}/${addDeficientItemId}`).set(expectedDeficientItems[addDeficientItemId]);
+        updates[`/propertyInspectionDeficientItems/${inspection.property}/${inspectionId}/${addDeficientItemId}`] = 'created';
+        log.info(`${LOG_PREFIX} added new deficient item ${addDeficientItemId}`);
       }
     } catch (e) {
       log.error(`${LOG_PREFIX} ${e}`);
@@ -91,4 +112,45 @@ async function lookupPropertyIdByInspectionId(db, inspectionId) {
   }
 
   return ''; // unfound
+}
+
+/**
+ * Get differences between an inspection item
+ * and its' source inspection item for the given
+ * attributes
+ * @param  {Object} src
+ * @param  {Object} dest
+ * @param  {Object} attrs - key of attributes to diff
+ * @return {Object} - diff object
+ */
+function getDefItemDiffs(src = {}, dest = {}, attrs = {}) {
+  const updates = Object.create(null);
+
+  Object.keys(attrs)
+  .filter(diAttr => Boolean(src[attrs[diAttr]])) // Ignore falsey source values
+  .filter(diAttr => diff(src[attrs[diAttr]], dest[diAttr])) // different attrs only
+  .forEach(diAttr => {
+    const sourceItemAttr = attrs[diAttr];
+    if (typeof src[sourceItemAttr] === 'object') {
+      return updates[diAttr] = JSON.parse(JSON.stringify(src[sourceItemAttr]));
+    } else {
+      return updates[diAttr] = src[sourceItemAttr];
+    }
+  });
+
+  return updates;
+}
+
+/**
+ * Determine if two values are different
+ * @param  {Any} a
+ * @param  {Any} b
+ * @return {Boolean}
+ */
+function diff(a, b) {
+  if (typeof a === 'object' && typeof b === 'object') {
+    return JSON.stringify(a) !== JSON.stringify(b); // deep equal
+  } else {
+    return a !== b;
+  }
 }
