@@ -206,3 +206,6 @@ exports.cleanupInspectionProxyOrphansSyncStaging = inspections.cron.cleanupProxy
 
 exports.regTokensSync = regTokens.cron.syncOutdated('registration-tokens-sync', functions.pubsub, db);
 exports.regTokensSyncStaging = regTokens.cron.syncOutdated('staging-registration-tokens-sync', functions.pubsub, dbStaging);
+
+exports.deficientItemsOverdueSync = deficientItems.cron.createSyncOverdue('deficient-items-sync', functions.pubsub, db);
+exports.deficientItemsOverdueSyncStaging = deficientItems.cron.createSyncOverdue('staging-deficient-items-sync', functions.pubsub, dbStaging);

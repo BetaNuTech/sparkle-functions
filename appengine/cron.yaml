@@ -38,3 +38,11 @@ cron:
 - description: Trigger sync of all staging /properties
   url: /publish/staging-properties-sync
   schedule: every 1 hours
+
+- description: Trigger sync of all /propertyInspectionDeficientItems
+  url: /publish/deficient-items-sync
+  schedule: every 1 hours
+
+- description: Trigger sync of all staging /propertyInspectionDeficientItems
+  url: /publish/staging-deficient-items-sync
+  schedule: every 1 hours

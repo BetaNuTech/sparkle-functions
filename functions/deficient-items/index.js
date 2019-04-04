@@ -1,4 +1,5 @@
 module.exports = {
   createOnInspectionWrite: require('./on-inspection-write'),
-  createOnDiStateUpdate: require('./on-di-state-update')
+  createOnDiStateUpdate: require('./on-di-state-update'),
+  cron: require('./cron')
 };
