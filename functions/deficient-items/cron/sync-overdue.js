@@ -1,3 +1,6 @@
+const adminUtils = require('../../utils/firebase-admin')
+const log = require('../../utils/logger');
+
 const LOG_PREFIX = 'deficient-items: cron: sync-overdue:';
 
 /**
