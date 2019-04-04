@@ -99,11 +99,11 @@ exports.propertyDeleteStaging = functionsStagingDatabase.ref('/properties/{prope
 
 
 // Deficient Items
-exports.deficientItemsCreateDelete = functions.database.ref('/inspections/{inspectionId}/updatedLastDate').onWrite(
+exports.deficientItemsWrite = functions.database.ref('/inspections/{inspectionId}/updatedLastDate').onWrite(
   deficientItems.createOnInspectionWrite(db)
 );
 
-exports.deficientItemsCreateDeleteStaging = functionsStagingDatabase.ref('/inspections/{inspectionId}/updatedLastDate').onWrite(
+exports.deficientItemsWriteStaging = functionsStagingDatabase.ref('/inspections/{inspectionId}/updatedLastDate').onWrite(
   deficientItems.createOnInspectionWrite(dbStaging)
 );
 

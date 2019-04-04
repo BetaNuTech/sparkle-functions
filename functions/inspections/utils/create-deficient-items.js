@@ -1,6 +1,6 @@
-const _ = require('lodash');
 const assert = require('assert');
 const config = require('../../config');
+const getLatestItemAdminEditTimestamp = require('./get-latest-admin-edit-timestamp');
 
 const LOG_PREFIX = 'inspections: utils: create-deficient-items';
 const DEFICIENT_ITEM_ELIGIBLE = config.inspectionItems.deficientListEligible;
@@ -18,7 +18,13 @@ const DEFAULT_DEFICIENT_ITEM = Object.freeze({
   progressNotes: null,
   reasonsIncomplete: null,
   currentReasonIncomplete: '',
-  completedPhotos: null
+  completedPhotos: null,
+  itemAdminEdits: null,
+  itemInspectorNotes: '',
+  itemTitle: '',
+  itemMainInputType: '',
+  itemMainInputSelection: 0,
+  itemPhotosData: null
 });
 
 /**
@@ -71,17 +77,25 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
       {},
       DEFAULT_DEFICIENT_ITEM,
       {
-        itemData: _.omit(item, 'id'),
+        itemMainInputType: item.mainInputType,
         sectionTitle: section.title || undefined,
+        itemTitle: item.title,
+        itemInspectorNotes: item.inspectorNotes,
+        itemAdminEdits: item.adminEdits ? deepClone(item.adminEdits) : null,
+        itemPhotosData: item.photosData ? deepClone(item.photosData) : null,
+        itemMainInputSelection: item.mainInputSelection,
         itemDataLastUpdatedTimestamp,
         sectionSubtitle,
-        sectionType
+        sectionType,
       }
     );
 
-    // Cleanup falsey values for item
+    // Cleanup falsey values for item, except
+    // "itemMainInputSelection" which may be 0
     Object.keys(result[item.id]).forEach(attr => {
-      if (!result[item.id][attr]) delete result[item.id][attr];
+      if (!result[item.id][attr] && attr !== 'itemMainInputSelection') {
+        delete result[item.id][attr];
+      }
     });
   });
 
@@ -106,13 +120,10 @@ function getSectionItems(sectionId, inspection) {
 }
 
 /**
- * Find latest admin edit of an item
- * @param  {Object} item
- * @return {Number} - admin edit timestamp or `0`
+ * Clone an object
+ * @param  {Object} obj
+ * @return {Object} - cloned
  */
-function getLatestItemAdminEditTimestamp({ adminEdits }) {
-  const [result] = Object.keys(adminEdits || {})
-    .map(adminEditId => adminEdits[adminEditId]) // Create admin edit array
-    .sort((a, b) => b.edit_date - a.edit_date); // Descending
-  return result ? result.edit_date : 0;
+function deepClone(obj = {}) {
+  return JSON.parse(JSON.stringify(obj));
 }

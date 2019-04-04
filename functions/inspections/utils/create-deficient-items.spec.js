@@ -62,7 +62,7 @@ describe('Inspections | Utils | Create Deficient Items', () => {
       const items = {};
       data.forEach(item => items[uuid()] = createItem(...item));
       const result = createDeficientItems(createInspection({}, items));
-      const actual = Object.keys(result).map(itemId => result[itemId].itemData.mainInputType);
+      const actual = Object.keys(result).map(itemId => result[itemId].itemMainInputType);
       expect(actual).to.deep.equal(expected, message);
     });
   });
@@ -102,6 +102,82 @@ describe('Inspections | Utils | Create Deficient Items', () => {
       )
     )[itemId].sectionType;
     expect(actual).to.equal(expected);
+  });
+
+  it('should set any available item title', () => {
+    const itemId = uuid();
+    const sectionId = uuid()
+    const expected = 'title';
+    const actual = createDeficientItems(
+      createInspection({},
+        { [itemId]: createItem('twoactions_checkmarkx', true, { title: expected }) }
+      )
+    )[itemId].itemTitle;
+    expect(actual).to.equal(expected);
+  });
+
+  it('should set any available item inspector notes', () => {
+    const itemId = uuid();
+    const sectionId = uuid()
+    const expected = 'notes';
+    const actual = createDeficientItems(
+      createInspection({},
+        { [itemId]: createItem('twoactions_checkmarkx', true, { inspectorNotes: expected }) }
+      )
+    )[itemId].itemInspectorNotes;
+    expect(actual).to.equal(expected);
+  });
+
+  it('should set any available item main input type', () => {
+    const itemId = uuid();
+    const sectionId = uuid()
+    const expected = 'twoactions_checkmarkx';
+    const actual = createDeficientItems(
+      createInspection({},
+        { [itemId]: createItem(expected, true) }
+      )
+    )[itemId].itemMainInputType;
+    expect(actual).to.equal(expected);
+  });
+
+  it('should set any available, falsey, item input selection', () => {
+    const itemId = uuid();
+    const sectionId = uuid()
+    const expected = 0;
+    const actual = createDeficientItems(
+      createInspection({},
+        { [itemId]: createItem('fiveactions_onetofive', true, { mainInputSelection: expected }) }
+      )
+    )[itemId];
+    expect(actual.itemMainInputSelection).to.equal(expected);
+  });
+
+  it('should deeply clone any available item admin edits', () => {
+    const itemId = uuid();
+    const sectionId = uuid()
+    const expected = {
+      [uuid()]: { action: 'selected B', admin_name: 'test', admin_uid: uuid(), edit_date: 1554227737 }
+    };
+    const actual = createDeficientItems(
+      createInspection({},
+        { [itemId]: createItem('twoactions_checkmarkx', true, { adminEdits: expected }) }
+      )
+    )[itemId].itemAdminEdits;
+    expect(actual).to.not.equal(expected, 'cloned new object');
+    expect(actual).to.deep.equal(expected, 'cloned admin edits matches');
+  });
+
+  it('should deeply clone any available item photos data', () => {
+    const itemId = uuid();
+    const sectionId = uuid()
+    const expected = { '1554325519707': { caption: 'a caption!', downloadURL: 'google.com' } };
+    const actual = createDeficientItems(
+      createInspection({},
+        { [itemId]: createItem('twoactions_checkmarkx', true, { photosData: expected }) }
+      )
+    )[itemId].itemPhotosData;
+    expect(actual).to.not.equal(expected, 'cloned new object');
+    expect(actual).to.deep.equal(expected, 'cloned photos data matches');
   });
 
   it('should set a subtitle from a multi-sections\' first text input title', () => {
@@ -221,7 +297,7 @@ describe('Inspections | Utils | Create Deficient Items', () => {
     });
   });
 
-  it('should not return any falsey attributes on the top level of each item payload', () => {
+  it('should not return falsey fields, except "itemMainInputSelection", on the top level of an item\'s JSON', () => {
     const itemId = uuid();
     const actual = createDeficientItems(
       createInspection({},
@@ -229,7 +305,11 @@ describe('Inspections | Utils | Create Deficient Items', () => {
       )
     )[itemId];
 
-    Object.keys(actual).forEach(attr => expect(actual[attr], `field ${attr} is truthy`).to.be.ok);
+    Object.keys(actual).forEach(attr => {
+      if (attr !== 'itemMainInputSelection') {
+        expect(actual[attr], `field ${attr} is truthy`).to.be.ok;
+      }
+    });
   });
 });
 
