@@ -38,7 +38,7 @@ describe('Deficient Items Create and Delete', () => {
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
-    const wrapped = test.wrap(cloudFunctions.deficientItemsCreateDelete);
+    const wrapped = test.wrap(cloudFunctions.deficientItemsWrite);
     await wrapped(changeSnap, { params: { inspectionId } });
 
     // Test result
@@ -84,7 +84,7 @@ describe('Deficient Items Create and Delete', () => {
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
-    const wrapped = test.wrap(cloudFunctions.deficientItemsCreateDelete);
+    const wrapped = test.wrap(cloudFunctions.deficientItemsWrite);
     await wrapped(changeSnap, { params: { inspectionId } });
 
     // Test result
@@ -130,7 +130,7 @@ describe('Deficient Items Create and Delete', () => {
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
-    const wrapped = test.wrap(cloudFunctions.deficientItemsCreateDelete);
+    const wrapped = test.wrap(cloudFunctions.deficientItemsWrite);
     await wrapped(changeSnap, { params: { inspectionId } });
 
     // Test result
@@ -188,7 +188,7 @@ describe('Deficient Items Create and Delete', () => {
 
       // Execute for initial DI add
       const changeSnap = test.makeChange(beforeSnap, afterSnap);
-      const wrapped = test.wrap(cloudFunctions.deficientItemsCreateDelete);
+      const wrapped = test.wrap(cloudFunctions.deficientItemsWrite);
       await wrapped(changeSnap, { params: { inspectionId } });
 
       // Update source item's proxyable attribute
@@ -243,7 +243,7 @@ describe('Deficient Items Create and Delete', () => {
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
-    const wrapped = test.wrap(cloudFunctions.deficientItemsCreateDelete);
+    const wrapped = test.wrap(cloudFunctions.deficientItemsWrite);
     await wrapped(changeSnap, { params: { inspectionId } });
 
     // Test result
