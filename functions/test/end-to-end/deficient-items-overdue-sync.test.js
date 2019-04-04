@@ -34,7 +34,7 @@ describe('Deficient Items Overdue Sync', () => {
 
     // Setup database
     await db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}`, numOfRequiredActionsForDeficientItems: expected.numOfRequiredActionsForDeficientItems });
-    await db.ref(`/inspection/${inspectionId}`).set(inspectionData);
+    await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
     await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}`).set({
       state: expected.state,
       currentDueDate: (Date.now() / 1000) - 100000 // past due
@@ -79,7 +79,7 @@ describe('Deficient Items Overdue Sync', () => {
 
     // Setup database
     await db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}`, numOfRequiredActionsForDeficientItems: expected.numOfRequiredActionsForDeficientItems });
-    await db.ref(`/inspection/${inspectionId}`).set(inspectionData);
+    await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
     await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}`).set({
       state: expected.state,
       currentDueDate: (Date.now() / 1000) + 100000 // not due
@@ -118,15 +118,15 @@ describe('Deficient Items Overdue Sync', () => {
       }
     });
     const expected = {
-      state: 'pending',
+      state: 'overdue',
       numOfRequiredActionsForDeficientItems: 1
     };
 
     // Setup database
     await db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}`, numOfRequiredActionsForDeficientItems: 0 });
-    await db.ref(`/inspection/${inspectionId}`).set(inspectionData);
+    await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
     await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}`).set({
-      state: expected.state,
+      state: 'pending',
       currentDueDate: (Date.now() / 1000) - 100000 // past due
     });
 
