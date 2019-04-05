@@ -72,10 +72,10 @@ exports.propertyTemplatesWriteStaging = functionsStagingDatabase.ref('/propertie
 
 
 // Property onWrite
-exports.propertyWrite = functions.database.ref('/properties/{objectId}').onWrite(
+exports.propertyWrite = functions.database.ref('/properties/{propertyId}').onWrite(
   properties.createOnWriteHandler(db)
 );
-exports.propertyWriteStaging = functionsStagingDatabase.ref('/properties/{objectId}').onWrite(
+exports.propertyWriteStaging = functionsStagingDatabase.ref('/properties/{propertyId}').onWrite(
   properties.createOnWriteHandler(dbStaging)
 );
 

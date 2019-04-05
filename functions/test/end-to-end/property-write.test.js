@@ -27,7 +27,7 @@ describe('Property Write', () => {
     // Execute
     const changeSnap = test.makeChange(propertyBeforeSnap, propertyAfterSnap);
     const wrapped = test.wrap(cloudFunctions.propertyWrite);
-    yield wrapped(changeSnap, { params: { objectId: propertyId } });
+    yield wrapped(changeSnap, { params: { propertyId } });
 
     // Test result
     const actual = yield db.ref(`/propertyTemplates/${propertyId}`).once('value');
@@ -61,7 +61,7 @@ describe('Property Write', () => {
     // Execute
     const changeSnap = test.makeChange(propertyBeforeSnap, propertyAfterSnap);
     const wrapped = test.wrap(cloudFunctions.propertyWrite);
-    yield wrapped(changeSnap, { params: { objectId: propertyId } });
+    yield wrapped(changeSnap, { params: { propertyId } });
 
     // Test result
     const actual = yield db.ref(`/propertyTemplates/${propertyId}`).once('value');
