@@ -5,6 +5,7 @@ const processPropertyMeta = require('../properties/process-meta');
 
 const LOG_PREFIX = 'deficient-items: on-di-state-update:';
 const REQUIRED_ACTIONS_VALUES = config.deficientItems.requiredActionStates;
+const FOLLOW_UP_ACTION_VALUES = config.deficientItems.followUpActionStates;
 
 /**
  * Factory for Deficient Items sync on DI state updates
@@ -24,11 +25,13 @@ module.exports = function createOnDiStateUpdateHandler(db) {
 
     log.info(`${LOG_PREFIX} property: ${propertyId} | inspection: ${inspectionId} | item: ${itemId}`);
 
-    const beforeStateRequired = REQUIRED_ACTIONS_VALUES.includes(change.before.val());
-    const afterStateRequired = REQUIRED_ACTIONS_VALUES.includes(change.after.val());
+    const beforeState = change.before.val();
+    const afterState = change.after.val();
+    const stillRequiresAction = REQUIRED_ACTIONS_VALUES.includes(beforeState) && REQUIRED_ACTIONS_VALUES.includes(afterState);
+    const stillFollowUpAction = FOLLOW_UP_ACTION_VALUES.includes(beforeState) && FOLLOW_UP_ACTION_VALUES.includes(afterState);
 
     // Action required action status changed
-    if (beforeStateRequired !== afterStateRequired) {
+    if (!stillRequiresAction && !stillFollowUpAction && beforeState !== afterState) {
       await processPropertyMeta(db, propertyId);
       log.info(`${LOG_PREFIX} updated property: ${propertyId} deficient items associated metadata`);
     }
