@@ -12,7 +12,7 @@ const LOG_PREFIX = 'inspections: on-attribute-write:';
 module.exports = function createOnAttributeWriteHandler(db) {
   return (change, event) => co(function *() {
     const updates = {};
-    const inspectionId = event.params.objectId;
+    const {inspectionId} = event.params;
 
     // Inspection deleted or already up to date
     if (!change.after.exists() || change.before.val() === change.after.val()) {

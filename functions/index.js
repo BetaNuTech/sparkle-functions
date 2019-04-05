@@ -54,10 +54,10 @@ exports.createSendMessagesStaging = functions.https.onRequest(
 
 // For migrating to a new architecture only, setting a newer date
 // This allow the updatedLastDate to stay as-is (make sure client doesn't update it though)
-exports.inspectionMigrationDateWrite = functions.database.ref('/inspections/{objectId}/migrationDate').onWrite(
+exports.inspectionMigrationDateWrite = functions.database.ref('/inspections/{inspectionId}/migrationDate').onWrite(
   inspections.createOnAttributeWriteHandler(db)
 );
-exports.inspectionMigrationDateWriteStaging = functionsStagingDatabase.ref('/inspections/{objectId}/migrationDate').onWrite(
+exports.inspectionMigrationDateWriteStaging = functionsStagingDatabase.ref('/inspections/{inspectionId}/migrationDate').onWrite(
   inspections.createOnAttributeWriteHandler(dbStaging)
 );
 
