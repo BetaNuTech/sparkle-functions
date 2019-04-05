@@ -115,10 +115,10 @@ exports.templateWriteStaging = functionsStagingDatabase.ref('/templates/{templat
 
 
 // Inspection updatedLastDate onWrite
-exports.inspectionUpdatedLastDateWrite = functions.database.ref('/inspections/{objectId}/updatedLastDate').onWrite(
+exports.inspectionUpdatedLastDateWrite = functions.database.ref('/inspections/{inspectionId}/updatedLastDate').onWrite(
   inspections.createOnAttributeWriteHandler(db)
 );
-exports.inspectionUpdatedLastDateWriteStaging = functionsStagingDatabase.ref('/inspections/{objectId}/updatedLastDate').onWrite(
+exports.inspectionUpdatedLastDateWriteStaging = functionsStagingDatabase.ref('/inspections/{inspectionId}/updatedLastDate').onWrite(
   inspections.createOnAttributeWriteHandler(dbStaging)
 );
 

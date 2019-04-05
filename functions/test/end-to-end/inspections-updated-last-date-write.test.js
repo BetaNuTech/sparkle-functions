@@ -9,12 +9,12 @@ describe('Inspections Updated Last Date Write', () => {
   afterEach(() => cleanDb(db));
 
   it('should update all an inspections\' outdated proxy records', () => co(function *() {
-    const inspId = uuid();
+    const inspectionId = uuid();
     const propertyId = uuid();
     const categoryId = uuid();
     const now = Date.now() / 1000;
     const inspectionData = {
-      templateName: `name${inspId}`,
+      templateName: `name${inspectionId}`,
       inspector: '23423423',
       inspectorName: 'testor',
       creationDate: now - 100000,
@@ -31,21 +31,21 @@ describe('Inspections Updated Last Date Write', () => {
     // Setup database
     yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
     yield db.ref(`/templateCategories/${categoryId}`).set({ name: `name${categoryId}` }); // sanity check
-    yield db.ref(`/inspections/${inspId}`).set(Object.assign({}, inspectionData, { updatedLastDate: now - 1000 })); // Add inspection with old updated date
-    const beforeSnap = yield db.ref(`/inspections/${inspId}/updatedLastDate`).once('value');
-    yield db.ref(`/inspections/${inspId}/updatedLastDate`).set(now);
-    const afterSnap = yield db.ref(`/inspections/${inspId}/updatedLastDate`).once('value');
+    yield db.ref(`/inspections/${inspectionId}`).set(Object.assign({}, inspectionData, { updatedLastDate: now - 1000 })); // Add inspection with old updated date
+    const beforeSnap = yield db.ref(`/inspections/${inspectionId}/updatedLastDate`).once('value');
+    yield db.ref(`/inspections/${inspectionId}/updatedLastDate`).set(now);
+    const afterSnap = yield db.ref(`/inspections/${inspectionId}/updatedLastDate`).once('value');
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
     const wrapped = test.wrap(cloudFunctions.inspectionUpdatedLastDateWrite);
-    yield wrapped(changeSnap, { params: { objectId: inspId } });
+    yield wrapped(changeSnap, { params: { inspectionId } });
 
     // Test results
-    const propertyInspection = yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value');
-    const propertyInspectionList = yield db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).once('value');
-    const completedInspection = yield db.ref(`/completedInspections/${inspId}`).once('value');
-    const completedInspectionList = yield db.ref(`/completedInspectionsList/${inspId}`).once('value');
+    const propertyInspection = yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspectionId}`).once('value');
+    const propertyInspectionList = yield db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`).once('value');
+    const completedInspection = yield db.ref(`/completedInspections/${inspectionId}`).once('value');
+    const completedInspectionList = yield db.ref(`/completedInspectionsList/${inspectionId}`).once('value');
 
     // Assertions
     const expected = Object.assign({}, inspectionData);
@@ -86,7 +86,7 @@ describe('Inspections Updated Last Date Write', () => {
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
     const wrapped = test.wrap(cloudFunctions.inspectionUpdatedLastDateWrite);
-    yield wrapped(changeSnap, { params: { objectId: insp1Id } });
+    yield wrapped(changeSnap, { params: { inspectionId: insp1Id } });
 
     // Test result
     const propertySnap = yield db.ref(`/properties/${propertyId}`).once('value');
