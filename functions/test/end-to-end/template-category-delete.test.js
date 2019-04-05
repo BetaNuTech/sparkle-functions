@@ -25,7 +25,7 @@ describe('Template Category Delete', () => {
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.templateCategoryDelete);
-    yield wrapped(deleteSnap, { params: { objectId: categoryId } });
+    yield wrapped(deleteSnap, { params: { categoryId } });
 
     // Test result
     const actualTmpl1Cat = yield db.ref(`/templates/${tmpl1Id}/category`).once('value');
@@ -59,7 +59,7 @@ describe('Template Category Delete', () => {
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.templateCategoryDelete);
-    yield wrapped(deleteSnap, { params: { objectId: categoryId } });
+    yield wrapped(deleteSnap, { params: { categoryId } });
 
     // Test result
     const actualTmpl1Cat = yield db.ref(`/templatesList/${tmpl1Id}/category`).once('value');
@@ -97,7 +97,7 @@ describe('Template Category Delete', () => {
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.templateCategoryDelete);
-    yield wrapped(deleteSnap, { params: { objectId: categoryId } });
+    yield wrapped(deleteSnap, { params: { categoryId } });
 
     // Test result
     const actualTmpl1Cat = yield db.ref(`/propertyTemplatesList/${propertyId}/${tmpl1Id}/category`).once('value');

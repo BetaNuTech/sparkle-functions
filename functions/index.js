@@ -142,11 +142,11 @@ exports.inspectionDeleteStaging = functionsStagingDatabase.ref('/inspections/{in
 
 
 // Template Category Delete
-exports.templateCategoryDelete = functions.database.ref('/templateCategories/{objectId}').onDelete(
-  templateCategories.onDeleteHandler(db)
+exports.templateCategoryDelete = functions.database.ref('/templateCategories/{categoryId}').onDelete(
+  templateCategories.createOnDeleteHandler(db)
 );
-exports.templateCategoryDeleteStaging = functionsStagingDatabase.ref('/templateCategories/{objectId}').onDelete(
-  templateCategories.onDeleteHandler(dbStaging)
+exports.templateCategoryDeleteStaging = functionsStagingDatabase.ref('/templateCategories/{categoryId}').onDelete(
+  templateCategories.createOnDeleteHandler(dbStaging)
 );
 
 
