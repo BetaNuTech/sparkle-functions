@@ -43,7 +43,7 @@ describe('Push Messages', function() {
           val: () => ({ recipientId: uuid() })
         }
       },
-      { params: { objectId: uuid() } }
+      { params: { messageId: uuid() } }
       )
         .then(() => expect(loaded).to.equal(true, 'loaded data snapshot successfully'));
     });
@@ -85,7 +85,7 @@ describe('Push Messages', function() {
 
       return createOnWriteHandler(db, messaging)(
         payload,
-        { params: { objectId: expectedPayload.recipientId } }
+        { params: { messageId: expectedPayload.recipientId } }
       )
         .then(() => expect(sentMessage).to.equal(true, 'triggered send message successfully'));
     });
@@ -123,7 +123,7 @@ describe('Push Messages', function() {
 
       return createOnWriteHandler(db, messaging)(
         payload,
-        { params: { objectId: uuid() } }
+        { params: { messageId: uuid() } }
       )
         .then(() => expect(sentMessage).to.equal(true, 'triggered send message successfully'));
     });
