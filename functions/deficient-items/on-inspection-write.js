@@ -76,6 +76,7 @@ module.exports = function createOnInspectionWriteHandler(db) {
 
         // Write, log, and set in memory w/ any updates
         if (Object.keys(itemUpdates).length) {
+          itemUpdates.updatedAt = Date.now() / 1000; // modify updatedAt
           await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${updateDeficientItemId}`).update(itemUpdates);
           updates[`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${updateDeficientItemId}`] = 'updated';
           log.info(`${LOG_PREFIX} updating out of date deficient item ${updateDeficientItemId}`);

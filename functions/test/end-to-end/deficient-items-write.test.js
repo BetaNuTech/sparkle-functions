@@ -215,12 +215,15 @@ describe('Deficient Items Create and Delete', () => {
         await db.ref(`/inspections/${inspectionId}/template/items/${itemId}/${sourceAttr}`).set(expected);
       }
 
+      const beforeUpdatedAtSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/updatedAt`).once('value');
+
       // Execute again for DI update
       await wrapped(changeSnap, { params: { inspectionId } });
 
       // Test result
-      const actualSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/${diAttr}`).once('value');
-      const actual = actualSnap.val();
+      const results = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/${diAttr}`).once('value');
+      const actual = results.val();
+      const afterUpdatedAtSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/updatedAt`).once('value');
 
       // Assertions
       if (typeof expected === 'object') {
@@ -228,6 +231,9 @@ describe('Deficient Items Create and Delete', () => {
       } else {
         expect(actual).to.equal(expected, `updated DI proxy attribute ${diAttr}`);
       }
+
+      expect(afterUpdatedAtSnap.exists()).to.equal(true, 'set DI "updatedAt"');
+      expect(beforeUpdatedAtSnap.val()).to.not.equal(afterUpdatedAtSnap.val(), 'updated DI "updatedAt"');
     }
   });
 
