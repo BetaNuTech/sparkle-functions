@@ -12,7 +12,7 @@ describe('Templates', function() {
           before: { exists: () => true, val: () => null },
           after: { exists: () => false, val: () => null }
         },
-        { params: { objectId: '1' } }
+        { params: { templateId: '1' } }
       );
       expect(actual).to.be.an.instanceof(Promise, 'returned a promise');
       return actual.then((result) => expect(result).to.be.an('object', 'has update hash'))
