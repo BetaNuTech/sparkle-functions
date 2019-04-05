@@ -1,6 +1,7 @@
 const log = require('../../utils/logger');
 const processPropertyMeta = require('../../properties/process-meta');
 const {forEachChild} = require('../../utils/firebase-admin')
+const createStateHistory = require('../utils/create-state-history');
 
 const LOG_PREFIX = 'deficient-items: cron: sync-overdue:';
 
@@ -23,11 +24,20 @@ module.exports = function createSyncOverdueDeficientItemshandler(topic = '', pub
 
     await forEachChild(db, '/propertyInspectionDeficientItems', async function proccessDIproperties(propertyId) {
       await forEachChild(db, `/propertyInspectionDeficientItems/${propertyId}`, async function processDIinspections(inspectionId) {
-        await forEachChild(db, `/propertyInspectionDeficientItems/${propertyId}/${inspectionId}`, async function processDeficientItems(itemId, item) {
+        await forEachChild(db, `/propertyInspectionDeficientItems/${propertyId}/${inspectionId}`, async function processDeficientItems(itemId, diItem) {
           try {
-            if (item.state === 'pending' && item.currentDueDate <= now) {
-              await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/state`).set('overdue');
+            if (diItem.state === 'pending' && diItem.currentDueDate <= now) {
+              diItem.state = 'overdue';
+
+              // Update DI's state
+              await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/state`).set(diItem.state);
               updates[`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/state`] = 'updated';
+
+              // Update `stateHistory` with latest DI state
+              await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/stateHistory`).push(createStateHistory(diItem));
+              updates[`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/stateHistory`] = 'added';
+
+              // Sync DI's changes to its' property's metadata
               const metaUpdates = await processPropertyMeta(db, propertyId);
               log.info(`${LOG_PREFIX} property: ${propertyId} | inspection: ${inspectionId} | item: ${itemId} | deficiency overdue`);
               Object.assign(updates, metaUpdates); // add property meta updates to updates

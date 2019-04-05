@@ -119,6 +119,7 @@ describe('Deficient Items Overdue Sync', () => {
     });
     const expected = {
       state: 'overdue',
+      startDate: (Date.now() / 1000) - 100,
       numOfRequiredActionsForDeficientItems: 1
     };
 
@@ -127,6 +128,7 @@ describe('Deficient Items Overdue Sync', () => {
     await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
     await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}`).set({
       state: 'pending',
+      currentStartDate: expected.startDate,
       currentDueDate: (Date.now() / 1000) - 100000 // past due
     });
 
@@ -136,12 +138,16 @@ describe('Deficient Items Overdue Sync', () => {
     // Test result
     const result = await Promise.all([
       db.ref(`/properties/${propertyId}/numOfRequiredActionsForDeficientItems`).once('value'),
-      db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/state`).once('value')
+      db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/state`).once('value'),
+      db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/stateHistory`).once('value')
     ]);
-    const [actualReqActions, actualState]  = result.map(r => r.val());
+    const [actualReqActions, actualState, allStateHistory]  = result.map(r => r.val());
+    const actualStateHistory = allStateHistory ? allStateHistory[Object.keys(allStateHistory)[0]] : {}; // Get 1st from hash
 
     // Assertions
     expect(actualState).to.equal(expected.state, 'updated DI state');
+    expect(actualStateHistory.state).to.equal(expected.state, 'updated state history with latest state');
+    expect(actualStateHistory.startDate).to.equal(expected.startDate, 'updated state history with current start date');
     expect(actualReqActions).to.equal(expected.numOfRequiredActionsForDeficientItems, 'updated property meta');
   });
 });
