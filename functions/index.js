@@ -124,10 +124,10 @@ exports.inspectionUpdatedLastDateWriteStaging = functionsStagingDatabase.ref('/i
 
 
 // Inspection onWrite
-exports.inspectionWrite = functions.database.ref('/inspections/{objectId}').onWrite(
+exports.inspectionWrite = functions.database.ref('/inspections/{inspectionId}').onWrite(
   inspections.createOnWriteHandler(db)
 );
-exports.inspectionWriteStaging = functionsStagingDatabase.ref('/inspections/{objectId}').onWrite(
+exports.inspectionWriteStaging = functionsStagingDatabase.ref('/inspections/{inspectionId}').onWrite(
   inspections.createOnWriteHandler(dbStaging)
 );
 

@@ -9,11 +9,11 @@ describe('Inspection Write', () => {
   afterEach(() => cleanDb(db));
 
   it('should set an invalid score value to zero', () => co(function *() {
-    const inspId = uuid();
+    const inspectionId = uuid();
     const propertyId = uuid();
     const now = Date.now() / 1000;
     const beforeData = {
-      templateName: `name${inspId}`,
+      templateName: `name${inspectionId}`,
       inspector: '23423423',
       inspectorName: 'testor',
       creationDate: now - 100000,
@@ -28,27 +28,27 @@ describe('Inspection Write', () => {
     const afterData = Object.assign({}, beforeData, { score: null });
 
     // Setup database
-    yield db.ref(`/inspections/${inspId}`).set(beforeData); // Add inspection
+    yield db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
     yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
-    yield db.ref(`/completedInspections/${inspId}`).set(beforeData); // Add completedInspections
-    yield db.ref(`/completedInspectionsList/${inspId}`).set(beforeData); // Add completedInspectionsList
-    yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).set(beforeData); // Add propertyInspections
-    yield db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).set(beforeData); // Add propertyInspectionsList
-    const beforeSnap = yield db.ref(`/inspections/${inspId}`).once('value'); // Create before
-    yield db.ref(`/inspections/${inspId}`).update(afterData); // set invalid score
-    const afterSnap = yield db.ref(`/inspections/${inspId}`).once('value'); // Create after
+    yield db.ref(`/completedInspections/${inspectionId}`).set(beforeData); // Add completedInspections
+    yield db.ref(`/completedInspectionsList/${inspectionId}`).set(beforeData); // Add completedInspectionsList
+    yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspectionId}`).set(beforeData); // Add propertyInspections
+    yield db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`).set(beforeData); // Add propertyInspectionsList
+    const beforeSnap = yield db.ref(`/inspections/${inspectionId}`).once('value'); // Create before
+    yield db.ref(`/inspections/${inspectionId}`).update(afterData); // set invalid score
+    const afterSnap = yield db.ref(`/inspections/${inspectionId}`).once('value'); // Create after
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
     const wrapped = test.wrap(cloudFunctions.inspectionWrite);
-    yield wrapped(changeSnap, { params: { objectId: inspId } });
+    yield wrapped(changeSnap, { params: { inspectionId } });
 
     // Test result
     const paths = [
-      `/completedInspections/${inspId}/score`,
-      `/completedInspectionsList/${inspId}/score`,
-      `/propertyInspections/${propertyId}/inspections/${inspId}/score`,
-      `/propertyInspectionsList/${propertyId}/inspections/${inspId}/score`
+      `/completedInspections/${inspectionId}/score`,
+      `/completedInspectionsList/${inspectionId}/score`,
+      `/propertyInspections/${propertyId}/inspections/${inspectionId}/score`,
+      `/propertyInspectionsList/${propertyId}/inspections/${inspectionId}/score`
     ];
     const results = yield Promise.all(paths.map(p => db.ref(p).once('value')));
 
@@ -60,12 +60,12 @@ describe('Inspection Write', () => {
   }));
 
   it('should update inspections\' proxy records with new data', () => co(function *() {
-    const inspId = uuid();
+    const inspectionId = uuid();
     const propertyId = uuid();
     const categoryId = uuid();
     const now = Date.now() / 1000;
     const beforeData = {
-      templateName: `name${inspId}`,
+      templateName: `name${inspectionId}`,
       inspector: '23423423',
       inspectorName: 'testor',
       creationDate: now - 100000,
@@ -79,7 +79,7 @@ describe('Inspection Write', () => {
     };
 
     const afterData = Object.assign({}, beforeData, {
-      templateName: `name${inspId}--rev2`,
+      templateName: `name${inspectionId}--rev2`,
       inspectorName: 'testor--rev2',
       score: 8,
       templateCategory: categoryId,
@@ -88,27 +88,27 @@ describe('Inspection Write', () => {
     });
 
     // Setup database
-    yield db.ref(`/inspections/${inspId}`).set(beforeData); // Add inspection
+    yield db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
     yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
     yield db.ref(`/templateCategories/${categoryId}`).set({ name: `name${categoryId}` }); // Add inspections' category
-    yield db.ref(`/completedInspections/${inspId}`).set(beforeData); // Add completedInspections
-    yield db.ref(`/completedInspectionsList/${inspId}`).set(beforeData); // Add completedInspections
-    yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).set(beforeData); // Add propertyInspections
-    yield db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).set(beforeData); // Add propertyInspectionsList
-    const beforeSnap = yield db.ref(`/inspections/${inspId}`).once('value'); // Create before
-    yield db.ref(`/inspections/${inspId}`).update(afterData); // Remove inspection
-    const afterSnap = yield db.ref(`/inspections/${inspId}`).once('value'); // Create after
+    yield db.ref(`/completedInspections/${inspectionId}`).set(beforeData); // Add completedInspections
+    yield db.ref(`/completedInspectionsList/${inspectionId}`).set(beforeData); // Add completedInspections
+    yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspectionId}`).set(beforeData); // Add propertyInspections
+    yield db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`).set(beforeData); // Add propertyInspectionsList
+    const beforeSnap = yield db.ref(`/inspections/${inspectionId}`).once('value'); // Create before
+    yield db.ref(`/inspections/${inspectionId}`).update(afterData); // Remove inspection
+    const afterSnap = yield db.ref(`/inspections/${inspectionId}`).once('value'); // Create after
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
     const wrapped = test.wrap(cloudFunctions.inspectionWrite);
-    yield wrapped(changeSnap, { params: { objectId: inspId } });
+    yield wrapped(changeSnap, { params: { inspectionId } });
 
     // Test result
-    const propertyInspection = yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value');
-    const propertyInspectionList = yield db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).once('value');
-    const completedInspection = yield db.ref(`/completedInspections/${inspId}`).once('value');
-    const completedInspectionList = yield db.ref(`/completedInspectionsList/${inspId}`).once('value');
+    const propertyInspection = yield db.ref(`/propertyInspections/${propertyId}/inspections/${inspectionId}`).once('value');
+    const propertyInspectionList = yield db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`).once('value');
+    const completedInspection = yield db.ref(`/completedInspections/${inspectionId}`).once('value');
+    const completedInspectionList = yield db.ref(`/completedInspectionsList/${inspectionId}`).once('value');
 
     // Assertions
     const expected = Object.assign({}, afterData);
@@ -125,11 +125,11 @@ describe('Inspection Write', () => {
   }));
 
   it('should update completedInspections when inspection becomes completed', () => co(function *() {
-    const inspId = uuid();
+    const inspectionId = uuid();
     const propertyId = uuid();
     const now = Date.now() / 1000;
     const beforeData = {
-      templateName: `name${inspId}`,
+      templateName: `name${inspectionId}`,
       inspector: '23423423',
       inspectorName: 'testor',
       creationDate: now - 100000,
@@ -150,19 +150,19 @@ describe('Inspection Write', () => {
 
     // Setup database
     yield db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
-    yield db.ref(`/inspections/${inspId}`).set(beforeData); // Add inspection
-    const beforeSnap = yield db.ref(`/inspections/${inspId}`).once('value'); // Create before
-    yield db.ref(`/inspections/${inspId}`).update(afterData); // Update inspection
-    const afterSnap = yield db.ref(`/inspections/${inspId}`).once('value'); // Create after
+    yield db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
+    const beforeSnap = yield db.ref(`/inspections/${inspectionId}`).once('value'); // Create before
+    yield db.ref(`/inspections/${inspectionId}`).update(afterData); // Update inspection
+    const afterSnap = yield db.ref(`/inspections/${inspectionId}`).once('value'); // Create after
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
     const wrapped = test.wrap(cloudFunctions.inspectionWrite);
-    yield wrapped(changeSnap, { params: { objectId: inspId } });
+    yield wrapped(changeSnap, { params: { inspectionId } });
 
     // Test result
-    const actual = yield db.ref(`/completedInspections/${inspId}`).once('value');
-    const actualList = yield db.ref(`/completedInspectionsList/${inspId}`).once('value');
+    const actual = yield db.ref(`/completedInspections/${inspectionId}`).once('value');
+    const actualList = yield db.ref(`/completedInspectionsList/${inspectionId}`).once('value');
 
     // Assertions
     const expected = Object.assign({}, afterData);
@@ -173,11 +173,11 @@ describe('Inspection Write', () => {
   }));
 
   it('should ensure an incomplete inspection does not exist in any completed proxy records', () => co(function *() {
-    const inspId = uuid();
+    const inspectionId = uuid();
     const propertyId = uuid();
     const now = Date.now() / 1000;
     const beforeData = {
-      templateName: `name${inspId}`,
+      templateName: `name${inspectionId}`,
       inspector: '23423423',
       inspectorName: 'testor',
       creationDate: now - 100000,
@@ -193,19 +193,19 @@ describe('Inspection Write', () => {
     const afterData = Object.assign({}, beforeData, { updatedLastDate: now });
 
     // Setup database
-    yield db.ref(`/inspections/${inspId}`).set(beforeData); // Add inspection
-    const beforeSnap = yield db.ref(`/inspections/${inspId}`).once('value'); // Create before
-    yield db.ref(`/inspections/${inspId}`).update(afterData); // Update inspection
-    const afterSnap = yield db.ref(`/inspections/${inspId}`).once('value'); // Create after
+    yield db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
+    const beforeSnap = yield db.ref(`/inspections/${inspectionId}`).once('value'); // Create before
+    yield db.ref(`/inspections/${inspectionId}`).update(afterData); // Update inspection
+    const afterSnap = yield db.ref(`/inspections/${inspectionId}`).once('value'); // Create after
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
     const wrapped = test.wrap(cloudFunctions.inspectionWrite);
-    yield wrapped(changeSnap, { params: { objectId: inspId } });
+    yield wrapped(changeSnap, { params: { inspectionId } });
 
     // Test result
-    const actual = yield db.ref(`/completedInspections/${inspId}`).once('value');
-    const actualList = yield db.ref(`/completedInspectionsList/${inspId}`).once('value');
+    const actual = yield db.ref(`/completedInspections/${inspectionId}`).once('value');
+    const actualList = yield db.ref(`/completedInspectionsList/${inspectionId}`).once('value');
 
     // Assertions
     expect(actual.exists()).to.equal(false, '/completedInspections proxy does not exist');
@@ -248,7 +248,7 @@ describe('Inspection Write', () => {
     // Execute
     const changeSnap = test.makeChange(snap, snap);
     const wrapped = test.wrap(cloudFunctions.inspectionWrite);
-    yield wrapped(changeSnap, { params: { objectId: insp1Id } });
+    yield wrapped(changeSnap, { params: { inspectionId: insp1Id } });
 
     // Test result
     const propertySnap = yield db.ref(`/properties/${propertyId}`).once('value');
