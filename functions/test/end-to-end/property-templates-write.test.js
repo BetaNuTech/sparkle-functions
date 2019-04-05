@@ -22,7 +22,7 @@ describe('Property Templates Write', () => {
     // Execute
     const changeSnap = test.makeChange(propertyBeforeSnap, propertyAfterSnap);
     const wrapped = test.wrap(cloudFunctions.propertyTemplatesWrite);
-    yield wrapped(changeSnap, { params: { objectId: propertyId } });
+    yield wrapped(changeSnap, { params: { propertyId } });
 
     // Test result
     const actual = yield db.ref(`/propertyTemplates/${propertyId}`).once('value');
@@ -52,7 +52,7 @@ describe('Property Templates Write', () => {
     // Execute
     const changeSnap = test.makeChange(propertyBeforeSnap, propertyAfterSnap);
     const wrapped = test.wrap(cloudFunctions.propertyTemplatesWrite);
-    yield wrapped(changeSnap, { params: { objectId: propertyId } });
+    yield wrapped(changeSnap, { params: { propertyId } });
 
     // Test result
     const actual = yield db.ref(`/propertyTemplates/${propertyId}`).once('value');
@@ -86,7 +86,7 @@ describe('Property Templates Write', () => {
     // Execute
     const changeSnap = test.makeChange(propertyBeforeSnap, propertyAfterSnap);
     const wrapped = test.wrap(cloudFunctions.propertyTemplatesWrite);
-    yield wrapped(changeSnap, { params: { objectId: propertyId } });
+    yield wrapped(changeSnap, { params: { propertyId } });
 
     // Test result
     const actual = yield db.ref(`/propertyTemplates/${propertyId}`).once('value');

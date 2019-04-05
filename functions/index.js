@@ -63,11 +63,11 @@ exports.inspectionMigrationDateWriteStaging = functionsStagingDatabase.ref('/ins
 
 
 // Property templates onWrite
-exports.propertyTemplatesWrite = functions.database.ref('/properties/{objectId}/templates').onWrite(
-  properties.templatesOnWriteHandler(db)
+exports.propertyTemplatesWrite = functions.database.ref('/properties/{propertyId}/templates').onWrite(
+  properties.createOnTemplatesWriteHandler(db)
 );
-exports.propertyTemplatesWriteStaging = functionsStagingDatabase.ref('/properties/{objectId}/templates').onWrite(
-  properties.templatesOnWriteHandler(dbStaging)
+exports.propertyTemplatesWriteStaging = functionsStagingDatabase.ref('/properties/{propertyId}/templates').onWrite(
+  properties.createOnTemplatesWriteHandler(dbStaging)
 );
 
 
