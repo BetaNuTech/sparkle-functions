@@ -11,7 +11,7 @@ describe('Inspections', function() {
           before: { exists: () => true },
           after: { exists: () => false }
         },
-        { params: { objectId: '1' } }
+        { params: { inspectionId: '1' } }
       );
       expect(actual).to.be.an.instanceof(Promise, 'returned a promise');
       return actual.then((result) => expect(result).to.be.an('object', 'has update hash'))

@@ -1,15 +1,10 @@
 const { expect } = require('chai');
-const templateCategories = require('./index');
+const uuid = require('../test-helpers/uuid');
+const onDeleteHandler = require('./on-delete-handler');
 
-const { onDeleteHandler } = templateCategories;
-const uuid = (function() {
-  let i = 0;
-  return () => `-${++i}`;
-})();
-
-describe('Template Categories', function() {
-  describe('On deletion', function() {
-    it('should lookup all templates associated with template category', function() {
+describe('Template Categories', () => {
+  describe('On delete handler', () => {
+    it('should lookup all templates associated with template category', () => {
       const expected = uuid();
       const templateCategory = createDataSnapshot({}, expected);
       const db = createDatabase();
@@ -20,7 +15,7 @@ describe('Template Categories', function() {
       return onDeleteHandler(db)(templateCategory, { params: { objectId: expected } });
     });
 
-    it('should apply all updates to the database', function() {
+    it('should apply all updates to the database', () => {
       const template1 = createDataSnapshot().val();
       const template2 = createDataSnapshot().val();
       const payload = Object.assign({}, template1, template2);

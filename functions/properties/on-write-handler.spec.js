@@ -11,7 +11,7 @@ describe('Properties', function() {
           before: { exists: () => true, val: () => ({ templates: null }) },
           after: { exists: () => false }
         },
-        { params: { objectId: '1' } }
+        { params: { propertyId: '1' } }
       );
       expect(actual).to.be.an.instanceof(Promise, 'returned a promise');
       return actual.then((result) => expect(result).to.be.an('object', 'has update hash'))

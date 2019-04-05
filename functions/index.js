@@ -8,48 +8,42 @@ const properties = require('./properties');
 const propertyTemplates = require('./property-templates');
 const deficientItems = require('./deficient-items');
 const regTokens = require('./reg-tokens');
+
 const config = functions.config().firebase;
 const defaultApp = admin.initializeApp(config);
-
 const db = defaultApp.database();
 const auth = admin.auth();
+const storage = admin.storage();
 
 // Staging
 const functionsStagingDatabase = functions.database.instance('staging-sapphire-inspections');
 const dbStaging = defaultApp.database('https://staging-sapphire-inspections.firebaseio.com');
-const storage = admin.storage();
-
 
 // Send API version
-
 exports.latestVersion = functions.https.onRequest((request, response) =>
   response.status(200).send({ios: '1.1.0'})
 );
 
 
 // Latest Completed Inspections
-
 exports.latestCompleteInspection = functions.https.onRequest(
   inspections.getLatestCompleted(db)
 );
-
 exports.latestCompleteInspectionStaging = functions.https.onRequest(
   inspections.getLatestCompleted(dbStaging)
 );
 
 
 // Default Database Functions
-
-exports.sendPushMessage = functions.database.ref('/sendMessages/{objectId}').onWrite(
+exports.sendPushMessage = functions.database.ref('/sendMessages/{messageId}').onWrite(
   pushMessages.createOnWriteHandler(db, admin.messaging())
 );
-
-exports.sendPushMessageStaging = functionsStagingDatabase.ref('/sendMessages/{objectId}').onWrite(
+exports.sendPushMessageStaging = functionsStagingDatabase.ref('/sendMessages/{messageId}').onWrite(
   pushMessages.createOnWriteHandler(dbStaging, admin.messaging())
 );
 
-// POST /sendMessages
 
+// POST /sendMessages
 exports.createSendMessages = functions.https.onRequest(
   pushMessages.onCreateRequestHandler(db, auth)
 );
@@ -57,33 +51,31 @@ exports.createSendMessagesStaging = functions.https.onRequest(
   pushMessages.onCreateRequestHandler(dbStaging, auth)
 );
 
+
 // For migrating to a new architecture only, setting a newer date
 // This allow the updatedLastDate to stay as-is (make sure client doesn't update it though)
-exports.inspectionMigrationDateWrite = functions.database.ref('/inspections/{objectId}/migrationDate').onWrite(
+exports.inspectionMigrationDateWrite = functions.database.ref('/inspections/{inspectionId}/migrationDate').onWrite(
   inspections.createOnAttributeWriteHandler(db)
 );
-
-exports.inspectionMigrationDateWriteStaging = functionsStagingDatabase.ref('/inspections/{objectId}/migrationDate').onWrite(
+exports.inspectionMigrationDateWriteStaging = functionsStagingDatabase.ref('/inspections/{inspectionId}/migrationDate').onWrite(
   inspections.createOnAttributeWriteHandler(dbStaging)
 );
 
 
 // Property templates onWrite
-exports.propertyTemplatesWrite = functions.database.ref('/properties/{objectId}/templates').onWrite(
-  properties.templatesOnWriteHandler(db)
+exports.propertyTemplatesWrite = functions.database.ref('/properties/{propertyId}/templates').onWrite(
+  properties.createOnTemplatesWriteHandler(db)
 );
-
-exports.propertyTemplatesWriteStaging = functionsStagingDatabase.ref('/properties/{objectId}/templates').onWrite(
-  properties.templatesOnWriteHandler(dbStaging)
+exports.propertyTemplatesWriteStaging = functionsStagingDatabase.ref('/properties/{propertyId}/templates').onWrite(
+  properties.createOnTemplatesWriteHandler(dbStaging)
 );
 
 
 // Property onWrite
-exports.propertyWrite = functions.database.ref('/properties/{objectId}').onWrite(
+exports.propertyWrite = functions.database.ref('/properties/{propertyId}').onWrite(
   properties.createOnWriteHandler(db)
 );
-
-exports.propertyWriteStaging = functionsStagingDatabase.ref('/properties/{objectId}').onWrite(
+exports.propertyWriteStaging = functionsStagingDatabase.ref('/properties/{propertyId}').onWrite(
   properties.createOnWriteHandler(dbStaging)
 );
 
@@ -92,7 +84,6 @@ exports.propertyWriteStaging = functionsStagingDatabase.ref('/properties/{object
 exports.propertyDelete = functions.database.ref('/properties/{propertyId}').onDelete(
   properties.createOnDeleteHandler(db, storage)
 );
-
 exports.propertyDeleteStaging = functionsStagingDatabase.ref('/properties/{propertyId}').onDelete(
   properties.createOnDeleteHandler(dbStaging, storage)
 );
@@ -102,7 +93,6 @@ exports.propertyDeleteStaging = functionsStagingDatabase.ref('/properties/{prope
 exports.deficientItemsWrite = functions.database.ref('/inspections/{inspectionId}/updatedLastDate').onWrite(
   deficientItems.createOnInspectionWrite(db)
 );
-
 exports.deficientItemsWriteStaging = functionsStagingDatabase.ref('/inspections/{inspectionId}/updatedLastDate').onWrite(
   deficientItems.createOnInspectionWrite(dbStaging)
 );
@@ -110,50 +100,37 @@ exports.deficientItemsWriteStaging = functionsStagingDatabase.ref('/inspections/
 exports.deficientItemsPropertyMetaSync = functions.database.ref('/propertyInspectionDeficientItems/{propertyId}/{inspectionId}/{itemId}/state').onUpdate(
   deficientItems.createOnDiStateUpdate(db)
 );
-
 exports.deficientItemsPropertyMetaSyncStaging = functionsStagingDatabase.ref('/propertyInspectionDeficientItems/{propertyId}/{inspectionId}/{itemId}/state').onUpdate(
   deficientItems.createOnDiStateUpdate(dbStaging)
 );
 
 
 // Template onWrite
-exports.templateWrite = functions.database.ref('/templates/{objectId}').onWrite(
+exports.templateWrite = functions.database.ref('/templates/{templateId}').onWrite(
   templates.createOnWriteHandler(db)
 );
-
-exports.templateWriteStaging = functionsStagingDatabase.ref('/templates/{objectId}').onWrite(
+exports.templateWriteStaging = functionsStagingDatabase.ref('/templates/{templateId}').onWrite(
   templates.createOnWriteHandler(dbStaging)
 );
 
 
 // Inspection updatedLastDate onWrite
-exports.inspectionUpdatedLastDateWrite = functions.database.ref('/inspections/{objectId}/updatedLastDate').onWrite(
+exports.inspectionUpdatedLastDateWrite = functions.database.ref('/inspections/{inspectionId}/updatedLastDate').onWrite(
   inspections.createOnAttributeWriteHandler(db)
 );
-
-exports.inspectionUpdatedLastDateWriteStaging = functionsStagingDatabase.ref('/inspections/{objectId}/updatedLastDate').onWrite(
+exports.inspectionUpdatedLastDateWriteStaging = functionsStagingDatabase.ref('/inspections/{inspectionId}/updatedLastDate').onWrite(
   inspections.createOnAttributeWriteHandler(dbStaging)
 );
 
-// exports.inspectionCreate = functions.database.ref('/inspections/{objectId}').onCreate(event => {
-//     var objectId = event.params.objectId;
-
-//     // When the data is created, or new root data added/deleted.
-//     if (event.data.exists()) {
-//         var inspection = event.data.current.val();
-//         inspections.processWrite(inspection);
-//     } else {
-//         console.error("inspectionCreate: Inspection created, but data is missing");
-//     }
-// });
 
 // Inspection onWrite
-exports.inspectionWrite = functions.database.ref('/inspections/{objectId}').onWrite(
+exports.inspectionWrite = functions.database.ref('/inspections/{inspectionId}').onWrite(
   inspections.createOnWriteHandler(db)
 );
-exports.inspectionWriteStaging = functionsStagingDatabase.ref('/inspections/{objectId}').onWrite(
+exports.inspectionWriteStaging = functionsStagingDatabase.ref('/inspections/{inspectionId}').onWrite(
   inspections.createOnWriteHandler(dbStaging)
 );
+
 
 // Inspection onDelete
 exports.inspectionDelete = functions.database.ref('/inspections/{inspectionId}').onDelete(
@@ -163,17 +140,17 @@ exports.inspectionDeleteStaging = functionsStagingDatabase.ref('/inspections/{in
   inspections.createOnDeleteHandler(dbStaging, storage)
 );
 
-// Template Category Delete
 
-exports.templateCategoryDelete = functions.database.ref('/templateCategories/{objectId}').onDelete(
-  templateCategories.onDeleteHandler(db)
+// Template Category Delete
+exports.templateCategoryDelete = functions.database.ref('/templateCategories/{categoryId}').onDelete(
+  templateCategories.createOnDeleteHandler(db)
 );
-exports.templateCategoryDeleteStaging = functionsStagingDatabase.ref('/templateCategories/{objectId}').onDelete(
-  templateCategories.onDeleteHandler(dbStaging)
+exports.templateCategoryDeleteStaging = functionsStagingDatabase.ref('/templateCategories/{categoryId}').onDelete(
+  templateCategories.createOnDeleteHandler(dbStaging)
 );
+
 
 // GET Inspection PDF Report
-
 exports.inspectionPdfReport = functions.https.onRequest(
   inspections.createOnGetPDFReportHandler(db, admin.messaging(), auth)
 );
@@ -181,8 +158,8 @@ exports.inspectionPdfReportStaging = functions.https.onRequest(
   inspections.createOnGetPDFReportHandler(dbStaging, admin.messaging(), auth)
 );
 
-// Message Subscribers
 
+// Message Subscribers
 exports.propertyMetaSync = properties.cron.createSyncMeta('properties-sync', functions.pubsub, db);
 exports.propertyMetaSyncStaging = properties.cron.createSyncMeta('staging-properties-sync', functions.pubsub, dbStaging);
 
