@@ -1,12 +1,13 @@
 const assert = require('assert');
 const log = require('../utils/logger');
 const config = require('../config');
+const {getDiffs} = require('../utils/object-differ');
 const createDeficientItems = require('../inspections/utils/create-deficient-items');
 const findRemovedKeys = require('../utils/find-removed-keys');
 const getLatestItemAdminEditTimestamp = require('../inspections/utils/get-latest-admin-edit-timestamp');
 
 const LOG_PREFIX = 'deficient-items: on-inspection-write:';
-const DEFICIENT_ITEM_PROXY_ATTRS = config.deficientItems.inspectionItemProxyAttrs;
+const DEFICIENT_ITEM_PROXY_ATTRS = Object.keys(config.deficientItems.inspectionItemProxyAttrs);
 
 /**
  * Factory for Deficient Items sync on Inspection write
@@ -65,7 +66,7 @@ module.exports = function createOnInspectionWriteHandler(db) {
         const updateDeficientItemId = updateDeficientItemIds[i];
         const deficientItem = currentDeficientItems[updateDeficientItemId];
         const sourceItem = inspection.template.items[updateDeficientItemId] || {};
-        const itemUpdates = getDefItemDiffs(sourceItem, deficientItem, DEFICIENT_ITEM_PROXY_ATTRS);
+        const itemUpdates = getDiffs(expectedDeficientItems[updateDeficientItemId], deficientItem, DEFICIENT_ITEM_PROXY_ATTRS);
         const latestAdminEditTimestamp = getLatestItemAdminEditTimestamp(sourceItem) || 0;
 
         // Set any latest admin edit as the last updated timestamp
@@ -120,45 +121,4 @@ async function lookupPropertyIdByInspectionId(db, inspectionId) {
   }
 
   return ''; // unfound
-}
-
-/**
- * Get differences between an inspection item
- * and its' source inspection item for the given
- * attributes
- * @param  {Object} src
- * @param  {Object} dest
- * @param  {Object} attrs - key of attributes to diff
- * @return {Object} - diff object
- */
-function getDefItemDiffs(src = {}, dest = {}, attrs = {}) {
-  const updates = Object.create(null);
-
-  Object.keys(attrs)
-  .filter(diAttr => Boolean(src[attrs[diAttr]])) // Ignore falsey source values
-  .filter(diAttr => diff(src[attrs[diAttr]], dest[diAttr])) // different attrs only
-  .forEach(diAttr => {
-    const sourceItemAttr = attrs[diAttr];
-    if (typeof src[sourceItemAttr] === 'object') {
-      return updates[diAttr] = JSON.parse(JSON.stringify(src[sourceItemAttr]));
-    } else {
-      return updates[diAttr] = src[sourceItemAttr];
-    }
-  });
-
-  return updates;
-}
-
-/**
- * Determine if two values are different
- * @param  {Any} a
- * @param  {Any} b
- * @return {Boolean}
- */
-function diff(a, b) {
-  if (typeof a === 'object' && typeof b === 'object') {
-    return JSON.stringify(a) !== JSON.stringify(b); // deep equal
-  } else {
-    return a !== b;
-  }
 }

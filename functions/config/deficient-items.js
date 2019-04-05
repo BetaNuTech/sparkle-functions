@@ -11,6 +11,7 @@ module.exports = {
     itemAdminEdits: 'adminEdits',
     itemInspectorNotes: 'inspectorNotes',
     itemMainInputSelection: 'mainInputSelection',
-    itemPhotosData: 'photosData'
+    itemPhotosData: 'photosData',
+    sectionSubtitle: 'textInputValue'
   }
 };
