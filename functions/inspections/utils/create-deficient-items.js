@@ -67,7 +67,7 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
     let sectionSubtitle = undefined;
     if (sectionType === 'multi') {
       const [firstItem] = getSectionItems(item.sectionId, inspection);
-      if (firstItem.itemType === 'text_input' && firstItem.title) sectionSubtitle = firstItem.title;
+      if (firstItem.itemType === 'text_input' && firstItem.textInputValue) sectionSubtitle = firstItem.textInputValue;
     }
 
     // Use latest admin edit or inspection's last update date
