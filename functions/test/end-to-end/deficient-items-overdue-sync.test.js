@@ -139,9 +139,10 @@ describe('Deficient Items Overdue Sync', () => {
     const result = await Promise.all([
       db.ref(`/properties/${propertyId}/numOfRequiredActionsForDeficientItems`).once('value'),
       db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/state`).once('value'),
-      db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/stateHistory`).once('value')
+      db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/stateHistory`).once('value'),
+      db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/updatedAt`).once('value')
     ]);
-    const [actualReqActions, actualState, allStateHistory]  = result.map(r => r.val());
+    const [actualReqActions, actualState, allStateHistory, actualUpdatedAt]  = result.map(r => r.val());
     const actualStateHistory = allStateHistory ? allStateHistory[Object.keys(allStateHistory)[0]] : {}; // Get 1st from hash
 
     // Assertions
@@ -149,5 +150,6 @@ describe('Deficient Items Overdue Sync', () => {
     expect(actualStateHistory.state).to.equal(expected.state, 'updated state history with latest state');
     expect(actualStateHistory.startDate).to.equal(expected.startDate, 'updated state history with current start date');
     expect(actualReqActions).to.equal(expected.numOfRequiredActionsForDeficientItems, 'updated property meta');
+    expect(actualUpdatedAt).to.be.a('number', 'modified DI updatedAt');
   });
 });

@@ -37,6 +37,10 @@ module.exports = function createSyncOverdueDeficientItemshandler(topic = '', pub
               await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/stateHistory`).push(createStateHistory(diItem));
               updates[`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/stateHistory`] = 'added';
 
+              // Modify updatedAt to denote changes
+              await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/updatedAt`).set(Date.now() / 1000);
+              updates[`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/updatedAt`] = 'updated';
+
               // Sync DI's changes to its' property's metadata
               const metaUpdates = await processPropertyMeta(db, propertyId);
               log.info(`${LOG_PREFIX} property: ${propertyId} | inspection: ${inspectionId} | item: ${itemId} | deficiency overdue`);
