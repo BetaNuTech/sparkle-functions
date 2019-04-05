@@ -16,7 +16,7 @@ module.exports = function createPushMessagesOnWriteHandler(db, messaging) {
 
     const pushMessage = change.after.val();
     const recipientId = pushMessage.recipientId;
-    const messageId = event.params.objectId;
+    const {messageId} = event.params;
 
     yield sendToRecipient(
       db,
