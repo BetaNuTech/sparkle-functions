@@ -146,21 +146,36 @@ describe('Deficient Items Create and Delete', () => {
     const propertyId = uuid();
     const inspectionId = uuid();
     const itemId = uuid();
+    const itemTextValueId = uuid();
+    const sectionId = uuid();
     const beforeData = Object.freeze(mocking.createInspection({
       deficienciesExist: true,
       inspectionCompleted: true,
       trackDeficientItems: true,
       property: propertyId,
 
-      // Create single deficient item on inspection
       template: {
         items: {
+          // First item text input (sub title target)
+          [itemTextValueId]: mocking.createItem({
+            sectionId,
+            itemType: 'text_input',
+            index: 0, // required
+            textInputValue: 'initial'
+          }),
+
+          // Create single deficient item on inspection
           [itemId]: mocking.createCompletedMainInputItem(
             'fiveactions_onetofive',
             true,
-            { mainInputSelection: 0 } // Require deficient selection
-          )
-        }
+            {
+              mainInputSelection: 0, // Require deficient selection
+              sectionId,
+              index: 1 // required
+            }
+          ),
+        },
+        sections: { [sectionId]: { section_type: 'multi' } } // required for sectionSubtitle
       }
     }));
 
@@ -168,7 +183,8 @@ describe('Deficient Items Create and Delete', () => {
       itemInspectorNotes: 'note',
       itemMainInputSelection: 1, // still a deficient item eligible score
       itemPhotosData: { '1554325519707': { caption: 'test', downloadURL: 'https:google.com' } },
-      itemAdminEdits: { [uuid()]: { action: 'selected B', admin_name: 'testor', admin_uid: uuid(), edit_date: 1554227737 } }
+      itemAdminEdits: { [uuid()]: { action: 'selected B', admin_name: 'testor', admin_uid: uuid(), edit_date: 1554227737 } },
+      sectionSubtitle: 'updated'
     });
 
     // List of all proxy attrs synced to source item
@@ -191,8 +207,13 @@ describe('Deficient Items Create and Delete', () => {
       const wrapped = test.wrap(cloudFunctions.deficientItemsWrite);
       await wrapped(changeSnap, { params: { inspectionId } });
 
-      // Update source item's proxyable attribute
-      await db.ref(`/inspections/${inspectionId}/template/items/${itemId}/${sourceAttr}`).set(expected); // Add source item update
+      if (diAttr === 'sectionSubtitle') {
+        // Update 1st text input item's value in source item's multi-section
+        await db.ref(`/inspections/${inspectionId}/template/items/${itemTextValueId}/${sourceAttr}`).set(expected);
+      } else {
+        // Update source item's proxyable attribute
+        await db.ref(`/inspections/${inspectionId}/template/items/${itemId}/${sourceAttr}`).set(expected);
+      }
 
       // Execute again for DI update
       await wrapped(changeSnap, { params: { inspectionId } });
