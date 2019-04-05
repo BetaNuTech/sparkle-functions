@@ -35,7 +35,7 @@ describe('Templates Write', () => {
       // Execute
       const changeSnap = test.makeChange(beforeSnap, afterSnap);
       const wrapped = test.wrap(cloudFunctions.templateWrite);
-      yield wrapped(changeSnap, { params: { objectId: tmplId } });
+      yield wrapped(changeSnap, { params: { templateId: tmplId } });
 
       // Test result
       const paths = [
@@ -76,7 +76,7 @@ describe('Templates Write', () => {
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
     const wrapped = test.wrap(cloudFunctions.templateWrite);
-    yield wrapped(changeSnap, { params: { objectId: tmplId } });
+    yield wrapped(changeSnap, { params: { templateId: tmplId } });
 
     // Test result
     const actual = yield Promise.all([
@@ -128,7 +128,7 @@ describe('Templates Write', () => {
       // Execute
       const changeSnap = test.makeChange(beforeSnap, afterSnap);
       const wrapped = test.wrap(cloudFunctions.templateWrite);
-      yield wrapped(changeSnap, { params: { objectId: tmplId } });
+      yield wrapped(changeSnap, { params: { templateId: tmplId } });
 
       // Test result
       const paths = [
@@ -162,7 +162,7 @@ describe('Templates Write', () => {
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
     const wrapped = test.wrap(cloudFunctions.templateWrite);
-    yield wrapped(changeSnap, { params: { objectId: tmplId } });
+    yield wrapped(changeSnap, { params: { templateId: tmplId } });
 
     // Test result
     const actual = yield db.ref(`/templatesList/${tmplId}`).once('value');
@@ -190,7 +190,7 @@ describe('Templates Write', () => {
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
     const wrapped = test.wrap(cloudFunctions.templateWrite);
-    yield wrapped(changeSnap, { params: { objectId: tmplId } });
+    yield wrapped(changeSnap, { params: { templateId: tmplId } });
 
     // Test result
     const actual = yield db.ref(`/templatesList/${tmplId}`).once('value');
@@ -215,7 +215,7 @@ describe('Templates Write', () => {
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
     const wrapped = test.wrap(cloudFunctions.templateWrite);
-    yield wrapped(changeSnap, { params: { objectId: tmplId } });
+    yield wrapped(changeSnap, { params: { templateId: tmplId } });
 
     // Test result
     const actual = yield db.ref(`/templatesList/${tmplId}`).once('value');
