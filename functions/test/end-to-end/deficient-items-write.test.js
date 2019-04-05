@@ -275,7 +275,7 @@ describe('Deficient Items Create and Delete', () => {
     await wrapped(changeSnap, { params: { inspectionId } });
 
     // Test result
-    const actualSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/itemDataLastUpdatedTimestamp`).once('value');
+    const actualSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/itemDataLastUpdatedDate`).once('value');
     const actual = actualSnap.val();
 
     // Assertions

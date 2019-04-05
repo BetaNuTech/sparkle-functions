@@ -5,12 +5,14 @@ const getLatestItemAdminEditTimestamp = require('./get-latest-admin-edit-timesta
 const LOG_PREFIX = 'inspections: utils: create-deficient-items';
 const DEFICIENT_ITEM_ELIGIBLE = config.inspectionItems.deficientListEligible;
 const DEFAULT_DEFICIENT_ITEM = Object.freeze({
+  createdAt: 0,
+  updatedAt: 0,
+  startDates: null,
+  currentStartDate: 0,
+  stateHistory: null,
   state: 'requires-action',
-  startTimestamps: null,
-  currentStartTimestamp: 0,
   dueDates: null,
   currentDueDate: 0,
-  deficientTimestamp: 0,
   plansToFix: null,
   currentPlanToFix: '',
   responsibilityGroups: null,
@@ -19,6 +21,10 @@ const DEFAULT_DEFICIENT_ITEM = Object.freeze({
   reasonsIncomplete: null,
   currentReasonIncomplete: '',
   completedPhotos: null,
+  itemDataLastUpdatedDate: 0,
+  sectionTitle: '',
+  sectionSubtitle: '',
+  sectionType: '',
   itemAdminEdits: null,
   itemInspectorNotes: '',
   itemTitle: '',
@@ -71,12 +77,14 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
     }
 
     // Use latest admin edit or inspection's last update date
-    const itemDataLastUpdatedTimestamp = getLatestItemAdminEditTimestamp(item) || inspection.updatedLastDate;
+    const itemDataLastUpdatedDate = getLatestItemAdminEditTimestamp(item) || inspection.updatedLastDate;
 
     result[item.id] = Object.assign(
       {},
       DEFAULT_DEFICIENT_ITEM,
       {
+        createdAt: Date.now() / 1000,
+        updatedAt: Date.now() / 1000,
         itemMainInputType: item.mainInputType,
         sectionTitle: section.title || undefined,
         itemTitle: item.title,
@@ -84,7 +92,7 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
         itemAdminEdits: item.adminEdits ? deepClone(item.adminEdits) : null,
         itemPhotosData: item.photosData ? deepClone(item.photosData) : null,
         itemMainInputSelection: item.mainInputSelection,
-        itemDataLastUpdatedTimestamp,
+        itemDataLastUpdatedDate,
         sectionSubtitle,
         sectionType,
       }

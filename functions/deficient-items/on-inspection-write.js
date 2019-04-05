@@ -70,8 +70,8 @@ module.exports = function createOnInspectionWriteHandler(db) {
         const latestAdminEditTimestamp = getLatestItemAdminEditTimestamp(sourceItem) || 0;
 
         // Set any latest admin edit as the last updated timestamp
-        if (latestAdminEditTimestamp && latestAdminEditTimestamp > deficientItem.itemDataLastUpdatedTimestamp) {
-          itemUpdates.itemDataLastUpdatedTimestamp = latestAdminEditTimestamp;
+        if (latestAdminEditTimestamp && latestAdminEditTimestamp > deficientItem.itemDataLastUpdatedDate) {
+          itemUpdates.itemDataLastUpdatedDate = latestAdminEditTimestamp;
         }
 
         // Write, log, and set in memory w/ any updates
