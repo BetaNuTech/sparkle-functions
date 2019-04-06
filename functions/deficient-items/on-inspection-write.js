@@ -70,12 +70,13 @@ module.exports = function createOnInspectionWriteHandler(db) {
         const latestAdminEditTimestamp = getLatestItemAdminEditTimestamp(sourceItem) || 0;
 
         // Set any latest admin edit as the last updated timestamp
-        if (latestAdminEditTimestamp && latestAdminEditTimestamp > deficientItem.itemDataLastUpdatedTimestamp) {
-          itemUpdates.itemDataLastUpdatedTimestamp = latestAdminEditTimestamp;
+        if (latestAdminEditTimestamp && latestAdminEditTimestamp > deficientItem.itemDataLastUpdatedDate) {
+          itemUpdates.itemDataLastUpdatedDate = latestAdminEditTimestamp;
         }
 
         // Write, log, and set in memory w/ any updates
         if (Object.keys(itemUpdates).length) {
+          itemUpdates.updatedAt = Date.now() / 1000; // modify updatedAt
           await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${updateDeficientItemId}`).update(itemUpdates);
           updates[`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${updateDeficientItemId}`] = 'updated';
           log.info(`${LOG_PREFIX} updating out of date deficient item ${updateDeficientItemId}`);

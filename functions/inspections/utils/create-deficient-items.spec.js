@@ -67,6 +67,28 @@ describe('Inspections | Utils | Create Deficient Items', () => {
     });
   });
 
+  it('should set an initial "createdAt" timestamp', () => {
+    const itemId = uuid();
+    const actual = createDeficientItems(
+      createInspection({},
+        { [itemId]: createItem('twoactions_checkmarkx', true) }
+      )
+    )[itemId].createdAt;
+    expect(actual).to.be.ok;
+    expect(actual).to.be.a('number');
+  });
+
+  it('should set an initial "updatedAt" timestamp', () => {
+    const itemId = uuid();
+    const actual = createDeficientItems(
+      createInspection({},
+        { [itemId]: createItem('twoactions_checkmarkx', true) }
+      )
+    )[itemId].updatedAt;
+    expect(actual).to.be.ok;
+    expect(actual).to.be.a('number');
+  });
+
   it('should set the default state of deficient items to "requires-action"', () => {
     const itemId = uuid();
     const expected = 'requires-action';
@@ -293,7 +315,7 @@ describe('Inspections | Utils | Create Deficient Items', () => {
       }
     ].forEach(({ data, expected, message }) => {
       const actual = createDeficientItems(data)[itemId];
-      expect(actual.itemDataLastUpdatedTimestamp).to.equal(expected, message);
+      expect(actual.itemDataLastUpdatedDate).to.equal(expected, message);
     });
   });
 
