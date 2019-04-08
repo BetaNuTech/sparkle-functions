@@ -18,11 +18,11 @@ describe('Deficient Items Create and Delete', () => {
     const beforeData = mocking.createInspection({
       deficienciesExist: true,
       inspectionCompleted: true,
-      trackDeficientItems: true,
       property: propertyId,
 
       // Create single deficient item on inspection
       template: {
+        trackDeficientItems: true,
         items: {
           [itemId]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true)
         }
@@ -57,11 +57,11 @@ describe('Deficient Items Create and Delete', () => {
     const beforeData = mocking.createInspection({
       deficienciesExist: true,
       inspectionCompleted: true,
-      trackDeficientItems: true,
       property: propertyId,
 
       // Create two deficient items on inspection
       template: {
+        trackDeficientItems: true,
         items: {
           [item1Id]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true, { mainInputSelection: 1 }), // target to make non-deficient
           [item2Id]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true, { mainInputSelection: 1 })
@@ -103,11 +103,11 @@ describe('Deficient Items Create and Delete', () => {
     const beforeData = mocking.createInspection({
       deficienciesExist: true,
       inspectionCompleted: true,
-      trackDeficientItems: true,
       property: propertyId,
 
       // Create two NON-deficient items on inspection
       template: {
+        trackDeficientItems: true,
         items: {
           [item1Id]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', false),
           [item2Id]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', false)
@@ -151,10 +151,10 @@ describe('Deficient Items Create and Delete', () => {
     const beforeData = Object.freeze(mocking.createInspection({
       deficienciesExist: true,
       inspectionCompleted: true,
-      trackDeficientItems: true,
       property: propertyId,
 
       template: {
+        trackDeficientItems: true,
         items: {
           // First item text input (sub title target)
           [itemTextValueId]: mocking.createItem({
@@ -248,11 +248,11 @@ describe('Deficient Items Create and Delete', () => {
     const beforeData = mocking.createInspection({
       deficienciesExist: true,
       inspectionCompleted: true,
-      trackDeficientItems: true,
       property: propertyId,
 
       // Create single deficient item on inspection
       template: {
+        trackDeficientItems: true,
         items: {
           [itemId]: mocking.createCompletedMainInputItem(
             'fiveactions_onetofive',
@@ -296,11 +296,11 @@ describe('Deficient Items Create and Delete', () => {
     const beforeData = mocking.createInspection({
       deficienciesExist: true,
       inspectionCompleted: true,
-      trackDeficientItems: true,
       property: propertyId,
 
       // Create two deficient items on inspection
       template: {
+        trackDeficientItems: true,
         items: {
           [item1Id]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true),
           [item2Id]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', false) // target to make deficient

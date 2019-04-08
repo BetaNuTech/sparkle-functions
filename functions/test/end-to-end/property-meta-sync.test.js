@@ -37,20 +37,26 @@ describe('Property Meta Sync', () => {
     await db.ref(`/inspections/${uuid()}`).set(mocking.createInspection({
       property: property1Id,
       inspectionCompleted: true,
-      trackDeficientItems: true,
       creationDate: newerDate,
       score: newerScore,
-      // Create template w/ 1 deficient item
-      template: { items: { [uuid()]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) } }
+      template: {
+        trackDeficientItems: true,
+
+        // Create template w/ 1 deficient item
+        items: { [uuid()]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) }
+      }
     })); // Add property #1 inspection
     await db.ref(`/inspections/${uuid()}`).set(mocking.createInspection({
       property: property1Id,
       inspectionCompleted: true,
-      trackDeficientItems: true,
       creationDate: olderDate,
       score: olderScore,
-      // Create template w/ 1 deficient item
-      template: { items: { [uuid()]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) } }
+      template: {
+        trackDeficientItems: true,
+
+        // Create template w/ 1 deficient item
+        items: { [uuid()]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) }
+      }
     })); // Add property #1 inspection
     await db.ref(`/inspections/${uuid()}`).set(mocking.createInspection({ property: property2Id, inspectionCompleted: true, creationDate: newerDate, score: newerScore })); // Add property #2 inspection
     await db.ref(`/inspections/${uuid()}`).set(mocking.createInspection({ property: property2Id, inspectionCompleted: true, creationDate: olderDate, score: olderScore })); // Add property #2 inspection
@@ -105,21 +111,27 @@ describe('Property Meta Sync', () => {
     const inspectionOne = mocking.createInspection({
       property: propertyId,
       inspectionCompleted: true,
-      trackDeficientItems: true,
       creationDate: newest,
       score: 65,
-      // Create template w/ 1 deficient item
-      template: { items: { [defItem1Id]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) } }
+      template: {
+        trackDeficientItems: true,
+
+        // Create template w/ 1 deficient item
+        items: { [defItem1Id]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) }
+      }
     });
     const defItem2Id = uuid();
     const inspectionTwo = mocking.createInspection({
       property: propertyId,
       inspectionCompleted: true,
-      trackDeficientItems: true,
       creationDate: oldest,
       score: 25,
-      // Create template w/ 1 deficient item
-      template: { items: { [defItem2Id]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) } }
+      template: {
+        trackDeficientItems: true,
+
+        // Create template w/ 1 deficient item
+        items: { [defItem2Id]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) }
+      }
     });
     const expected = {
       numOfRequiredActionsForDeficientItems: 1 // updated via latest state from `/propertyInspectionDeficientItems`

@@ -120,8 +120,8 @@ function updateLastInspectionAttrs(config = { propertyId: '', inspections: [], u
  */
 function updateDeficientItemsAttrs(config = { propertyId: '', inspections: [], deficientItems: [], updates: {} }) {
   const deficientInspectionItems = config.inspections
-    .filter(({ inspectionCompleted, trackDeficientItems, template }) =>
-      inspectionCompleted && trackDeficientItems && Boolean(template.items)) // only completed, DI enabled, /w items
+    .filter(({ inspectionCompleted, template }) =>
+      inspectionCompleted && Boolean(template.trackDeficientItems) && Boolean(template.items)) // only completed, DI enabled, /w items
     .map(inspection => createDeficientItems(inspection)) // create inspection's deficient items
     .filter(calcDeficientItems => Object.keys(calcDeficientItems).length) // remove  non-deficient inspections
     .map(defItems => {

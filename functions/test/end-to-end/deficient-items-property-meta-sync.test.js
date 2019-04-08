@@ -18,10 +18,10 @@ describe('Deficient Items Property Meta Sync', () => {
     const beforeData = mocking.createInspection({
       deficienciesExist: true,
       inspectionCompleted: true,
-      trackDeficientItems: true,
       property: propertyId,
 
       template: {
+        trackDeficientItems: true,
         items: {
           // Create single deficient item on inspection
           [itemId]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true)
@@ -62,10 +62,10 @@ describe('Deficient Items Property Meta Sync', () => {
     const beforeData = mocking.createInspection({
       deficienciesExist: true,
       inspectionCompleted: true,
-      trackDeficientItems: true,
       property: propertyId,
 
       template: {
+        trackDeficientItems: true,
         items: {
           // Create single deficient item on inspection
           [itemId]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true)
@@ -106,10 +106,10 @@ describe('Deficient Items Property Meta Sync', () => {
     const beforeData = mocking.createInspection({
       deficienciesExist: true,
       inspectionCompleted: true,
-      trackDeficientItems: true,
       property: propertyId,
 
       template: {
+        trackDeficientItems: true,
         items: {
           // Create single deficient item on inspection
           [itemId]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true)
@@ -145,10 +145,10 @@ describe('Deficient Items Property Meta Sync', () => {
     const beforeData = mocking.createInspection({
       deficienciesExist: true,
       inspectionCompleted: true,
-      trackDeficientItems: true,
       property: propertyId,
 
       template: {
+        trackDeficientItems: true,
         items: {
           // Create single deficient item on inspection
           [itemId]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true)

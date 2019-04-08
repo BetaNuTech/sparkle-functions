@@ -38,7 +38,7 @@ module.exports = function createOnInspectionWriteHandler(db) {
       }
 
       // Inspection deleted, incomplete, or deficient list disabled
-      if (!inspection || !inspection.inspectionCompleted || !inspection.trackDeficientItems) {
+      if (!inspection || !inspection.inspectionCompleted || !inspection.template || !inspection.template.trackDeficientItems) {
         return updates;
       }
 

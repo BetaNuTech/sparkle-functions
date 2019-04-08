@@ -22,7 +22,6 @@ module.exports = {
     return Object.assign({
       creationDate: (now - offset),
       deficienciesExist: Math.random() > .5 ? true : false,
-      trackDeficientItems: false,
       inspectionCompleted: completed,
       inspector: `user-${offset * 2}`,
       inspectorName: 'test-user',
@@ -30,6 +29,7 @@ module.exports = {
       score: Math.random() > .5 ? 100 : Math.random(),
       templateName,
       template: {
+        trackDeficientItems: false,
         name: templateName,
         sections: {},
         items: {}
