@@ -42,9 +42,9 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
   assert(inspection && typeof inspection === 'object', `${LOG_PREFIX} has inspection`);
   assert(Boolean(inspection.id), 'has inspection id');
   assert(inspection.inspectionCompleted, `${LOG_PREFIX} has completed inspection`);
-  assert(inspection.trackDeficientItems, `${LOG_PREFIX} has deficient items list enabled`);
   assert(Boolean(inspection.template), `${LOG_PREFIX} has inspection template`);
   assert(Boolean(inspection.template.items), `${LOG_PREFIX} has inspection template items`);
+  assert(inspection.template.trackDeficientItems, `${LOG_PREFIX} has deficient items list enabled`);
 
   const result = Object.create(null);
 

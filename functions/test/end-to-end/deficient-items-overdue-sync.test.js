@@ -17,10 +17,10 @@ describe('Deficient Items Overdue Sync', () => {
     const inspectionData = mocking.createInspection({
       deficienciesExist: true,
       inspectionCompleted: true,
-      trackDeficientItems: true,
       property: propertyId,
 
       template: {
+        trackDeficientItems: true,
         items: {
           // Create single deficient item on inspection
           [itemId]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true)
@@ -62,10 +62,10 @@ describe('Deficient Items Overdue Sync', () => {
     const inspectionData = mocking.createInspection({
       deficienciesExist: true,
       inspectionCompleted: true,
-      trackDeficientItems: true,
       property: propertyId,
 
       template: {
+        trackDeficientItems: true,
         items: {
           // Create single deficient item on inspection
           [itemId]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true)
@@ -107,10 +107,10 @@ describe('Deficient Items Overdue Sync', () => {
     const inspectionData = mocking.createInspection({
       deficienciesExist: true,
       inspectionCompleted: true,
-      trackDeficientItems: true,
       property: propertyId,
 
       template: {
+        trackDeficientItems: true,
         items: {
           // Create single deficient item on inspection
           [itemId]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true)

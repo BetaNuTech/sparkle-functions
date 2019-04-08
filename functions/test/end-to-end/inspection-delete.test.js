@@ -65,11 +65,14 @@ describe('Inspection Delete', () => {
     const inspectionTwo = mocking.createInspection({
       property: propertyId,
       inspectionCompleted: true,
-      trackDeficientItems: true,
       creationDate: oldest,
       score: 25,
-      // Create template w/ 1 deficient item
-      template: { items: { [uuid()]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) } }
+      template: {
+        trackDeficientItems: true,
+
+        // Create template w/ 1 deficient item
+        items: { [uuid()]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) }
+      }
     });
     const expected = {
       numOfInspections: 1,

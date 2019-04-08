@@ -345,9 +345,9 @@ function createInspection(inspection = {}, items = {}, sections = {}) {
   return Object.assign({
     id: uuid(),
     inspectionCompleted: true,
-    trackDeficientItems: true,
     updatedLastDate: Date.now() / 1000,
     template: {
+      trackDeficientItems: true,
       sections: Object.assign({}, sections),
       items: Object.assign({}, items)
     }
