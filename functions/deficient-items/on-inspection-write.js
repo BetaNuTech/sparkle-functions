@@ -2,6 +2,7 @@ const assert = require('assert');
 const log = require('../utils/logger');
 const config = require('../config');
 const {getDiffs} = require('../utils/object-differ');
+const model = require('../models/deficient-items');
 const createDeficientItems = require('../inspections/utils/create-deficient-items');
 const findRemovedKeys = require('../utils/find-removed-keys');
 const getLatestItemAdminEditTimestamp = require('../inspections/utils/get-latest-admin-edit-timestamp');
@@ -26,14 +27,14 @@ module.exports = function createOnInspectionWriteHandler(db) {
 
     try {
       const inspectionSnap = await change.after.ref.parent.once('value');
-      const propertyId = await lookupPropertyIdByInspectionId(db, inspectionId);
       const inspection = inspectionSnap.exists() ? Object.assign({ id: inspectionId }, inspectionSnap.val()) : null;
 
       // Remove deleted Inspections'
       // possible deficient items
-      if (!inspection && propertyId) {
-        await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}`).remove();
-        updates[`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}`] = 'removed';
+      if (!inspection) {
+        const inspectionDisSnap = await model.findAllByInspection(db, inspectionId);
+        await Promise.all(inspectionDisSnap.map(inspectionSnap => inspectionSnap.ref.remove()));
+        inspectionDisSnap.forEach((inspectionSnap) => updates[inspectionSnap.ref.toString()] = 'removed');
         log.info(`${LOG_PREFIX} removing possible deficient items for deleted inspection`);
       }
 
@@ -44,8 +45,10 @@ module.exports = function createOnInspectionWriteHandler(db) {
 
       // Calculate expected and lookup current DI's
       const expectedDeficientItems = createDeficientItems(inspection);
-      const currentDeficientItemsSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}`).once('value');
-      const currentDeficientItems = currentDeficientItemsSnap.val() || {};
+      const currentDeficientItemSnaps = await model.findAllByInspection(db, inspectionId);
+      const currentDeficientItems = {};
+      currentDeficientItemSnaps.forEach(deficientItemsSnap =>
+        currentDeficientItems[deficientItemsSnap.key] = deficientItemsSnap.val());
 
       // Remove any deficient item(s) belonging
       // to inspection items that are no longer deficient
@@ -53,8 +56,9 @@ module.exports = function createOnInspectionWriteHandler(db) {
 
       for (let i = 0; i < removeDeficientItemIds.length; i++) {
         const removeDeficientItemId = removeDeficientItemIds[i];
-        await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${removeDeficientItemId}`).remove();
-        updates[`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${removeDeficientItemId}`] = 'removed';
+        const [deficientItemSnap] = currentDeficientItemSnaps.filter(({key: id}) => id === removeDeficientItemId);
+        await deficientItemSnap.ref.remove();
+        updates[deficientItemSnap.ref.toString()] = 'removed';
         log.info(`${LOG_PREFIX} removed no longer deficient item ${removeDeficientItemId}`);
       }
 
@@ -65,6 +69,7 @@ module.exports = function createOnInspectionWriteHandler(db) {
       for (let i = 0; i < updateDeficientItemIds.length; i++) {
         const updateDeficientItemId = updateDeficientItemIds[i];
         const deficientItem = currentDeficientItems[updateDeficientItemId];
+        const [deficientItemSnap] = currentDeficientItemSnaps.filter(({key: id}) => id === updateDeficientItemId);
         const sourceItem = inspection.template.items[updateDeficientItemId] || {};
         const itemUpdates = getDiffs(expectedDeficientItems[updateDeficientItemId], deficientItem, DEFICIENT_ITEM_PROXY_ATTRS);
         const latestAdminEditTimestamp = getLatestItemAdminEditTimestamp(sourceItem) || 0;
@@ -77,8 +82,8 @@ module.exports = function createOnInspectionWriteHandler(db) {
         // Write, log, and set in memory w/ any updates
         if (Object.keys(itemUpdates).length) {
           itemUpdates.updatedAt = Date.now() / 1000; // modify updatedAt
-          await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${updateDeficientItemId}`).update(itemUpdates);
-          updates[`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${updateDeficientItemId}`] = 'updated';
+          await deficientItemSnap.ref.update(itemUpdates);
+          updates[deficientItemSnap.ref.toString()] = 'updated';
           log.info(`${LOG_PREFIX} updating out of date deficient item ${updateDeficientItemId}`);
           Object.assign(currentDeficientItems[updateDeficientItemId], itemUpdates); // update current snapshot value
         }
@@ -89,11 +94,13 @@ module.exports = function createOnInspectionWriteHandler(db) {
 
       for (let i = 0; i < addDeficientItemIds.length; i++) {
         const addDeficientItemId = addDeficientItemIds[i];
-        await db.ref(`/propertyInspectionDeficientItems/${inspection.property}/${inspectionId}/${addDeficientItemId}`).set(expectedDeficientItems[addDeficientItemId]);
-        updates[`/propertyInspectionDeficientItems/${inspection.property}/${inspectionId}/${addDeficientItemId}`] = 'created';
+        const deficientItemData = expectedDeficientItems[addDeficientItemId];
+        const addResult = await model.createRecord(db, inspection.property, addDeficientItemId, deficientItemData);
+        updates[Object.keys(addResult)[0]] = 'created';
         log.info(`${LOG_PREFIX} added new deficient item ${addDeficientItemId}`);
       }
     } catch (e) {
+      console.log('>>>>error:', e);
       log.error(`${LOG_PREFIX} ${e}`);
     }
 
