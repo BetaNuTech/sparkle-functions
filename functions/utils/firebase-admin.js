@@ -66,7 +66,8 @@ module.exports = {
         const record = snapshot.val();
         await fn(
           recordId,
-          record
+          record,
+          snapshot
         );
       }
     } while (pageGroupIds.length > 0);

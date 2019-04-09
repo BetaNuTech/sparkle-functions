@@ -67,6 +67,18 @@ describe('Inspections | Utils | Create Deficient Items', () => {
     });
   });
 
+  it('should set the inspection\'s reference ID', () => {
+    const expected = uuid();
+    const itemId = uuid();
+    const actual = createDeficientItems(
+      createInspection(
+        { id: expected },
+        { [itemId]: createItem('twoactions_checkmarkx', true) }
+      )
+    )[itemId].inspection;
+    expect(actual).to.equal(expected);
+  });
+
   it('should set an initial "createdAt" timestamp', () => {
     const itemId = uuid();
     const actual = createDeficientItems(

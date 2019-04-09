@@ -35,8 +35,9 @@ describe('Deficient Items Overdue Sync', () => {
     // Setup database
     await db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}`, numOfRequiredActionsForDeficientItems: expected.numOfRequiredActionsForDeficientItems });
     await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
-    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}`).set({
+    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}`).set({
       state: expected.state,
+      inspection: inspectionId,
       currentDueDate: (Date.now() / 1000) - 100000 // past due
     });
 
@@ -46,7 +47,7 @@ describe('Deficient Items Overdue Sync', () => {
     // Test result
     const result = await Promise.all([
       db.ref(`/properties/${propertyId}/numOfRequiredActionsForDeficientItems`).once('value'),
-      db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/state`).once('value')
+      db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}/state`).once('value')
     ]);
     const [actualReqActions, actualState]  = result.map(r => r.val());
 
@@ -80,8 +81,9 @@ describe('Deficient Items Overdue Sync', () => {
     // Setup database
     await db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}`, numOfRequiredActionsForDeficientItems: expected.numOfRequiredActionsForDeficientItems });
     await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
-    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}`).set({
+    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}`).set({
       state: expected.state,
+      inspection: inspectionId,
       currentDueDate: (Date.now() / 1000) + 100000 // not due
     });
 
@@ -91,7 +93,7 @@ describe('Deficient Items Overdue Sync', () => {
     // Test result
     const result = await Promise.all([
       db.ref(`/properties/${propertyId}/numOfRequiredActionsForDeficientItems`).once('value'),
-      db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/state`).once('value')
+      db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}/state`).once('value')
     ]);
     const [actualReqActions, actualState]  = result.map(r => r.val());
 
@@ -126,8 +128,9 @@ describe('Deficient Items Overdue Sync', () => {
     // Setup database
     await db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}`, numOfRequiredActionsForDeficientItems: 0 });
     await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
-    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}`).set({
+    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}`).set({
       state: 'pending',
+      inspection: inspectionId,
       currentStartDate: expected.startDate,
       currentDueDate: (Date.now() / 1000) - 100000 // past due
     });
@@ -138,9 +141,9 @@ describe('Deficient Items Overdue Sync', () => {
     // Test result
     const result = await Promise.all([
       db.ref(`/properties/${propertyId}/numOfRequiredActionsForDeficientItems`).once('value'),
-      db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/state`).once('value'),
-      db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/stateHistory`).once('value'),
-      db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/updatedAt`).once('value')
+      db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}/state`).once('value'),
+      db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}/stateHistory`).once('value'),
+      db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}/updatedAt`).once('value')
     ]);
     const [actualReqActions, actualState, allStateHistory, actualUpdatedAt]  = result.map(r => r.val());
     const actualStateHistory = allStateHistory ? allStateHistory[Object.keys(allStateHistory)[0]] : {}; // Get 1st from hash
