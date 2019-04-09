@@ -34,6 +34,18 @@ module.exports = modelSetup({
    * Push deficient item into property path
    * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
    * @param  {String} propertyId
+   * @return {Promise} - resolves {DataSnapshot}
+   */
+  findAllByProperty(db, propertyId) {
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    const path = `${API_PATH}/${propertyId}`;
+    return db.ref(path).once('value');
+  },
+
+  /**
+   * Add a deficient item to a property
+   * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+   * @param  {String} propertyId
    * @param  {String} itemId
    * @param  {Object} recordData
    * @return {Promise} - resolves {Object} JSON of path and update

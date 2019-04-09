@@ -1,5 +1,6 @@
 const pipe = require('lodash/fp/flow');
 const log = require('../utils/logger');
+const defItemsModel = require('../models/deficient-items');
 const { deficientItems } = require('../config');
 const { createDeficientItems } = require('../inspections/utils');
 
@@ -33,13 +34,10 @@ module.exports = async function processMeta(db, propertyId) {
     }
 
     // Find any deficient items data for property
-    const propertyInspectionDeficientItemsSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}`).once('value');
+    const propertyInspectionDeficientItemsSnap = await defItemsModel.findAllByProperty(db, propertyId);
     const propertyInspectionDeficientItemsData = propertyInspectionDeficientItemsSnap.exists() ? propertyInspectionDeficientItemsSnap.val() : {};
-    const deficientItems = [].concat(...Object.keys(propertyInspectionDeficientItemsData) // Flatten into single level items
-      .map(inspectionId =>
-        Object.keys(propertyInspectionDeficientItemsData[inspectionId])
-          .map(itemId => Object.assign({id: itemId}, propertyInspectionDeficientItemsData[inspectionId][itemId]))
-      ));
+    const deficientItems = Object.keys(propertyInspectionDeficientItemsData)
+      .map(itemId => Object.assign({id: itemId}, propertyInspectionDeficientItemsData[itemId]))
 
     // Collect updates to write to property's metadata attrs
     const { updates } = propertyMetaUpdates({
