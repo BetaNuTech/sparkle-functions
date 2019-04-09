@@ -36,7 +36,7 @@ module.exports = modelSetup({
    * @param  {String} propertyId
    * @param  {String} itemId
    * @param  {Object} recordData
-   * @return {Promise} - resolves {??}
+   * @return {Promise} - resolves {Object} JSON of path and update
    */
   async createRecord(db, propertyId, itemId, recordData) {
     assert(propertyId && typeof propertyId === 'string', 'has property id');
