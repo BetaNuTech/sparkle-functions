@@ -114,7 +114,10 @@ module.exports = {
     );
   },
 
-  createDeficientItem(item = {}) {
+  createDeficientItem(inspectionId, item = {}) {
+    assert(inspectionId && typeof inspectionId === 'string', 'has inspection id');
+    assert(item && typeof item === 'object', 'has object item');
+
     return Object.assign({
       state: 'requires-action' // TODO #81
     }, item);
