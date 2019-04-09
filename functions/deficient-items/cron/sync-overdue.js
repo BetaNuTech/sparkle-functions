@@ -23,33 +23,33 @@ module.exports = function createSyncOverdueDeficientItemshandler(topic = '', pub
     const now = Date.now() / 1000;
 
     await forEachChild(db, '/propertyInspectionDeficientItems', async function proccessDIproperties(propertyId) {
-      await forEachChild(db, `/propertyInspectionDeficientItems/${propertyId}`, async function processDIinspections(inspectionId) {
-        await forEachChild(db, `/propertyInspectionDeficientItems/${propertyId}/${inspectionId}`, async function processDeficientItems(itemId, diItem) {
-          try {
-            if (diItem.state === 'pending' && diItem.currentDueDate <= now) {
-              diItem.state = 'overdue';
+      await forEachChild(db, `/propertyInspectionDeficientItems/${propertyId}`, async function processDeficientItems(itemId, diItem, diItemSnap) {
+        const path = diItemSnap.ref.path.toString();
 
-              // Update DI's state
-              await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/state`).set(diItem.state);
-              updates[`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/state`] = 'updated';
+        try {
+          if (diItem.state === 'pending' && diItem.currentDueDate <= now) {
+            diItem.state = 'overdue';
 
-              // Update `stateHistory` with latest DI state
-              await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/stateHistory`).push(createStateHistory(diItem));
-              updates[`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/stateHistory`] = 'added';
+            // Update DI's state
+            await db.ref(`${path}/state`).set(diItem.state);
+            updates[`${path}/state`] = 'updated';
 
-              // Modify updatedAt to denote changes
-              await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/updatedAt`).set(Date.now() / 1000);
-              updates[`/propertyInspectionDeficientItems/${propertyId}/${inspectionId}/${itemId}/updatedAt`] = 'updated';
+            // Update `stateHistory` with latest DI state
+            await db.ref(`${path}/stateHistory`).push(createStateHistory(diItem));
+            updates[`${path}/stateHistory`] = 'added';
 
-              // Sync DI's changes to its' property's metadata
-              const metaUpdates = await processPropertyMeta(db, propertyId);
-              log.info(`${LOG_PREFIX} property: ${propertyId} | inspection: ${inspectionId} | item: ${itemId} | deficiency overdue`);
-              Object.assign(updates, metaUpdates); // add property meta updates to updates
-            }
-          } catch (e) {
-            log.error(`${LOG_PREFIX} ${e}`);
+            // Modify updatedAt to denote changes
+            await db.ref(`${path}/updatedAt`).set(Date.now() / 1000);
+            updates[`${path}/updatedAt`] = 'updated';
+
+            // Sync DI's changes to its' property's metadata
+            const metaUpdates = await processPropertyMeta(db, propertyId);
+            log.info(`${LOG_PREFIX} property: ${propertyId} | | item: ${itemId} | deficiency overdue`);
+            Object.assign(updates, metaUpdates); // add property meta updates to updates
           }
-        });
+        } catch (e) {
+          log.error(`${LOG_PREFIX} ${e}`);
+        }
       });
     });
 
