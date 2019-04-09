@@ -100,33 +100,9 @@ module.exports = function createOnInspectionWriteHandler(db) {
         log.info(`${LOG_PREFIX} added new deficient item ${addDeficientItemId}`);
       }
     } catch (e) {
-      console.log('>>>>error:', e);
       log.error(`${LOG_PREFIX} ${e}`);
     }
 
     return updates;
   };
-}
-
-/**
- * Lookup a property ID by its' nested inspection ID
- * @param  {firebaseAdmin.database} - Firebase Admin DB instance
- * @param  {String} inspectionId
- * @return {Promise} - resolve {String} property ID or empty string
- */
-async function lookupPropertyIdByInspectionId(db, inspectionId) {
-  const propertyGroupsSnap = await db.ref('/propertyInspectionDeficientItems').once('value');
-  const propertyGroups = Object.create(null);
-  propertyGroupsSnap.forEach(propertyChildSnap =>
-    propertyGroups[propertyChildSnap.key] = Object.keys(propertyChildSnap.val())
-  );
-  const propertyIds = Object.keys(propertyGroups);
-
-  for (let i = 0; i < propertyIds.length; i++) {
-    if (propertyGroups[propertyIds[i]].includes(inspectionId)) {
-      return propertyIds[i];
-    }
-  }
-
-  return ''; // unfound
 }
