@@ -2,6 +2,7 @@ const { expect } = require('chai');
 const config = require('../../config');
 const uuid = require('../../test-helpers/uuid');
 const mocking = require('../../test-helpers/mocking');
+const timeMocking = require('../../test-helpers/time');
 const { cleanDb } = require('../../test-helpers/firebase');
 const { db, test, cloudFunctions } = require('./setup');
 
@@ -39,7 +40,8 @@ describe('Deficient Items Overdue Sync', () => {
     await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}`).set({
       state: expected.state,
       inspection: inspectionId,
-      currentDueDate: (Date.now() / 1000) - 100000 // past due
+      currentStartDate: timeMocking.age.twoDaysAgo,
+      currentDueDate: timeMocking.age.oneDayAgo // past due
     });
 
     // Execute
@@ -91,7 +93,8 @@ describe('Deficient Items Overdue Sync', () => {
       await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}`).set({
         state: expected.state,
         inspection: inspectionId,
-        currentDueDate: (Date.now() / 1000) + 100000 // not due
+        currentStartDate: timeMocking.age.twoDaysAgo,
+        currentDueDate: timeMocking.age.oneDayFromNow // not due
       });
 
       // Execute
@@ -129,7 +132,7 @@ describe('Deficient Items Overdue Sync', () => {
     });
     const expected = {
       state: 'overdue',
-      startDate: (Date.now() / 1000) - 100,
+      startDate: timeMocking.age.sixDaysAgo,
       numOfRequiredActionsForDeficientItems: 1
     };
 
@@ -143,7 +146,7 @@ describe('Deficient Items Overdue Sync', () => {
         state: eligibleState,
         inspection: inspectionId,
         currentStartDate: expected.startDate,
-        currentDueDate: (Date.now() / 1000) - 100000 // past due
+        currentDueDate: timeMocking.age.oneDayAgo // past due
       });
 
       // Execute
@@ -166,5 +169,125 @@ describe('Deficient Items Overdue Sync', () => {
       expect(actualReqActions).to.equal(expected.numOfRequiredActionsForDeficientItems, 'updated property meta');
       expect(actualUpdatedAt).to.be.a('number', 'modified DI updatedAt');
     }
+  });
+
+  it('should not progress ineligible DI\'s, over half past due, to "requires-progress-update" state', async () => {
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const itemId = uuid();
+    const inspectionData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: propertyId,
+
+      template: {
+        trackDeficientItems: true,
+        items: {
+          // Create single deficient item on inspection
+          [itemId]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true)
+        }
+      }
+    });
+    const expected = { state: 'pending' };
+
+    // Setup database
+    await db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` });
+    await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
+    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}`).set({
+      state: expected.state,
+      inspection: inspectionId,
+      currentStartDate: timeMocking.age.twoDaysAgo, // ineligible for requires progress state
+      currentDueDate: timeMocking.age.oneDayFromNow // over 1/2 past due
+    });
+
+    // Execute
+    await test.wrap(cloudFunctions.deficientItemsOverdueSync)();
+
+    // Test Result
+    const actualSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}/state`).once('value');
+    const actual = actualSnap.val();
+
+    // Assertions
+    expect(actual).to.equal(expected.state);
+  });
+
+  it('should not progress eligible DI\'s, under half past due, to "requires-progress-update" state', async () => {
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const itemId = uuid();
+    const inspectionData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: propertyId,
+
+      template: {
+        trackDeficientItems: true,
+        items: {
+          // Create single deficient item on inspection
+          [itemId]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true)
+        }
+      }
+    });
+    const expected = { state: 'pending' };
+
+    // Setup database
+    await db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` });
+    await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
+    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}`).set({
+      state: expected.state,
+      inspection: inspectionId,
+      currentStartDate: timeMocking.age.fiveDaysAgo, // eligible for requires progress state
+      currentDueDate: timeMocking.age.sixDaysFromNow // under 1/2 past due
+    });
+
+    // Execute
+    await test.wrap(cloudFunctions.deficientItemsOverdueSync)();
+
+    // Test Result
+    const actualSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}/state`).once('value');
+    const actual = actualSnap.val();
+
+    // Assertions
+    expect(actual).to.equal(expected.state);
+  });
+
+  it('should progress eligible DI\'s, under half past due, to "requires-progress-update" state', async () => {
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const itemId = uuid();
+    const inspectionData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: propertyId,
+
+      template: {
+        trackDeficientItems: true,
+        items: {
+          // Create single deficient item on inspection
+          [itemId]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true)
+        }
+      }
+    });
+    const expected = { state: 'requires-progress-update' };
+
+    // Setup database
+    await db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` });
+    await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
+    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}`).set({
+      state: 'pending',
+      inspection: inspectionId,
+      currentStartDate: timeMocking.age.threeDaysAgo, // eligible for requires progress state
+      currentDueDate: timeMocking.age.twoDaysFromNow // over 1/2 past due
+    });
+
+    // Execute
+    await test.wrap(cloudFunctions.deficientItemsOverdueSync)();
+
+    // Test Result
+    const actualSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}/state`).once('value');
+    const actual = actualSnap.val();
+
+    // Assertions
+    expect(actual).to.equal(expected.state);
   });
 });
