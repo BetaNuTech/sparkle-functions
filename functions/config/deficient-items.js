@@ -1,6 +1,7 @@
 module.exports = {
   requiredActionStates: ['requires-action', 'go-back', 'overdue'],
   followUpActionStates: ['completed', 'incomplete'],
+  overdueEligibleStates: ['pending', 'requires-progress-update'],
 
   /**
    * DI proxy attributes mapped

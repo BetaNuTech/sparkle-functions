@@ -1,9 +1,11 @@
 const log = require('../../utils/logger');
+const config = require('../../config');
 const processPropertyMeta = require('../../properties/process-meta');
 const {forEachChild} = require('../../utils/firebase-admin')
 const createStateHistory = require('../utils/create-state-history');
 
 const LOG_PREFIX = 'deficient-items: cron: sync-overdue:';
+const OVERDUE_ELIGIBLE_STATES = config.deficientItems.overdueEligibleStates;
 
 /**
  * Sync Deficient items from "pending" to "overdue"
@@ -27,7 +29,7 @@ module.exports = function createSyncOverdueDeficientItemshandler(topic = '', pub
         const path = diItemSnap.ref.path.toString();
 
         try {
-          if (diItem.state === 'pending' && diItem.currentDueDate <= now) {
+          if (OVERDUE_ELIGIBLE_STATES.includes(diItem.state) && diItem.currentDueDate <= now) {
             diItem.state = 'overdue';
 
             // Update DI's state
