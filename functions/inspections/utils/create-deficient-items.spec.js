@@ -79,6 +79,16 @@ describe('Inspections | Utils | Create Deficient Items', () => {
     expect(actual).to.equal(expected);
   });
 
+  it('should set the item\'s reference ID', () => {
+    const expected = uuid();
+    const actual = createDeficientItems(
+      createInspection({},
+        { [expected]: createItem('twoactions_checkmarkx', true) }
+      )
+    )[expected].item;
+    expect(actual).to.equal(expected);
+  });
+
   it('should set an initial "createdAt" timestamp', () => {
     const itemId = uuid();
     const actual = createDeficientItems(
