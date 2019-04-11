@@ -64,14 +64,18 @@ module.exports = function createOnInspectionWriteHandler(db) {
 
       // Update each existing deficient items'
       // proxy data from its' source inspection item
-      const updateDeficientItemIds = Object.keys(currentDeficientItems).filter(itemId => expectedDeficientItems[itemId]);
+      const updateDeficientItemIds = Object.keys(currentDeficientItems).filter(id => {
+        const itemId = currentDeficientItems[id].item; // inspection item ID
+        return Boolean(expectedDeficientItems[itemId]);
+      });
 
       for (let i = 0; i < updateDeficientItemIds.length; i++) {
         const updateDeficientItemId = updateDeficientItemIds[i];
         const deficientItem = currentDeficientItems[updateDeficientItemId];
+        const inspectionItemId = deficientItem.item;
         const [deficientItemSnap] = currentDeficientItemSnaps.filter(({key: id}) => id === updateDeficientItemId);
-        const sourceItem = inspection.template.items[updateDeficientItemId] || {};
-        const itemUpdates = getDiffs(expectedDeficientItems[updateDeficientItemId], deficientItem, DEFICIENT_ITEM_PROXY_ATTRS);
+        const sourceItem = inspection.template.items[inspectionItemId] || {};
+        const itemUpdates = getDiffs(expectedDeficientItems[inspectionItemId], deficientItem, DEFICIENT_ITEM_PROXY_ATTRS);
         const latestAdminEditTimestamp = getLatestItemAdminEditTimestamp(sourceItem) || 0;
 
         // Set any latest admin edit as the last updated timestamp
@@ -95,7 +99,7 @@ module.exports = function createOnInspectionWriteHandler(db) {
       for (let i = 0; i < addDeficientItemIds.length; i++) {
         const addDeficientItemId = addDeficientItemIds[i];
         const deficientItemData = expectedDeficientItems[addDeficientItemId];
-        const addResult = await model.createRecord(db, inspection.property, addDeficientItemId, deficientItemData);
+        const addResult = await model.createRecord(db, inspection.property, deficientItemData);
         updates[Object.keys(addResult)[0]] = 'created';
         log.info(`${LOG_PREFIX} added new deficient item ${addDeficientItemId}`);
       }
