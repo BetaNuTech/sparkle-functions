@@ -26,7 +26,7 @@ module.exports = function createSyncOverdueDeficientItemshandler(topic = '', pub
     const now = Date.now() / 1000;
 
     await forEachChild(db, '/propertyInspectionDeficientItems', async function proccessDIproperties(propertyId) {
-      await forEachChild(db, `/propertyInspectionDeficientItems/${propertyId}`, async function processDeficientItems(itemId, diItem, diItemSnap) {
+      await forEachChild(db, `/propertyInspectionDeficientItems/${propertyId}`, async function processDeficientItems(defItemId, diItem, diItemSnap) {
         let { state } = diItem;
         const currentStartDate = diItem.currentStartDate || 0;
         const currentDueDate = diItem.currentDueDate || 0;
@@ -48,7 +48,7 @@ module.exports = function createSyncOverdueDeficientItemshandler(topic = '', pub
 
             // Sync DI's changes to its' property's metadata
             const metaUpdates = await processPropertyMeta(db, propertyId);
-            log.info(`${LOG_PREFIX} property: ${propertyId} | | item: ${itemId} | deficiency overdue`);
+            log.info(`${LOG_PREFIX} property: ${propertyId} | deficient item: ${defItemId} | deficiency overdue`);
             Object.assign(updates, metaUpdates); // add property meta updates to updates
           } else if (
             state === 'pending' &&
@@ -58,7 +58,7 @@ module.exports = function createSyncOverdueDeficientItemshandler(topic = '', pub
             // Progress state
             state = diItem.state = 'requires-progress-update';
             const stateUpdates = await model.updateState(db, diItemSnap, state);
-            log.info(`${LOG_PREFIX} property: ${propertyId} | | item: ${itemId} | deficiency requires progress update`);
+            log.info(`${LOG_PREFIX} property: ${propertyId} | deficient item: ${defItemId} | deficiency requires progress update`);
             Object.assign(updates, stateUpdates); // add state updates to updates
           }
         } catch (e) {

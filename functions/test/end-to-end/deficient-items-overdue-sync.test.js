@@ -37,9 +37,12 @@ describe('Deficient Items Overdue Sync', () => {
     // Setup database
     await db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}`, numOfRequiredActionsForDeficientItems: expected.numOfRequiredActionsForDeficientItems });
     await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
-    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}`).set({
+    const diRef = db.ref(`/propertyInspectionDeficientItems/${propertyId}`).push();
+    const diPath = diRef.path.toString();
+    await diRef.set({
       state: expected.state,
       inspection: inspectionId,
+      item: itemId,
       currentStartDate: timeMocking.age.twoDaysAgo,
       currentDueDate: timeMocking.age.oneDayAgo // past due
     });
@@ -50,7 +53,7 @@ describe('Deficient Items Overdue Sync', () => {
     // Test result
     const result = await Promise.all([
       db.ref(`/properties/${propertyId}/numOfRequiredActionsForDeficientItems`).once('value'),
-      db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}/state`).once('value')
+      db.ref(`${diPath}/state`).once('value')
     ]);
     const [actualReqActions, actualState]  = result.map(r => r.val());
 
@@ -90,9 +93,12 @@ describe('Deficient Items Overdue Sync', () => {
         numOfRequiredActionsForDeficientItems: expected.numOfRequiredActionsForDeficientItems
       });
       await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
-      await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}`).set({
+      const diRef = db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}`).push();
+      const diPath = diRef.path.toString();
+      await diRef.set({
         state: expected.state,
         inspection: inspectionId,
+        item: itemId,
         currentStartDate: timeMocking.age.twoDaysAgo,
         currentDueDate: timeMocking.age.oneDayFromNow // not due
       });
@@ -103,7 +109,7 @@ describe('Deficient Items Overdue Sync', () => {
       // Test result
       const result = await Promise.all([
         db.ref(`/properties/${propertyId}/numOfRequiredActionsForDeficientItems`).once('value'),
-        db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}/state`).once('value')
+        db.ref(`${diPath}/state`).once('value')
       ]);
       const [actualReqActions, actualState]  = result.map(r => r.val());
 
@@ -142,9 +148,12 @@ describe('Deficient Items Overdue Sync', () => {
       // Setup database
       await db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}`, numOfRequiredActionsForDeficientItems: 0 });
       await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
-      await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}`).set({
+      const diRef = db.ref(`/propertyInspectionDeficientItems/${propertyId}`).push();
+      const diPath = diRef.path.toString();
+      await diRef.set({
         state: eligibleState,
         inspection: inspectionId,
+        item: itemId,
         currentStartDate: expected.startDate,
         currentDueDate: timeMocking.age.oneDayAgo // past due
       });
@@ -155,9 +164,9 @@ describe('Deficient Items Overdue Sync', () => {
       // Test result
       const result = await Promise.all([
         db.ref(`/properties/${propertyId}/numOfRequiredActionsForDeficientItems`).once('value'),
-        db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}/state`).once('value'),
-        db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}/stateHistory`).once('value'),
-        db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}/updatedAt`).once('value')
+        db.ref(`${diPath}/state`).once('value'),
+        db.ref(`${diPath}/stateHistory`).once('value'),
+        db.ref(`${diPath}/updatedAt`).once('value')
       ]);
       const [actualReqActions, actualState, allStateHistory, actualUpdatedAt]  = result.map(r => r.val());
       const actualStateHistory = allStateHistory ? allStateHistory[Object.keys(allStateHistory)[0]] : {}; // Get 1st from hash
@@ -193,9 +202,12 @@ describe('Deficient Items Overdue Sync', () => {
     // Setup database
     await db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` });
     await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
-    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}`).set({
+    const diRef = db.ref(`/propertyInspectionDeficientItems/${propertyId}`).push();
+    const diPath = diRef.path.toString();
+    await diRef.set({
       state: expected.state,
       inspection: inspectionId,
+      item: itemId,
       currentStartDate: timeMocking.age.twoDaysAgo, // ineligible for requires progress state
       currentDueDate: timeMocking.age.oneDayFromNow // over 1/2 past due
     });
@@ -204,7 +216,7 @@ describe('Deficient Items Overdue Sync', () => {
     await test.wrap(cloudFunctions.deficientItemsOverdueSync)();
 
     // Test Result
-    const actualSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}/state`).once('value');
+    const actualSnap = await db.ref(`${diPath}/state`).once('value');
     const actual = actualSnap.val();
 
     // Assertions
@@ -233,9 +245,12 @@ describe('Deficient Items Overdue Sync', () => {
     // Setup database
     await db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` });
     await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
-    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}`).set({
+    const diRef = db.ref(`/propertyInspectionDeficientItems/${propertyId}`).push();
+    const diPath = diRef.path.toString();
+    await diRef.set({
       state: expected.state,
       inspection: inspectionId,
+      item: itemId,
       currentStartDate: timeMocking.age.fiveDaysAgo, // eligible for requires progress state
       currentDueDate: timeMocking.age.sixDaysFromNow // under 1/2 past due
     });
@@ -244,7 +259,7 @@ describe('Deficient Items Overdue Sync', () => {
     await test.wrap(cloudFunctions.deficientItemsOverdueSync)();
 
     // Test Result
-    const actualSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}/state`).once('value');
+    const actualSnap = await db.ref(`${diPath}/state`).once('value');
     const actual = actualSnap.val();
 
     // Assertions
@@ -273,9 +288,12 @@ describe('Deficient Items Overdue Sync', () => {
     // Setup database
     await db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` });
     await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
-    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}`).set({
+    const diRef = db.ref(`/propertyInspectionDeficientItems/${propertyId}`).push();
+    const diPath = diRef.path.toString();
+    await diRef.set({
       state: 'pending',
       inspection: inspectionId,
+      item: itemId,
       currentStartDate: timeMocking.age.threeDaysAgo, // eligible for requires progress state
       currentDueDate: timeMocking.age.twoDaysFromNow // over 1/2 past due
     });
@@ -284,7 +302,7 @@ describe('Deficient Items Overdue Sync', () => {
     await test.wrap(cloudFunctions.deficientItemsOverdueSync)();
 
     // Test Result
-    const actualSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}/state`).once('value');
+    const actualSnap = await db.ref(`${diPath}/state`).once('value');
     const actual = actualSnap.val();
 
     // Assertions
