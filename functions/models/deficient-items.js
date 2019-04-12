@@ -47,17 +47,15 @@ module.exports = modelSetup({
    * Add a deficient item to a property
    * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
    * @param  {String} propertyId
-   * @param  {String} itemId
    * @param  {Object} recordData
    * @return {Promise} - resolves {Object} JSON of path and update
    */
-  async createRecord(db, propertyId, itemId, recordData) {
+  async createRecord(db, propertyId, recordData) {
     assert(propertyId && typeof propertyId === 'string', 'has property id');
-    assert(itemId && typeof itemId === 'string', 'has item id');
     assert(recordData && typeof recordData === 'object', 'has record date');
-    const path = `${API_PATH}/${propertyId}/${itemId}`;
-    await db.ref(path).set(recordData);
-    return { [path]: recordData };
+    const ref = db.ref(`${API_PATH}/${propertyId}`).push(); // create new db path
+    await ref.set(recordData);
+    return { [ref.path.toString()]: recordData };
   },
 
   /**

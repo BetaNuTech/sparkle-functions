@@ -114,13 +114,17 @@ module.exports = {
     );
   },
 
-  createDeficientItem(inspectionId, item = {}) {
+  createDeficientItem(inspectionId, itemId, item = {}) {
     assert(inspectionId && typeof inspectionId === 'string', 'has inspection id');
+    assert(itemId && typeof itemId === 'string', 'has item id');
     assert(item && typeof item === 'object', 'has object item');
 
     return Object.assign({
       state: 'requires-action' // TODO #81
-    }, item);
+    }, item, {
+      inspection: inspectionId,
+      item: itemId
+    });
   },
 
   createSection(config = {}) {

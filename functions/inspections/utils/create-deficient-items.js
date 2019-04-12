@@ -84,6 +84,7 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
       DEFAULT_DEFICIENT_ITEM,
       {
         inspection: inspection.id,
+        item: item.id,
         createdAt: Date.now() / 1000,
         updatedAt: Date.now() / 1000,
         itemMainInputType: item.mainInputType,

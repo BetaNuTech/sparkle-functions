@@ -141,8 +141,8 @@ describe('Property Meta Sync', () => {
     await db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
     await db.ref(`/inspections/${insp1Id}`).set(inspectionOne); // Add inspection #1
     await db.ref(`/inspections/${insp2Id}`).set(inspectionTwo); // Add inspection #2
-    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${defItem1Id}`).set(mocking.createDeficientItem(insp1Id, { state: 'go-back' })); // non-default required action state
-    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${defItem2Id}`).set(mocking.createDeficientItem(insp2Id, { state: 'pending' })); // remove required action state
+    await db.ref(`/propertyInspectionDeficientItems/${propertyId}`).push().set(mocking.createDeficientItem(insp1Id, defItem1Id, { state: 'go-back' })); // non-default required action state
+    await db.ref(`/propertyInspectionDeficientItems/${propertyId}`).push().set(mocking.createDeficientItem(insp2Id, defItem2Id, { state: 'pending' })); // remove required action state
     const snap = await db.ref(`/inspections/${insp1Id}`).once('value'); // Create snapshot
 
     // Execute
