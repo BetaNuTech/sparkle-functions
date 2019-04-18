@@ -4,7 +4,6 @@ const config = require('../config');
 const {getDiffs} = require('../utils/object-differ');
 const model = require('../models/deficient-items');
 const createDeficientItems = require('../inspections/utils/create-deficient-items');
-const findRemovedKeys = require('../utils/find-removed-keys');
 const getLatestItemAdminEditTimestamp = require('../inspections/utils/get-latest-admin-edit-timestamp');
 
 const LOG_PREFIX = 'deficient-items: on-inspection-write:';
@@ -32,10 +31,10 @@ module.exports = function createOnInspectionWriteHandler(db) {
       // Remove deleted Inspections'
       // possible deficient items
       if (!inspection) {
-        const inspectionDisSnap = await model.findAllByInspection(db, inspectionId);
-        await Promise.all(inspectionDisSnap.map(inspectionSnap => inspectionSnap.ref.remove()));
-        inspectionDisSnap.forEach((inspectionSnap) => updates[inspectionSnap.ref.path.toString()] = 'removed');
-        log.info(`${LOG_PREFIX} removing possible deficient items for deleted inspection`);
+        const deficientItemSnapshots = await model.findAllByInspection(db, inspectionId);
+        const archiveUpdates = await Promise.all(deficientItemSnapshots.map(deficientItemSnap => model.archive(db, deficientItemSnap)));
+        archiveUpdates.forEach((archiveUpdate) => Object.assign(updates, archiveUpdate));
+        log.info(`${LOG_PREFIX} archived deficient items for deleted inspection`);
       }
 
       // Inspection deleted, incomplete, or deficient list disabled
@@ -50,24 +49,21 @@ module.exports = function createOnInspectionWriteHandler(db) {
       currentDeficientItemSnaps.forEach(deficientItemsSnap =>
         currentDeficientItems[deficientItemsSnap.key] = deficientItemsSnap.val());
 
-      // Remove any deficient item(s) belonging
+      // Archive any deficient item(s) belonging
       // to inspection items that are no longer deficient
-      const removeDeficientItemIds = findRemovedKeys(currentDeficientItems, expectedDeficientItems);
+      const removeDeficientItemIds = findMissingdDeficientItemIDs(currentDeficientItems, expectedDeficientItems);
 
       for (let i = 0; i < removeDeficientItemIds.length; i++) {
         const removeDeficientItemId = removeDeficientItemIds[i];
         const [deficientItemSnap] = currentDeficientItemSnaps.filter(({key: id}) => id === removeDeficientItemId);
-        await deficientItemSnap.ref.remove();
-        updates[deficientItemSnap.ref.path.toString()] = 'removed';
-        log.info(`${LOG_PREFIX} removed no longer deficient item ${removeDeficientItemId}`);
+        const archiveUpdates = await model.archive(db, deficientItemSnap);
+        Object.assign(updates, archiveUpdates);
+        log.info(`${LOG_PREFIX} archived no longer deficient item ${removeDeficientItemId}`);
       }
 
       // Update each existing deficient items'
       // proxy data from its' source inspection item
-      const updateDeficientItemIds = Object.keys(currentDeficientItems).filter(id => {
-        const itemId = currentDeficientItems[id].item; // inspection item ID
-        return Boolean(expectedDeficientItems[itemId]);
-      });
+      const updateDeficientItemIds = findMatchingDeficientItemIDs(currentDeficientItems, expectedDeficientItems);
 
       for (let i = 0; i < updateDeficientItemIds.length; i++) {
         const updateDeficientItemId = updateDeficientItemIds[i];
@@ -94,14 +90,17 @@ module.exports = function createOnInspectionWriteHandler(db) {
       }
 
       // Add new deficient item(s) to DI
-      const addDeficientItemIds = Object.keys(expectedDeficientItems).filter(itemId => !currentDeficientItems[itemId]);
+      // NOTE: these are inspection item ID's
+      //       not deficient item identifiers
+      const addInspectionItemIds = findMissingdDeficientItemIDs(expectedDeficientItems, currentDeficientItems);
 
-      for (let i = 0; i < addDeficientItemIds.length; i++) {
-        const addDeficientItemId = addDeficientItemIds[i];
-        const deficientItemData = expectedDeficientItems[addDeficientItemId];
+      for (let i = 0; i < addInspectionItemIds.length; i++) {
+        const inspectionItemId = addInspectionItemIds[i];
+        const deficientItemData = expectedDeficientItems[inspectionItemId];
         const addResult = await model.createRecord(db, inspection.property, deficientItemData);
-        updates[Object.keys(addResult)[0]] = 'created';
-        log.info(`${LOG_PREFIX} added new deficient item ${addDeficientItemId}`);
+        const addedDeficientItemID = Object.keys(addResult)[0];
+        updates[addedDeficientItemID] = 'created';
+        log.info(`${LOG_PREFIX} added new deficient item: ${addedDeficientItemID.split('/').pop()}`);
       }
     } catch (e) {
       log.error(`${LOG_PREFIX} ${e}`);
@@ -109,4 +108,36 @@ module.exports = function createOnInspectionWriteHandler(db) {
 
     return updates;
   };
+}
+
+/**
+ * Compare 2 versions of an inspection's deficient
+ * item tree and return the deficient item ID's
+ * that no longer exist in target tree
+ * @param  {Object} source
+ * @param  {Object} target
+ * @return {String[]} - deprecated deficient item ID's
+ */
+function findMissingdDeficientItemIDs(source, target) {
+  return Object.keys(source).filter(defItemID => {
+    const { item } = source[defItemID];
+    const [ found ] = Object.keys(target).filter(targetItemID => target[targetItemID].item === item);
+    return !found;
+  });
+}
+
+/**
+ * Compare 2 versions of an inspection's deficient
+ * item tree and return the deficient item ID's
+ * that still exist in target tree
+ * @param  {Object} source
+ * @param  {Object} target
+ * @return {String[]} - deprecated deficient item ID's
+ */
+function findMatchingDeficientItemIDs(source, target) {
+  return Object.keys(source).filter(defItemID => {
+    const { item } = source[defItemID]; // inspection item ID
+    const [ found ] = Object.keys(target).filter(targetItemID => target[targetItemID].item === item);
+    return Boolean(found);
+  });
 }
