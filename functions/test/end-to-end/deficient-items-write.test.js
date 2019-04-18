@@ -10,7 +10,7 @@ const DEFICIENT_ITEM_PROXY_ATTRS = config.deficientItems.inspectionItemProxyAttr
 describe('Deficient Items Create and Delete', () => {
   afterEach(() => cleanDb(db));
 
-  it('should remove all deficient items associated with a deleted inspection', async () => {
+  it('should archive all deficient items associated with a deleted inspection', async () => {
     const propertyId = uuid();
     const inspectionId = uuid();
     const itemId = uuid();
@@ -20,21 +20,25 @@ describe('Deficient Items Create and Delete', () => {
       inspectionCompleted: true,
       property: propertyId,
 
-      // Create single deficient item on inspection
       template: {
         trackDeficientItems: true,
         items: {
+          // Create single deficient item on inspection
           [itemId]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true)
         }
       }
     });
+    const expected = {
+      inspection: inspectionId,
+      item: itemId,
+      state: 'requires-action'
+    };
 
     // Setup database
+    const diRef = db.ref(`/propertyInspectionDeficientItems/${propertyId}`).push();
+    const diPath = diRef.path.toString();
     await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
-    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}`).set({
-      inspection: inspectionId,
-      state: 'requires-action'
-    });
+    await diRef.set(expected); // Add deficient item for item
     const beforeSnap = await db.ref(`/inspections/${inspectionId}/updatedLastDate`).once('value'); // Create before
     await db.ref(`/inspections/${inspectionId}`).remove(); // remove inspection
     const afterSnap = await db.ref(`/inspections/${inspectionId}/updatedLastDate`).once('value'); // Create after
@@ -45,14 +49,18 @@ describe('Deficient Items Create and Delete', () => {
     await wrapped(changeSnap, { params: { inspectionId } });
 
     // Test result
-    const actualSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}`).once('value');
-    const actual = actualSnap.val();
+    const actualSnap = await Promise.all([
+      db.ref(diPath).once('value'),
+      db.ref(`/archive${diPath}`).once('value')
+    ]);
+    const [active, archive] = actualSnap.map(snap => snap.val());
 
     // Assertions
-    expect(actual).to.equal(null, 'removed all inspection\'s deficient items');
+    expect(active).to.equal(null, 'removed active inspection\'s deficient items');
+    expect(archive).to.deep.equal(expected, 'archived deleted inspection\'s deficient items');
   });
 
-  it('should remove each deficient item that belongs to an approved inspection items', async () => {
+  it('should archive each deficient item that belongs to an approved inspection items', async () => {
     const propertyId = uuid();
     const inspectionId = uuid();
     const item1Id = uuid();
@@ -72,13 +80,16 @@ describe('Deficient Items Create and Delete', () => {
       }
     });
 
-    const expected = { [item2Id]: { state: 'requires-action', inspection: inspectionId, itemMainInputSelection: 1 } };
-    const removedDeficientItem = { state: 'requires-action', inspection: inspectionId, itemMainInputSelection: 1 };
+    const archivedDeficientItem = { state: 'requires-action', inspection: inspectionId, item: item1Id, itemMainInputSelection: 1 };
+    const unchangedDeficientItem = { state: 'requires-action', inspection: inspectionId, item: item2Id, itemMainInputSelection: 1 };
 
     // Setup database
+    const diRefOne = db.ref(`/propertyInspectionDeficientItems/${propertyId}`).push();
+    const diRefTwo = db.ref(`/propertyInspectionDeficientItems/${propertyId}`).push();
+    const diPathTwo = diRefTwo.path.toString();
     await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
-    await db.ref(`/propertyInspectionDeficientItems/${propertyId}`).set(expected); // Setup expected DI
-    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${item1Id}`).set(removedDeficientItem);
+    await diRefOne.set(unchangedDeficientItem); // Setup expected DI
+    await diRefTwo.set(archivedDeficientItem);
     const beforeSnap = await db.ref(`/inspections/${inspectionId}/updatedLastDate`).once('value'); // Create before
     await db.ref(`/inspections/${inspectionId}/template/items/${item1Id}`).set(
       mocking.createCompletedMainInputItem('twoactions_checkmarkx', false) // Mark 1st item as non-deficient
@@ -91,11 +102,15 @@ describe('Deficient Items Create and Delete', () => {
     await wrapped(changeSnap, { params: { inspectionId } });
 
     // Test result
-    const actualSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}`).once('value');
-    const actual = actualSnap.val();
+    const actualSnap = await Promise.all([
+      db.ref(`/propertyInspectionDeficientItems/${propertyId}`).once('value'),
+      db.ref(`/archive${diPathTwo}`).once('value')
+    ]);
+    const [active, archive] = actualSnap.map(snap => snap.val());
 
     // Assertions
-    expect(actual).to.deep.equal(expected);
+    expect(Object.keys(active).length).to.equal(1, 'has one active deficient item');
+    expect(archive).to.deep.equal(archivedDeficientItem, 'has one archived deficient item');
   });
 
   it('should create deficient items for a newly deficient inspection', async () => {
@@ -108,10 +123,10 @@ describe('Deficient Items Create and Delete', () => {
       inspectionCompleted: true,
       property: propertyId,
 
-      // Create two NON-deficient items on inspection
       template: {
         trackDeficientItems: true,
         items: {
+          // Create two NON-deficient items on inspection
           [item1Id]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', false),
           [item2Id]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', false)
         }
@@ -138,11 +153,68 @@ describe('Deficient Items Create and Delete', () => {
 
     // Test result
     const actualSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}`).once('value');
-    const actual = Object.keys(actualSnap.val() || {});
+    const actualData = actualSnap.val() || {};
+    const actual = Object.keys(actualData).map(id => actualData[id].item);
 
     // Assertions
-    expect(actual.includes(item1Id)).to.equal(true, 'created deficient item #1');
-    expect(actual.includes(item2Id)).to.equal(true, 'created deficient item #2');
+    expect(actual.includes(item1Id)).to.equal(true, 'created deficient item for inspection item #1');
+    expect(actual.includes(item2Id)).to.equal(true, 'created deficient item for inspection item #2');
+  });
+
+  it('should merge any archived deficient item data matching a newly deficient inspection item', async () => {
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const item1Id = uuid();
+    const item2Id = uuid();
+    const beforeData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: propertyId,
+
+      template: {
+        trackDeficientItems: true,
+        items: {
+          // Create two NON-deficient items on inspection
+          [item1Id]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', false),
+          [item2Id]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', false)
+        }
+      }
+    });
+    const expected = Date.now() - 100000;
+
+    // Setup database
+    const diArchiveRef = db.ref(`/archive/propertyInspectionDeficientItems/${propertyId}`).push();
+    const diArchivePath = diArchiveRef.path.toString();
+    const diArchiveID = diArchivePath.split('/').pop();
+    await diArchiveRef.set({ inspection: inspectionId, item: item1Id, createdAt: expected }); // Add archived DI for item #1
+    await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
+    const beforeSnap = await db.ref(`/inspections/${inspectionId}/updatedLastDate`).once('value'); // Create before
+    await db.ref(`/inspections/${inspectionId}/template/items/${item1Id}`).set(
+      mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) // Mark 1st item as deficient
+    );
+    await db.ref(`/inspections/${inspectionId}/template/items/${item2Id}`).set(
+      mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) // Mark 2nd item as deficient
+    );
+    const afterSnap = await db.ref(`/inspections/${inspectionId}/updatedLastDate`).once('value'); // Create after
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.deficientItemsWrite);
+    await wrapped(changeSnap, { params: { inspectionId } });
+
+    // Test result
+    const actualSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}`).once('value');
+    const actualData = actualSnap.val() || {};
+    const [active] = Object.keys(actualData).filter(id => id !== diArchiveID).map(id => actualData[id]);
+    const [archive] = Object.keys(actualData).filter(id => id === diArchiveID).map(id => actualData[id]);
+    const oldArchiveSnap = await db.ref(diArchivePath).once('value');
+    const oldArchive = oldArchiveSnap.val();
+
+    // Assertions
+    expect(active.createdAt).to.be.ok
+    expect(active.createdAt).to.not.equal(expected, 'new deficient item not merged with archive');
+    expect(archive.createdAt).to.equal(expected, 'repeatedly deficient item merged with archive');
+    expect(oldArchive).to.equal(null, 'removed deficient item from archive');
   });
 
   it('should update deficient item proxy attributes that are out of sync with its\' inspection item', async () => {
@@ -218,15 +290,17 @@ describe('Deficient Items Create and Delete', () => {
         await db.ref(`/inspections/${inspectionId}/template/items/${itemId}/${sourceAttr}`).set(expected);
       }
 
-      const beforeUpdatedAtSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}/updatedAt`).once('value');
+      const itemOneDiSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}`).orderByChild('item').equalTo(itemId).limitToFirst(1).once('value');
+      const itemOneDiIdentifier = Object.keys(itemOneDiSnap.val() || {})[0];
+      const beforeUpdatedAtSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemOneDiIdentifier}/updatedAt`).once('value');
 
       // Execute again for DI update
       await wrapped(changeSnap, { params: { inspectionId } });
 
       // Test result
-      const results = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}/${diAttr}`).once('value');
+      const results = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemOneDiIdentifier}/${diAttr}`).once('value');
       const actual = results.val();
-      const afterUpdatedAtSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}/updatedAt`).once('value');
+      const afterUpdatedAtSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemOneDiIdentifier}/updatedAt`).once('value');
 
       // Assertions
       if (typeof expected === 'object') {
@@ -246,17 +320,18 @@ describe('Deficient Items Create and Delete', () => {
     const itemId = uuid();
     const newer = Date.now() / 1000;
     const older = newer - 100000;
-    const newerAdminEdit = { action: 'selected A', admin_name: 'test', admin_uid: uuid(), edit_date: newer };
-    const olderAdminEdit = { action: 'selected B', admin_name: 'test', admin_uid: uuid(), edit_date: older };
+    const newerAdminEdit = { action: 'NEWER', admin_name: 'test', admin_uid: uuid(), edit_date: newer };
+    const olderAdminEdit = { action: 'OLDER', admin_name: 'test', admin_uid: uuid(), edit_date: older };
     const beforeData = mocking.createInspection({
       deficienciesExist: true,
       inspectionCompleted: true,
       property: propertyId,
 
-      // Create single deficient item on inspection
       template: {
         trackDeficientItems: true,
         items: {
+
+          // Create single deficient item on inspection
           [itemId]: mocking.createCompletedMainInputItem(
             'fiveactions_onetofive',
             true,
@@ -284,8 +359,10 @@ describe('Deficient Items Create and Delete', () => {
     await wrapped(changeSnap, { params: { inspectionId } });
 
     // Test result
-    const actualSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}/itemDataLastUpdatedDate`).once('value');
-    const actual = actualSnap.val();
+    const actualSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}`).orderByChild('item').equalTo(itemId).limitToFirst(1).once('value');
+    const actualData = (actualSnap.exists() ? actualSnap.val() : {})
+    const actualDI = Object.keys(actualData).map(id => actualData[id])[0];
+    const actual = actualDI ? actualDI.itemDataLastUpdatedDate : 0;
 
     // Assertions
     expect(actual).to.equal(expected);
@@ -315,8 +392,9 @@ describe('Deficient Items Create and Delete', () => {
 
     // Setup database
     await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
-    await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${item1Id}`).set({
+    await db.ref(`/propertyInspectionDeficientItems/${propertyId}`).push().set({
       state: 'requires-action',
+      item: item1Id,
       inspection: inspectionId
     });
     const beforeSnap = await db.ref(`/inspections/${inspectionId}/updatedLastDate`).once('value'); // Create before
@@ -331,9 +409,57 @@ describe('Deficient Items Create and Delete', () => {
     await wrapped(changeSnap, { params: { inspectionId } });
 
     // Test result
-    const actual = await db.ref(`/propertyInspectionDeficientItems/${propertyId}/${item2Id}`).once('value');
+    const actualSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}`).orderByChild('item').equalTo(item2Id).limitToFirst(1).once('value');
+    const actualData = actualSnap.val() || {};
+    const actual = Object.keys(actualData).map(id => actualData[id].item);
 
     // Assertions
-    expect(actual.exists()).to.equal(true, 'created deficient item #2');
+    expect(actual.includes(item2Id)).to.equal(true, 'created deficient item for inspection item #2');
+  });
+
+  it('should create new deficient items for matching source items of different inspectons', async () => {
+    const propertyId = uuid();
+    const inspectionOneId = uuid();
+    const inspectionTwoId = uuid();
+    const itemId = uuid();
+    const inspectionData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: propertyId,
+
+      template: {
+        trackDeficientItems: true,
+        items: {
+          // Create single deficient item on inspection
+          [itemId]: mocking.createCompletedMainInputItem( 'fiveactions_onetofive', true)
+        }
+      }
+    });
+
+    // Setup database
+    await db.ref(`/inspections/${inspectionOneId}`).set(inspectionData); // Add inspection
+    let beforeSnap = await db.ref(`/inspections/${inspectionOneId}/updatedLastDate`).once('value'); // Create before
+    let afterSnap = await db.ref(`/inspections/${inspectionOneId}/updatedLastDate`).once('value'); // Create after
+
+    // Execute for 1st DI add
+    let changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.deficientItemsWrite);
+    await wrapped(changeSnap, { params: { inspectionId: inspectionOneId } });
+
+    // Create 2nd inspection with the same source template
+    await db.ref(`/inspections/${inspectionTwoId}`).set(inspectionData); // Add 2nd inspection w/ same item id
+    beforeSnap = await db.ref(`/inspections/${inspectionTwoId}/updatedLastDate`).once('value'); // Create before
+    afterSnap = await db.ref(`/inspections/${inspectionTwoId}/updatedLastDate`).once('value'); // Create after
+    changeSnap = test.makeChange(beforeSnap, afterSnap)
+
+    // Execute again for DI update
+    await wrapped(changeSnap, { params: { inspectionId: inspectionTwoId } });
+
+    // Test result
+    const actualSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}`).once('value');
+    const actual = Object.keys(actualSnap.val()).length;
+
+    // Assertions
+    expect(actual).to.equal(2, 'created 2 distinct deficient items');
   });
 });

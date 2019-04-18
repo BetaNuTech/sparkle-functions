@@ -26,6 +26,18 @@
         "category"
       ]
     },
+    "propertyInspectionDeficientItems": {
+      "$propertyID": {
+        ".indexOn": ["item"]
+      }
+    },
+    "archive": {
+      "propertyInspectionDeficientItems": {
+        "$propertyID": {
+          ".indexOn": ["item"]
+        }
+      }
+    },
     ".read": "auth != null",
     ".write": "auth != null"
   }

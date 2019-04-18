@@ -104,6 +104,13 @@ exports.deficientItemsPropertyMetaSyncStaging = functionsStagingDatabase.ref('/p
   deficientItems.createOnDiStateUpdate(dbStaging)
 );
 
+exports.deficientItemsArchiving = functions.database.ref('/propertyInspectionDeficientItems/{propertyId}/{itemId}/archive').onUpdate(
+  deficientItems.createOnDiArchiveUpdate(db)
+);
+exports.deficientItemsArchivingStaging = functionsStagingDatabase.ref('/propertyInspectionDeficientItems/{propertyId}/{itemId}/archive').onUpdate(
+  deficientItems.createOnDiArchiveUpdate(dbStaging)
+);
+
 
 // Template onWrite
 exports.templateWrite = functions.database.ref('/templates/{templateId}').onWrite(

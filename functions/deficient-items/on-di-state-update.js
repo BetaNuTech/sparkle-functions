@@ -17,12 +17,12 @@ module.exports = function createOnDiStateUpdateHandler(db) {
 
   return async (change, event) => {
     const updates = Object.create(null);
-    const { propertyId, itemId } = event.params;
+    const { propertyId, itemId: deficientItemId } = event.params;
 
     assert(Boolean(propertyId), 'has property ID');
-    assert(Boolean(itemId), 'has item ID');
+    assert(Boolean(deficientItemId), 'has deficient item ID');
 
-    log.info(`${LOG_PREFIX} property: ${propertyId} | item: ${itemId}`);
+    log.info(`${LOG_PREFIX} property: ${propertyId} | deficient item: ${deficientItemId}`);
 
     const beforeState = change.before.val();
     const afterState = change.after.val();

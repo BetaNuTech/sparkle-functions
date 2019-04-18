@@ -37,7 +37,7 @@ module.exports = async function processMeta(db, propertyId) {
     const propertyInspectionDeficientItemsSnap = await defItemsModel.findAllByProperty(db, propertyId);
     const propertyInspectionDeficientItemsData = propertyInspectionDeficientItemsSnap.exists() ? propertyInspectionDeficientItemsSnap.val() : {};
     const deficientItems = Object.keys(propertyInspectionDeficientItemsData)
-      .map(itemId => Object.assign({id: itemId}, propertyInspectionDeficientItemsData[itemId]))
+      .map(defItemId => Object.assign({id: defItemId}, propertyInspectionDeficientItemsData[defItemId]))
 
     // Collect updates to write to property's metadata attrs
     const { updates } = propertyMetaUpdates({
@@ -126,9 +126,9 @@ function updateDeficientItemsAttrs(config = { propertyId: '', inspections: [], d
       // Merge latest state from:
       // `/propertyInspectionDeficientItems/...` into
       // deficient items calculated from inspections
-      Object.keys(defItems).forEach(itemId => {
-        const [latest] = config.deficientItems.filter(({id}) => id === itemId);
-        Object.assign(defItems[itemId], latest || {}); // merge latest state
+      Object.keys(defItems).forEach(inspItemId => {
+        const [latest] = config.deficientItems.filter(defItem => defItem.item === inspItemId);
+        Object.assign(defItems[inspItemId], latest || {}); // merge latest state
       });
       return defItems;
     });

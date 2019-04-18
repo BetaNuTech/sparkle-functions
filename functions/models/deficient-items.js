@@ -6,10 +6,10 @@ const API_PATH = '/propertyInspectionDeficientItems';
 
 module.exports = modelSetup({
   /**
-   * Find all DI's associated with a property
+   * Find all DI's associated with an inspection
    * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
    * @param  {String} inspectionId
-   * @return {Promise} - resolves {InspectionSnapshots[]}
+   * @return {Promise} - resolves {DeficientItemsSnapshot[]}
    */
   async findAllByInspection(db, inspectionId) {
     assert(inspectionId && typeof inspectionId === 'string', 'has inspection id');
@@ -47,17 +47,38 @@ module.exports = modelSetup({
    * Add a deficient item to a property
    * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
    * @param  {String} propertyId
-   * @param  {String} itemId
    * @param  {Object} recordData
    * @return {Promise} - resolves {Object} JSON of path and update
    */
-  async createRecord(db, propertyId, itemId, recordData) {
+  async createRecord(db, propertyId, recordData) {
+    const updates = Object.create(null);
     assert(propertyId && typeof propertyId === 'string', 'has property id');
-    assert(itemId && typeof itemId === 'string', 'has item id');
-    assert(recordData && typeof recordData === 'object', 'has record date');
-    const path = `${API_PATH}/${propertyId}/${itemId}`;
-    await db.ref(path).set(recordData);
-    return { [path]: recordData };
+    assert(recordData && typeof recordData === 'object', 'has record data');
+    assert(Boolean(recordData.inspection), 'has inspection reference');
+    assert(Boolean(recordData.item), 'has item reference');
+
+    // Recover any previously archived deficient item
+    const archivedSnap = await this._findArchived(db, { propertyId, inspectionId: recordData.inspection, itemId: recordData.item });
+    const archived = archivedSnap ? archivedSnap.val() : null;
+
+    let ref;
+    if (archived) {
+      // Re-use previously created DI identifier
+      ref = db.ref(`${API_PATH}/${propertyId}/${archivedSnap.key}`);
+    } else {
+      // Create brand new DI identifier
+      ref = db.ref(`${API_PATH}/${propertyId}`).push();
+    }
+
+    // Merge archived and created into active path
+    await ref.set(Object.assign(recordData, archived));
+
+    if (archived) {
+      // Cleanup archive
+      await archivedSnap.ref.remove();
+    }
+
+    return { [ref.path.toString()]: recordData };
   },
 
   /**
@@ -94,5 +115,54 @@ module.exports = modelSetup({
     updates[`${path}/updatedAt`] = 'updated';
 
     return updates;
+  },
+
+  /**
+   * Move a deficient item under `/archive`
+   * and remove it from its' active location
+   * @param  {firebaseadmin.database} db
+   * @param  {DataSnapshot} diSnap
+   * @return {Promise} - resolves {Object} updates hash
+   */
+  async archive(db, diSnap) {
+    const updates = Object.create(null);
+    const activePath = diSnap.ref.path.toString();
+
+    await db.ref(`/archive${activePath}`).set(diSnap.val());
+    updates[`/archive${activePath}`] = 'created';
+
+    await db.ref(activePath).remove();
+    updates[activePath] = 'removed';
+
+    return updates;
+  },
+
+  /**
+   * Recover any deficient item from archive
+   * matching a property's inspection item
+   * @param  {firebaseadmin.database} db
+   * @param  {String}  propertyId
+   * @param  {String}  inspectionId
+   * @param  {String}  itemId
+   * @return {Promise} - resolve {DataSnapshot|Object}
+   */
+  async _findArchived(db, {propertyId, inspectionId, itemId}) {
+    assert(propertyId && typeof propertyId === 'string', 'has property reference');
+    assert(inspectionId && typeof inspectionId === 'string', 'has inspection reference');
+    assert(itemId && typeof itemId === 'string', 'has item reference');
+
+    let result = null;
+    const archPropertyDiRef = db.ref(`archive${API_PATH}/${propertyId}`);
+    const deficientItemSnaps = await archPropertyDiRef.orderByChild('item').equalTo(itemId).once('value');
+
+    // Find DI's matching inspection ID
+    // (we've matched or property and item already)
+    deficientItemSnaps.forEach(deficientItemSnap => {
+      if (!result && deficientItemSnap.val().inspection === inspectionId) {
+        result = deficientItemSnap;
+      }
+    });
+
+    return result;
   }
 });
