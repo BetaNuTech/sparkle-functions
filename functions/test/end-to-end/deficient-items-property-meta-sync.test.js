@@ -39,6 +39,7 @@ describe('Deficient Items Property Meta Sync', () => {
       await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
       const diRef = db.ref(`/propertyInspectionDeficientItems/${propertyId}`).push();
       const diPath = diRef.path.toString();
+      const diID = diPath.split('/').pop();
       await diRef.set({
         state: initalActionState, // requires action
         inspection: inspectionId,
@@ -55,7 +56,7 @@ describe('Deficient Items Property Meta Sync', () => {
       // Execute
       const changeSnap = test.makeChange(beforeSnap, afterSnap);
       const wrapped = test.wrap(cloudFunctions.deficientItemsPropertyMetaSync);
-      await wrapped(changeSnap, { params: { propertyId, itemId } });
+      await wrapped(changeSnap, { params: { propertyId, itemId: diID } });
 
       // Test result
       const actual = await db.ref(`/properties/${propertyId}/numOfRequiredActionsForDeficientItems`).once('value');
@@ -93,6 +94,7 @@ describe('Deficient Items Property Meta Sync', () => {
       await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
       const diRef = db.ref(`/propertyInspectionDeficientItems/${propertyId}`).push();
       const diPath = diRef.path.toString();
+      const diID = diPath.split('/').pop();
       await diRef.set({
         state: initalActionState, // obvs requires action
         inspection: inspectionId,
@@ -109,7 +111,7 @@ describe('Deficient Items Property Meta Sync', () => {
       // Execute
       const changeSnap = test.makeChange(beforeSnap, afterSnap);
       const wrapped = test.wrap(cloudFunctions.deficientItemsPropertyMetaSync);
-      await wrapped(changeSnap, { params: { propertyId, itemId } });
+      await wrapped(changeSnap, { params: { propertyId, itemId: diID } });
 
       // Test result
       const actual = await db.ref(`/properties/${propertyId}/numOfFollowUpActionsForDeficientItems`).once('value');
@@ -142,6 +144,7 @@ describe('Deficient Items Property Meta Sync', () => {
     await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
     const diRef = db.ref(`/propertyInspectionDeficientItems/${propertyId}`).push();
     const diPath = diRef.path.toString();
+    const diID = diPath.split('/').pop();
     await diRef.set({
       state: FOLLOW_UP_ACTION_VALUES[0], // NOT requiring action
       inspection: inspectionId,
@@ -158,7 +161,7 @@ describe('Deficient Items Property Meta Sync', () => {
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
     const wrapped = test.wrap(cloudFunctions.deficientItemsPropertyMetaSync);
-    await wrapped(changeSnap, { params: { propertyId, itemId } });
+    await wrapped(changeSnap, { params: { propertyId, itemId: diID } });
 
     // Test result
     const actualSnap = await db.ref(`/properties/${propertyId}/numOfRequiredActionsForDeficientItems`).once('value');
@@ -191,6 +194,7 @@ describe('Deficient Items Property Meta Sync', () => {
     await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
     const diRef = db.ref(`/propertyInspectionDeficientItems/${propertyId}`).push();
     const diPath = diRef.path.toString();
+    const diID = diPath.split('/').pop();
     await diRef.set({
       state: REQUIRED_ACTIONS_VALUES[0], // requires action
       inspection: inspectionId,
@@ -207,7 +211,7 @@ describe('Deficient Items Property Meta Sync', () => {
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
     const wrapped = test.wrap(cloudFunctions.deficientItemsPropertyMetaSync);
-    await wrapped(changeSnap, { params: { propertyId, itemId } });
+    await wrapped(changeSnap, { params: { propertyId, itemId: diID } });
 
     // Test result
     const actualSnap = await db.ref(`/properties/${propertyId}/numOfFollowUpActionsForDeficientItems`).once('value');
