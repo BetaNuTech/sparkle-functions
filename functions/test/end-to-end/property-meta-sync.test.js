@@ -108,6 +108,8 @@ describe('Property Meta Sync', () => {
     const newest = (Date.now() / 1000);
     const oldest = (Date.now() / 1000) - 100000;
     const defItem1Id = uuid();
+    const defItem2Id = uuid();
+    const defItem3Id = uuid();
     const inspectionOne = mocking.createInspection({
       property: propertyId,
       inspectionCompleted: true,
@@ -120,7 +122,6 @@ describe('Property Meta Sync', () => {
         items: { [defItem1Id]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) }
       }
     });
-    const defItem2Id = uuid();
     const inspectionTwo = mocking.createInspection({
       property: propertyId,
       inspectionCompleted: true,
@@ -129,12 +130,17 @@ describe('Property Meta Sync', () => {
       template: {
         trackDeficientItems: true,
 
-        // Create template w/ 1 deficient item
-        items: { [defItem2Id]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true) }
+        // Create template w/ 2 deficient items
+        items: {
+          [defItem2Id]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true),
+          [defItem3Id]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true)
+        }
       }
     });
     const expected = {
-      numOfRequiredActionsForDeficientItems: 1 // updated via latest state from `/propertyInspectionDeficientItems`
+      numOfDeficientItems: 3,
+      numOfRequiredActionsForDeficientItems: 1,
+      numOfFollowUpActionsForDeficientItems: 1
     };
 
     // Setup database
@@ -143,6 +149,7 @@ describe('Property Meta Sync', () => {
     await db.ref(`/inspections/${insp2Id}`).set(inspectionTwo); // Add inspection #2
     await db.ref(`/propertyInspectionDeficientItems/${propertyId}`).push().set(mocking.createDeficientItem(insp1Id, defItem1Id, { state: 'go-back' })); // non-default required action state
     await db.ref(`/propertyInspectionDeficientItems/${propertyId}`).push().set(mocking.createDeficientItem(insp2Id, defItem2Id, { state: 'pending' })); // remove required action state
+    await db.ref(`/propertyInspectionDeficientItems/${propertyId}`).push().set(mocking.createDeficientItem(insp2Id, defItem3Id, { state: 'completed' })); // follow up action state
     const snap = await db.ref(`/inspections/${insp1Id}`).once('value'); // Create snapshot
 
     // Execute
@@ -154,9 +161,19 @@ describe('Property Meta Sync', () => {
     const actual = propertySnap.val();
 
     // Assertions
+    expect(actual.numOfDeficientItems).to.equal(
+      expected.numOfDeficientItems,
+      'updated property\'s `numOfDeficientItems`'
+    );
+
     expect(actual.numOfRequiredActionsForDeficientItems).to.equal(
       expected.numOfRequiredActionsForDeficientItems,
       'updated property\'s `numOfRequiredActionsForDeficientItems`'
+    );
+
+    expect(actual.numOfFollowUpActionsForDeficientItems).to.equal(
+      expected.numOfFollowUpActionsForDeficientItems,
+      'updated property\'s `numOfFollowUpActionsForDeficientItems`'
     );
   });
 

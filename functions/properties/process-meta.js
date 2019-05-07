@@ -117,7 +117,7 @@ function updateLastInspectionAttrs(config = { propertyId: '', inspections: [], u
  * @return {Object} - configuration
  */
 function updateDeficientItemsAttrs(config = { propertyId: '', inspections: [], deficientItems: [], updates: {} }) {
-  const deficientInspectionItems = config.inspections
+  const deficientItemsLatest = [].concat(...config.inspections // flatten
     .filter(({ inspectionCompleted, template }) =>
       inspectionCompleted && Boolean(template.trackDeficientItems) && Boolean(template.items)) // only completed, DI enabled, /w items
     .map(inspection => createDeficientItems(inspection)) // create inspection's deficient items
@@ -131,22 +131,27 @@ function updateDeficientItemsAttrs(config = { propertyId: '', inspections: [], d
         Object.assign(defItems[inspItemId], latest || {}); // merge latest state
       });
       return defItems;
-    });
+    })
+    .map(defItems => {
+      // Convert nested objects of inspections DI's
+      // into grouped array's of inspection DI's
+      const defItemsArr = [];
+      Object.keys(defItems).forEach(defItemId => defItemsArr.push(defItems[defItemId]));
+      return defItemsArr;
+    }))
 
   // Count all deficient items
-  config.updates[`/properties/${config.propertyId}/numOfDeficientItems`] = deficientInspectionItems.reduce((acc, defItems) =>
-    acc + Object.keys(defItems).length
-  , 0);
+  config.updates[`/properties/${config.propertyId}/numOfDeficientItems`] = deficientItemsLatest.length;
 
   // Count all deficient items where state requires action
-  config.updates[`/properties/${config.propertyId}/numOfRequiredActionsForDeficientItems`] = deficientInspectionItems.reduce((acc, defItems) =>
-    acc + Object.keys(defItems).filter(itemId => REQUIRED_ACTIONS_VALUES.includes(defItems[itemId].state)).length
-  , 0);
+  config.updates[`/properties/${config.propertyId}/numOfRequiredActionsForDeficientItems`] = deficientItemsLatest.filter(
+    ({state}) => REQUIRED_ACTIONS_VALUES.includes(state)
+  ).length;
 
   // Count all deficient items where state requires follow up
-  config.updates[`/properties/${config.propertyId}/numOfFollowUpActionsForDeficientItems`] = deficientInspectionItems.reduce((acc, defItems) =>
-    acc + Object.keys(defItems).filter(itemId => FOLLOW_UP_ACTION_VALUES.includes(defItems[itemId].state)).length
-  , 0);
+  config.updates[`/properties/${config.propertyId}/numOfFollowUpActionsForDeficientItems`] = deficientItemsLatest.filter(
+    ({state}) => FOLLOW_UP_ACTION_VALUES.includes(state)
+  ).length;
 
   return config;
 }
