@@ -33,11 +33,13 @@ cron:
 
 - description: Trigger sync of all /properties
   url: /publish/properties-sync
-  schedule: every 1 hours
+  schedule: every 24 hours from 03:00 to 04:00
+  timezone: America/New_York
 
 - description: Trigger sync of all staging /properties
   url: /publish/staging-properties-sync
-  schedule: every 1 hours
+  schedule: every 24 hours from 03:00 to 04:00
+  timezone: America/New_York
 
 - description: Trigger sync of all /propertyInspectionDeficientItems
   url: /publish/deficient-items-sync
