@@ -36,14 +36,15 @@ module.exports = async function processMeta(db, propertyId) {
     // Find any deficient items data for property
     const propertyInspectionDeficientItemsSnap = await defItemsModel.findAllByProperty(db, propertyId);
     const propertyInspectionDeficientItemsData = propertyInspectionDeficientItemsSnap.exists() ? propertyInspectionDeficientItemsSnap.val() : {};
-    const deficientItems = Object.keys(propertyInspectionDeficientItemsData)
+    const deficientItemsCurrent = Object.keys(propertyInspectionDeficientItemsData)
+      .filter(defItemId => Boolean(propertyInspectionDeficientItemsData[defItemId].state)) // require state
       .map(defItemId => Object.assign({id: defItemId}, propertyInspectionDeficientItemsData[defItemId]))
 
     // Collect updates to write to property's metadata attrs
     const { updates } = propertyMetaUpdates({
       propertyId,
       inspections,
-      deficientItems,
+      deficientItems: deficientItemsCurrent,
       updates: Object.create(null)
     });
 
@@ -121,14 +122,18 @@ function updateDeficientItemsAttrs(config = { propertyId: '', inspections: [], d
     .filter(({ inspectionCompleted, template }) =>
       inspectionCompleted && Boolean(template.trackDeficientItems) && Boolean(template.items)) // only completed, DI enabled, /w items
     .map(inspection => createDeficientItems(inspection)) // create inspection's deficient items
-    .filter(calcDeficientItems => Object.keys(calcDeficientItems).length) // remove  non-deficient inspections
+    .filter(calcDeficientItems => Object.keys(calcDeficientItems).length) // remove non-deficient inspections
     .map(defItems => {
       // Merge latest state from:
       // `/propertyInspectionDeficientItems/...` into
       // deficient items calculated from inspections
-      Object.keys(defItems).forEach(inspItemId => {
-        const [latest] = config.deficientItems.filter(defItem => defItem.item === inspItemId);
-        Object.assign(defItems[inspItemId], latest || {}); // merge latest state
+      Object.keys(defItems).forEach(id => {
+        const itemId = defItems[id].item;
+        const inspId = defItems[id].inspection;
+        const [existingDefItem] = config.deficientItems.filter(
+          ({item, inspection}) => item === itemId && inspection === inspId
+        );
+        Object.assign(defItems[id], existingDefItem || {}); // merge existingDefItem state
       });
       return defItems;
     })
@@ -138,7 +143,7 @@ function updateDeficientItemsAttrs(config = { propertyId: '', inspections: [], d
       const defItemsArr = [];
       Object.keys(defItems).forEach(defItemId => defItemsArr.push(defItems[defItemId]));
       return defItemsArr;
-    }))
+    }));
 
   // Count all deficient items
   config.updates[`/properties/${config.propertyId}/numOfDeficientItems`] = deficientItemsLatest.length;
