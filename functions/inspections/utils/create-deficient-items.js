@@ -4,6 +4,7 @@ const getLatestItemAdminEditTimestamp = require('./get-latest-admin-edit-timesta
 
 const LOG_PREFIX = 'inspections: utils: create-deficient-items';
 const DEFICIENT_ITEM_ELIGIBLE = config.inspectionItems.deficientListEligible;
+const ITEM_VALUE_NAMES = ['mainInputZeroValue', 'mainInputOneValue', 'mainInputTwoValue', 'mainInputThreeValue', 'mainInputFourValue'];
 const DEFAULT_DEFICIENT_ITEM = Object.freeze({
   createdAt: 0,
   updatedAt: 0,
@@ -29,6 +30,7 @@ const DEFAULT_DEFICIENT_ITEM = Object.freeze({
   itemInspectorNotes: '',
   itemTitle: '',
   itemMainInputType: '',
+  itemScore: 0,
   itemMainInputSelection: 0,
   itemPhotosData: null
 });
@@ -68,6 +70,7 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
   deficientItems.forEach(item => {
     const section = inspection.template.sections ? inspection.template.sections[item.sectionId] || {} : {};
     const sectionType = section.section_type || 'single';
+    const { mainInputSelection } = item;
 
     // Add multi section sub title if present
     let sectionSubtitle = undefined;
@@ -93,12 +96,17 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
         itemInspectorNotes: item.inspectorNotes,
         itemAdminEdits: item.adminEdits ? deepClone(item.adminEdits) : null,
         itemPhotosData: item.photosData ? deepClone(item.photosData) : null,
-        itemMainInputSelection: item.mainInputSelection,
+        itemMainInputSelection: mainInputSelection,
         itemDataLastUpdatedDate,
         sectionSubtitle,
         sectionType,
       }
     );
+
+    // Set the item score from the selected
+    // source item, which may be customized
+    const selectionValueName = ITEM_VALUE_NAMES[mainInputSelection];
+    result[item.id].itemScore = selectionValueName ? item[selectionValueName] || 0 : 0;
 
     // Cleanup falsey values for item, except
     // "itemMainInputSelection" which may be 0
