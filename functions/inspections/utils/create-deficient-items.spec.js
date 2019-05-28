@@ -355,6 +355,19 @@ describe('Inspections | Utils | Create Deficient Items', () => {
       }
     });
   });
+
+  it('should lookup and set the source items score', () => {
+    const itemId = uuid();
+    const expected = 9999;
+    const item = createItem(
+      'fiveactions_onetofive',
+      true,
+      { mainInputSelection: 3, mainInputThreeValue: expected }
+    );
+    const selection = item.mainInputSelection;
+    const actual = createDeficientItems(createInspection({}, { [itemId]: item }))[itemId].itemScore;
+    expect(actual).to.equal(expected);
+  });
 });
 
 /**
