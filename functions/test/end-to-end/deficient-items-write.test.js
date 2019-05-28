@@ -6,6 +6,7 @@ const { cleanDb } = require('../../test-helpers/firebase');
 const { db, test, cloudFunctions } = require('./setup');
 
 const DEFICIENT_ITEM_PROXY_ATTRS = config.deficientItems.inspectionItemProxyAttrs;
+const INSPECTION_ITEM_SCORES = config.inspectionItems.scores;
 
 describe('Deficient Items Create and Delete', () => {
   afterEach(() => cleanDb(db));
@@ -415,6 +416,35 @@ describe('Deficient Items Create and Delete', () => {
 
     // Assertions
     expect(actual.includes(item2Id)).to.equal(true, 'created deficient item for inspection item #2');
+  });
+
+  it('should add a deficient item with all proxy attributes set from source item', async () => {
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const itemId = uuid();
+    const selectedIndex = 2;
+    const item = mocking.createCompletedMainInputItem('fiveactions_onetofive', true, { mainInputSelection: selectedIndex });
+    const beforeData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: propertyId,
+
+      // Create one new deficient item
+      template: {
+        trackDeficientItems: true,
+        items: {
+          [itemId]: item
+        }
+      }
+    });
+
+    // Expected proxy attributes
+    const expected = {};
+
+    // TODO: lookup all source item values using: `DEFICIENT_ITEM_PROXY_ATTRS`
+    // NOTE: that deficient item "proxy" attributes are named differently than the source items
+    // TODO: lookup the expected score via `INSPECTION_ITEM_SCORES` from the `selectedIndex`
+    // TODO: match actual created DI's proxy attributes to each expected attribute
   });
 
   it('should create new deficient items for matching source items of different inspectons', async () => {

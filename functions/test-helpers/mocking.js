@@ -3,6 +3,7 @@ const config = require('../config');
 
 const INSPECTION_SCORES = config.inspectionItems.scores;
 const DEFICIENT_LIST_ELIGIBLE = config.inspectionItems.deficientListEligible;
+const ITEM_VALUE_NAMES = ['mainInputZeroValue', 'mainInputOneValue', 'mainInputTwoValue', 'mainInputThreeValue', 'mainInputFourValue'];
 
 module.exports = {
  /**
@@ -71,6 +72,11 @@ module.exports = {
     assert(typeof deficient === 'boolean', 'has boolean deficient');
     assert(item && typeof item === 'object', 'has object item');
 
+    if (item.mainInputSelection) {
+      assert(ITEM_VALUE_NAMES[item.mainInputSelection], 'has valid main input selection');
+      assert(typeof INSPECTION_SCORES[type][item.mainInputSelection] === 'number', 'has valid score selection');
+    }
+
     const itemValues = {
       mainInputZeroValue: 0,
       mainInputOneValue: 0,
@@ -80,17 +86,7 @@ module.exports = {
     };
 
     INSPECTION_SCORES[type].forEach((score, i) => {
-      if (i === 0) {
-        itemValues.mainInputZeroValue = score;
-      } else if (i === 1) {
-        itemValues.mainInputOneValue = score;
-      } else if (i === 2) {
-        itemValues.mainInputTwoValue = score;
-      } else if (i === 3) {
-        itemValues.mainInputThreeValue = score;
-      } else if (i === 4) {
-        itemValues.mainInputFourValue = score;
-      }
+      itemValues[ITEM_VALUE_NAMES[i]] = score;
     });
 
     return Object.assign(
@@ -101,7 +97,7 @@ module.exports = {
         itemType: 'main',
         isTextInputItem: false,
         mainInputSelected: true,
-        mainInputSelection: (DEFICIENT_LIST_ELIGIBLE[type] || [deficient]).lastIndexOf(deficient),
+        mainInputSelection: item.mainInputSelection || DEFICIENT_LIST_ELIGIBLE[type].lastIndexOf(deficient),
         mainInputType: type,
         sectionId: '-uK6',
         textInputValue: '',
