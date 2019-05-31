@@ -81,12 +81,12 @@ module.exports = {
       assert(typeof INSPECTION_SCORES[type][item.mainInputSelection] === 'number', 'has valid score selection');
       selection = item.mainInputSelection;
     } else if (DEFICIENT_LIST_ELIGIBLE[type]) {
-       selection = DEFICIENT_LIST_ELIGIBLE[type].lastIndexOf(
-         deficient
-       ) || 0;
-     } else {
-       selection = null;
-     }
+      selection = DEFICIENT_LIST_ELIGIBLE[type].lastIndexOf(
+        deficient
+      ) || 0;
+    } else {
+      selection = null;
+    }
 
     const itemValues = {
       mainInputZeroValue: 0,
