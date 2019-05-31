@@ -6,9 +6,11 @@ const { cleanDb } = require('../../test-helpers/firebase');
 const { db, test, cloudFunctions } = require('./setup');
 
 const DEFICIENT_ITEM_PROXY_ATTRS = config.deficientItems.inspectionItemProxyAttrs;
+const DEFICIENT_ITEM_ELIGIBLE = config.inspectionItems.deficientListEligible;
 const INSPECTION_ITEM_SCORES = config.inspectionItems.scores;
+const ITEM_VALUE_NAMES = config.inspectionItems.valueNames;
 
-describe('Deficient Items Create and Delete', () => {
+describe('Deficient Items Create, Update, and Delete', () => {
   afterEach(() => cleanDb(db));
 
   it('should archive all deficient items associated with a deleted inspection', async () => {
@@ -418,12 +420,20 @@ describe('Deficient Items Create and Delete', () => {
     expect(actual.includes(item2Id)).to.equal(true, 'created deficient item for inspection item #2');
   });
 
-  it('should add a deficient item with all proxy attributes set from source item', async () => {
+  it('should lookup and set source items score on deficient item', async () => {
     const propertyId = uuid();
     const inspectionId = uuid();
     const itemId = uuid();
-    const selectedIndex = 2;
-    const item = mocking.createCompletedMainInputItem('fiveactions_onetofive', true, { mainInputSelection: selectedIndex });
+    const itemType = 'fiveactions_onetofive'
+    const itemSelectedIndex = DEFICIENT_ITEM_ELIGIBLE[itemType].lastIndexOf(true); // get last deficient eligible index
+    const selectedValueName = ITEM_VALUE_NAMES[itemSelectedIndex];
+    const expected = 9999; // create custom inspection item value
+    const itemConfig = {
+      mainInputSelection: itemSelectedIndex,
+      [selectedValueName]: expected
+    };
+
+    // creating a mock inspection initially adding two deficient items.
     const beforeData = mocking.createInspection({
       deficienciesExist: true,
       inspectionCompleted: true,
@@ -433,18 +443,76 @@ describe('Deficient Items Create and Delete', () => {
       template: {
         trackDeficientItems: true,
         items: {
-          [itemId]: item
+          [itemId]: mocking.createCompletedMainInputItem(itemType, true, itemConfig)
         }
       }
     });
 
-    // Expected proxy attributes
-    const expected = {};
+    // Setup database
+    await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add intial inspection with two deficient item
+    const afterSnap = await db.ref(`/inspections/${inspectionId}/updatedLastDate`).once('value'); // dataSnapshot adding inspection
 
-    // TODO: lookup all source item values using: `DEFICIENT_ITEM_PROXY_ATTRS`
-    // NOTE: that deficient item "proxy" attributes are named differently than the source items
-    // TODO: lookup the expected score via `INSPECTION_ITEM_SCORES` from the `selectedIndex`
-    // TODO: match actual created DI's proxy attributes to each expected attribute
+    // Execute
+    const changeSnap = test.makeChange({}, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.deficientItemsWrite);
+    await wrapped(changeSnap, { params: { inspectionId } });
+
+    // Test result
+    const actualSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}`).once('value');
+    const actualData = actualSnap.val() || {};
+    const [actual] = Object.keys(actualData).map(id => actualData[id]); // getting the actual  propertyInspectionDeficientItem
+
+    // Assertions
+    expect(actual.itemScore).to.equal(expected) // ensure the items score is correctly set
+  });
+
+  it('should updated a deficient items score with the latest selection from an inspection item', async () => {
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const itemId = uuid();
+    const itemType = 'fiveactions_onetofive';
+    const firstSelectedIndex = DEFICIENT_ITEM_ELIGIBLE[itemType].indexOf(true); // Get first deficient index
+    const secondSelectedIndex = DEFICIENT_ITEM_ELIGIBLE[itemType].lastIndexOf(true); // Get last deficient index
+    const expected = INSPECTION_ITEM_SCORES[itemType][secondSelectedIndex];
+
+    // creating a mock inspection initially adding two deficient items.
+    const beforeData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: propertyId,
+
+      // Create one new deficient item
+      template: {
+        trackDeficientItems: true,
+        items: {
+          [itemId]: mocking.createCompletedMainInputItem(itemType, true, { mainInputSelection: firstSelectedIndex })
+        }
+      }
+    });
+
+    // Setup database
+    await db.ref(`/inspections/${inspectionId}`).set(beforeData);
+    const beforeSnap = await db.ref(`/inspections/${inspectionId}/updatedLastDate`).once('value'); // dataSnapshot before updating inspection
+
+    // Make 2nd inspection item value selection
+    await db.ref(`/inspections/${inspectionId}/template/items/${itemId}/mainInputSelection`).set(
+      secondSelectedIndex
+    );
+
+    const afterSnap = await db.ref(`/inspections/${inspectionId}/updatedLastDate`).once('value'); // dataSnapshot after updating inspection
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.deficientItemsWrite);
+    await wrapped(changeSnap, { params: { inspectionId } });
+
+    // Test result
+    const actualSnap = await db.ref(`/propertyInspectionDeficientItems/${propertyId}`).once('value');
+    const actualData = actualSnap.val() || {};
+    const [actual] = Object.keys(actualData).map(id => actualData[id]); // find deficient item
+
+    // Assertions
+    expect(actual.itemScore).to.equal(expected); // ensure the items' score is correctly set to new score
   });
 
   it('should create new deficient items for matching source items of different inspectons', async () => {

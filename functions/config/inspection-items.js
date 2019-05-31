@@ -16,5 +16,7 @@ module.exports = {
     threeactions_checkmarkexclamationx: [false, true, true],
     threeactions_abc: [false, true, true],
     fiveactions_onetofive: [true, true, true, true, false]
-  })
+  }),
+
+  valueNames: ['mainInputZeroValue', 'mainInputOneValue', 'mainInputTwoValue', 'mainInputThreeValue', 'mainInputFourValue']
 }

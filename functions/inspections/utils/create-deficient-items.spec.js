@@ -42,7 +42,7 @@ describe('Inspections | Utils | Create Deficient Items', () => {
       {
         data: [['oneaction_notes', true]],
         expected: [],
-        message: 'has one deficient "oneaction_notes"'
+        message: 'does not have deficient note item'
       },
       {
         data: [
