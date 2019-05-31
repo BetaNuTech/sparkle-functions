@@ -74,6 +74,11 @@ module.exports = function createOnInspectionWriteHandler(db) {
         const itemUpdates = getDiffs(expectedDeficientItems[inspectionItemId], deficientItem, DEFICIENT_ITEM_PROXY_ATTRS);
         const latestAdminEditTimestamp = getLatestItemAdminEditTimestamp(sourceItem) || 0;
 
+        // updates the changed deficient Items' score
+        if (deficientItem & deficientItem.itemScore) {
+          itemUpdates.itemScore = deficientItem.itemScore
+        }
+
         // Set any latest admin edit as the last updated timestamp
         if (latestAdminEditTimestamp && latestAdminEditTimestamp > deficientItem.itemDataLastUpdatedDate) {
           itemUpdates.itemDataLastUpdatedDate = latestAdminEditTimestamp;

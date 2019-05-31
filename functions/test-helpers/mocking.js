@@ -3,7 +3,7 @@ const config = require('../config');
 
 const INSPECTION_SCORES = config.inspectionItems.scores;
 const DEFICIENT_LIST_ELIGIBLE = config.inspectionItems.deficientListEligible;
-const ITEM_VALUE_NAMES = ['mainInputZeroValue', 'mainInputOneValue', 'mainInputTwoValue', 'mainInputThreeValue', 'mainInputFourValue'];
+const ITEM_VALUE_NAMES = config.inspectionItems.valueNames;
 
 module.exports = {
  /**
@@ -72,10 +72,21 @@ module.exports = {
     assert(typeof deficient === 'boolean', 'has boolean deficient');
     assert(item && typeof item === 'object', 'has object item');
 
-    if (item.mainInputSelection) {
+    // Validate mocked selection or
+    // lookup selection based on deficiency
+    // list eligiblity
+    let selection = 0;
+    if (typeof item.mainInputSelection === 'number') {
       assert(ITEM_VALUE_NAMES[item.mainInputSelection], 'has valid main input selection');
       assert(typeof INSPECTION_SCORES[type][item.mainInputSelection] === 'number', 'has valid score selection');
-    }
+      selection = item.mainInputSelection;
+    } else if (DEFICIENT_LIST_ELIGIBLE[type]) {
+       selection = DEFICIENT_LIST_ELIGIBLE[type].lastIndexOf(
+         deficient
+       ) || 0;
+     } else {
+       selection = null;
+     }
 
     const itemValues = {
       mainInputZeroValue: 0,
@@ -97,7 +108,7 @@ module.exports = {
         itemType: 'main',
         isTextInputItem: false,
         mainInputSelected: true,
-        mainInputSelection: item.mainInputSelection || DEFICIENT_LIST_ELIGIBLE[type].lastIndexOf(deficient),
+        mainInputSelection: selection,
         mainInputType: type,
         sectionId: '-uK6',
         textInputValue: '',
