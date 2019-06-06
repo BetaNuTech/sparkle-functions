@@ -20,8 +20,8 @@ const pubsubClient = new PubSub({
 });
 
 // Staging
-const functionsStagingDatabase = functions.database.instance('trialbase-1a146');
-const dbStaging = defaultApp.database('https://trialbase-darren-7f868.firebaseio.com');
+const functionsStagingDatabase = functions.database.instance('staging-sapphire-inspections');
+const dbStaging = defaultApp.database('https://staging-sapphire-inspections.firebaseio.com');
 
 // Send API version
 exports.latestVersion = functions.https.onRequest((request, response) =>
