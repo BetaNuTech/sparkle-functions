@@ -189,4 +189,31 @@ describe('Property Delete', () => {
     expect(actual.exists()).to.equal(false, 'removed /propertyTemplates proxy');
     expect(actualList.exists()).to.equal(false, 'removed /propertyTemplatesList proxy');
   }));
+
+  it('should remove the deleted property from any team it is associated with', () => co(function *() {
+    const teamId = uuid();
+    const userId = uuid();
+    const propertyId = uuid();
+    const property2Id = uuid();
+
+    // Setup database
+    yield db.ref(`/properties/${propertyId}`).set({ name: 'test', team: teamId }); // Add property
+    yield db.ref(`/teams/${teamId}/properties/${propertyId}`).set(true); // Add first property to team
+    yield db.ref(`/users/${userId}/teams/${teamId}/${propertyId}`).set(true); // add a user to the first team
+    yield db.ref(`/teams/${teamId}/properties/${property2Id}`).set(true); // Add second property to team
+    yield db.ref(`/properties/${propertyId}`).remove(); // Remove property
+    const propertyAfterSnap = yield db.ref(`/properties/${propertyId}`).once('value'); // Get after templates
+
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.propertyDelete);
+    yield wrapped(propertyAfterSnap, { params: { propertyId } });
+
+    // Test result
+    const removedProperty = yield db.ref(`/teams/${teamId}/properties/${propertyId}`).once('value'); // check removed property is removed from team
+    const otherProperty = yield db.ref(`/teams/${teamId}/properties/${property2Id}`).once('value'); // check other property is unaffected
+
+    // Assertions
+    expect(removedProperty.exists()).to.equal(false, `removed property from /teams/${teamId}/properties`);
+    expect(otherProperty.exists()).to.equal(true, 'second added property still exists on team');
+  }));
 });
