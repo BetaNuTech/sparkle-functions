@@ -8,16 +8,20 @@ const properties = require('./properties');
 const propertyTemplates = require('./property-templates');
 const deficientItems = require('./deficient-items');
 const regTokens = require('./reg-tokens');
+const PubSub = require('@google-cloud/pubsub');
 
 const config = functions.config().firebase;
 const defaultApp = admin.initializeApp(config);
 const db = defaultApp.database();
 const auth = admin.auth();
 const storage = admin.storage();
+const pubsubClient = new PubSub({
+  projectId: config ? config.projectId : ''
+});
 
 // Staging
-const functionsStagingDatabase = functions.database.instance('staging-sapphire-inspections');
-const dbStaging = defaultApp.database('https://staging-sapphire-inspections.firebaseio.com');
+const functionsStagingDatabase = functions.database.instance('trialbase-1a146');
+const dbStaging = defaultApp.database('https://trialbase-darren-7f868.firebaseio.com');
 
 // Send API version
 exports.latestVersion = functions.https.onRequest((request, response) =>
@@ -82,12 +86,19 @@ exports.propertyWriteStaging = functionsStagingDatabase.ref('/properties/{proper
 
 // Property onDelete
 exports.propertyDelete = functions.database.ref('/properties/{propertyId}').onDelete(
-  properties.createOnDeleteHandler(db, storage)
+  properties.createOnDeleteHandler(db, storage, pubsubClient, 'user-teams-sync')
 );
 exports.propertyDeleteStaging = functionsStagingDatabase.ref('/properties/{propertyId}').onDelete(
-  properties.createOnDeleteHandler(dbStaging, storage)
+  properties.createOnDeleteHandler(dbStaging, storage, pubsubClient, 'staging-user-teams-sync')
 );
 
+// Property team onWrite
+exports.propertyTeamWrite = functions.database.ref('/properties/{propertyId}/team').onWrite(
+  properties.createOnTeamsWriteHandler(db, pubsubClient, 'user-teams-sync')
+);
+exports.propertyTeamWriteStaging = functionsStagingDatabase.ref('/properties/{propertyId}/team').onWrite(
+  properties.createOnTeamsWriteHandler(dbStaging, pubsubClient, 'staging-user-teams-sync')
+);
 
 // Deficient Items
 exports.deficientItemsWrite = functions.database.ref('/inspections/{inspectionId}/updatedLastDate').onWrite(
