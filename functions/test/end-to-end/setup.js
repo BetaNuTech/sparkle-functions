@@ -9,13 +9,14 @@ if (process.env.FIREBASE_FUNCTIONS_AUTH && !fs.existsSync(AUTH_FILE_PATH)) {
 }
 
 const testConfig = {
-  databaseURL: 'https://test-sapphire-inspections-8a9e3.firebaseio.com',
-  storageBucket: 'sapphire-inspections.appspot.com',
-  projectId: 'test-sapphire-inspections-8a9e3'
+  databaseURL: 'https://trialbase-darren-7f868.firebaseio.com/',
+  storageBucket: 'trialbase-1a146.appspot.com',
+  projectId: 'test-trialbase-1a146'
 };
 const test = require('firebase-functions-test')(testConfig, AUTH_FILE_PATH);
 const sinon = require('sinon');
 const admin = require('firebase-admin');
+const PubSub = require('@google-cloud/pubsub');
 
 admin.initializeApp(testConfig);
 const db = admin.database();
@@ -26,6 +27,19 @@ const storage = admin.storage();
 sinon.stub(admin, 'initializeApp').returns({ database: () => db });
 Object.defineProperty(admin, 'database', { writable: true, value: () => db });
 Object.defineProperty(admin, 'storage', { writable: true, value: () => storage });
+
+// Stub out pubsub publisher prototype
+// to avoid publishing live messages
+Object.defineProperty(
+  PubSub.prototype,
+  'topic',
+  { writable: true, value: () => ({
+    publisher: () => ({
+      publish: () => Promise.resolve()
+    })
+  })
+});
+
 
 module.exports = {
   db,
