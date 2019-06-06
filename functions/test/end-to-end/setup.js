@@ -9,9 +9,9 @@ if (process.env.FIREBASE_FUNCTIONS_AUTH && !fs.existsSync(AUTH_FILE_PATH)) {
 }
 
 const testConfig = {
-  databaseURL: 'https://trialbase-darren-7f868.firebaseio.com/',
-  storageBucket: 'trialbase-1a146.appspot.com',
-  projectId: 'test-trialbase-1a146'
+  databaseURL: 'https://test-sapphire-inspections-8a9e3.firebaseio.com',
+  storageBucket: 'sapphire-inspections.appspot.com',
+  projectId: 'test-sapphire-inspections-8a9e3'
 };
 const test = require('firebase-functions-test')(testConfig, AUTH_FILE_PATH);
 const sinon = require('sinon');
