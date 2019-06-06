@@ -5,10 +5,10 @@ const createOnTeamsWriteHandler = require('./on-team-write-handler');
 describe('Properties', function() {
   describe('On Team Write Handler', function() {
     it('should create a handler that returns a promise resolving updates hash', () => {
-      const actual = createOnTeamsWriteHandler(createDatabaseStub().value())(
+      const actual = createOnTeamsWriteHandler(createDatabaseStub().value(), createPubSubClient(), 'topic')(
         {
-          before: { exists: () => true },
-          after: { exists: () => false }
+          before: { exists: () => true, val: () => ({}) },
+          after: { exists: () => false, val: () => null  }
         },
         { params: { propertyId: '1' } }
       );
@@ -17,3 +17,13 @@ describe('Properties', function() {
     });
   });
 });
+
+function createPubSubClient() {
+  return {
+    topic: () => ({
+      publisher: () => ({
+        publish: () => Promise.resolve()
+      })
+    })
+  };
+}
