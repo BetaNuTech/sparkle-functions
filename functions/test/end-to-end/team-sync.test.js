@@ -9,6 +9,7 @@ describe('Teams Sync', () => {
   it('should add all missing property assocaitions to all teams', async () => {
     const team1Id = uuid();
     const team2Id = uuid();
+    const team3Id = uuid();
     const property1Id = uuid();
     const property2Id = uuid();
     const property3Id = uuid();
@@ -22,6 +23,7 @@ describe('Teams Sync', () => {
 
     await db.ref(`/teams/${team1Id}`).set({ name: 'Team1' }); // Add team
     await db.ref(`/teams/${team2Id}`).set({ name: 'Team2' }); // Add team
+    await db.ref(`/teams/${team3Id}`).set({ name: 'Team3' }); // Regression check for team /wo properties
 
     // Execute
     await test.wrap(cloudFunctions.teamsSync)();
