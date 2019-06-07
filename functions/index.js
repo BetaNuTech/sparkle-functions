@@ -7,6 +7,7 @@ const inspections = require('./inspections');
 const properties = require('./properties');
 const propertyTemplates = require('./property-templates');
 const deficientItems = require('./deficient-items');
+const teams = require('./teams');
 const regTokens = require('./reg-tokens');
 const PubSub = require('@google-cloud/pubsub');
 
@@ -204,3 +205,6 @@ exports.regTokensSyncStaging = regTokens.cron.syncOutdated('staging-registration
 
 exports.deficientItemsOverdueSync = deficientItems.cron.createSyncOverdue('deficient-items-sync', functions.pubsub, db);
 exports.deficientItemsOverdueSyncStaging = deficientItems.cron.createSyncOverdue('staging-deficient-items-sync', functions.pubsub, dbStaging);
+
+exports.teamsSync = teams.cron.createSyncTeamHandler('teams-sync', functions.pubsub, db);
+exports.teamsSyncStaging = teams.cron.createSyncTeamHandler('staging-teams-sync', functions.pubsub, dbStaging);
