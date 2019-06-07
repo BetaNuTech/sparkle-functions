@@ -6,7 +6,7 @@ const { db, test, cloudFunctions } = require('./setup');
 describe('Teams Sync', () => {
   afterEach(() => cleanDb(db));
 
-  it('should add all missing property assocaitions to all teams', async () => {
+  it('should add all missing property associations to all teams', async () => {
     const team1Id = uuid();
     const team2Id = uuid();
     const team3Id = uuid();
@@ -17,7 +17,7 @@ describe('Teams Sync', () => {
     const expectedPayloadTeam2 = { [property3Id]: true }
 
     // Setup database
-    await db.ref(`/properties/${property1Id}`).set({ name: 'Condo', team: team1Id }); // Add property and team 
+    await db.ref(`/properties/${property1Id}`).set({ name: 'Condo', team: team1Id }); // Add property and team
     await db.ref(`/properties/${property2Id}`).set({ name: 'Tree House', team: team1Id }); // Add property 2 and team
     await db.ref(`/properties/${property3Id}`).set({ name: 'Mansion', team: team2Id }); // Add property 3 to team 2
 
@@ -56,5 +56,23 @@ describe('Teams Sync', () => {
 
     // Assertions
     expect(actual.val()).to.deep.equal(expectedPayload, `synced /teams/${team1Id}/properties by removing invalid`);
+  });
+
+  it('should remove all invalid team/properties associations when all properties have no team associations', async () => {
+    const team1Id = uuid();
+    const property1Id = uuid();
+
+    // Setup database
+    await db.ref(`/properties/${property1Id}`).set({ name: 'Condo' }); // Add property /wo team
+    await db.ref(`/teams/${team1Id}`).set({ name: 'Team1', properties: { [property1Id]: true } }); // Add team /w property
+
+    // Execute
+    await test.wrap(cloudFunctions.teamsSync)();
+
+    // Test result
+    const actual = await db.ref(`/teams/${team1Id}/properties`).once('value');
+
+    // Assertions
+    expect(actual.exists()).to.equal(false, `synced /teams/${team1Id}/properties by removing invalid`);
   });
 });
