@@ -16,24 +16,41 @@ module.exports = function createSyncTeamHandler(topic = '', pubsub, db) {
   .topic(topic)
   .onPublish(async function syncTeamHandler() {
     const updates = {};
-    log.info(`${LOG_PREFIX} received ${Date.now()}`);
-
     const propertyAndTeam = {};
 
-    // load all properties team associations (source of truth)
-    await adminUtils.forEachChild(db, '/properties', function buildSourceOfTruth(propertyId, property) {
-      if (property.team) {
-        propertyAndTeam[property.team] = propertyAndTeam[property.team] || {};
-        propertyAndTeam[property.team][propertyId] = true;
-      }
-    });
+    log.info(`${LOG_PREFIX} received ${Date.now()}`);
 
-    // loop through all teams and async up with the properties (source of truth)
-    await adminUtils.forEachChild(db, '/teams', async function teamWrite(teamId) {
-      const currentTeamsActualProperties = propertyAndTeam[teamId];
-      await db.ref(`/teams/${teamId}/properties`).set(currentTeamsActualProperties);
-      updates[`/teams/${teamId}/properties`] = currentTeamsActualProperties;
-    });
+    try {
+      // load all properties team associations (source of truth)
+      await adminUtils.forEachChild(db, '/properties', function buildSourceOfTruth(propertyId, property) {
+        if (property.team) {
+          propertyAndTeam[property.team] = propertyAndTeam[property.team] || {};
+          propertyAndTeam[property.team][propertyId] = true;
+        }
+      });
+    } catch (err) {
+      log.error(`${LOG_PREFIX} for each property lookup failed: ${err}`);
+      throw err;
+    }
+
+    // No property/team associations found
+    if (Object.keys(propertyAndTeam).length === 0) {
+      return updates;
+    }
+
+    try {
+      // loop through all teams and async up with the properties (source of truth)
+      await adminUtils.forEachChild(db, '/teams', async function teamWrite(teamId) {
+        const currentTeamsActualProperties = propertyAndTeam[teamId];
+        if (currentTeamsActualProperties) {
+          await db.ref(`/teams/${teamId}/properties`).set(currentTeamsActualProperties);
+          updates[`/teams/${teamId}/properties`] = currentTeamsActualProperties;
+        }
+      });
+    } catch (err) {
+      log.error(`${LOG_PREFIX} for each team sync failed: ${err}`);
+      throw err;
+    }
 
     return updates;
   });
