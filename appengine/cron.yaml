@@ -19,6 +19,14 @@ cron:
   url: /publish/templates-sync
   schedule: every 24 hours from 00:00 to 01:00
 
+- description: Trigger sync of all /teams
+  url: /publish/teams-sync
+  schedule: every 24 hours from 00:00 to 01:00
+
+- description: Trigger sync of all staging /teams
+  url: /publish/staging-teams-sync
+  schedule: every 24 hours from 00:00 to 01:00
+
 - description: Trigger sync of all staging /templates
   url: /publish/staging-templates-sync
   schedule: every 24 hours from 00:00 to 01:00
