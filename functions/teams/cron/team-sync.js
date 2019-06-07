@@ -33,18 +33,18 @@ module.exports = function createSyncTeamHandler(topic = '', pubsub, db) {
       throw err;
     }
 
-    // No property/team associations found
-    if (Object.keys(propertyAndTeam).length === 0) {
-      return updates;
-    }
-
     try {
       // loop through all teams and async up with the properties (source of truth)
       await adminUtils.forEachChild(db, '/teams', async function teamWrite(teamId) {
         const currentTeamsActualProperties = propertyAndTeam[teamId];
         if (currentTeamsActualProperties) {
+          // Upsert team with properties
           await db.ref(`/teams/${teamId}/properties`).set(currentTeamsActualProperties);
           updates[`/teams/${teamId}/properties`] = currentTeamsActualProperties;
+        } else {
+          // Ensure teams properties does not exist
+          await db.ref(`/teams/${teamId}/properties`).remove();
+          updates[`/teams/${teamId}/properties`] = null;
         }
       });
     } catch (err) {
