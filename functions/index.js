@@ -101,6 +101,14 @@ exports.propertyTeamWriteStaging = functionsStagingDatabase.ref('/properties/{pr
   properties.createOnTeamsWriteHandler(dbStaging, pubsubClient, 'staging-user-teams-sync')
 );
 
+// Users teams onWrite
+exports.userTeamWrite = functions.database.ref('/users/{userId}/teams/{teamId}').onWrite(
+  teams.createOnUserTeamWriteHandler(db, pubsubClient, 'user-teams-sync')
+);
+exports.userTeamWriteStaging = functionsStagingDatabase.ref('/users/{userId}/teams/{teamId}').onWrite(
+  teams.createOnUserTeamWriteHandler(dbStaging, pubsubClient, 'staging-user-teams-sync')
+);
+
 // Deficient Items
 exports.deficientItemsWrite = functions.database.ref('/inspections/{inspectionId}/updatedLastDate').onWrite(
   deficientItems.createOnInspectionWrite(db)
@@ -208,3 +216,6 @@ exports.deficientItemsOverdueSyncStaging = deficientItems.cron.createSyncOverdue
 
 exports.teamsSync = teams.cron.createSyncTeamHandler('teams-sync', functions.pubsub, db);
 exports.teamsSyncStaging = teams.cron.createSyncTeamHandler('staging-teams-sync', functions.pubsub, dbStaging);
+
+exports.userTeamsSync = teams.cron.createSyncUserTeamHandler('user-teams-sync', functions.pubsub, db);
+exports.userTeamsSyncStaging = teams.cron.createSyncUserTeamHandler('staging-user-teams-sync', functions.pubsub, dbStaging);
