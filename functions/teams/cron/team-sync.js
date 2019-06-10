@@ -1,6 +1,6 @@
 const log = require('../../utils/logger');
 const adminUtils = require('../../utils/firebase-admin');
-
+const teamsModel = require('../../models/teams');
 const LOG_PREFIX = 'teams: cron: team-sync:';
 
 /**
@@ -16,20 +16,15 @@ module.exports = function createSyncTeamHandler(topic = '', pubsub, db) {
   .topic(topic)
   .onPublish(async function syncTeamHandler() {
     const updates = {};
-    const propertyAndTeam = {};
+    let propertyAndTeam = {};
 
     log.info(`${LOG_PREFIX} received ${Date.now()}`);
 
     try {
       // load all properties team associations (source of truth)
-      await adminUtils.forEachChild(db, '/properties', function buildSourceOfTruth(propertyId, property) {
-        if (property.team) {
-          propertyAndTeam[property.team] = propertyAndTeam[property.team] || {};
-          propertyAndTeam[property.team][propertyId] = true;
-        }
-      });
+      propertyAndTeam = await teamsModel.getPropertyRelationships(db);
     } catch (err) {
-      log.error(`${LOG_PREFIX} for each property lookup failed: ${err}`);
+      log.error(`${LOG_PREFIX} ${err}`);
       throw err;
     }
 
