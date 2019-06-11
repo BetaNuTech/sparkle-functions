@@ -12,7 +12,10 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {DeficientItemsSnapshot[]}
    */
   async findAllByInspection(db, inspectionId) {
-    assert(inspectionId && typeof inspectionId === 'string', 'has inspection id');
+    assert(
+      inspectionId && typeof inspectionId === 'string',
+      'has inspection id'
+    );
 
     const result = [];
     const deficientItemsByPropertySnap = await db.ref(API_PATH).once('value');
@@ -58,7 +61,11 @@ module.exports = modelSetup({
     assert(Boolean(recordData.item), 'has item reference');
 
     // Recover any previously archived deficient item
-    const archivedSnap = await this._findArchived(db, { propertyId, inspectionId: recordData.inspection, itemId: recordData.item });
+    const archivedSnap = await this._findArchived(db, {
+      propertyId,
+      inspectionId: recordData.inspection,
+      itemId: recordData.item,
+    });
     const archived = archivedSnap ? archivedSnap.val() : null;
 
     let ref;
@@ -92,8 +99,8 @@ module.exports = modelSetup({
   async updateState(db, diSnap, newState) {
     assert(
       diSnap &&
-      typeof diSnap.ref === 'object' &&
-      typeof diSnap.val === 'function',
+        typeof diSnap.ref === 'object' &&
+        typeof diSnap.val === 'function',
       'has data snapshot'
     );
     assert(newState && typeof newState === 'string', 'has new state string');
@@ -146,14 +153,23 @@ module.exports = modelSetup({
    * @param  {String}  itemId
    * @return {Promise} - resolve {DataSnapshot|Object}
    */
-  async _findArchived(db, {propertyId, inspectionId, itemId}) {
-    assert(propertyId && typeof propertyId === 'string', 'has property reference');
-    assert(inspectionId && typeof inspectionId === 'string', 'has inspection reference');
+  async _findArchived(db, { propertyId, inspectionId, itemId }) {
+    assert(
+      propertyId && typeof propertyId === 'string',
+      'has property reference'
+    );
+    assert(
+      inspectionId && typeof inspectionId === 'string',
+      'has inspection reference'
+    );
     assert(itemId && typeof itemId === 'string', 'has item reference');
 
     let result = null;
     const archPropertyDiRef = db.ref(`archive${API_PATH}/${propertyId}`);
-    const deficientItemSnaps = await archPropertyDiRef.orderByChild('item').equalTo(itemId).once('value');
+    const deficientItemSnaps = await archPropertyDiRef
+      .orderByChild('item')
+      .equalTo(itemId)
+      .once('value');
 
     // Find DI's matching inspection ID
     // (we've matched or property and item already)
@@ -164,5 +180,5 @@ module.exports = modelSetup({
     });
 
     return result;
-  }
+  },
 });

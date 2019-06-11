@@ -3,8 +3,11 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const authUser = require('../utils/auth-firebase-user');
-const {forEachChild} = require('../utils/firebase-admin');
-const {pushSendMessage, getRecepients} = require('../utils/firebase-messaging');
+const { forEachChild } = require('../utils/firebase-admin');
+const {
+  pushSendMessage,
+  getRecepients,
+} = require('../utils/firebase-messaging');
 const log = require('../utils/logger');
 
 const LOG_PREFIX = 'push-messages: create:';
@@ -26,18 +29,18 @@ module.exports = function createOnCreatePushNotificationHandler(db, auth) {
    * @return {Promise}
    */
   const createPushNotificationHandler = async (req, res) => {
-    const {user, body} = req;
-    const {notification} = body;
+    const { user, body } = req;
+    const { notification } = body;
 
     if (!user) {
-      return res.status(401).send({message: 'request not authorized'});
+      return res.status(401).send({ message: 'request not authorized' });
     }
 
     log.info(`${LOG_PREFIX} requested by user: ${user.id}`);
 
     if (!user.admin) {
       log.error(`${LOG_PREFIX} requested by non-admin user: ${user.id}`);
-      return res.status(403).send({message: 'requester not admin'});
+      return res.status(403).send({ message: 'requester not admin' });
     }
 
     // Reject impropertly stuctured request body
@@ -61,17 +64,20 @@ module.exports = function createOnCreatePushNotificationHandler(db, auth) {
         }
       }
 
-      return res.status(400).send({message});
+      return res.status(400).send({ message });
     }
 
     const users = [];
-    await forEachChild(db, '/users', async function sendMessageForUser(userId, user) {
+    await forEachChild(db, '/users', async function sendMessageForUser(
+      userId,
+      user
+    ) {
       users.push(Object.assign({ id: userId }, user));
     });
     const recipientIds = getRecepients({
       users,
       excludes: [user.id],
-      allowCorp: false
+      allowCorp: false,
     });
 
     // Send message for each user
@@ -81,9 +87,11 @@ module.exports = function createOnCreatePushNotificationHandler(db, auth) {
         const messageId = await pushSendMessage(db, {
           title: notification.title,
           message: notification.message,
-          recipientId: userId
+          recipientId: userId,
         });
-        log.info(`${LOG_PREFIX} created send message record: ${messageId} for user: ${userId}`);
+        log.info(
+          `${LOG_PREFIX} created send message record: ${messageId} for user: ${userId}`
+        );
       } catch (e) {
         log.error(`${LOG_PREFIX} ${e}`);
       }
@@ -97,4 +105,4 @@ module.exports = function createOnCreatePushNotificationHandler(db, auth) {
   app.use(cors(), bodyParser.json());
   app.post('/', authUser(db, auth), createPushNotificationHandler);
   return app;
-}
+};

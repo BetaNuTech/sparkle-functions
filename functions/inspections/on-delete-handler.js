@@ -12,60 +12,75 @@ const LOG_PREFIX = 'inspections: on-delete:';
  * @return {Function} - inspection onDelete handler
  */
 module.exports = function createOnDeleteHandler(db, storage) {
-  return (inspectionSnap, event) => co(function *() {
-    const { inspectionId } = event.params;
-    const inspection = inspectionSnap.val() || {};
-    const propertyId = inspection.property;
-    const isCompleted = Boolean(inspection.inspectionCompleted);
-    const updates = Object.create(null);
-    const requests = [];
+  return (inspectionSnap, event) =>
+    co(function*() {
+      const { inspectionId } = event.params;
+      const inspection = inspectionSnap.val() || {};
+      const propertyId = inspection.property;
+      const isCompleted = Boolean(inspection.inspectionCompleted);
+      const updates = Object.create(null);
+      const requests = [];
 
-    log.info(`${LOG_PREFIX} ${inspectionId} deleted`);
+      log.info(`${LOG_PREFIX} ${inspectionId} deleted`);
 
-    if (!propertyId || !inspection) {
-      log.error(`${LOG_PREFIX} inspection ${inspectionId} missing property reference`);
-      return Promise.resolve(updates);
-    }
+      if (!propertyId || !inspection) {
+        log.error(
+          `${LOG_PREFIX} inspection ${inspectionId} missing property reference`
+        );
+        return Promise.resolve(updates);
+      }
 
-    // Remove any completed inspection proxies
-    if (isCompleted) {
-      updates[`/completedInspections/${inspectionId}`] = 'removed';
-      updates[`/completedInspectionsList/${inspectionId}`] = 'removed';
+      // Remove any completed inspection proxies
+      if (isCompleted) {
+        updates[`/completedInspections/${inspectionId}`] = 'removed';
+        updates[`/completedInspectionsList/${inspectionId}`] = 'removed';
+
+        requests.push(
+          db.ref(`/completedInspections/${inspectionId}`).remove(),
+          db.ref(`/completedInspectionsList/${inspectionId}`).remove()
+        );
+      }
+
+      // Remove property inspection proxies
+      updates[
+        `/propertyInspections/${propertyId}/inspections/${inspectionId}`
+      ] = 'removed';
+      updates[
+        `/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`
+      ] = 'removed';
 
       requests.push(
-        db.ref(`/completedInspections/${inspectionId}`).remove(),
-        db.ref(`/completedInspectionsList/${inspectionId}`).remove()
+        db
+          .ref(`/propertyInspections/${propertyId}/inspections/${inspectionId}`)
+          .remove(),
+        db
+          .ref(
+            `/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`
+          )
+          .remove()
       );
-    }
 
-    // Remove property inspection proxies
-    updates[`/propertyInspections/${propertyId}/inspections/${inspectionId}`] = 'removed';
-    updates[`/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`] = 'removed';
+      // Wait for proxy removal
+      try {
+        yield Promise.all(requests).then(() => updates);
+      } catch (e) {
+        log.error(
+          `${LOG_PREFIX} ${inspectionId} proxy record cleanup failed: ${e}`
+        );
+      }
 
-    requests.push(
-      db.ref(`/propertyInspections/${propertyId}/inspections/${inspectionId}`).remove(),
-      db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`).remove()
-    );
+      // Update property attributes related
+      // to completed inspection meta data
+      if (isCompleted) {
+        const metaUpdates = yield processPropertyMeta(db, propertyId);
+        Object.assign(updates, metaUpdates); // combine updates
+      }
 
-    // Wait for proxy removal
-    try {
-      yield Promise.all(requests).then(() => updates);
-    } catch (e) {
-      log.error(`${LOG_PREFIX} ${inspectionId} proxy record cleanup failed: ${e}`);
-    }
+      // Removal all uploads, ignoring errors
+      try {
+        yield deleteUploads(db, storage, inspectionId);
+      } catch (e) {}
 
-    // Update property attributes related
-    // to completed inspection meta data
-    if (isCompleted) {
-      const metaUpdates = yield processPropertyMeta(db, propertyId);
-      Object.assign(updates, metaUpdates); // combine updates
-    }
-
-    // Removal all uploads, ignoring errors
-    try {
-      yield deleteUploads(db, storage, inspectionId);
-    } catch (e) {}
-
-    return updates
-  });
-}
+      return updates;
+    });
+};

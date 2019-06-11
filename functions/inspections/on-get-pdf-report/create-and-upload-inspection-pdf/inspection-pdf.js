@@ -5,10 +5,10 @@ const {
   pdfVerticals,
   pdfImages,
   pdfFonts,
-  pdfColors
+  pdfColors,
 } = require('./inspection-pdf-settings');
 
-const {assign} = Object;
+const { assign } = Object;
 
 const LEFT_GUTTER = 12;
 const RIGHT_GUTTER = 204;
@@ -23,16 +23,16 @@ const prototype = {
       {
         addMetadata: [
           `${this._property.name || 'Property'}: ${this.creationDate}`,
-          'title'
-        ]
+          'title',
+        ],
       }, // eslint-disable-line
-      {addMetadata: ['Sparkle Report', 'subject']}, // eslint-disable-line
+      { addMetadata: ['Sparkle Report', 'subject'] }, // eslint-disable-line
       {
         addMetadata: [
           `${this._inspection.inspectorName || 'Inspector Unknown'}`,
-          'author'
-        ]
-      } // eslint-disable-line
+          'author',
+        ],
+      }, // eslint-disable-line
     ];
   },
 
@@ -42,10 +42,10 @@ const prototype = {
    */
   getPdfDefaults() {
     return [
-      {setFont: 'helvetica'},
+      { setFont: 'helvetica' },
       // Set page background
-      {setFillColor: [255, 255, 255]},
-      {rect: [0, 0, 612, 792, 'F']}
+      { setFillColor: [255, 255, 255] },
+      { rect: [0, 0, 612, 792, 'F'] },
     ];
   },
 
@@ -57,20 +57,23 @@ const prototype = {
     const subHeader = [
       `${this._property.name || 'Unknown Property'} | `,
       `${this._inspection.inspectorName || 'Inspector Unknown'} | `,
-      `${this.creationDate}`
+      `${this.creationDate}`,
     ];
 
     const imgSize = 10.75;
 
     return [
-      {setFontSize: pdfFonts.header.size},
-      {setFontType: pdfFonts.header.weight},
-      {setFontStyle: pdfFonts.header.style},
+      { setFontSize: pdfFonts.header.size },
+      { setFontType: pdfFonts.header.weight },
+      { setFontStyle: pdfFonts.header.style },
       {
         text: [LEFT_GUTTER, 0, 'Sparkle Report'],
-        _vertical: 'headerTitle'
+        _vertical: 'headerTitle',
       }, // eslint-disable-line
-      {text: [LEFT_GUTTER, 0, subHeader.join('')], _vertical: 'headerSubTitle'},
+      {
+        text: [LEFT_GUTTER, 0, subHeader.join('')],
+        _vertical: 'headerSubTitle',
+      },
       {
         addImage: [
           pdfImages.appIcon,
@@ -78,12 +81,12 @@ const prototype = {
           RIGHT_GUTTER - 11,
           10,
           imgSize,
-          imgSize
-        ]
+          imgSize,
+        ],
       }, // eslint-disable-line
-      {setLineWidth: 1},
-      {setDrawColor: pdfColors.black},
-      {line: [LEFT_GUTTER, 0, RIGHT_GUTTER, 0], _vertical: 'headerLine'}
+      { setLineWidth: 1 },
+      { setDrawColor: pdfColors.black },
+      { line: [LEFT_GUTTER, 0, RIGHT_GUTTER, 0], _vertical: 'headerLine' },
     ];
   },
 
@@ -95,10 +98,10 @@ const prototype = {
     const page = `${this.page}`;
 
     return [
-      {setFontSize: pdfFonts.pageNumber.size},
-      {setFontType: pdfFonts.pageNumber.weight},
-      {setFontStyle: pdfFonts.pageNumber.style},
-      {text: [RIGHT_GUTTER - 2 * page.length, 263, page]}
+      { setFontSize: pdfFonts.pageNumber.size },
+      { setFontType: pdfFonts.pageNumber.weight },
+      { setFontStyle: pdfFonts.pageNumber.style },
+      { text: [RIGHT_GUTTER - 2 * page.length, 263, page] },
     ];
   },
 
@@ -108,19 +111,19 @@ const prototype = {
    */
   getScore() {
     return [
-      {setFontSize: pdfFonts.score.size},
-      {setFontType: pdfFonts.score.weight},
-      {setFontStyle: pdfFonts.score.style},
+      { setFontSize: pdfFonts.score.size },
+      { setFontType: pdfFonts.score.weight },
+      { setFontStyle: pdfFonts.score.style },
       {
         setTextColor: this._inspection.deficienciesExist
           ? pdfColors.red
-          : pdfColors.blue
+          : pdfColors.blue,
       }, // eslint-disable-line
       {
         text: [LEFT_GUTTER, 0, `Score: ${decimate(this._inspection.score)}%`],
-        _vertical: 'score'
+        _vertical: 'score',
       }, // eslint-disable-line
-      {setTextColor: pdfColors.black} // Revert color to default
+      { setTextColor: pdfColors.black }, // Revert color to default
     ];
   },
 
@@ -131,14 +134,14 @@ const prototype = {
   getSections() {
     const template = assign({}, this._inspection.template);
     const items = Object.keys(template.items).map(id =>
-      assign({id}, template.items[id])
+      assign({ id }, template.items[id])
     );
     const sections = Object.keys(template.sections)
       .map(id => {
         const s = assign({}, template.sections[id]);
         s.id = id;
         s.items = items
-          .filter(({sectionId}) => id === sectionId)
+          .filter(({ sectionId }) => id === sectionId)
           .sort((a, b) => a.index - b.index);
         return s;
       })
@@ -151,12 +154,12 @@ const prototype = {
             this.getItemInspectorNotes(item),
             this.getItemAdminUpdates(item),
             this.getItemPhotos(item),
-            [{_placeholder: true, _vertical: 'itemEnd'}]
+            [{ _placeholder: true, _vertical: 'itemEnd' }]
           )
         );
 
         return [].concat(this.getSectionHeader(section.title), ...items, [
-          {_placeholder: true, _vertical: 'sectionEnd'}
+          { _placeholder: true, _vertical: 'sectionEnd' },
         ]);
       });
 
@@ -181,13 +184,16 @@ const prototype = {
       });
 
     return [
-      {setFontSize: pdfFonts.sectionHeader.size},
-      {setFontType: pdfFonts.sectionHeader.weight},
-      {setFontStyle: pdfFonts.sectionHeader.style},
+      { setFontSize: pdfFonts.sectionHeader.size },
+      { setFontType: pdfFonts.sectionHeader.weight },
+      { setFontStyle: pdfFonts.sectionHeader.style },
       ...segments,
-      {setLineWidth: 0.1},
-      {setDrawColor: pdfColors.lightGray},
-      {line: [LEFT_GUTTER, 0, RIGHT_GUTTER, 0], _vertical: 'sectionHeaderLine'}
+      { setLineWidth: 0.1 },
+      { setDrawColor: pdfColors.lightGray },
+      {
+        line: [LEFT_GUTTER, 0, RIGHT_GUTTER, 0],
+        _vertical: 'sectionHeaderLine',
+      },
     ];
   },
 
@@ -198,9 +204,9 @@ const prototype = {
    */
   getItemHeader(item) {
     const steps = [
-      {setFontSize: pdfFonts.item.size},
-      {setFontType: pdfFonts.item.weight},
-      {setFontStyle: pdfFonts.item.style}
+      { setFontSize: pdfFonts.item.size },
+      { setFontType: pdfFonts.item.weight },
+      { setFontStyle: pdfFonts.item.style },
     ];
 
     let text = '';
@@ -236,10 +242,10 @@ const prototype = {
 
     if (!item.isTextInputItem && item.isItemNA) {
       steps.push(
-        {setFontSize: pdfFonts.na.size},
-        {setFontType: pdfFonts.na.weight},
-        {setFontStyle: pdfFonts.na.style},
-        {text: [LEFT_GUTTER + 3, 0, 'NA'], _vertical: 'itemNAHeader'}
+        { setFontSize: pdfFonts.na.size },
+        { setFontType: pdfFonts.na.weight },
+        { setFontStyle: pdfFonts.na.style },
+        { text: [LEFT_GUTTER + 3, 0, 'NA'], _vertical: 'itemNAHeader' }
       );
     }
 
@@ -301,7 +307,7 @@ const prototype = {
       return [];
     }
 
-    return [{addImage, _vertical: 'itemBodyImage'}];
+    return [{ addImage, _vertical: 'itemBodyImage' }];
   },
 
   /**
@@ -319,22 +325,21 @@ const prototype = {
 
     if (notes) {
       return [
-        {setFontSize: pdfFonts.noteTitle.size},
-        {setFontStyle: pdfFonts.noteTitle.style},
-        {setFontType: pdfFonts.noteTitle.weight},
+        { setFontSize: pdfFonts.noteTitle.size },
+        { setFontStyle: pdfFonts.noteTitle.style },
+        { setFontType: pdfFonts.noteTitle.weight },
         {
           text: [LEFT_GUTTER + 10, 0, 'Inspector Notes:'],
-          _vertical: 'inspectionNoteHeader'
+          _vertical: 'inspectionNoteHeader',
         }, // eslint-disable-line
-        {_placeholder: true, _vertical: 'inspectionNoteHeaderPost'},
-        {setFontSize: pdfFonts.note.size},
-        {setFontType: pdfFonts.note.weight},
-        {setFontStyle: pdfFonts.note.style},
-        ...segments
+        { _placeholder: true, _vertical: 'inspectionNoteHeaderPost' },
+        { setFontSize: pdfFonts.note.size },
+        { setFontType: pdfFonts.note.weight },
+        { setFontStyle: pdfFonts.note.style },
+        ...segments,
       ];
-    } else {
-      return [];
     }
+    return [];
   },
 
   /**
@@ -352,7 +357,7 @@ const prototype = {
             'M/D/YY, h:mm A:'
           ),
           e.admin_name,
-          `${e.action}.`
+          `${e.action}.`,
         ].join(' ')
       );
 
@@ -369,21 +374,20 @@ const prototype = {
 
     if (adminEdits.length) {
       return [
-        {setFontSize: pdfFonts.noteTitle.size},
-        {setFontStyle: pdfFonts.noteTitle.style},
-        {setFontType: pdfFonts.noteTitle.weight},
+        { setFontSize: pdfFonts.noteTitle.size },
+        { setFontStyle: pdfFonts.noteTitle.style },
+        { setFontType: pdfFonts.noteTitle.weight },
         {
           text: [LEFT_GUTTER + 10, 0, 'Admin Edits:'],
-          _vertical: 'itemAdminEditHeader'
+          _vertical: 'itemAdminEditHeader',
         }, // eslint-disable-line
-        {setFontSize: pdfFonts.note.size},
-        {setFontType: pdfFonts.note.weight},
-        {setFontStyle: pdfFonts.note.style},
-        ...segments
+        { setFontSize: pdfFonts.note.size },
+        { setFontType: pdfFonts.note.weight },
+        { setFontStyle: pdfFonts.note.style },
+        ...segments,
       ];
-    } else {
-      return [];
     }
+    return [];
   },
 
   /**
@@ -405,7 +409,7 @@ const prototype = {
 
     if (photos.length) {
       return [
-        {setDrawColor: pdfColors.black},
+        { setDrawColor: pdfColors.black },
         ...photos.map(photo => ({
           addImage: [
             photo.datauri,
@@ -413,14 +417,13 @@ const prototype = {
             LEFT_GUTTER + 10,
             0,
             Math.round(photo.width / pxToMm),
-            Math.round(photo.height / pxToMm)
+            Math.round(photo.height / pxToMm),
           ],
-          _vertical: 'itemPhoto'
-        }))
+          _vertical: 'itemPhoto',
+        })),
       ];
-    } else {
-      return [];
     }
+    return [];
   },
 
   /**
@@ -431,16 +434,9 @@ const prototype = {
   getSignatureImage(datauri) {
     return [
       {
-        addImage: [
-          datauri,
-          'PNG',
-          LEFT_GUTTER,
-          0,
-          70.5,
-          20.8
-        ],
-        _vertical: 'itemSignature'
-      }
+        addImage: [datauri, 'PNG', LEFT_GUTTER, 0, 70.5, 20.8],
+        _vertical: 'itemSignature',
+      },
     ];
   },
 
@@ -470,48 +466,49 @@ const prototype = {
     /*
      * Increment each admin edit to `editsByAuthor`
      */
-    adminEdits.filter(edit => Boolean(edit.admin_name)).forEach(edit => {
-      if (!editsByAuthor[edit.admin_name]) {
-        editsByAuthor[edit.admin_name] = 0;
-      }
+    adminEdits
+      .filter(edit => Boolean(edit.admin_name))
+      .forEach(edit => {
+        if (!editsByAuthor[edit.admin_name]) {
+          editsByAuthor[edit.admin_name] = 0;
+        }
 
-      editsByAuthor[edit.admin_name]++;
-    });
+        editsByAuthor[edit.admin_name]++;
+      });
 
     if (Object.keys(editsByAuthor).length) {
       return [
-        {setFontSize: pdfFonts.summaryHeader.size},
-        {setFontStyle: pdfFonts.summaryHeader.style},
-        {setFontType: pdfFonts.summaryHeader.weight},
-        {setTextColor: pdfColors.lightBlue},
+        { setFontSize: pdfFonts.summaryHeader.size },
+        { setFontStyle: pdfFonts.summaryHeader.style },
+        { setFontType: pdfFonts.summaryHeader.weight },
+        { setTextColor: pdfColors.lightBlue },
         {
           text: [LEFT_GUTTER, 0, 'Summary of Admin Activity'],
-          _vertical: 'adminSummaryHeader'
+          _vertical: 'adminSummaryHeader',
         }, // eslint-disable-line
-        {setLineWidth: 0.5},
-        {setDrawColor: pdfColors.lightGray},
+        { setLineWidth: 0.5 },
+        { setDrawColor: pdfColors.lightGray },
         {
           line: [LEFT_GUTTER, 0, RIGHT_GUTTER, 0],
-          _vertical: 'adminSummaryLine'
+          _vertical: 'adminSummaryLine',
         }, // eslint-disable-line
-        {setFontSize: pdfFonts.item.size},
-        {setFontStyle: pdfFonts.item.style},
-        {setFontType: pdfFonts.item.weight},
-        {setTextColor: pdfColors.black},
+        { setFontSize: pdfFonts.item.size },
+        { setFontStyle: pdfFonts.item.style },
+        { setFontType: pdfFonts.item.weight },
+        { setTextColor: pdfColors.black },
         ...Object.keys(editsByAuthor).map(author => ({
           text: [
             LEFT_GUTTER + 4,
             0,
             `${author} made a total of ${editsByAuthor[author]} edit${
               editsByAuthor[author] > 1 ? 's' : ''
-            }.` // eslint-disable-line
+            }.`, // eslint-disable-line
           ],
-          _vertical: 'adminSummaryItem'
-        }))
+          _vertical: 'adminSummaryItem',
+        })),
       ];
-    } else {
-      return [];
     }
+    return [];
   },
 
   /**
@@ -523,7 +520,7 @@ const prototype = {
    * @return {Object[]}
    */
   _splitOverflowText(text, defaults = [LEFT_GUTTER, 0], maxLen = 200) {
-    let str = `${text}`.split(/\s/g);
+    const str = `${text}`.split(/\s/g);
     let line = [].concat(defaults, ['']);
     const steps = [];
 
@@ -536,14 +533,14 @@ const prototype = {
         str.unshift(nextWord);
       }
 
-      let canAppendNextWord = line[2].length + nextWord.length <= maxLen;
+      const canAppendNextWord = line[2].length + nextWord.length <= maxLen;
 
       if (canAppendNextWord) {
         line[2] += `${line[2].length > 0 ? ' ' : ''}${str.shift()}`;
       }
 
       if (!canAppendNextWord || !str.length) {
-        steps.push({text: [].concat(line)});
+        steps.push({ text: [].concat(line) });
         line = [].concat(defaults, ['']);
       }
     }
@@ -557,17 +554,20 @@ const prototype = {
    * @param  {Object} settings
    * @return {Object[]} steps
    */
-  applyPdfVerticals(steps, settings = {pageHeight: 300, pageCutoffBuffer: 10}) {
+  applyPdfVerticals(
+    steps,
+    settings = { pageHeight: 300, pageCutoffBuffer: 10 }
+  ) {
     let cursor = 0;
     let result = [];
     let page = [].concat(steps);
     let lastStyleCommands = [];
     let lastVerticalCommand = 0;
-    const {pageHeight, pageCutoffBuffer} = settings;
+    const { pageHeight, pageCutoffBuffer } = settings;
 
     for (let i = 0, l = page.length; i < l; i++) {
-      let command = page[i];
-      let type = command._vertical;
+      const command = page[i];
+      const type = command._vertical;
 
       if (!command._vertical) {
         /*
@@ -586,7 +586,7 @@ const prototype = {
         `applyPdfVerticals() command: ${type} configured vertical settings`
       );
 
-      let {top = 0, height = 0} = settings[type];
+      let { top = 0, height = 0 } = settings[type];
 
       /*
        * Use any image height if not pre-defined
@@ -603,13 +603,13 @@ const prototype = {
         page = [].concat(
           this.getFooter(),
           [
-            {addPage: []},
+            { addPage: [] },
             // Set page background
-            {setFillColor: [255, 255, 255]},
-            {rect: [0, 0, 612, 792, 'F']}
+            { setFillColor: [255, 255, 255] },
+            { rect: [0, 0, 612, 792, 'F'] },
           ],
           this.getHeader(),
-          [{_placeholder: true, _vertical: 'pageCutBuffer'}],
+          [{ _placeholder: true, _vertical: 'pageCutBuffer' }],
           lastStyleCommands.map(index => cloneDeep(page[index])),
           page.slice(i)
         );
@@ -661,7 +661,7 @@ const prototype = {
         if (cmd._vertical) delete cmd._vertical;
         return cmd;
       });
-  }
+  },
 };
 
 /**
@@ -675,8 +675,8 @@ module.exports = function createInspectionPdf(inspection, property) {
   assert(Boolean(property), 'inspectionPdf requires a property model');
 
   return Object.create(prototype, {
-    _inspection: {value: inspection},
-    _property: {value: property},
+    _inspection: { value: inspection },
+    _property: { value: property },
 
     /**
      * Name of inspection
@@ -688,10 +688,11 @@ module.exports = function createInspectionPdf(inspection, property) {
           parseInt(this._inspection.creationDate * 1000, 10)
         ); // eslint-disable-line
         const creationDate = moment(date).format('YYYY-MM-DD');
-        return `${
-          this._property.name
-        }_-_InspectionReport_-_${creationDate}.pdf`.replace(/\s/g, '_'); // eslint-disable-line
-      }
+        return `${this._property.name}_-_InspectionReport_-_${creationDate}.pdf`.replace(
+          /\s/g,
+          '_'
+        ); // eslint-disable-line
+      },
     },
 
     /**
@@ -702,7 +703,7 @@ module.exports = function createInspectionPdf(inspection, property) {
       get: (function() {
         let page = 0;
         return () => (page += 1);
-      })()
+      })(),
     },
 
     /**
@@ -715,10 +716,10 @@ module.exports = function createInspectionPdf(inspection, property) {
           parseInt(this._inspection.creationDate * 1000, 10)
         ); // eslint-disable-line
         return moment(creationDate).format('ddd, MMM D, YYYY');
-      }
-    }
+      },
+    },
   });
-}
+};
 
 /**
  * Convert a string: Into A Title
@@ -741,5 +742,5 @@ function capitalize(str) {
  * @return {String} transfomed
  */
 function decimate(factor, divisor = 100, accuracy = 1) {
-  return (factor / divisor * 100).toFixed(accuracy || 0);
+  return ((factor / divisor) * 100).toFixed(accuracy || 0);
 }

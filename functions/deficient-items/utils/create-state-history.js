@@ -15,8 +15,14 @@ module.exports = function createStateHistory(idItem, options = {}) {
   const { createdAt = Date.now() / 1000, user } = options;
 
   assert(state && typeof state === 'string', 'has DI with "state" string');
-  assert(currentStartDate && typeof currentStartDate === 'number', 'has DI with "currentStartDate" unix timestamp');
-  assert(createdAt && typeof createdAt === 'number', 'has "createdAt" unix timestamp ');
+  assert(
+    currentStartDate && typeof currentStartDate === 'number',
+    'has DI with "currentStartDate" unix timestamp'
+  );
+  assert(
+    createdAt && typeof createdAt === 'number',
+    'has "createdAt" unix timestamp '
+  );
 
   const result = { state, startDate: currentStartDate, createdAt };
 
@@ -27,4 +33,4 @@ module.exports = function createStateHistory(idItem, options = {}) {
   }
 
   return result;
-}
+};

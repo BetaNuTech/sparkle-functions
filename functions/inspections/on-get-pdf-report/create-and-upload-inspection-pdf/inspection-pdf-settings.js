@@ -7,28 +7,28 @@ module.exports = {
   pdfVerticals: Object.freeze({
     pageHeight: 268,
     pageCutoffBuffer: 0,
-    headerTitle: {top: 15, height: 6},
-    headerSubTitle: {height: 2},
-    headerLine: {top: 1, height: 1},
-    pageCutBuffer: {height: 8},
-    score: {top: 17, height: 23},
-    sectionHeader: {height: 8},
-    sectionHeaderLine: {top: -6, height: 8},
-    sectionEnd: {height: 7},
-    itemHeader: {top: 3, height: 4},
-    itemNAHeader: {top: 5, height: 10},
-    itemBodyImage: {height: 12},
-    itemPhoto: {top: 3},
-    itemSignature: {top: -2},
-    inspectionNoteHeader: {height: 1},
-    inspectionNoteHeaderPost: {height: 4},
-    inspectionNote: {height: 3},
-    itemAdminEditHeader: {top: 6, height: 6},
-    itemAdminEdit: {height: 5},
-    itemEnd: {height: 10},
-    adminSummaryHeader: {top: 20, height: 8},
-    adminSummaryLine: {top: -5, height: 7},
-    adminSummaryItem: {height: 9}
+    headerTitle: { top: 15, height: 6 },
+    headerSubTitle: { height: 2 },
+    headerLine: { top: 1, height: 1 },
+    pageCutBuffer: { height: 8 },
+    score: { top: 17, height: 23 },
+    sectionHeader: { height: 8 },
+    sectionHeaderLine: { top: -6, height: 8 },
+    sectionEnd: { height: 7 },
+    itemHeader: { top: 3, height: 4 },
+    itemNAHeader: { top: 5, height: 10 },
+    itemBodyImage: { height: 12 },
+    itemPhoto: { top: 3 },
+    itemSignature: { top: -2 },
+    inspectionNoteHeader: { height: 1 },
+    inspectionNoteHeaderPost: { height: 4 },
+    inspectionNote: { height: 3 },
+    itemAdminEditHeader: { top: 6, height: 6 },
+    itemAdminEdit: { height: 5 },
+    itemEnd: { height: 10 },
+    adminSummaryHeader: { top: 20, height: 8 },
+    adminSummaryLine: { top: -5, height: 7 },
+    adminSummaryItem: { height: 9 },
   }),
 
   /**
@@ -62,7 +62,7 @@ module.exports = {
 
     thumbsUpItemIcon: `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABGdBTUEAALGPC/xhBQAAAlxJREFUSA21ljuLFEEQx6vX8xH4iD1XOThNjAT1Kyhy6JlrYqSBGpqKCBoaiIgYmJgZ+IBL7itobOSC07t4oAaHgtyd54y/f0/PMrszPZ6vP9R0T72ntrp6nXVi1DfLF1FZgOah2aj+gXUALZn1Xpr1R5HfWFyDExgeR8UtM3eJdVu7TsV1P9B5gu5Ns0MKPIGWAP4cBk/R2gN9h16QJeTemO2IDjaUwAm+7jxy0XboKzoXCfKKfQrD62aejLKC9TmksvwCw8OlbrDBdngtYaDMfQ5J6UZCqYMtG9kGwtcEVPPsS5l5l/PsOA4+QScnzMcvstWXyJd8jpE9LgUqSxf8g5jE3bSWfIQg+AxQK/pNmBuUhnqm8HE3OqulsX+Y0ip9yJd8jvq9ss9DK9IpB9+lDddoANsX5Z/TesEHvuQzXyRAOEQsasU2FOj4K0hu16T8FtlZMjyGo101ftzq8AUszLDEVlSfT8Pf55NP4+TIpKQ4wztE05jPeMxBNbjX8WVeAeKvXR2imp4VV+tvif2dJn/nitk3sWdVogjXcqorWed6OS0tVF+Lx399f1oxKVk3m9GPPwWNEsGtKMAg7MNsKXe/8Vwz2zzQ1M+ZUwEDBWDkCmFwldvx091j+4xMYhJjQdw4b7Z3eZpb87VE3cPMf0+nMId6R9NnQS2ZX8DZKUidtwo9YnrW2xeWDmv+lqRIvjcHQ9jqqCi1u5+NUSH1rQ67btdknxp2IYjGdRy3XRM1FUQ2lb1Gfyv+5MLRpVSVRQEmL5yWw6Xo/+7KbAmgT/uvl369dn//t+Un+N37WlazI80AAAAASUVORK5CYII=`,
 
-    thumbsDownItemIcon: `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABGdBTUEAALGPC/xhBQAAAftJREFUSA21lr9KA0EQhy+pLCJYH+kiqQXxKcTYWcQXEIKWFoKVhYVgIyKSN4iFWJiXUAvtIgoW0cZG1Er89/1k1uwtm0s0uvBxezu/mdnb3Zu7QpLTPpKkjHkeZqECKajdwTUcw1EhSbpch28ETqEJr/AxAGmkdcnzEyGswSMo8Au0oA5VKBnqa0w2aaSVTy03OoIVeAc5HMJkrgNGaUwrnzdYjvpg0MwlEKtRUc6gfDz/7JNgSMEty4+Du7yWxC1Xb08waJO+lsWJf3sljpZWsZpfMeiUQSdBm6WjGG3YpmALzuEZurAeihnTniiWYpa1SQ1QxlZEvK1xuDKNdD4X3E9E/A5M11CCtt3UI0I/WKz/gO9CxG/RYraLGN2ynIbCIe7H0NxGdCc2VtETPFm2Uii08djM/bGziN+4+T7pCUZt+7kByNSxbNVQyPgOXJrdn7Xfv4n4qZRI08ndZDkiKsIS6A13gXUw5kBHV/uQaYx9b7IC9D2mvhe6NXAJNnxb2EeXOabDvmiqpDqWSrIXBnX32LIvmgwMDlUq0O2CEmy6gOEVW7ZUWIIUw8Bih2Ya7mEmDGxxVFE1AcXqFTsz/l+5drMhqz447rT87QfHS6Incculqhh+MvWW/u6T6SXRnmjjVXLd0ex3lUba7JpbMP44+jecRv5t+QRVea4cytddYwAAAABJRU5ErkJggg==`
+    thumbsDownItemIcon: `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABGdBTUEAALGPC/xhBQAAAftJREFUSA21lr9KA0EQhy+pLCJYH+kiqQXxKcTYWcQXEIKWFoKVhYVgIyKSN4iFWJiXUAvtIgoW0cZG1Er89/1k1uwtm0s0uvBxezu/mdnb3Zu7QpLTPpKkjHkeZqECKajdwTUcw1EhSbpch28ETqEJr/AxAGmkdcnzEyGswSMo8Au0oA5VKBnqa0w2aaSVTy03OoIVeAc5HMJkrgNGaUwrnzdYjvpg0MwlEKtRUc6gfDz/7JNgSMEty4+Du7yWxC1Xb08waJO+lsWJf3sljpZWsZpfMeiUQSdBm6WjGG3YpmALzuEZurAeihnTniiWYpa1SQ1QxlZEvK1xuDKNdD4X3E9E/A5M11CCtt3UI0I/WKz/gO9CxG/RYraLGN2ynIbCIe7H0NxGdCc2VtETPFm2Uii08djM/bGziN+4+T7pCUZt+7kByNSxbNVQyPgOXJrdn7Xfv4n4qZRI08ndZDkiKsIS6A13gXUw5kBHV/uQaYx9b7IC9D2mvhe6NXAJNnxb2EeXOabDvmiqpDqWSrIXBnX32LIvmgwMDlUq0O2CEmy6gOEVW7ZUWIIUw8Bih2Ya7mEmDGxxVFE1AcXqFTsz/l+5drMhqz447rT87QfHS6Incculqhh+MvWW/u6T6SXRnmjjVXLd0ex3lUba7JpbMP44+jecRv5t+QRVea4cytddYwAAAABJRU5ErkJggg==`,
   }),
 
   /**
@@ -73,62 +73,62 @@ module.exports = {
     header: {
       size: 13.85,
       style: 'normal',
-      weight: 'normal'
+      weight: 'normal',
     },
 
     score: {
       size: 28,
       style: 'normal',
-      weight: 'normal'
+      weight: 'normal',
     },
 
     sectionHeader: {
       size: 20,
       style: 'normal',
-      weight: 'bold'
+      weight: 'bold',
     },
 
     noteTitle: {
       size: 10,
       style: 'normal',
-      weight: 'bold'
+      weight: 'bold',
     },
 
     note: {
       size: 10,
       style: 'italic',
-      weight: 'normal'
+      weight: 'normal',
     },
 
     item: {
       size: 15,
       style: 'normal',
-      weight: 'normal'
+      weight: 'normal',
     },
 
     signatureItem: {
       size: 15,
       style: 'bold',
-      weight: 'normal'
+      weight: 'normal',
     },
 
     na: {
       size: 20,
       style: 'italic',
-      weight: 'normal'
+      weight: 'normal',
     },
 
     summaryHeader: {
       size: 22,
       style: 'normal',
-      weight: 'normal'
+      weight: 'normal',
     },
 
     pageNumber: {
       size: 13,
       style: 'normal',
-      weight: 'normal'
-    }
+      weight: 'normal',
+    },
   }),
 
   /**
@@ -140,6 +140,6 @@ module.exports = {
     red: [255, 0, 0],
     black: [0, 0, 0],
     lightBlue: [82, 152, 242],
-    lightGray: [134, 134, 134]
-  })
+    lightGray: [134, 134, 134],
+  }),
 };

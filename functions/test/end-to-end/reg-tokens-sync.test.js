@@ -17,10 +17,10 @@ describe('Registration Token Sync', () => {
     await db.ref('/registrationTokens').set({
       [userId]: {
         [uuid()]: true,
-        [unchangedTokenId]: nowUnix
+        [unchangedTokenId]: nowUnix,
       },
       [uuid()]: {
-        [uuid()]: true
+        [uuid()]: true,
       },
     });
 
@@ -36,12 +36,18 @@ describe('Registration Token Sync', () => {
       Object.keys(results[userId]).forEach(tokenId => {
         const actual = results[userId][tokenId];
         expect(actual).to.be.a('number', 'token value a number');
-        expect(actual).to.be.at.least(nowUnix, 'token value accurate timestamp value');
+        expect(actual).to.be.at.least(
+          nowUnix,
+          'token value accurate timestamp value'
+        );
       });
     });
 
     const actualUnchangedToken = results[userId][unchangedTokenId];
-    expect(actualUnchangedToken).to.equal(actualUnchangedToken, 'existing timestamp unchanged');
+    expect(actualUnchangedToken).to.equal(
+      actualUnchangedToken,
+      'existing timestamp unchanged'
+    );
   });
 
   it('should remove device tokens older than 6 months', async () => {
@@ -54,8 +60,8 @@ describe('Registration Token Sync', () => {
     await db.ref('/registrationTokens').set({
       [userId]: {
         [deletedTokenId]: nowUnix - SIX_MONTHS_AGO_SEC,
-        [unchangedTokenId]: nowUnix
-      }
+        [unchangedTokenId]: nowUnix,
+      },
     });
 
     // Execute

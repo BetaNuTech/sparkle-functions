@@ -9,25 +9,31 @@ module.exports = {
    * @return {Object} - configuration for `Object.defineProperty()`
    */
   createDatabaseStub(config = {}, dataSnapshot = {}, childConf = {}) {
-    const childWrapper = Object.assign({
-      child: () => childWrapper,
-      orderByChild: () => childWrapper,
-      orderByKey: () => childWrapper,
-      limitToFirst: () => childWrapper,
-      equalTo: () => childWrapper,
-      once: () => Promise.resolve(dataSnapshot),
-      remove: () => Promise.resolve(true),
-      set: () => Promise.resolve(),
-      update: () => Promise.resolve()
-    }, childConf);
+    const childWrapper = Object.assign(
+      {
+        child: () => childWrapper,
+        orderByChild: () => childWrapper,
+        orderByKey: () => childWrapper,
+        limitToFirst: () => childWrapper,
+        equalTo: () => childWrapper,
+        once: () => Promise.resolve(dataSnapshot),
+        remove: () => Promise.resolve(true),
+        set: () => Promise.resolve(),
+        update: () => Promise.resolve(),
+      },
+      childConf
+    );
 
-    return Object.assign({
-      writable: true,
-      value: () => ({
-        _isTestStub: true,
-        ref: () => childWrapper
-      })
-    }, config);
+    return Object.assign(
+      {
+        writable: true,
+        value: () => ({
+          _isTestStub: true,
+          ref: () => childWrapper,
+        }),
+      },
+      config
+    );
   },
 
   /**
@@ -37,8 +43,8 @@ module.exports = {
   createPubSubStub() {
     return {
       topic: () => ({
-        onPublish: (fn) => fn()
-      })
+        onPublish: fn => fn(),
+      }),
     };
   },
 
@@ -49,10 +55,13 @@ module.exports = {
    * @return {Object} - configuration for `Object.defineProperty()`
    */
   createMessagingStub(config = {}, api = {}) {
-    return Object.assign({
-      writable: true,
-      value: () => api
-    }, config)
+    return Object.assign(
+      {
+        writable: true,
+        value: () => api,
+      },
+      config
+    );
   },
 
   cleanDb(db) {
@@ -68,12 +77,14 @@ module.exports = {
    */
   findStorageFile(bucket, prefix, fileName) {
     assert('has storage bucket', bucket);
-    assert('has test directory prefix', prefix && `${prefix}`.search(/Test$/) !== -1);
+    assert(
+      'has test directory prefix',
+      prefix && `${prefix}`.search(/Test$/) !== -1
+    );
     assert('has filename', fileName && typeof fileName === 'string');
 
-    return bucket.getFiles({ prefix })
-      .then(([files]) =>
-        files.filter(f => f.name.search(fileName) > -1)[0]
-      );
-  }
+    return bucket
+      .getFiles({ prefix })
+      .then(([files]) => files.filter(f => f.name.search(fileName) > -1)[0]);
+  },
 };

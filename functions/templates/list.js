@@ -24,10 +24,14 @@ module.exports = {
     if (!after) {
       log.info(`${LOG_PREFIX} removing ${target}`);
 
-      return db.ref(target).remove()
-        .catch((e) => Promise.reject(
-          new Error(`${LOG_PREFIX} failed to remove at ${target} ${e}`) // wrap error
-        ))
+      return db
+        .ref(target)
+        .remove()
+        .catch(e =>
+          Promise.reject(
+            new Error(`${LOG_PREFIX} failed to remove at ${target} ${e}`) // wrap error
+          )
+        )
         .then(() => null);
     }
 
@@ -47,10 +51,18 @@ module.exports = {
     if (after.description) upsertData.description = after.description;
     if (after.category) upsertData.category = after.category;
 
-    return db.ref(target).update(upsertData)
-      .catch((e) => Promise.reject(
-        new Error(`${LOG_PREFIX} failed to ${before ? 'update' : 'add'} record at ${target} ${e}`) // wrap error
-      ))
+    return db
+      .ref(target)
+      .update(upsertData)
+      .catch(e =>
+        Promise.reject(
+          new Error(
+            `${LOG_PREFIX} failed to ${
+              before ? 'update' : 'add'
+            } record at ${target} ${e}`
+          ) // wrap error
+        )
+      )
       .then(() => upsertData);
   },
 
@@ -66,7 +78,7 @@ module.exports = {
 
     const updates = Object.create(null);
 
-    return co(function *() {
+    return co(function*() {
       const templatesListItemsInCategory = yield db
         .ref('/templatesList')
         .orderByChild('category')
@@ -91,10 +103,13 @@ module.exports = {
       }
 
       return updates;
-    })
-    .catch((e) => Promise.reject(
-      new Error(`${LOG_PREFIX} category ${categoryId} removal from /templatesList failed ${e}`) // wrap error
-    ));
+    }).catch(e =>
+      Promise.reject(
+        new Error(
+          `${LOG_PREFIX} category ${categoryId} removal from /templatesList failed ${e}`
+        ) // wrap error
+      )
+    );
   },
 
   /**
@@ -107,14 +122,14 @@ module.exports = {
    */
   removeOrphans(db, existingTemplateIds = [], utils = adminUtils) {
     assert(
-      Array.isArray(existingTemplateIds)
-      && existingTemplateIds.every(id => id && typeof id === 'string'),
+      Array.isArray(existingTemplateIds) &&
+        existingTemplateIds.every(id => id && typeof id === 'string'),
       'has existing templates ids array'
     );
 
     const updates = Object.create(null);
 
-    return co(function *() {
+    return co(function*() {
       const templatesListIds = yield utils.fetchRecordIds(db, '/templatesList');
 
       templatesListIds
@@ -122,7 +137,7 @@ module.exports = {
         .forEach(id => {
           // Collect updates
           updates[`/templatesList/${id}`] = null;
-        })
+        });
 
       // Update database
       if (Object.keys(updates).length) {
@@ -130,9 +145,10 @@ module.exports = {
       }
 
       return updates;
-    })
-    .catch((e) => Promise.reject(
-      new Error(`${LOG_PREFIX} orphan removal failed ${e}`) // wrap error
-    ));
-  }
-}
+    }).catch(e =>
+      Promise.reject(
+        new Error(`${LOG_PREFIX} orphan removal failed ${e}`) // wrap error
+      )
+    );
+  },
+};

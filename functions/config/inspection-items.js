@@ -7,7 +7,7 @@ module.exports = {
     fiveactions_onetofive: [1, 2, 3, 4, 5],
     oneaction_notes: [0, 0, 0, 0, 0],
     signature: [3, 0, 0, 0, 0],
-    text_input: [3, 0, 0, 0, 0]
+    text_input: [3, 0, 0, 0, 0],
   }),
 
   deficientListEligible: Object.freeze({
@@ -15,8 +15,14 @@ module.exports = {
     twoactions_thumbs: [false, true],
     threeactions_checkmarkexclamationx: [false, true, true],
     threeactions_abc: [false, true, true],
-    fiveactions_onetofive: [true, true, true, true, false]
+    fiveactions_onetofive: [true, true, true, true, false],
   }),
 
-  valueNames: ['mainInputZeroValue', 'mainInputOneValue', 'mainInputTwoValue', 'mainInputThreeValue', 'mainInputFourValue']
-}
+  valueNames: [
+    'mainInputZeroValue',
+    'mainInputOneValue',
+    'mainInputTwoValue',
+    'mainInputThreeValue',
+    'mainInputFourValue',
+  ],
+};

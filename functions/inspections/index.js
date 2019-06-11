@@ -23,8 +23,12 @@ module.exports = {
   removeForProperty(db, storage, propertyId) {
     const updates = Object.create(null);
 
-    return co(function *() {
-      const inspectionsSnap = yield db.ref('/inspections').orderByChild('property').equalTo(propertyId).once('value');
+    return co(function*() {
+      const inspectionsSnap = yield db
+        .ref('/inspections')
+        .orderByChild('property')
+        .equalTo(propertyId)
+        .once('value');
       const inspections = inspectionsSnap.val();
       const inspectionsIds = Object.keys(inspections);
 
@@ -35,7 +39,7 @@ module.exports = {
         try {
           const uploadUpdates = yield deleteUploads(db, storage, inspId);
           Object.assign(updates, uploadUpdates);
-        } catch (e) {};
+        } catch (e) {}
       }
 
       // Collect inspections to delete in `updates`
@@ -51,8 +55,8 @@ module.exports = {
 
       yield db.ref().update(updates);
       return updates;
-    }).catch(e =>
-      new Error(`${LOG_PREFIX} removeForProperty: ${e}`) // wrap error
+    }).catch(
+      e => new Error(`${LOG_PREFIX} removeForProperty: ${e}`) // wrap error
     );
   },
 
@@ -62,5 +66,5 @@ module.exports = {
   createOnAttributeWriteHandler,
   createOnWriteHandler,
   createOnDeleteHandler,
-  createOnGetPDFReportHandler
+  createOnGetPDFReportHandler,
 };

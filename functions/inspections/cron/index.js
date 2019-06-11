@@ -5,5 +5,5 @@ const cleanupProxyOrphans = require('./cleanup-proxy-orphans');
 module.exports = {
   cleanupProxyOrphans,
   syncCompletedInspectionproxies,
-  syncPropertyInspectionproxies
+  syncPropertyInspectionproxies,
 };

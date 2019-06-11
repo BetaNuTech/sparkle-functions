@@ -5,5 +5,5 @@ const cron = require('./cron');
 module.exports = {
   list,
   cron,
-  createOnWriteHandler
+  createOnWriteHandler,
 };

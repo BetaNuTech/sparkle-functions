@@ -8,17 +8,21 @@ module.exports = {
    * @return {Promise} - resolves {String[]} ID's
    */
   fetchRecordIds(db, recordPath) {
-    return db.ref(recordPath).once('value').then((snapShot) => {
-      // No records in database
-      if (!snapShot.exists()) {
-        return [];
-      }
+    return db
+      .ref(recordPath)
+      .once('value')
+      .then(snapShot => {
+        // No records in database
+        if (!snapShot.exists()) {
+          return [];
+        }
 
-      // Collect all truthy ID's
-      return (
-        snapShot.hasChildren() ? Object.keys(snapShot.toJSON()) : [snapShot.key]
-      ).filter(Boolean); // ignore null's
-    });
+        // Collect all truthy ID's
+        return (snapShot.hasChildren()
+          ? Object.keys(snapShot.toJSON())
+          : [snapShot.key]
+        ).filter(Boolean); // ignore null's
+      });
   },
 
   /**
@@ -37,7 +41,11 @@ module.exports = {
     let pageGroupIds = [];
 
     // Fetch first record ID in database
-    let lastRecordId = await db.ref(`${childName}`).orderByKey().limitToFirst(1).once('value');
+    let lastRecordId = await db
+      .ref(`${childName}`)
+      .orderByKey()
+      .limitToFirst(1)
+      .once('value');
     lastRecordId = Object.keys(lastRecordId.val() || {})[0];
 
     // Has no records
@@ -47,7 +55,12 @@ module.exports = {
 
     do {
       // Load records 10 at a time
-      let queuedRecords = await db.ref(`${childName}`).orderByKey().startAt(lastRecordId).limitToFirst(11).once('value');
+      let queuedRecords = await db
+        .ref(`${childName}`)
+        .orderByKey()
+        .startAt(lastRecordId)
+        .limitToFirst(11)
+        .once('value');
       queuedRecords = queuedRecords.val() || {};
 
       // Remove last itterations' last record
@@ -64,13 +77,8 @@ module.exports = {
         const recordId = pageGroupIds[i];
         const snapshot = await db.ref(`${childName}/${recordId}`).once('value');
         const record = snapshot.val();
-        await fn(
-          recordId,
-          record,
-          snapshot
-        );
+        await fn(recordId, record, snapshot);
       }
     } while (pageGroupIds.length > 0);
-    return;
-  }
-}
+  },
+};

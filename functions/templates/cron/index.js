@@ -3,5 +3,5 @@ const syncPropertyTemplatesList = require('./sync-property-templates-list');
 
 module.exports = {
   syncTemplatesList,
-  syncPropertyTemplatesList
+  syncPropertyTemplatesList,
 };

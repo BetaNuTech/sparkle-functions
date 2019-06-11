@@ -25,26 +25,37 @@ describe('Deficient Items Overdue Sync', () => {
         trackDeficientItems: true,
         items: {
           // Create single deficient item on inspection
-          [itemId]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true)
-        }
-      }
+          [itemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true
+          ),
+        },
+      },
     });
     const expected = {
       state: REQUIRED_ACTIONS_VALUES[0], // not eligible to be "overdue"
-      numOfRequiredActionsForDeficientItems: 0
+      numOfRequiredActionsForDeficientItems: 0,
     };
 
     // Setup database
-    await db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}`, numOfRequiredActionsForDeficientItems: expected.numOfRequiredActionsForDeficientItems });
+    await db
+      .ref(`/properties/${propertyId}`)
+      .set({
+        name: `name${propertyId}`,
+        numOfRequiredActionsForDeficientItems:
+          expected.numOfRequiredActionsForDeficientItems,
+      });
     await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
-    const diRef = db.ref(`/propertyInspectionDeficientItems/${propertyId}`).push();
+    const diRef = db
+      .ref(`/propertyInspectionDeficientItems/${propertyId}`)
+      .push();
     const diPath = diRef.path.toString();
     await diRef.set({
       state: expected.state,
       inspection: inspectionId,
       item: itemId,
       currentStartDate: timeMocking.age.twoDaysAgo,
-      currentDueDate: timeMocking.age.oneDayAgo // past due
+      currentDueDate: timeMocking.age.oneDayAgo, // past due
     });
 
     // Execute
@@ -52,14 +63,19 @@ describe('Deficient Items Overdue Sync', () => {
 
     // Test result
     const result = await Promise.all([
-      db.ref(`/properties/${propertyId}/numOfRequiredActionsForDeficientItems`).once('value'),
-      db.ref(`${diPath}/state`).once('value')
+      db
+        .ref(`/properties/${propertyId}/numOfRequiredActionsForDeficientItems`)
+        .once('value'),
+      db.ref(`${diPath}/state`).once('value'),
     ]);
-    const [actualReqActions, actualState]  = result.map(r => r.val());
+    const [actualReqActions, actualState] = result.map(r => r.val());
 
     // Assertions
     expect(actualState).to.equal(expected.state, 'did not update DI state');
-    expect(actualReqActions).to.equal(expected.numOfRequiredActionsForDeficientItems, 'did not update property meta');
+    expect(actualReqActions).to.equal(
+      expected.numOfRequiredActionsForDeficientItems,
+      'did not update property meta'
+    );
   });
 
   it('should not set eligible, non-due, deficiency items to overdue', async () => {
@@ -75,32 +91,38 @@ describe('Deficient Items Overdue Sync', () => {
         trackDeficientItems: true,
         items: {
           // Create single deficient item on inspection
-          [itemId]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true)
-        }
-      }
+          [itemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true
+          ),
+        },
+      },
     });
 
     for (let i = 0; i < OVERDUE_ELIGIBLE_STATES.length; i++) {
       const eligibleState = OVERDUE_ELIGIBLE_STATES[i];
       const expected = {
         state: eligibleState,
-        numOfRequiredActionsForDeficientItems: 0
+        numOfRequiredActionsForDeficientItems: 0,
       };
 
       // Setup database
       await db.ref(`/properties/${propertyId}`).set({
         name: `name${propertyId}`,
-        numOfRequiredActionsForDeficientItems: expected.numOfRequiredActionsForDeficientItems
+        numOfRequiredActionsForDeficientItems:
+          expected.numOfRequiredActionsForDeficientItems,
       });
       await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
-      const diRef = db.ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}`).push();
+      const diRef = db
+        .ref(`/propertyInspectionDeficientItems/${propertyId}/${itemId}`)
+        .push();
       const diPath = diRef.path.toString();
       await diRef.set({
         state: expected.state,
         inspection: inspectionId,
         item: itemId,
         currentStartDate: timeMocking.age.twoDaysAgo,
-        currentDueDate: timeMocking.age.oneDayFromNow // not due
+        currentDueDate: timeMocking.age.oneDayFromNow, // not due
       });
 
       // Execute
@@ -108,14 +130,21 @@ describe('Deficient Items Overdue Sync', () => {
 
       // Test result
       const result = await Promise.all([
-        db.ref(`/properties/${propertyId}/numOfRequiredActionsForDeficientItems`).once('value'),
-        db.ref(`${diPath}/state`).once('value')
+        db
+          .ref(
+            `/properties/${propertyId}/numOfRequiredActionsForDeficientItems`
+          )
+          .once('value'),
+        db.ref(`${diPath}/state`).once('value'),
       ]);
-      const [actualReqActions, actualState]  = result.map(r => r.val());
+      const [actualReqActions, actualState] = result.map(r => r.val());
 
       // Assertions
       expect(actualState).to.equal(expected.state, 'did not update DI state');
-      expect(actualReqActions).to.equal(expected.numOfRequiredActionsForDeficientItems, 'did not update property meta');
+      expect(actualReqActions).to.equal(
+        expected.numOfRequiredActionsForDeficientItems,
+        'did not update property meta'
+      );
     }
   });
 
@@ -132,30 +161,40 @@ describe('Deficient Items Overdue Sync', () => {
         trackDeficientItems: true,
         items: {
           // Create single deficient item on inspection
-          [itemId]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true)
-        }
-      }
+          [itemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true
+          ),
+        },
+      },
     });
     const expected = {
       state: 'overdue',
       startDate: timeMocking.age.sixDaysAgo,
-      numOfRequiredActionsForDeficientItems: 1
+      numOfRequiredActionsForDeficientItems: 1,
     };
 
     for (let i = 0; i < OVERDUE_ELIGIBLE_STATES.length; i++) {
       const eligibleState = OVERDUE_ELIGIBLE_STATES[i];
 
       // Setup database
-      await db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}`, numOfRequiredActionsForDeficientItems: 0 });
+      await db
+        .ref(`/properties/${propertyId}`)
+        .set({
+          name: `name${propertyId}`,
+          numOfRequiredActionsForDeficientItems: 0,
+        });
       await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
-      const diRef = db.ref(`/propertyInspectionDeficientItems/${propertyId}`).push();
+      const diRef = db
+        .ref(`/propertyInspectionDeficientItems/${propertyId}`)
+        .push();
       const diPath = diRef.path.toString();
       await diRef.set({
         state: eligibleState,
         inspection: inspectionId,
         item: itemId,
         currentStartDate: expected.startDate,
-        currentDueDate: timeMocking.age.oneDayAgo // past due
+        currentDueDate: timeMocking.age.oneDayAgo, // past due
       });
 
       // Execute
@@ -163,19 +202,39 @@ describe('Deficient Items Overdue Sync', () => {
 
       // Test result
       const result = await Promise.all([
-        db.ref(`/properties/${propertyId}/numOfRequiredActionsForDeficientItems`).once('value'),
+        db
+          .ref(
+            `/properties/${propertyId}/numOfRequiredActionsForDeficientItems`
+          )
+          .once('value'),
         db.ref(`${diPath}/state`).once('value'),
         db.ref(`${diPath}/stateHistory`).once('value'),
-        db.ref(`${diPath}/updatedAt`).once('value')
+        db.ref(`${diPath}/updatedAt`).once('value'),
       ]);
-      const [actualReqActions, actualState, allStateHistory, actualUpdatedAt]  = result.map(r => r.val());
-      const actualStateHistory = allStateHistory ? allStateHistory[Object.keys(allStateHistory)[0]] : {}; // Get 1st from hash
+      const [
+        actualReqActions,
+        actualState,
+        allStateHistory,
+        actualUpdatedAt,
+      ] = result.map(r => r.val());
+      const actualStateHistory = allStateHistory
+        ? allStateHistory[Object.keys(allStateHistory)[0]]
+        : {}; // Get 1st from hash
 
       // Assertions
       expect(actualState).to.equal(expected.state, 'updated DI state');
-      expect(actualStateHistory.state).to.equal(expected.state, 'updated state history with latest state');
-      expect(actualStateHistory.startDate).to.equal(expected.startDate, 'updated state history with current start date');
-      expect(actualReqActions).to.equal(expected.numOfRequiredActionsForDeficientItems, 'updated property meta');
+      expect(actualStateHistory.state).to.equal(
+        expected.state,
+        'updated state history with latest state'
+      );
+      expect(actualStateHistory.startDate).to.equal(
+        expected.startDate,
+        'updated state history with current start date'
+      );
+      expect(actualReqActions).to.equal(
+        expected.numOfRequiredActionsForDeficientItems,
+        'updated property meta'
+      );
       expect(actualUpdatedAt).to.be.a('number', 'modified DI updatedAt');
     }
   });
@@ -193,23 +252,30 @@ describe('Deficient Items Overdue Sync', () => {
         trackDeficientItems: true,
         items: {
           // Create single deficient item on inspection
-          [itemId]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true)
-        }
-      }
+          [itemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true
+          ),
+        },
+      },
     });
     const expected = { state: 'pending' };
 
     // Setup database
-    await db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` });
+    await db
+      .ref(`/properties/${propertyId}`)
+      .set({ name: `name${propertyId}` });
     await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
-    const diRef = db.ref(`/propertyInspectionDeficientItems/${propertyId}`).push();
+    const diRef = db
+      .ref(`/propertyInspectionDeficientItems/${propertyId}`)
+      .push();
     const diPath = diRef.path.toString();
     await diRef.set({
       state: expected.state,
       inspection: inspectionId,
       item: itemId,
       currentStartDate: timeMocking.age.twoDaysAgo, // ineligible for requires progress state
-      currentDueDate: timeMocking.age.oneDayFromNow // over 1/2 past due
+      currentDueDate: timeMocking.age.oneDayFromNow, // over 1/2 past due
     });
 
     // Execute
@@ -236,23 +302,30 @@ describe('Deficient Items Overdue Sync', () => {
         trackDeficientItems: true,
         items: {
           // Create single deficient item on inspection
-          [itemId]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true)
-        }
-      }
+          [itemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true
+          ),
+        },
+      },
     });
     const expected = { state: 'pending' };
 
     // Setup database
-    await db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` });
+    await db
+      .ref(`/properties/${propertyId}`)
+      .set({ name: `name${propertyId}` });
     await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
-    const diRef = db.ref(`/propertyInspectionDeficientItems/${propertyId}`).push();
+    const diRef = db
+      .ref(`/propertyInspectionDeficientItems/${propertyId}`)
+      .push();
     const diPath = diRef.path.toString();
     await diRef.set({
       state: expected.state,
       inspection: inspectionId,
       item: itemId,
       currentStartDate: timeMocking.age.fiveDaysAgo, // eligible for requires progress state
-      currentDueDate: timeMocking.age.sixDaysFromNow // under 1/2 past due
+      currentDueDate: timeMocking.age.sixDaysFromNow, // under 1/2 past due
     });
 
     // Execute
@@ -279,23 +352,30 @@ describe('Deficient Items Overdue Sync', () => {
         trackDeficientItems: true,
         items: {
           // Create single deficient item on inspection
-          [itemId]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true)
-        }
-      }
+          [itemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true
+          ),
+        },
+      },
     });
     const expected = { state: 'requires-progress-update' };
 
     // Setup database
-    await db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` });
+    await db
+      .ref(`/properties/${propertyId}`)
+      .set({ name: `name${propertyId}` });
     await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
-    const diRef = db.ref(`/propertyInspectionDeficientItems/${propertyId}`).push();
+    const diRef = db
+      .ref(`/propertyInspectionDeficientItems/${propertyId}`)
+      .push();
     const diPath = diRef.path.toString();
     await diRef.set({
       state: 'pending',
       inspection: inspectionId,
       item: itemId,
       currentStartDate: timeMocking.age.threeDaysAgo, // eligible for requires progress state
-      currentDueDate: timeMocking.age.twoDaysFromNow // over 1/2 past due
+      currentDueDate: timeMocking.age.twoDaysFromNow, // over 1/2 past due
     });
 
     // Execute

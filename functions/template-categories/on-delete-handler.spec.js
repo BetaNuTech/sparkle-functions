@@ -12,7 +12,9 @@ describe('Template Categories', () => {
         expect(actual).to.equal(expected, 'looked up templates by snapshop ID');
         return db;
       };
-      return onDeleteHandler(db)(templateCategory, { params: { objectId: expected } });
+      return onDeleteHandler(db)(templateCategory, {
+        params: { objectId: expected },
+      });
     });
 
     it('should apply all updates to the database', () => {
@@ -26,11 +28,19 @@ describe('Template Categories', () => {
       db.update = updates => {
         const actual = Object.keys(updates);
         expect(actual).to.have.lengthOf(2, 'has 2 updates');
-        expect(actual).to.include(`/templates/${template1Id}/category`, 'has template 1 update');
-        expect(actual).to.include(`/templates/${template2Id}/category`, 'has template 2 update');
+        expect(actual).to.include(
+          `/templates/${template1Id}/category`,
+          'has template 1 update'
+        );
+        expect(actual).to.include(
+          `/templates/${template2Id}/category`,
+          'has template 2 update'
+        );
         return Promise.resolve();
       };
-      return onDeleteHandler(db)(createDataSnapshot(), { params: { objectId: id } });
+      return onDeleteHandler(db)(createDataSnapshot(), {
+        params: { objectId: id },
+      });
     });
   });
 });
@@ -52,9 +62,9 @@ function createDatabase(payload = {}) {
     once() {
       return Promise.resolve({
         val: () => payload,
-        exists: () => true
+        exists: () => true,
       });
-    }
+    },
   };
 }
 

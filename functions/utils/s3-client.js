@@ -8,7 +8,7 @@ const target = new AWS.S3({
   region: 'USEast2',
   endpoint: CONFIG.s3.endpoint,
   accessKeyId: CONFIG.s3.accessKeyId,
-  secretAccessKey: CONFIG.s3.secretAccessKey
+  secretAccessKey: CONFIG.s3.secretAccessKey,
 });
 
 /**
@@ -36,5 +36,5 @@ module.exports = new Proxy(target, {
     }
 
     throw new Error(`${LOG_PREFIX} AWS S3 client not configurable`);
-  }
+  },
 });

@@ -20,18 +20,27 @@ describe('Deficient Items Archiving', () => {
         trackDeficientItems: true,
         items: {
           // Create single deficient item on inspection
-          [itemId]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true)
-        }
-      }
+          [itemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true
+          ),
+        },
+      },
     });
 
     // Setup database
     await db.ref(`/properties/${propertyId}`).set({ name: 'test' });
     await db.ref(`/inspections/${inspectionId}`).set(inspectionData); // Add inspection
-    const diRef = db.ref(`/propertyInspectionDeficientItems/${propertyId}`).push();
+    const diRef = db
+      .ref(`/propertyInspectionDeficientItems/${propertyId}`)
+      .push();
     const diPath = diRef.path.toString();
     const diID = diPath.split('/').pop();
-    await diRef.set({ state: 'requires-action', inspection: inspectionId, item: itemId });
+    await diRef.set({
+      state: 'requires-action',
+      inspection: inspectionId,
+      item: itemId,
+    });
     const beforeSnap = await db.ref(`${diPath}/archive`).once('value'); // Create before
     await diRef.update({ archive: false });
     const afterSnap = await db.ref(`${diPath}/archive`).once('value'); // Create after
@@ -42,10 +51,15 @@ describe('Deficient Items Archiving', () => {
     await wrapped(changeSnap, { params: { propertyId, itemId: diID } });
 
     // Test result
-    const actual = await db.ref(`/archive/propertyInspectionDeficientItems/${propertyId}/${diID}`).once('value');
+    const actual = await db
+      .ref(`/archive/propertyInspectionDeficientItems/${propertyId}/${diID}`)
+      .once('value');
 
     // Assertions
-    expect(actual.exists()).to.equal(false, 'did not archive the deficient item');
+    expect(actual.exists()).to.equal(
+      false,
+      'did not archive the deficient item'
+    );
   });
 
   it('should archive a deficient item when requested', async () => {
@@ -61,18 +75,27 @@ describe('Deficient Items Archiving', () => {
         trackDeficientItems: true,
         items: {
           // Create single deficient item on inspection
-          [itemId]: mocking.createCompletedMainInputItem('twoactions_checkmarkx', true)
-        }
-      }
+          [itemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true
+          ),
+        },
+      },
     });
 
     // Setup database
     await db.ref(`/properties/${propertyId}`).set({ name: 'test' });
     await db.ref(`/inspections/${inspectionId}`).set(inspectionData); // Add inspection
-    const diRef = db.ref(`/propertyInspectionDeficientItems/${propertyId}`).push();
+    const diRef = db
+      .ref(`/propertyInspectionDeficientItems/${propertyId}`)
+      .push();
     const diPath = diRef.path.toString();
     const diID = diPath.split('/').pop();
-    await diRef.set({ state: 'requires-action', inspection: inspectionId, item: itemId });
+    await diRef.set({
+      state: 'requires-action',
+      inspection: inspectionId,
+      item: itemId,
+    });
     const beforeSnap = await db.ref(`${diPath}/archive`).once('value'); // Create before
     await diRef.update({ archive: true });
     const afterSnap = await db.ref(`${diPath}/archive`).once('value'); // Create after
@@ -83,7 +106,9 @@ describe('Deficient Items Archiving', () => {
     await wrapped(changeSnap, { params: { propertyId, itemId: diID } });
 
     // Test result
-    const actual = await db.ref(`/archive/propertyInspectionDeficientItems/${propertyId}/${diID}`).once('value');
+    const actual = await db
+      .ref(`/archive/propertyInspectionDeficientItems/${propertyId}/${diID}`)
+      .once('value');
 
     // Assertions
     expect(actual.exists()).to.equal(true, 'archived the deficient item');

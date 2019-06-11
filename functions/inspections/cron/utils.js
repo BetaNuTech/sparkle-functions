@@ -18,7 +18,12 @@ module.exports = {
 
     // Lookup mismatched `updatedLastDate` and check for
     // any difference between inspection & proxy last update date
-    const proxyUpdateDateSnap = await db.ref(`${proxyDbPath}/updatedLastDate`).once('value');
-    return !proxyUpdateDateSnap.exists() || proxyUpdateDateSnap.val() !== inspection.updatedLastDate;
-  }
-}
+    const proxyUpdateDateSnap = await db
+      .ref(`${proxyDbPath}/updatedLastDate`)
+      .once('value');
+    return (
+      !proxyUpdateDateSnap.exists() ||
+      proxyUpdateDateSnap.val() !== inspection.updatedLastDate
+    );
+  },
+};

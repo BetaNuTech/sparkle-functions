@@ -11,10 +11,12 @@ const LOG_PREFIX = 'inspections: on-attribute-write:';
 module.exports = function createOnAttributeWriteHandler(db) {
   return async (change, event) => {
     const updates = Object.create(null);
-    const {inspectionId} = event.params;
+    const { inspectionId } = event.params;
 
     if (!inspectionId) {
-      log.warn(`${LOG_PREFIX} incorrectly defined event parameter "inspectionId"`);
+      log.warn(
+        `${LOG_PREFIX} incorrectly defined event parameter "inspectionId"`
+      );
       return;
     }
 
@@ -31,13 +33,21 @@ module.exports = function createOnAttributeWriteHandler(db) {
         return updates;
       }
 
-      log.info(`${LOG_PREFIX} ${inspectionId} updated, migrating proxy inspections`);
-      const processWriteUpdates = await processWrite(db, inspectionId, inspectionSnapshot.val());
+      log.info(
+        `${LOG_PREFIX} ${inspectionId} updated, migrating proxy inspections`
+      );
+      const processWriteUpdates = await processWrite(
+        db,
+        inspectionId,
+        inspectionSnapshot.val()
+      );
       return Object.assign({}, processWriteUpdates, updates);
-    } catch(e) {
+    } catch (e) {
       // Handle any errors
-      log.error(`${LOG_PREFIX} ${inspectionId} failed to migrate updated inspection ${e}`);
+      log.error(
+        `${LOG_PREFIX} ${inspectionId} failed to migrate updated inspection ${e}`
+      );
       return updates;
     }
-  }
-}
+  };
+};

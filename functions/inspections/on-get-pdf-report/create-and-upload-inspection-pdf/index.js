@@ -1,10 +1,11 @@
 const co = require('co');
 const fs = require('fs');
 const assert = require('assert');
-const {promisify} = require('util');
+const { promisify } = require('util');
 const JsPDF = require('./js-pdf');
 const inspectionPdf = require('./inspection-pdf');
 const inspectionUpload = require('./inspection-upload');
+
 const readFile = promisify(fs.readFile);
 
 /**
@@ -14,13 +15,13 @@ const readFile = promisify(fs.readFile);
  * @return {Promise} - resolve {String} report download url
  */
 module.exports = function createAndUploadInspection(property, inspection) {
-  return co(function *() {
+  return co(function*() {
     assert('has property', Boolean(property));
     assert('has inspection with id', Boolean(inspection) && inspection.id);
 
     const src = inspectionPdf(inspection, property);
     const steps = src.toSteps();
-    const pdf = new JsPDF({format: 'letter'});
+    const pdf = new JsPDF({ format: 'letter' });
 
     // Add steps to PDF
     for (let i = 0; i < steps.length; i++) {
@@ -35,12 +36,9 @@ module.exports = function createAndUploadInspection(property, inspection) {
     const output = toBuffer(pdf.output('arraybuffer'));
 
     // Upload tmp PDF file to S3
-    return inspectionUpload(
-      output,
-      `reports/${inspection.id}/${src.filename}`
-    );
+    return inspectionUpload(output, `reports/${inspection.id}/${src.filename}`);
   });
-}
+};
 
 /**
  * Convert Array Buffer to Buffer

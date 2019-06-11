@@ -11,7 +11,8 @@ const assert = require('assert');
 module.exports = function base64Image(
   imgUrl,
   scale = [200, 200],
-  jimpFormat = Jimp.MIME_JPEG) {
+  jimpFormat = Jimp.MIME_JPEG
+) {
   assert('has image url', imgUrl && typeof imgUrl === 'string');
   assert(
     'has numeric scale array',
@@ -33,9 +34,9 @@ module.exports = function base64Image(
             datauri,
             downloadURL: imgUrl,
             width: img.bitmap.width,
-            height: img.bitmap.height
+            height: img.bitmap.height,
           });
         });
     });
   });
-}
+};

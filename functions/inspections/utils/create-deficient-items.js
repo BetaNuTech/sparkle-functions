@@ -4,7 +4,13 @@ const getLatestItemAdminEditTimestamp = require('./get-latest-admin-edit-timesta
 
 const LOG_PREFIX = 'inspections: utils: create-deficient-items';
 const DEFICIENT_ITEM_ELIGIBLE = config.inspectionItems.deficientListEligible;
-const ITEM_VALUE_NAMES = ['mainInputZeroValue', 'mainInputOneValue', 'mainInputTwoValue', 'mainInputThreeValue', 'mainInputFourValue'];
+const ITEM_VALUE_NAMES = [
+  'mainInputZeroValue',
+  'mainInputOneValue',
+  'mainInputTwoValue',
+  'mainInputThreeValue',
+  'mainInputFourValue',
+];
 const DEFAULT_DEFICIENT_ITEM = Object.freeze({
   createdAt: 0,
   updatedAt: 0,
@@ -32,7 +38,7 @@ const DEFAULT_DEFICIENT_ITEM = Object.freeze({
   itemMainInputType: '',
   itemScore: 0,
   itemMainInputSelection: 0,
-  itemPhotosData: null
+  itemPhotosData: null,
 });
 
 /**
@@ -41,25 +47,38 @@ const DEFAULT_DEFICIENT_ITEM = Object.freeze({
  * @return {Object} - deficient items
  */
 module.exports = function createDeficientItems(inspection = { template: {} }) {
-  assert(inspection && typeof inspection === 'object', `${LOG_PREFIX} has inspection`);
+  assert(
+    inspection && typeof inspection === 'object',
+    `${LOG_PREFIX} has inspection`
+  );
   assert(Boolean(inspection.id), 'has inspection id');
-  assert(inspection.inspectionCompleted, `${LOG_PREFIX} has completed inspection`);
+  assert(
+    inspection.inspectionCompleted,
+    `${LOG_PREFIX} has completed inspection`
+  );
   assert(Boolean(inspection.template), `${LOG_PREFIX} has inspection template`);
-  assert(Boolean(inspection.template.items), `${LOG_PREFIX} has inspection template items`);
-  assert(inspection.template.trackDeficientItems, `${LOG_PREFIX} has deficient items list enabled`);
+  assert(
+    Boolean(inspection.template.items),
+    `${LOG_PREFIX} has inspection template items`
+  );
+  assert(
+    inspection.template.trackDeficientItems,
+    `${LOG_PREFIX} has deficient items list enabled`
+  );
 
   const result = Object.create(null);
 
   // Create list of all inspection's template items
-  const items = Object.keys(inspection.template.items).map(
-    itemId => Object.assign({ id: itemId }, inspection.template.items[itemId])
+  const items = Object.keys(inspection.template.items).map(itemId =>
+    Object.assign({ id: itemId }, inspection.template.items[itemId])
   );
 
   // Collect all deficient items
   const deficientItems = items.filter(item => {
-    const deficientsForType = DEFICIENT_ITEM_ELIGIBLE[(item.mainInputType || '').toLowerCase()];
+    const deficientsForType =
+      DEFICIENT_ITEM_ELIGIBLE[(item.mainInputType || '').toLowerCase()];
 
-    if(!deficientsForType) {
+    if (!deficientsForType) {
       return false;
     }
 
@@ -68,45 +87,47 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
 
   // Configure result w/ default deficient items
   deficientItems.forEach(item => {
-    const section = inspection.template.sections ? inspection.template.sections[item.sectionId] || {} : {};
+    const section = inspection.template.sections
+      ? inspection.template.sections[item.sectionId] || {}
+      : {};
     const sectionType = section.section_type || 'single';
     const { mainInputSelection } = item;
 
     // Add multi section sub title if present
-    let sectionSubtitle = undefined;
+    let sectionSubtitle;
     if (sectionType === 'multi') {
       const [firstItem] = getSectionItems(item.sectionId, inspection);
-      if (firstItem.itemType === 'text_input' && firstItem.textInputValue) sectionSubtitle = firstItem.textInputValue;
+      if (firstItem.itemType === 'text_input' && firstItem.textInputValue)
+        sectionSubtitle = firstItem.textInputValue;
     }
 
     // Use latest admin edit or inspection's last update date
-    const itemDataLastUpdatedDate = getLatestItemAdminEditTimestamp(item) || inspection.updatedLastDate;
+    const itemDataLastUpdatedDate =
+      getLatestItemAdminEditTimestamp(item) || inspection.updatedLastDate;
 
-    result[item.id] = Object.assign(
-      {},
-      DEFAULT_DEFICIENT_ITEM,
-      {
-        inspection: inspection.id,
-        item: item.id,
-        createdAt: Date.now() / 1000,
-        updatedAt: Date.now() / 1000,
-        itemMainInputType: item.mainInputType,
-        sectionTitle: section.title || undefined,
-        itemTitle: item.title,
-        itemInspectorNotes: item.inspectorNotes,
-        itemAdminEdits: item.adminEdits ? deepClone(item.adminEdits) : null,
-        itemPhotosData: item.photosData ? deepClone(item.photosData) : null,
-        itemMainInputSelection: mainInputSelection,
-        itemDataLastUpdatedDate,
-        sectionSubtitle,
-        sectionType,
-      }
-    );
+    result[item.id] = Object.assign({}, DEFAULT_DEFICIENT_ITEM, {
+      inspection: inspection.id,
+      item: item.id,
+      createdAt: Date.now() / 1000,
+      updatedAt: Date.now() / 1000,
+      itemMainInputType: item.mainInputType,
+      sectionTitle: section.title || undefined,
+      itemTitle: item.title,
+      itemInspectorNotes: item.inspectorNotes,
+      itemAdminEdits: item.adminEdits ? deepClone(item.adminEdits) : null,
+      itemPhotosData: item.photosData ? deepClone(item.photosData) : null,
+      itemMainInputSelection: mainInputSelection,
+      itemDataLastUpdatedDate,
+      sectionSubtitle,
+      sectionType,
+    });
 
     // Set the item score from the selected
     // source item, which may be customized
     const selectionValueName = ITEM_VALUE_NAMES[mainInputSelection];
-    result[item.id].itemScore = selectionValueName ? item[selectionValueName] || 0 : 0;
+    result[item.id].itemScore = selectionValueName
+      ? item[selectionValueName] || 0
+      : 0;
 
     // Cleanup falsey values for item, except
     // "itemMainInputSelection" which may be 0
@@ -129,7 +150,10 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
  */
 function getSectionItems(sectionId, inspection) {
   assert(sectionId && typeof sectionId === 'string', 'has section ID');
-  assert(inspection && inspection.template && inspection.template.items, 'has inspection template with items');
+  assert(
+    inspection && inspection.template && inspection.template.items,
+    'has inspection template with items'
+  );
 
   return Object.keys(inspection.template.items)
     .map(itemId => Object.assign({}, inspection.template.items[itemId])) // Item hash to array

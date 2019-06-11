@@ -9,10 +9,17 @@ const log = require('../utils/logger');
  * @param {Object} pushMessage
  * @return {Promise} - resolves {String[]} recipient's registration tokens
  */
-module.exports = function sendToRecipient(db, messaging, recipientId, pushMessage = {}) {
-  return co(function *() {
+module.exports = function sendToRecipient(
+  db,
+  messaging,
+  recipientId,
+  pushMessage = {}
+) {
+  return co(function*() {
     const registrationTokens = [];
-    const dataSnapshot = yield db.ref(`/registrationTokens/${recipientId}`).once('value');
+    const dataSnapshot = yield db
+      .ref(`/registrationTokens/${recipientId}`)
+      .once('value');
 
     if (!dataSnapshot.exists()) {
       // Recipient has no tokens
@@ -21,7 +28,7 @@ module.exports = function sendToRecipient(db, messaging, recipientId, pushMessag
 
     // These registration tokens come from the client FCM SDKs.
     if (dataSnapshot.hasChildren()) {
-      dataSnapshot.forEach((childSnapshot) => {
+      dataSnapshot.forEach(childSnapshot => {
         // key will be "ada" the first time and "alan" the second time
         // childData will be the actual contents of the child
         registrationTokens.push(childSnapshot.key);
@@ -36,8 +43,9 @@ module.exports = function sendToRecipient(db, messaging, recipientId, pushMessag
       notification: {
         title: pushMessage.title,
         body: pushMessage.message,
-        icon: 'https://s3.us-east-2.amazonaws.com/sapphireinspections/assets/app_icon_192.png'
-      }
+        icon:
+          'https://s3.us-east-2.amazonaws.com/sapphireinspections/assets/app_icon_192.png',
+      },
     };
 
     // Set the message as high priority and have it expire after 24 hours.
@@ -49,7 +57,11 @@ module.exports = function sendToRecipient(db, messaging, recipientId, pushMessag
     // Send a message to the device corresponding to the provided
     // registration token with the provided options.
     try {
-      const response = yield messaging.sendToDevice(registrationTokens, payload, {});
+      const response = yield messaging.sendToDevice(
+        registrationTokens,
+        payload,
+        {}
+      );
       log.info(`Successfully sent message: ${response.multicastId}`);
     } catch (e) {
       log.error(`Error sending message: ${e}`);
@@ -58,4 +70,4 @@ module.exports = function sendToRecipient(db, messaging, recipientId, pushMessag
 
     return registrationTokens;
   });
-}
+};

@@ -15,7 +15,7 @@ const consoleTransport = new winston.transports.Console({
     winston.format.timestamp(),
     winston.format.align(),
     winston.format.printf(info => {
-      const printInfo = Object.assign({}, info)
+      const printInfo = Object.assign({}, info);
       const { timestamp, message } = printInfo;
       delete printInfo.timestamp;
       delete printInfo.level;
@@ -25,7 +25,7 @@ const consoleTransport = new winston.transports.Console({
         Object.keys(printInfo).length ? JSON.stringify(printInfo, null, 2) : ''
       }`;
     })
-  )
+  ),
 });
 
 /**
@@ -49,7 +49,8 @@ consoleTransport.log = function log(info, callback) {
     }
 
     return;
-  } else if (this.consoleWarnLevels[info[LEVEL]]) {
+  }
+  if (this.consoleWarnLevels[info[LEVEL]]) {
     // console.warn adds a newline
     console.warn(info[MESSAGE]);
 
@@ -65,10 +66,10 @@ consoleTransport.log = function log(info, callback) {
   if (callback) {
     callback(); // eslint-disable-line callback-return
   }
-}
+};
 
 module.exports = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
   format: winston.format.json(),
-  transports: [consoleTransport]
+  transports: [consoleTransport],
 });
