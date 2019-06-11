@@ -25,21 +25,17 @@ module.exports = function createOnTeamsWriteHandler(
       return;
     }
 
-    const beforeTeam = change.before.exists() ? change.before.val().team : null;
-    const afterTeam = change.after.exists() ? change.after.val().team : null;
+    const beforeTeam = change.before.val();
+    const afterTeam = change.after.val();
     const publisher = pubsubClient.topic(userTeamsTopic).publisher();
-
-    // Team removed
-    if (!afterTeam) {
-      return updates;
-    }
+    const isTeamRemoved = afterTeam ? false : true;
 
     log.info(
-      `${LOG_PREFIX} property ${propertyId} - team ${afterTeam} updated`
+      `${LOG_PREFIX} property ${propertyId} - team ${isTeamRemoved ? beforeTeam : afterTeam} ${isTeamRemoved ? 'removed' : 'updated'}`
     );
 
     // Remove old team / property association
-    if (beforeTeam !== afterTeam) {
+    if (beforeTeam && beforeTeam !== afterTeam) {
       try {
         await db.ref(`/teams/${beforeTeam}/properties/${propertyId}`).set(null);
         updates[`/teams/${beforeTeam}/properties/${propertyId}`] = 'removed';
@@ -56,6 +52,12 @@ module.exports = function createOnTeamsWriteHandler(
           `${LOG_PREFIX} property: ${propertyId} remove from team: ${beforeTeam} - failed: ${e}`
         );
       }
+    }
+
+    // Prevent adding non-existent
+    // user team associations
+    if (isTeamRemoved) {
+      return updates;
     }
 
     try {
@@ -79,7 +81,7 @@ module.exports = function createOnTeamsWriteHandler(
       log.error(
         `${LOG_PREFIX} property: ${propertyId} upsert to team: ${afterTeam} - failed: ${e}`
       );
-      return;
+      throw e;
     }
 
     return updates;
