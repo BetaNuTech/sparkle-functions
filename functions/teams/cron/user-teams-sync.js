@@ -1,5 +1,6 @@
 const log = require('../../utils/logger');
 const teamsModel = require('../../models/teams');
+
 const LOG_PREFIX = 'teams: cron: user-team-sync:';
 
 /**
@@ -13,7 +14,7 @@ const LOG_PREFIX = 'teams: cron: user-team-sync:';
 module.exports = function createSyncUserTeamHandler(topic = '', pubsub, db) {
   return pubsub
     .topic(topic)
-    .onPublish(async function syncUserTeamHandler(message, context) {
+    .onPublish(async function syncUserTeamHandler(message /* , context */) {
       const updates = {};
       let userId = null;
       let propertyAndTeam = {};
@@ -21,15 +22,20 @@ module.exports = function createSyncUserTeamHandler(topic = '', pubsub, db) {
       log.info(`${LOG_PREFIX} received ${Date.now()}`);
 
       try {
-        userId = message.json.id;
-      } catch (e) {
-        log.error(
-          `${LOG_PREFIX} PubSub message was not JSON: ${e} | message ${message.json}`
-        );
-        throw Error(
-          `${LOG_PREFIX} PubSub message was not JSON: ${e} | message ${message.json}`
-        );
+        userId = message.data
+          ? Buffer.from(message.data, 'base64').toString()
+          : '';
+
+        if (!userId) {
+          throw new Error(`topic: ${topic} received invalid message`);
+        }
+      } catch (err) {
+        const msgErr = `${LOG_PREFIX} message error: ${err}`;
+        log.error(msgErr);
+        throw Error(msgErr);
       }
+
+      log.info(`${LOG_PREFIX} syncing user teams of: ${userId}`);
 
       // load all properties team associations (source of truth)
       try {
