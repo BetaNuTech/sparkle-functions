@@ -28,10 +28,12 @@ module.exports = function createOnTeamsWriteHandler(
     const beforeTeam = change.before.val();
     const afterTeam = change.after.val();
     const publisher = pubsubClient.topic(userTeamsTopic).publisher();
-    const isTeamRemoved = afterTeam ? false : true;
+    const isTeamRemoved = !afterTeam;
 
     log.info(
-      `${LOG_PREFIX} property ${propertyId} - team ${isTeamRemoved ? beforeTeam : afterTeam} ${isTeamRemoved ? 'removed' : 'updated'}`
+      `${LOG_PREFIX} property ${propertyId} - team ${
+        isTeamRemoved ? beforeTeam : afterTeam
+      } ${isTeamRemoved ? 'removed' : 'updated'}`
     );
 
     // Remove old team / property association
@@ -57,7 +59,7 @@ module.exports = function createOnTeamsWriteHandler(
     // Prevent adding non-existent
     // user team associations
     if (isTeamRemoved) {
-      return updates;
+      return updates; // eslint-disable-line
     }
 
     try {
@@ -84,6 +86,6 @@ module.exports = function createOnTeamsWriteHandler(
       throw e;
     }
 
-    return updates;
+    return updates; // eslint-disable-line
   };
 };
