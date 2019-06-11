@@ -18,20 +18,16 @@ describe('Teams Write', () => {
 
     // Setup database
     await db.ref(`/properties/${property1Id}`).set({ name: 'test' }); // Add property
-    await db
-      .ref(`/users/${user1Id}`)
-      .set({
-        firstName: 'Fred',
-        lastName: 'Flintstone',
-        teams: { [teamId]: { [property2Id]: true } },
-      }); // Add user 1 with teamID
-    await db
-      .ref(`/users/${user2Id}`)
-      .set({
-        firstName: 'Barney',
-        lastName: 'Rubble',
-        teams: { [teamId]: { [property2Id]: true } },
-      }); // Add user 2 with teamID
+    await db.ref(`/users/${user1Id}`).set({
+      firstName: 'Fred',
+      lastName: 'Flintstone',
+      teams: { [teamId]: { [property2Id]: true } },
+    }); // Add user 1 with teamID
+    await db.ref(`/users/${user2Id}`).set({
+      firstName: 'Barney',
+      lastName: 'Rubble',
+      teams: { [teamId]: { [property2Id]: true } },
+    }); // Add user 2 with teamID
     await db.ref(`/teams/${teamId}`).set({ name: 'Team1' }); // Add team
 
     const propertyBeforeSnap = await db
@@ -72,13 +68,11 @@ describe('Teams Write', () => {
 
     // Setup database
     await db.ref(`/properties/${property1Id}`).set({ name: 'test' }); // Add property
-    await db
-      .ref(`/users/${user1Id}`)
-      .set({
-        firstName: 'Fred',
-        lastName: 'Flintstone',
-        teams: { [teamId]: { [property2Id]: true } },
-      }); // Add user 1 with teamID
+    await db.ref(`/users/${user1Id}`).set({
+      firstName: 'Fred',
+      lastName: 'Flintstone',
+      teams: { [teamId]: { [property2Id]: true } },
+    }); // Add user 1 with teamID
     await db.ref(`/users/${user2Id}`).set({ firstName: 'no-teams' }); // regression check
     await db.ref(`/teams/${teamId}`).set({ name: 'Team1' }); // Add team
 
@@ -116,13 +110,11 @@ describe('Teams Write', () => {
     await db
       .ref(`/properties/${property1Id}`)
       .set({ name: 'test', team: teamId }); // Add property
-    await db
-      .ref(`/users/${user1Id}`)
-      .set({
-        firstName: 'Fred',
-        lastName: 'Flintstone',
-        teams: { [teamId]: { [property2Id]: true } },
-      }); // Add user 1 with teamID
+    await db.ref(`/users/${user1Id}`).set({
+      firstName: 'Fred',
+      lastName: 'Flintstone',
+      teams: { [teamId]: { [property2Id]: true } },
+    }); // Add user 1 with teamID
     await db.ref(`/teams/${teamId}`).set({ name: 'Team1' }); // Add team
 
     const propertyBeforeSnap = await db
