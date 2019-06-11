@@ -55,59 +55,58 @@ describe('User Teams Sync', () => {
     );
   });
 
-  it('should remove all invalid teams and property associates from all users', async () => {
-    const team1Id = uuid();
-    const team2Id = uuid();
+  it('should remove all invalid team property associations from user', async () => {
+    const teamId = uuid();
     const user1Id = uuid();
-    const user2Id = uuid();
     const property1Id = uuid();
     const property2Id = uuid();
-    const property3Id = uuid();
-    const property4Id = uuid();
-    const expectedPayload = {
-      [team1Id]: { [property1Id]: true },
+    const expected = {
+      [teamId]: { [property1Id]: true },
     };
     const pubSubMessage = { data: Buffer.from(user1Id) };
 
     // Setup database
-    await db
-      .ref(`/properties/${property1Id}`)
-      .set({ name: 'Condo', team: team1Id }); // Add property and team
+    await db.ref(`/properties/${property1Id}`).set({ team: teamId }); // Add property /w team
 
     await db.ref(`/users/${user1Id}`).set({
-      firstName: 'Fred',
       teams: {
-        [team1Id]: { [property1Id]: true, [property2Id]: true },
-        [team2Id]: { [property3Id]: true, [property4Id]: true },
+        [teamId]: {
+          [property1Id]: true, // valid
+          [property2Id]: true, // invalid
+        },
       },
-    }); // Add user
-    await db.ref(`/users/${user2Id}`).set({ firstName: 'no-teams' }); // Regression check for user /wo teams
+    });
 
     // Execute
     await test.wrap(cloudFunctions.userTeamsSync)(pubSubMessage);
 
     // Test result
-    const actual = await db.ref(`/users/${user1Id}/teams`).once('value');
+    const resultSnap = await db.ref(`/users/${user1Id}/teams`).once('value');
+    const actual = resultSnap.val();
 
     // Assertions
-    expect(actual.val()).to.deep.equal(
-      expectedPayload,
-      `synced /users/${user1Id}/teams by removing invalid`
+    expect(actual).to.deep.equal(
+      expected,
+      `removed property ${property2Id} from teams`
     );
   });
 
-  it('should remove all invalid team/properties associations when all properties have no team associations', async () => {
+  it("should remove all invalid properties from a users' teams, keeping their team membership intact", async () => {
     const userId = uuid();
     const teamId = uuid();
     const propertyId = uuid();
     const pubSubMessage = { data: Buffer.from(userId) };
-    const expected = false;
+    const expected = {
+      [teamId]: true,
+    };
 
     // Setup database
+    // NOTE: additionlly tests important edge case for all
+    // property/team associations to be removed and user
+    // to still get updated
     await db.ref(`/properties/${propertyId}`).set({ name: 'Condo' }); // Add property /wo team
     await db.ref(`/teams/${teamId}`).set({ name: 'Team1' }); // Add team /wo property
     await db.ref(`/users/${userId}`).set({
-      firstName: 'Fred',
       teams: {
         [teamId]: { [propertyId]: true }, // outdated team association
       },
@@ -118,12 +117,47 @@ describe('User Teams Sync', () => {
 
     // Test result
     const actualSnap = await db.ref(`/users/${userId}/teams`).once('value');
-    const actual = actualSnap.exists();
+    const actual = actualSnap.val();
 
     // Assertions
-    expect(actual).to.equal(
+    expect(actual).to.deep.equal(
       expected,
       `synced removed property from /users/${userId}/teams by removing invalid`
+    );
+  });
+
+  it("should add property association to user of team that just associated its' first property", async () => {
+    const userId = uuid();
+    const teamId = uuid();
+    const propertyId = uuid();
+    const pubSubMessage = { data: Buffer.from(userId) };
+    const expected = {
+      [teamId]: {
+        [propertyId]: true,
+      },
+    };
+
+    // Setup database
+    await db.ref(`/properties/${propertyId}`).set({}); // Add property /wo team
+    await db.ref(`/teams/${teamId}`).set({}); // Add team /wo property
+    await db.ref(`/users/${userId}`).set({
+      teams: {
+        [teamId]: true, // add user to team /wo properties
+      },
+    });
+    await db.ref(`/properties/${propertyId}/team`).set(teamId); // Add property to team
+
+    // Execute
+    await test.wrap(cloudFunctions.userTeamsSync)(pubSubMessage);
+
+    // Test result
+    const actualSnap = await db.ref(`/users/${userId}/teams`).once('value');
+    const actual = actualSnap.val();
+
+    // Assertions
+    expect(actual).to.deep.equal(
+      expected,
+      'users team membership contains first property association'
     );
   });
 });
