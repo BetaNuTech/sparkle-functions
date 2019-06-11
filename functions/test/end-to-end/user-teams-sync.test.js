@@ -18,7 +18,7 @@ describe('User Teams Sync', () => {
       [team1Id]: { [property1Id]: true, [property2Id]: true },
       [team2Id]: { [property3Id]: true, [property4Id]: true },
     };
-    const pubSubMessage = { json: { id: userId } };
+    const pubSubMessage = { data: Buffer.from(userId) };
 
     // Setup database
     await db
@@ -34,15 +34,13 @@ describe('User Teams Sync', () => {
       .ref(`/properties/${property4Id}`)
       .set({ name: 'Apartment', team: team2Id }); // Add property 4 and team 2
 
-    await db
-      .ref(`/users/${userId}`)
-      .set({
-        firstName: 'Fred',
-        teams: {
-          [team1Id]: { [property1Id]: true },
-          [team2Id]: { [property3Id]: true },
-        },
-      }); // Add user
+    await db.ref(`/users/${userId}`).set({
+      firstName: 'Fred',
+      teams: {
+        [team1Id]: { [property1Id]: true },
+        [team2Id]: { [property3Id]: true },
+      },
+    }); // Add user
 
     // Execute
     await test.wrap(cloudFunctions.userTeamsSync)(pubSubMessage);
@@ -69,7 +67,7 @@ describe('User Teams Sync', () => {
     const expectedPayload = {
       [team1Id]: { [property1Id]: true },
     };
-    const pubSubMessage = { json: { id: user1Id } };
+    const pubSubMessage = { data: Buffer.from(user1Id) };
 
     // Setup database
     await db
@@ -102,7 +100,7 @@ describe('User Teams Sync', () => {
     const userId = uuid();
     const teamId = uuid();
     const propertyId = uuid();
-    const pubSubMessage = { json: { id: userId } };
+    const pubSubMessage = { data: Buffer.from(userId) };
     const expected = false;
 
     // Setup database
