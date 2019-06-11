@@ -1,6 +1,5 @@
 const fs = require('fs');
-const s3Client = require('../../utils/s3-client');
-const CONFIG = require('../../config');
+
 const AUTH_FILE_PATH = '../auth.json';
 
 // Write firbase auth file from environment if non-existent
@@ -20,6 +19,8 @@ const test = require('firebase-functions-test')(testConfig, AUTH_FILE_PATH);
 const sinon = require('sinon');
 const admin = require('firebase-admin');
 const PubSub = require('@google-cloud/pubsub');
+const CONFIG = require('../../config');
+const s3Client = require('../../utils/s3-client');
 
 admin.initializeApp(testConfig);
 const db = admin.database();
@@ -36,11 +37,20 @@ Object.defineProperty(admin, 'storage', {
 
 // Stub out pubsub publisher prototype
 // to avoid publishing live messages
+const pubsubSubscribers = {};
 Object.defineProperty(PubSub.prototype, 'topic', {
   writable: true,
-  value: () => ({
+  value: topic => ({
     publisher: () => ({
-      publish: () => Promise.resolve(),
+      publish(data) {
+        if (
+          pubsubSubscribers[topic] &&
+          Array.isArray(pubsubSubscribers[topic])
+        ) {
+          pubsubSubscribers[topic].forEach(subscriber => subscriber(data));
+        }
+        return Promise.resolve();
+      },
     }),
   }),
 });
@@ -50,7 +60,7 @@ module.exports = {
   auth,
   test,
   storage,
-  cloudFunctions: require('../../index'),
+  cloudFunctions: require('../../index'), // eslint-disable-line
 
   /**
    * Delete an inspection PDF from S3 Bucket
@@ -71,5 +81,19 @@ module.exports = {
         (err, result) => (err ? reject(err) : resolve(result))
       );
     });
+  },
+
+  pubsub: {
+    subscribe(topic, fn) {
+      pubsubSubscribers[topic] = pubsubSubscribers[topic] || [];
+      pubsubSubscribers[topic].push(fn);
+
+      return function unsubscribe() {
+        return pubsubSubscribers[topic].splice(
+          pubsubSubscribers[topic].indexOf(fn),
+          1
+        );
+      };
+    },
   },
 };
