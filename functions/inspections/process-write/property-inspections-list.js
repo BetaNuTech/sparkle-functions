@@ -8,7 +8,11 @@ const { getTemplateName, getScore } = require('./utils');
  * @param  {Object} inspection
  * @return {Promise} - resolves {Object} property inspection proxy
  */
-module.exports = async function propertyInspectionsList({ db, inspectionId, inspection }) {
+module.exports = async function propertyInspectionsList({
+  db,
+  inspectionId,
+  inspection,
+}) {
   assert(Boolean(db), 'has firebase database reference');
   assert(inspectionId && typeof inspectionId === 'string', 'has inspection ID');
   assert(Boolean(inspection), 'has inspection data');
@@ -23,7 +27,7 @@ module.exports = async function propertyInspectionsList({ db, inspectionId, insp
     deficienciesExist: inspection.deficienciesExist,
     inspectionCompleted: inspection.inspectionCompleted,
     itemsCompleted: inspection.itemsCompleted,
-    totalItems: inspection.totalItems
+    totalItems: inspection.totalItems,
   };
 
   // Add optional template category
@@ -31,7 +35,15 @@ module.exports = async function propertyInspectionsList({ db, inspectionId, insp
     inspectionData.templateCategory = inspection.templateCategory;
   }
 
-  await db.ref(`/propertyInspections/${inspection.property}/inspections/${inspectionId}`).set(inspectionData); // TODO remove #53
-  await db.ref(`/propertyInspectionsList/${inspection.property}/inspections/${inspectionId}`).set(inspectionData);
+  await db
+    .ref(
+      `/propertyInspections/${inspection.property}/inspections/${inspectionId}`
+    )
+    .set(inspectionData); // TODO remove #53
+  await db
+    .ref(
+      `/propertyInspectionsList/${inspection.property}/inspections/${inspectionId}`
+    )
+    .set(inspectionData);
   return inspectionData;
-}
+};

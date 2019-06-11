@@ -21,7 +21,7 @@ module.exports = {
     nineDaysAgo: unixDaysToUnix(NOW_DAY - 9),
     elevenDaysAgo: unixDaysToUnix(NOW_DAY - 11),
     fourteenDaysAgo: unixDaysToUnix(NOW_DAY - 14),
-    fifteenDaysAgo: unixDaysToUnix(NOW_DAY- 15),
+    fifteenDaysAgo: unixDaysToUnix(NOW_DAY - 15),
     twentyDaysAgo: unixDaysToUnix(NOW_DAY - 20),
 
     oneDayFromNow: unixDaysToUnix(NOW_DAY + 1),
@@ -29,8 +29,8 @@ module.exports = {
     threeDaysFromNow: unixDaysToUnix(NOW_DAY + 3),
     fourDaysFromNow: unixDaysToUnix(NOW_DAY + 4),
     fiveDaysFromNow: unixDaysToUnix(NOW_DAY + 5),
-    sixDaysFromNow: unixDaysToUnix(NOW_DAY + 6)
-  })
+    sixDaysFromNow: unixDaysToUnix(NOW_DAY + 6),
+  }),
 };
 
 function unixDaysToUnix(unixDays) {

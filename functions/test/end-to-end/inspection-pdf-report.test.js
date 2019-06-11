@@ -18,17 +18,19 @@ const INSPECTION_DATA = mocking.createInspection({
   template: {
     name: 'template',
     items: { [uuid()]: mocking.createItem({ sectionId: SECTION_ID }) },
-    sections: { [SECTION_ID]: mocking.createSection() }
-  }
+    sections: { [SECTION_ID]: mocking.createSection() },
+  },
 });
 const PROPERTY_DATA = {
   name: `name${PROPERTY_ID}`,
-  inspections: { [INSP_ID]: true }
+  inspections: { [INSP_ID]: true },
 };
 
 describe('Inspection PDF Report', () => {
   afterEach(async () => {
-    const reportURL = await db.ref(`/inspections/${INSP_ID}/inspectionReportURL`).once('value');
+    const reportURL = await db
+      .ref(`/inspections/${INSP_ID}/inspectionReportURL`)
+      .once('value');
 
     // Delete any generated PDF
     if (reportURL.val()) {
@@ -54,7 +56,7 @@ describe('Inspection PDF Report', () => {
       .expect(401);
   });
 
-  it('should resolve an uploaded PDF\'s download link', async function() {
+  it("should resolve an uploaded PDF's download link", async function() {
     // Setup database
     await db.ref(`/inspections/${INSP_ID}`).set(INSPECTION_DATA); // Add inspection
     await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
@@ -85,7 +87,9 @@ describe('Inspection PDF Report', () => {
       .expect(200);
 
     // Get Result
-    const actual = await db.ref(`/inspections/${INSP_ID}/inspectionReportUpdateLastDate`).once('value');
+    const actual = await db
+      .ref(`/inspections/${INSP_ID}/inspectionReportUpdateLastDate`)
+      .once('value');
 
     // Assertions
     expect(actual.val()).to.be.a('number');
@@ -107,7 +111,9 @@ describe('Inspection PDF Report', () => {
       .expect(200);
 
     // Get Result
-    const actual = await db.ref(`/inspections/${INSP_ID}/inspectionReportURL`).once('value');
+    const actual = await db
+      .ref(`/inspections/${INSP_ID}/inspectionReportURL`)
+      .once('value');
     const expected = response.body.inspectionReportURL;
 
     // Assertions
@@ -128,7 +134,9 @@ describe('Inspection PDF Report', () => {
       .expect(200);
 
     // Get Result
-    const actual = await db.ref(`/inspections/${INSP_ID}/inspectionReportStatus`).once('value');
+    const actual = await db
+      .ref(`/inspections/${INSP_ID}/inspectionReportStatus`)
+      .once('value');
 
     // Assertions
     expect(actual.val()).to.equal('completed_success');
@@ -136,7 +144,9 @@ describe('Inspection PDF Report', () => {
 
   it('should return immediately when inspection status is generating', async function() {
     // Setup database
-    const inspectionData = Object.assign({}, INSPECTION_DATA, {inspectionReportStatus: 'generating'});
+    const inspectionData = Object.assign({}, INSPECTION_DATA, {
+      inspectionReportStatus: 'generating',
+    });
     await db.ref(`/inspections/${INSP_ID}`).set(inspectionData); // Add generating inspection
     await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
@@ -158,7 +168,7 @@ describe('Inspection PDF Report', () => {
     const inspectionData = Object.assign({}, INSPECTION_DATA, {
       inspectionReportStatus: 'completed_success',
       inspectionReportUpdateLastDate: Date.now() / 1000, // occured after
-      updatedLastDate: (Date.now() - 1000) / 1000 // occured before
+      updatedLastDate: (Date.now() - 1000) / 1000, // occured before
     });
     await db.ref(`/inspections/${INSP_ID}`).set(inspectionData); // Add generating inspection
     await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property

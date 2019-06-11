@@ -13,41 +13,50 @@ const LOG_PREFIX = 'inspections: cron: sync-completed-inspection-proxies:';
  * @param  {firebaseadmin.database} db
  * @return {functions.cloudfunction}
  */
-module.exports = function createSyncCompletedInspectionProxieshandler(topic = '', pubsub, db) {
+module.exports = function createSyncCompletedInspectionProxieshandler(
+  topic = '',
+  pubsub,
+  db
+) {
   return pubsub
-  .topic(topic)
-  .onPublish(async function syncCompletedInspectionProxiesHandler() {
-    const updates = {};
-    log.info(`${LOG_PREFIX} received ${Date.now()}`);
+    .topic(topic)
+    .onPublish(async function syncCompletedInspectionProxiesHandler() {
+      const updates = {};
+      log.info(`${LOG_PREFIX} received ${Date.now()}`);
 
-    await adminUtils.forEachChild(db, '/inspections', async function proccessCompletedInspectionProxyWrite(
-      inspectionId,
-      inspection) {
-      try {
-        // Throw errors if inspection cannot write proxies
-        await isInspectionWritable(db, inspection, LOG_PREFIX);
+      await adminUtils.forEachChild(
+        db,
+        '/inspections',
+        async function proccessCompletedInspectionProxyWrite(
+          inspectionId,
+          inspection
+        ) {
+          try {
+            // Throw errors if inspection cannot write proxies
+            await isInspectionWritable(db, inspection, LOG_PREFIX);
 
-        const isProxyOutdated = await isInspectionOutdated(
-          db,
-          inspection,
-          `/completedInspectionsList/${inspectionId}`
-        );
+            const isProxyOutdated = await isInspectionOutdated(
+              db,
+              inspection,
+              `/completedInspectionsList/${inspectionId}`
+            );
 
-        if (isProxyOutdated) {
-          // Update inspections' completedInspectionsList proxy
-          const result = await completedInspectionsList({
-            db,
-            inspectionId,
-            inspection
-          });
+            if (isProxyOutdated) {
+              // Update inspections' completedInspectionsList proxy
+              const result = await completedInspectionsList({
+                db,
+                inspectionId,
+                inspection,
+              });
 
-          updates[inspectionId] = result ? 'upserted' : 'removed';
+              updates[inspectionId] = result ? 'upserted' : 'removed';
+            }
+          } catch (e) {
+            log.error(`${LOG_PREFIX} ${e}`);
+          }
         }
-      } catch (e) {
-        log.error(`${LOG_PREFIX} ${e}`);
-      }
-    });
+      );
 
-    return updates;
-  });
-}
+      return updates;
+    });
+};

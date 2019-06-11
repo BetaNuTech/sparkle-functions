@@ -6,11 +6,10 @@ const assert = require('assert');
  * @param  {Object} target
  * @return {Proxy} - proxy to db handlers
  */
-module.exports = target => {
-  return new Proxy(target, {
+module.exports = target =>
+  new Proxy(target, {
     apply(target, thisArg, args) {
       assert(Boolean(args[0]), 'has firebase admin database reference');
       return target.apply(thisArg, args);
-    }
+    },
   });
-}

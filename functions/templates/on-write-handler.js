@@ -5,17 +5,19 @@ const templatesList = require('./list');
 const LOG_PREFIX = 'templates: on-write-handler:';
 
 /**
-* Factory for template on write handler
-* @param  {firebaseAdmin.database} - Firebase Admin DB instance
-* @return {Function} - property onWrite handler
-*/
+ * Factory for template on write handler
+ * @param  {firebaseAdmin.database} - Firebase Admin DB instance
+ * @return {Function} - property onWrite handler
+ */
 module.exports = function createOnWriteHandler(db) {
   return async (change, event) => {
     const updates = Object.create(null);
-    const {templateId} = event.params;
+    const { templateId } = event.params;
 
     if (!templateId) {
-      log.warn(`${LOG_PREFIX} incorrectly defined event parameter "templateId"`);
+      log.warn(
+        `${LOG_PREFIX} incorrectly defined event parameter "templateId"`
+      );
       return;
     }
 
@@ -23,12 +25,7 @@ module.exports = function createOnWriteHandler(db) {
     const afterData = change.after.val();
 
     try {
-      await templatesList.write(
-        db,
-        templateId,
-        beforeData,
-        afterData
-      );
+      await templatesList.write(db, templateId, beforeData, afterData);
     } catch (e) {
       log.error(`${LOG_PREFIX} ${e}`);
     }
@@ -42,11 +39,19 @@ module.exports = function createOnWriteHandler(db) {
 
     // Create or update template proxies
     if (afterData) {
-      const proTmplUpdates = await propertyTemplates.upsert(db, templateId, afterData);
-      log.info(`${LOG_PREFIX} template ${templateId} ${beforeData ? 'updated' : 'added'}`);
+      const proTmplUpdates = await propertyTemplates.upsert(
+        db,
+        templateId,
+        afterData
+      );
+      log.info(
+        `${LOG_PREFIX} template ${templateId} ${
+          beforeData ? 'updated' : 'added'
+        }`
+      );
       Object.assign(updates, proTmplUpdates);
     }
 
     return updates;
-  }
-}
+  };
+};

@@ -1,3 +1,3 @@
 module.exports = {
-  createSyncOverdue: require('./sync-overdue')
+  createSyncOverdue: require('./sync-overdue'),
 };

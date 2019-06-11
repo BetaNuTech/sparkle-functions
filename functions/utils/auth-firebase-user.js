@@ -16,28 +16,28 @@ module.exports = function authFirebaseUser(db, auth) {
   assert(Boolean(auth), 'has firebase auth instance');
 
   return async function strategy(req, res, next) {
-    const {authorization} = req.headers;
+    const { authorization } = req.headers;
 
     // Is authentication requested?
     if (!authorization) {
       return sendInvalidCred();
     }
 
-    const tokenType = (`${authorization}`).split(' ').shift(); // take type
+    const tokenType = `${authorization}`.split(' ').shift(); // take type
 
     // Is Firebase JWT Authorization requested?
     if (tokenType.toLowerCase() !== 'fb-jwt') {
       return sendInvalidCred(); // TODO: allow other auth strategies
     }
 
-    const idToken = (`${authorization}`).split(' ').pop(); // take token
+    const idToken = `${authorization}`.split(' ').pop(); // take token
 
     try {
       const decodedToken = await auth.verifyIdToken(idToken);
       const userResult = await getUserById(db, decodedToken.uid);
 
       // set request user
-      req.user = (req.user || {});
+      req.user = req.user || {};
       Object.assign(req.user, userResult);
 
       next();
@@ -47,11 +47,11 @@ module.exports = function authFirebaseUser(db, auth) {
     }
 
     function sendInvalidCred() {
-      res.status(401).send({message: 'invalid credentials'});
+      res.status(401).send({ message: 'invalid credentials' });
       next(new Error('invalid credentials')); // stop proceeding middleware
     }
   };
-}
+};
 
 /**
  * Request a user by their id
@@ -61,13 +61,17 @@ module.exports = function authFirebaseUser(db, auth) {
  */
 function getUserById(db, userId) {
   assert(Boolean(db), 'has firebase database instance');
-  assert(userId && typeof userId === 'string', `has valid user id got: ${userId}`);
+  assert(
+    userId && typeof userId === 'string',
+    `has valid user id got: ${userId}`
+  );
 
   return new Promise((resolve, reject) =>
-    db.ref(`/users/${userId}`)
+    db
+      .ref(`/users/${userId}`)
       .once('value')
-      .then((snapshot) => {
-        let user = snapshot.val();
+      .then(snapshot => {
+        const user = snapshot.val();
 
         if (!user) {
           return reject(null);

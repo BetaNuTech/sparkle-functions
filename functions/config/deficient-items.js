@@ -13,6 +13,6 @@ module.exports = {
     itemInspectorNotes: 'inspectorNotes',
     itemMainInputSelection: 'mainInputSelection',
     itemPhotosData: 'photosData',
-    sectionSubtitle: 'textInputValue'
-  }
+    sectionSubtitle: 'textInputValue',
+  },
 };

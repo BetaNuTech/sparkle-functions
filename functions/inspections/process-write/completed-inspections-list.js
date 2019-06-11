@@ -13,7 +13,7 @@ const { getTemplateName, getScore } = require('./utils');
 module.exports = async function completedInspectionsList({
   db,
   inspectionId,
-  inspection
+  inspection,
 }) {
   assert(Boolean(db), 'has firebase database reference');
   assert(inspectionId && typeof inspectionId === 'string', 'has inspection ID');
@@ -34,10 +34,14 @@ module.exports = async function completedInspectionsList({
     updatedLastDate: inspection.updatedLastDate,
     deficienciesExist: inspection.deficienciesExist,
     inspectionCompleted: inspection.inspectionCompleted,
-    property: inspection.property
+    property: inspection.property,
   };
 
-  await db.ref(`/completedInspections/${inspectionId}`).set(completedInspectionData); // TODO remove #53
-  await db.ref(`/completedInspectionsList/${inspectionId}`).set(completedInspectionData);
+  await db
+    .ref(`/completedInspections/${inspectionId}`)
+    .set(completedInspectionData); // TODO remove #53
+  await db
+    .ref(`/completedInspectionsList/${inspectionId}`)
+    .set(completedInspectionData);
   return completedInspectionData;
-}
+};

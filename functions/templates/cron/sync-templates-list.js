@@ -11,11 +11,13 @@ const LOG_PREFIX = 'templates: cron: sync-templates-list:';
  * @param  {functions.pubsub} pubSub
  * @param  {firebaseAdmin.database} db
  * @return {functions.CloudFunction}
-*/
-module.exports = function createSyncTemplatesListHandler(topic = '', pubSub, db) {
-  return pubSub
-  .topic(topic)
-  .onPublish(async () => {
+ */
+module.exports = function createSyncTemplatesListHandler(
+  topic = '',
+  pubSub,
+  db
+) {
+  return pubSub.topic(topic).onPublish(async () => {
     const updates = {};
     log.info(`${LOG_PREFIX} received ${Date.now()}`);
 
@@ -30,15 +32,19 @@ module.exports = function createSyncTemplatesListHandler(topic = '', pubSub, db)
     }
 
     // Add missing/outdated templatesList records
-    await adminUtils.forEachChild(db, '/templates', async function templateListWrite(templateId, template) {
-      try {
-        const result = await list.write(db, templateId, template, template);
-        updates[templateId] = result ? 'upserted' : 'removed';
-      } catch (e) {
-        log.error(`${LOG_PREFIX} ${e}`);
+    await adminUtils.forEachChild(
+      db,
+      '/templates',
+      async function templateListWrite(templateId, template) {
+        try {
+          const result = await list.write(db, templateId, template, template);
+          updates[templateId] = result ? 'upserted' : 'removed';
+        } catch (e) {
+          log.error(`${LOG_PREFIX} ${e}`);
+        }
       }
-    });
+    );
 
     return updates;
   });
-}
+};

@@ -1,4 +1,3 @@
-const fs = require('fs');
 const assert = require('assert');
 const s3Client = require('../../../utils/s3-client');
 const CONFIG = require('../../../config');
@@ -19,16 +18,14 @@ module.exports = function uploadInspectionPromise(file, destPath) {
         Body: file,
         Bucket: CONFIG.s3.inspectionReportBucket,
         Key: destPath,
-        ContentType: 'application/pdf'
+        ContentType: 'application/pdf',
       },
-      (putErr, result) => {
+      putErr => {
         if (putErr) return reject(putErr);
-        resolve(
-          `https://${CONFIG.s3.inspectionReportBucket}.${
-            CONFIG.s3.endpoint
-          }/${destPath}`
+        return resolve(
+          `https://${CONFIG.s3.inspectionReportBucket}.${CONFIG.s3.endpoint}/${destPath}`
         );
       }
     );
   });
-}
+};

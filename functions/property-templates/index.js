@@ -3,16 +3,16 @@ const log = require('../utils/logger');
 const adminUtils = require('../utils/firebase-admin');
 const findRemovedKeys = require('../utils/find-removed-keys');
 
-LOG_PREFIX = 'property-templates:';
+const LOG_PREFIX = 'property-templates:';
 
 module.exports = {
- /**
-  * Add property's templates to `/propertyTemplates` & `/propertyTemplatesList`
-  * @param  {firebaseAdmin.database}
-  * @param  {String} propertyId
-  * @param  {Object} templatesHash
-  * @return {Promise} - resolves {Object} hash of updates
-  */
+  /**
+   * Add property's templates to `/propertyTemplates` & `/propertyTemplatesList`
+   * @param  {firebaseAdmin.database}
+   * @param  {String} propertyId
+   * @param  {Object} templatesHash
+   * @return {Promise} - resolves {Object} hash of updates
+   */
   processWrite(database, propertyId, templatesHash) {
     const self = this;
     const updates = {};
@@ -22,12 +22,16 @@ module.exports = {
       return Promise.resolve(updates);
     }
 
-    log.info(`Writing to /propertyTemplates/${propertyId} with count: ${templateKeys.length}`);
+    log.info(
+      `Writing to /propertyTemplates/${propertyId} with count: ${templateKeys.length}`
+    );
 
-    return co(function *() {
-      for (var i = 0; i < templateKeys.length; i++) {
+    return co(function*() {
+      for (let i = 0; i < templateKeys.length; i++) {
         const templateId = templateKeys[i];
-        const templateSnapshot = yield database.ref(`/templates/${templateId}`).once('value');
+        const templateSnapshot = yield database
+          .ref(`/templates/${templateId}`)
+          .once('value');
 
         if (!templateSnapshot.exists()) {
           continue;
@@ -35,41 +39,68 @@ module.exports = {
 
         const template = templateSnapshot.val(); // Assumed hash data, with no children
         const templateCopy = self._toTemplateProxy(template);
-        yield database.ref(`/propertyTemplates/${propertyId}/${templateId}`).set(templateCopy);
-        yield database.ref(`/propertyTemplatesList/${propertyId}/${templateId}`).set(templateCopy);
+        yield database
+          .ref(`/propertyTemplates/${propertyId}/${templateId}`)
+          .set(templateCopy);
+        yield database
+          .ref(`/propertyTemplatesList/${propertyId}/${templateId}`)
+          .set(templateCopy);
         updates[`/propertyTemplates/${propertyId}/${templateId}`] = 'upserted';
-        updates[`/propertyTemplatesList/${propertyId}/${templateId}`] = 'upserted';
+        updates[`/propertyTemplatesList/${propertyId}/${templateId}`] =
+          'upserted';
       }
 
       // Check updated /propertyTemplates to remove templates that shouldn't be there
-      const propTmplsSnap = yield database.ref(`/propertyTemplates/${propertyId}`).once('value');
+      const propTmplsSnap = yield database
+        .ref(`/propertyTemplates/${propertyId}`)
+        .once('value');
 
       if (propTmplsSnap.exists()) {
-        const templatesRemoved = findRemovedKeys(propTmplsSnap.val(), templatesHash); // Array of template keys
+        const templatesRemoved = findRemovedKeys(
+          propTmplsSnap.val(),
+          templatesHash
+        ); // Array of template keys
 
         if (templatesRemoved.length > 0) {
-          log.info(`/propertyTemplates removed count: ${templatesRemoved.length}`);
+          log.info(
+            `/propertyTemplates removed count: ${templatesRemoved.length}`
+          );
 
-          yield Promise.all(templatesRemoved.map(id => {
-            updates[`/propertyTemplates/${propertyId}/${id}`] = 'removed';
-            return database.ref(`/propertyTemplates/${propertyId}/${id}`).remove();
-          }));
+          yield Promise.all(
+            templatesRemoved.map(id => {
+              updates[`/propertyTemplates/${propertyId}/${id}`] = 'removed';
+              return database
+                .ref(`/propertyTemplates/${propertyId}/${id}`)
+                .remove();
+            })
+          );
         }
       }
 
       // Check updated /propertyTemplates to remove templates that shouldn't be there
-      const propTmplsListSnap = yield database.ref(`/propertyTemplatesList/${propertyId}`).once('value');
+      const propTmplsListSnap = yield database
+        .ref(`/propertyTemplatesList/${propertyId}`)
+        .once('value');
 
       if (propTmplsListSnap.exists()) {
-        const templatesListRemoved = findRemovedKeys(propTmplsListSnap.val(), templatesHash); // Array of template keys
+        const templatesListRemoved = findRemovedKeys(
+          propTmplsListSnap.val(),
+          templatesHash
+        ); // Array of template keys
 
         if (templatesListRemoved.length > 0) {
-          log.info(`/propertyTemplatesList removed count: ${templatesListRemoved.length}`);
+          log.info(
+            `/propertyTemplatesList removed count: ${templatesListRemoved.length}`
+          );
 
-          yield Promise.all(templatesListRemoved.map(id => {
-            updates[`/propertyTemplatesList/${propertyId}/${id}`] = 'removed';
-            return database.ref(`/propertyTemplatesList/${propertyId}/${id}`).remove()
-          }));
+          yield Promise.all(
+            templatesListRemoved.map(id => {
+              updates[`/propertyTemplatesList/${propertyId}/${id}`] = 'removed';
+              return database
+                .ref(`/propertyTemplatesList/${propertyId}/${id}`)
+                .remove();
+            })
+          );
         }
       }
 
@@ -89,14 +120,17 @@ module.exports = {
     const updates = {};
     const templateCopy = this._toTemplateProxy(template);
 
-    return co(function *() {
+    return co(function*() {
       const allPropertyIds = yield adminUtils.fetchRecordIds(db, '/properties');
       const templatesPropertyIds = [];
 
       // Collect all properties associated with template
-      for (var i = 0; i < allPropertyIds.length; i++) {
+      for (let i = 0; i < allPropertyIds.length; i++) {
         const propertyId = allPropertyIds[i];
-        const propertyTemplateIds = yield adminUtils.fetchRecordIds(db, `/properties/${propertyId}/templates`);
+        const propertyTemplateIds = yield adminUtils.fetchRecordIds(
+          db,
+          `/properties/${propertyId}/templates`
+        );
 
         if (propertyTemplateIds.includes(templateId)) {
           templatesPropertyIds.push(propertyId);
@@ -104,7 +138,7 @@ module.exports = {
       }
 
       // Upsert all templates proxies
-      for (i = 0; i < templatesPropertyIds.length; i++) {
+      for (let i = 0; i < templatesPropertyIds.length; i++) {
         const propertyId = templatesPropertyIds[i];
 
         const target = `/propertyTemplates/${propertyId}/${templateId}`;
@@ -131,17 +165,21 @@ module.exports = {
    * @return {Promise} - resolves {Object} hash of updates
    */
   remove(db, templateId, attribute = '') {
-    return co(function *() {
+    return co(function*() {
       const updates = {};
       const propTmplsSnap = yield db.ref('/propertyTemplates').once('value');
-      const propTmplsListSnap = yield db.ref('/propertyTemplatesList').once('value');
+      const propTmplsListSnap = yield db
+        .ref('/propertyTemplatesList')
+        .once('value');
 
       // Remove in `/propertyTemplates`
       if (propTmplsSnap.exists()) {
         const propertyTemplates = propTmplsSnap.val();
-        const activePropertyIds = Object.keys(propertyTemplates).filter(propertyId => propertyTemplates[propertyId][templateId]);
+        const activePropertyIds = Object.keys(propertyTemplates).filter(
+          propertyId => propertyTemplates[propertyId][templateId]
+        );
 
-        for (var i = 0; i < activePropertyIds.length; i++) {
+        for (let i = 0; i < activePropertyIds.length; i++) {
           const propertyId = activePropertyIds[i];
           const target = `/propertyTemplates/${propertyId}/${templateId}${attribute}`;
           yield db.ref(target).remove();
@@ -153,9 +191,11 @@ module.exports = {
       // Remove in `/propertyTemplatesList`
       if (propTmplsListSnap.exists()) {
         const propertyTemplatesList = propTmplsListSnap.val();
-        const activePropertyIds = Object.keys(propertyTemplatesList).filter(propertyId => propertyTemplatesList[propertyId][templateId]);
+        const activePropertyIds = Object.keys(propertyTemplatesList).filter(
+          propertyId => propertyTemplatesList[propertyId][templateId]
+        );
 
-        for (var i = 0; i < activePropertyIds.length; i++) {
+        for (let i = 0; i < activePropertyIds.length; i++) {
           const propertyId = activePropertyIds[i];
           const target = `/propertyTemplatesList/${propertyId}/${templateId}${attribute}`;
           yield db.ref(target).remove();
@@ -177,7 +217,7 @@ module.exports = {
   removeForProperty(db, propertyId) {
     return Promise.all([
       db.ref(`/propertyTemplates/${propertyId}`).remove(),
-      db.ref(`/propertyTemplatesList/${propertyId}`).remove()
+      db.ref(`/propertyTemplatesList/${propertyId}`).remove(),
     ]);
   },
 
@@ -203,5 +243,5 @@ module.exports = {
     }
 
     return templateCopy;
-  }
+  },
 };

@@ -6,13 +6,15 @@ module.exports = {
    * @param  {Object} inspection
    * @return {Promise}
    */
-  isInspectionWritable: async function(db, inspection, logPrefix = '') {
+  async isInspectionWritable(db, inspection, logPrefix = '') {
     if (!inspection.property) {
       throw new Error(`${logPrefix} property relationship missing`);
     }
 
     // Stop if inspection dead (belongs to archived property)
-    const propertySnap = await db.ref(`/properties/${inspection.property}`).once('value');
+    const propertySnap = await db
+      .ref(`/properties/${inspection.property}`)
+      .once('value');
     if (!propertySnap.exists()) {
       throw new Error(`${logPrefix} inspection belongs to archived property`);
     }
@@ -33,6 +35,8 @@ module.exports = {
    * @return {Number} - score
    */
   getScore(inspection) {
-    return inspection.score && typeof inspection.score === 'number' ? inspection.score : 0;
-  }
-}
+    return inspection.score && typeof inspection.score === 'number'
+      ? inspection.score
+      : 0;
+  },
+};

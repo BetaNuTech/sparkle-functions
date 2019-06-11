@@ -11,10 +11,12 @@ const LOG_PREFIX = 'inspections: on-write:';
 module.exports = function createOnWriteHandler(db) {
   return async function onWriteHandler(change, event) {
     const updates = Object.create(null);
-    const {inspectionId} = event.params;
+    const { inspectionId } = event.params;
 
     if (!inspectionId) {
-      log.warn(`${LOG_PREFIX} incorrectly defined event parameter "inspectionId"`);
+      log.warn(
+        `${LOG_PREFIX} incorrectly defined event parameter "inspectionId"`
+      );
       return;
     }
 
@@ -24,7 +26,11 @@ module.exports = function createOnWriteHandler(db) {
     }
 
     try {
-      const processWriteUpdates = await processWrite(db, inspectionId, change.after.val());
+      const processWriteUpdates = await processWrite(
+        db,
+        inspectionId,
+        change.after.val()
+      );
       log.info(`${LOG_PREFIX} inspection ${inspectionId} upserted`);
       Object.assign(updates, processWriteUpdates);
     } catch (e) {
@@ -33,4 +39,4 @@ module.exports = function createOnWriteHandler(db) {
 
     return updates;
   };
-}
+};

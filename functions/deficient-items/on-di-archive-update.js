@@ -20,16 +20,20 @@ module.exports = function createOnDiArchiveUpdateHandler(db) {
     assert(Boolean(propertyId), 'has property ID');
     assert(Boolean(deficientItemId), 'has deficient item ID');
 
-    log.info(`${LOG_PREFIX} property: ${propertyId} | deficient item: ${deficientItemId}`);
+    log.info(
+      `${LOG_PREFIX} property: ${propertyId} | deficient item: ${deficientItemId}`
+    );
 
     // Is archive activated
     if (change.after.val() === true) {
       const diSnap = await change.after.ref.parent.once('value');
       const archiveUpdates = await model.archive(db, diSnap);
       Object.assign(updates, archiveUpdates);
-      log.info(`${LOG_PREFIX} archived requested deficient item ${deficientItemId}`);
+      log.info(
+        `${LOG_PREFIX} archived requested deficient item ${deficientItemId}`
+      );
     }
 
     return updates;
-  }
-}
+  };
+};

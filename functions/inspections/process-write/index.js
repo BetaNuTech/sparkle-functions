@@ -24,16 +24,20 @@ module.exports = async function processWrite(db, inspectionId, inspection) {
   await propertyInspectionsList({
     db,
     inspectionId,
-    inspection
+    inspection,
   });
-  updates[`/propertyInspections/${inspection.property}/inspections/${inspectionId}`] = 'upserted'; // TODO remove #53
-  updates[`/propertyInspectionsList/${inspection.property}/inspections/${inspectionId}`] = 'upserted';
+  updates[
+    `/propertyInspections/${inspection.property}/inspections/${inspectionId}`
+  ] = 'upserted'; // TODO remove #53
+  updates[
+    `/propertyInspectionsList/${inspection.property}/inspections/${inspectionId}`
+  ] = 'upserted';
 
   // Upsert / remove completed inspections proxy
   const addedCompleted = await completedInspectionsList({
     db,
     inspectionId,
-    inspection
+    inspection,
   });
 
   if (addedCompleted) {
@@ -50,4 +54,4 @@ module.exports = async function processWrite(db, inspectionId, inspection) {
   Object.assign(updates, metaUpdates); // combine updates
 
   return updates;
-}
+};

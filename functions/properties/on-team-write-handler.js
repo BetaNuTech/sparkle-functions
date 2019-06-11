@@ -9,13 +9,19 @@ const LOG_PREFIX = 'properties - team: on-write:';
  * @param  {String} userTeamsTopic
  * @return {Function} - property onWrite handler
  */
-module.exports = function createOnTeamsWriteHandler(db, pubsubClient, userTeamsTopic) {
+module.exports = function createOnTeamsWriteHandler(
+  db,
+  pubsubClient,
+  userTeamsTopic
+) {
   return async (change, event) => {
     const updates = {};
-    const {propertyId} = event.params;
+    const { propertyId } = event.params;
 
     if (!propertyId) {
-      log.warn(`${LOG_PREFIX} incorrectly defined event parameter "propertyId"`);
+      log.warn(
+        `${LOG_PREFIX} incorrectly defined event parameter "propertyId"`
+      );
       return;
     }
 
@@ -28,21 +34,27 @@ module.exports = function createOnTeamsWriteHandler(db, pubsubClient, userTeamsT
       return updates;
     }
 
-    log.info(`${LOG_PREFIX} property ${propertyId} - team ${afterTeam} updated`);
+    log.info(
+      `${LOG_PREFIX} property ${propertyId} - team ${afterTeam} updated`
+    );
 
     // Remove old team / property association
-    if (beforeTeam !== afterTeam){
+    if (beforeTeam !== afterTeam) {
       try {
         await db.ref(`/teams/${beforeTeam}/properties/${propertyId}`).set(null);
         updates[`/teams/${beforeTeam}/properties/${propertyId}`] = 'removed';
         const usersInBeforeTeam = await usersModel.findByTeam(db, beforeTeam);
 
-        await Promise.all(usersInBeforeTeam.map(userID => {
-          updates[userTeamsTopic] = userID;
-          return publisher.publish(Buffer.from(userID));
-        }));
+        await Promise.all(
+          usersInBeforeTeam.map(userID => {
+            updates[userTeamsTopic] = userID;
+            return publisher.publish(Buffer.from(userID));
+          })
+        );
       } catch (e) {
-        log.error(`${LOG_PREFIX} property: ${propertyId} remove from team: ${beforeTeam} - failed: ${e}`);
+        log.error(
+          `${LOG_PREFIX} property: ${propertyId} remove from team: ${beforeTeam} - failed: ${e}`
+        );
       }
     }
 
@@ -50,9 +62,10 @@ module.exports = function createOnTeamsWriteHandler(db, pubsubClient, userTeamsT
       const userUpdates = {};
       const usersInAfterTeam = await usersModel.findByTeam(db, afterTeam);
 
-      usersInAfterTeam.forEach((userID) => {
+      usersInAfterTeam.forEach(userID => {
         userUpdates[`/users/${userID}/teams/${afterTeam}/${propertyId}`] = true;
-        updates[`/users/${userID}/teams/${afterTeam}/${propertyId}`] = 'upserted';
+        updates[`/users/${userID}/teams/${afterTeam}/${propertyId}`] =
+          'upserted';
         updates[userTeamsTopic] = userID;
 
         // Queue update of users' teams
@@ -63,10 +76,12 @@ module.exports = function createOnTeamsWriteHandler(db, pubsubClient, userTeamsT
       await db.ref(`/teams/${afterTeam}/properties/${propertyId}`).set(true);
       updates[`/teams/${afterTeam}/properties/${propertyId}`] = 'upserted';
     } catch (e) {
-      log.error(`${LOG_PREFIX} property: ${propertyId} upsert to team: ${afterTeam} - failed: ${e}`);
+      log.error(
+        `${LOG_PREFIX} property: ${propertyId} upsert to team: ${afterTeam} - failed: ${e}`
+      );
       return;
     }
 
     return updates;
-  }
-}
+  };
+};

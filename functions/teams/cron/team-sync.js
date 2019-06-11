@@ -1,6 +1,7 @@
 const log = require('../../utils/logger');
 const adminUtils = require('../../utils/firebase-admin');
 const teamsModel = require('../../models/teams');
+
 const LOG_PREFIX = 'teams: cron: team-sync:';
 
 /**
@@ -12,9 +13,7 @@ const LOG_PREFIX = 'teams: cron: team-sync:';
  * @return {functions.cloudfunction}
  */
 module.exports = function createSyncTeamHandler(topic = '', pubsub, db) {
-  return pubsub
-  .topic(topic)
-  .onPublish(async function syncTeamHandler() {
+  return pubsub.topic(topic).onPublish(async function syncTeamHandler() {
     const updates = {};
     let propertyAndTeam = {};
 
@@ -30,11 +29,15 @@ module.exports = function createSyncTeamHandler(topic = '', pubsub, db) {
 
     try {
       // loop through all teams and async up with the properties (source of truth)
-      await adminUtils.forEachChild(db, '/teams', async function teamWrite(teamId) {
+      await adminUtils.forEachChild(db, '/teams', async function teamWrite(
+        teamId
+      ) {
         const currentTeamsActualProperties = propertyAndTeam[teamId];
         if (currentTeamsActualProperties) {
           // Upsert team with properties
-          await db.ref(`/teams/${teamId}/properties`).set(currentTeamsActualProperties);
+          await db
+            .ref(`/teams/${teamId}/properties`)
+            .set(currentTeamsActualProperties);
           updates[`/teams/${teamId}/properties`] = currentTeamsActualProperties;
         } else {
           // Ensure teams properties does not exist
@@ -49,4 +52,4 @@ module.exports = function createSyncTeamHandler(topic = '', pubsub, db) {
 
     return updates;
   });
-}
+};

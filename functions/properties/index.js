@@ -9,5 +9,5 @@ module.exports = {
   createOnDeleteHandler,
   createOnWriteHandler,
   createOnTemplatesWriteHandler,
-  createOnTeamsWriteHandler
+  createOnTeamsWriteHandler,
 };

@@ -1,4 +1,4 @@
-const assert =  require('assert');
+const assert = require('assert');
 const { expect } = require('chai');
 const request = require('supertest');
 const uuid = require('../../test-helpers/uuid');
@@ -78,20 +78,27 @@ describe('Create Send Messages', () => {
     const corporateUserId = uuid();
     const propertyUserId = uuid();
     const adminUser = { admin: true, corporate: false };
-    const expected = { title: `title-${requesterId}`,  message: `message-${requesterId}` };
+    const expected = {
+      title: `title-${requesterId}`,
+      message: `message-${requesterId}`,
+    };
 
     // Setup database
     await db.ref(`/users/${requesterId}`).set(adminUser); // set requesting admin user
     await db.ref(`/users/${admin1Id}`).set(adminUser); // set other admin user
     await db.ref(`/users/${admin2Id}`).set(adminUser); // set other admin user
-    await db.ref(`/users/${corporateUserId}`).set({ admin: false, corporate: true }); // set corporate user
-    await db.ref(`/users/${propertyUserId}`).set({ admin: false, corporate: false, properties: {[uuid()]: true}}); // set property user
+    await db
+      .ref(`/users/${corporateUserId}`)
+      .set({ admin: false, corporate: true }); // set corporate user
+    await db
+      .ref(`/users/${propertyUserId}`)
+      .set({ admin: false, corporate: false, properties: { [uuid()]: true } }); // set property user
 
     // Execute
     const app = createApp(db, stubFirbaseAuth(requesterId));
     await request(app)
       .post('/')
-      .send({notification: expected})
+      .send({ notification: expected })
       .set('Accept', 'application/json')
       .set('Authorization', 'fb-jwt stubbed-by-auth')
       .expect('Content-Type', /json/)
@@ -104,7 +111,7 @@ describe('Create Send Messages', () => {
     // Assertions
     const adminIds = [admin1Id, admin2Id];
     Object.keys(results).forEach(messageId => {
-      const {title, message, recipientId, createdAt} = results[messageId];
+      const { title, message, recipientId, createdAt } = results[messageId];
       expect(adminIds).to.include(admin1Id, 'wrote only messages to admins');
       expect(title).to.equal(expected.title, 'has expected title');
       expect(message).to.equal(expected.message, 'has expected message');
@@ -123,6 +130,6 @@ function stubFirbaseAuth(userId) {
   assert(userId && typeof userId === 'string', 'has user id');
 
   return {
-    verifyIdToken: () => Promise.resolve({ uid: userId })
+    verifyIdToken: () => Promise.resolve({ uid: userId }),
   };
 }

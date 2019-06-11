@@ -1,3 +1,3 @@
 module.exports = {
-  createOnDeleteHandler: require('./on-delete-handler')
+  createOnDeleteHandler: require('./on-delete-handler'),
 };

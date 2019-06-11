@@ -8,4 +8,4 @@ module.exports = function getLatestItemAdminEditTimestamp({ adminEdits }) {
     .map(adminEditId => adminEdits[adminEditId]) // Create admin edit array
     .sort((a, b) => b.edit_date - a.edit_date); // Descending
   return result ? result.edit_date : 0;
-}
+};

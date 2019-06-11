@@ -28,10 +28,12 @@ module.exports = function createOnDeleteHandler(db) {
    */
   return async (templateCategorySnapshot, context) => {
     const updates = Object.create(null);
-    const {categoryId} = context.params;
+    const { categoryId } = context.params;
 
     if (!categoryId) {
-      log.warn(`${LOG_PREFIX} incorrectly defined event parameter "categoryId"`);
+      log.warn(
+        `${LOG_PREFIX} incorrectly defined event parameter "categoryId"`
+      );
       return;
     }
 
@@ -65,13 +67,16 @@ module.exports = function createOnDeleteHandler(db) {
       }
 
       // Remove each template's proxy record `category`
-      for (var i = 0; i < templateIds.length; i++) {
+      for (let i = 0; i < templateIds.length; i++) {
         updates[`/propertyTemplates/**/${templateIds[i]}/category`] = 'removed';
-        updates[`/propertyTemplatesList/**/${templateIds[i]}/category`] = 'removed';
+        updates[`/propertyTemplatesList/**/${templateIds[i]}/category`] =
+          'removed';
         await propertyTemplates.remove(db, templateIds[i], '/category');
       }
     } catch (e) {
-      log.error(`${LOG_PREFIX} Failed to disassociate template relationship ${e}`);
+      log.error(
+        `${LOG_PREFIX} Failed to disassociate template relationship ${e}`
+      );
     }
 
     // Remove associations in /templatesList
@@ -82,5 +87,5 @@ module.exports = function createOnDeleteHandler(db) {
     }
 
     return updates;
-  }
-}
+  };
+};

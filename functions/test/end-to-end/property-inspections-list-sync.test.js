@@ -23,13 +23,17 @@ describe('Property Inspections List Sync', () => {
       property: propertyId,
       templateCategory: categoryId,
       updatedLastDate: now,
-      inspectionCompleted: true
+      inspectionCompleted: true,
     };
 
     // Setup database
     await db.ref(`/inspections/${inspId}`).set(inspectionData);
-    await db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
-    await db.ref(`/templateCategories/${categoryId}`).set({ name: `name${categoryId}` }); // sanity check
+    await db
+      .ref(`/properties/${propertyId}`)
+      .set({ name: `name${propertyId}` }); // required
+    await db
+      .ref(`/templateCategories/${categoryId}`)
+      .set({ name: `name${categoryId}` }); // sanity check
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.propertyInspectionsListSync);
@@ -37,15 +41,19 @@ describe('Property Inspections List Sync', () => {
 
     // Test result
     const actual = await Promise.all([
-      db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value'), // TODO remove #53
-      db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).once('value'),
+      db
+        .ref(`/propertyInspections/${propertyId}/inspections/${inspId}`)
+        .once('value'), // TODO remove #53
+      db
+        .ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`)
+        .once('value'),
     ]);
 
     // Assertions
     expect(actual.map(proxy => proxy.exists())).to.deep.equal([true, true]);
   });
 
-  it('should update all an inspections\' outdated proxy records', async () => {
+  it("should update all an inspections' outdated proxy records", async () => {
     const inspId = uuid();
     const propertyId = uuid();
     const categoryId = uuid();
@@ -62,17 +70,27 @@ describe('Property Inspections List Sync', () => {
       property: propertyId,
       templateCategory: categoryId,
       updatedLastDate: now,
-      inspectionCompleted: true
+      inspectionCompleted: true,
     };
-    const oldInspection = Object.assign({}, newInspection, { updatedLastDate: now - 1000 });
+    const oldInspection = Object.assign({}, newInspection, {
+      updatedLastDate: now - 1000,
+    });
     delete oldInspection.templateCategory;
 
     // Setup database
-    await db.ref(`/properties/${propertyId}`).set({ name: `name${propertyId}` }); // required
-    await db.ref(`/templateCategories/${categoryId}`).set({ name: `name${categoryId}` }); // sanity check
+    await db
+      .ref(`/properties/${propertyId}`)
+      .set({ name: `name${propertyId}` }); // required
+    await db
+      .ref(`/templateCategories/${categoryId}`)
+      .set({ name: `name${categoryId}` }); // sanity check
     await db.ref(`/inspections/${inspId}`).set(newInspection);
-    await db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).set(oldInspection);
-    await db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).set(oldInspection);
+    await db
+      .ref(`/propertyInspections/${propertyId}/inspections/${inspId}`)
+      .set(oldInspection);
+    await db
+      .ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`)
+      .set(oldInspection);
     await db.ref(`/completedInspections/${inspId}`).set(oldInspection);
     await db.ref(`/completedInspectionsList/${inspId}`).set(oldInspection);
 
@@ -81,14 +99,24 @@ describe('Property Inspections List Sync', () => {
     await wrapped();
 
     // Test result
-    const propertyInspection = await db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value'); // TODO remove #53
-    const propertyInspectionList = await db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).once('value');
+    const propertyInspection = await db
+      .ref(`/propertyInspections/${propertyId}/inspections/${inspId}`)
+      .once('value'); // TODO remove #53
+    const propertyInspectionList = await db
+      .ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`)
+      .once('value');
 
     // Assertions
     const expected = Object.assign({}, newInspection);
     delete expected.property;
-    expect(propertyInspection.val()).to.deep.equal(expected, 'updated /propertyInspections proxy');
-    expect(propertyInspectionList.val()).to.deep.equal(expected, 'updated /propertyInspectionsList proxy');
+    expect(propertyInspection.val()).to.deep.equal(
+      expected,
+      'updated /propertyInspections proxy'
+    );
+    expect(propertyInspectionList.val()).to.deep.equal(
+      expected,
+      'updated /propertyInspectionsList proxy'
+    );
   });
 
   it('should not create proxy records for inspections belonging to a deleted property', async () => {
@@ -106,7 +134,7 @@ describe('Property Inspections List Sync', () => {
       totalItems: 10,
       property: propertyId,
       updatedLastDate: now,
-      inspectionCompleted: true
+      inspectionCompleted: true,
     };
 
     // Setup database
@@ -118,8 +146,12 @@ describe('Property Inspections List Sync', () => {
 
     // Test results
     const actual = await Promise.all([
-      db.ref(`/propertyInspections/${propertyId}/inspections/${inspId}`).once('value'), // TODO remove #53
-      db.ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`).once('value')
+      db
+        .ref(`/propertyInspections/${propertyId}/inspections/${inspId}`)
+        .once('value'), // TODO remove #53
+      db
+        .ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`)
+        .once('value'),
     ]);
 
     // Assertions

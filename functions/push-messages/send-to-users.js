@@ -2,11 +2,9 @@ const co = require('co');
 const assert = require('assert');
 const sendToRecipient = require('./send-to-recipient');
 const createSendMessage = require('./create-send-message');
-const {fetchRecordIds} = require('../utils/firebase-admin');
-const {getRecepients} = require('../utils/firebase-messaging');
-const log = require('../utils/logger');
+const { getRecepients } = require('../utils/firebase-messaging');
 
-const {assign, keys} = Object;
+const { assign, keys } = Object;
 const LOG_PREFIX = 'push-messages: send-to-users:';
 
 /**
@@ -32,29 +30,50 @@ module.exports = function sendToUsers({
   property,
 }) {
   assert(Boolean(db), `${LOG_PREFIX} has Firebase Admin database instance`);
-  assert(Boolean(messaging), `${LOG_PREFIX} has Firebase Admin messaging instance`);
-  assert(message && typeof message === 'string', `${LOG_PREFIX} is given a valid message string`);
-  assert(title && typeof title === 'string', `${LOG_PREFIX} is given a valid title string`);
-  assert(Array.isArray(excludes) && excludes.every(e => typeof e === 'string'), `${LOG_PREFIX} has array of excluded strings`);
+  assert(
+    Boolean(messaging),
+    `${LOG_PREFIX} has Firebase Admin messaging instance`
+  );
+  assert(
+    message && typeof message === 'string',
+    `${LOG_PREFIX} is given a valid message string`
+  );
+  assert(
+    title && typeof title === 'string',
+    `${LOG_PREFIX} is given a valid title string`
+  );
+  assert(
+    Array.isArray(excludes) && excludes.every(e => typeof e === 'string'),
+    `${LOG_PREFIX} has array of excluded strings`
+  );
 
-  return co(function* () {
+  return co(function*() {
     // Request and flatten response hash to array
     let users = yield db.ref('/users').once('value');
     users = users.val();
     if (!users) return [];
-    users = keys(users).map(id => assign({id}, users[id]));
-    const recipients = getRecepients({users, property, excludes, allowCorp});
+    users = keys(users).map(id => assign({ id }, users[id]));
+    const recipients = getRecepients({
+      users,
+      property,
+      excludes,
+      allowCorp,
+    });
 
     let messages;
 
     try {
       // Create `/sendMessages/<recipient-id>` database records for recipients
-      messages = yield Promise.all(recipients.map(recipientId => createSendMessage(db, {
-        title,
-        message,
-        recipientId,
-        createdAt
-      })));
+      messages = yield Promise.all(
+        recipients.map(recipientId =>
+          createSendMessage(db, {
+            title,
+            message,
+            recipientId,
+            createdAt,
+          })
+        )
+      );
     } catch (e) {
       throw new Error(`${LOG_PREFIX} create-send-messages: ${e}`); // wrap error
     }
@@ -63,17 +82,15 @@ module.exports = function sendToUsers({
 
     try {
       // Collect results of sending push notifications
-      results = yield Promise.all(recipients.map(recipientId =>
-        sendToRecipient(
-          db,
-          messaging,
-          recipientId,
-          {
-            title,
-            message
-          }
-        ).then((r) => r instanceof Error ? false : true) // failed : succeeded
-      ));
+      results = yield Promise.all(
+        recipients.map(
+          recipientId =>
+            sendToRecipient(db, messaging, recipientId, {
+              title,
+              message,
+            }).then(r => !(r instanceof Error)) // failed : succeeded
+        )
+      );
     } catch (e) {
       throw new Error(`${LOG_PREFIX} send-to-recipient: ${e}`); // wrap error
     }
@@ -81,11 +98,13 @@ module.exports = function sendToUsers({
     try {
       // Cleanup sent messages
       // Allow unsent messages to linger to retry during push notification sync
-      yield Promise.all(results.map((result, i) =>
-        result === false || !messages[i] ?
-          Promise.resolve() :
-          db.ref(`/sendMessages/${messages[i].id}`).remove()
-      ));
+      yield Promise.all(
+        results.map((result, i) =>
+          result === false || !messages[i]
+            ? Promise.resolve()
+            : db.ref(`/sendMessages/${messages[i].id}`).remove()
+        )
+      );
     } catch (e) {
       throw new Error(`${LOG_PREFIX} remove-send-messages: ${e}`); // wrap error
     }

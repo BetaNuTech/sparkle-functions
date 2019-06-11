@@ -6,18 +6,24 @@ const LOG_PREFIX = 'teams: removeForProperty: ';
 
 module.exports = {
   /**
-  * Remove all teams for a property
-  * @param  {firebaseAdmin.database} db
-  * @param  {String} propertyId
-  * @param  {@google-cloud/pubsub} pubsubClient - PubSub instance
-  * @param  {String} userTeamsTopic
-  * @return {Promise} - resolves {Object} hash of updates
-  */
+   * Remove all teams for a property
+   * @param  {firebaseAdmin.database} db
+   * @param  {String} propertyId
+   * @param  {@google-cloud/pubsub} pubsubClient - PubSub instance
+   * @param  {String} userTeamsTopic
+   * @return {Promise} - resolves {Object} hash of updates
+   */
   async removeForProperty(db, propertyId, pubsubClient, userTeamsTopic) {
     assert(Boolean(db), 'has firebase admin database reference');
     assert(propertyId && typeof propertyId === 'string', 'has property ID');
-    assert(pubsubClient && typeof pubsubClient.topic === 'function', 'has pubsub client');
-    assert(userTeamsTopic && typeof userTeamsTopic === 'string', 'has user teams topic');
+    assert(
+      pubsubClient && typeof pubsubClient.topic === 'function',
+      'has pubsub client'
+    );
+    assert(
+      userTeamsTopic && typeof userTeamsTopic === 'string',
+      'has user teams topic'
+    );
 
     const updates = Object.create(null);
     const publisher = pubsubClient.topic(userTeamsTopic).publisher();
@@ -27,9 +33,12 @@ module.exports = {
       const allTeamIds = await adminUtils.fetchRecordIds(db, '/teams');
 
       // Find only team associated w/ property
-      for (var i = 0; i < allTeamIds.length; i++) {
+      for (let i = 0; i < allTeamIds.length; i++) {
         const currentTeamId = allTeamIds[i];
-        const teamPropertyIds = await adminUtils.fetchRecordIds(db, `/teams/${currentTeamId}/properties`);
+        const teamPropertyIds = await adminUtils.fetchRecordIds(
+          db,
+          `/teams/${currentTeamId}/properties`
+        );
 
         if (teamPropertyIds.includes(propertyId)) {
           teamId = currentTeamId;
@@ -50,8 +59,8 @@ module.exports = {
       usersInRemovedTeam.forEach(userID =>
         publisher.publish(Buffer.from(userID))
       );
-    } catch(e) {
+    } catch (e) {
       throw new Error(`${LOG_PREFIX} ${e}`); // wrap error
-    };
+    }
   },
 };

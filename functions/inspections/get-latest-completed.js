@@ -24,20 +24,29 @@ module.exports = function createGetLatestCompletedInspection(db) {
   const getlatestCompletedInspectionHandler = async (req, res) => {
     const propertyCode = req.query.cobalt_code;
     const otherDate = req.query.other_date;
-    const dateForInspection = otherDate ? new Date(otherDate).getTime() / 1000 : 0;
+    const dateForInspection = otherDate
+      ? new Date(otherDate).getTime() / 1000
+      : 0;
 
     if (!propertyCode) {
       return res.status(400).send('Bad Request. Missing Parameters.');
     }
 
-    log.info(`${LOG_PREFIX} requesting latest completed inspection of cobalt code: ${propertyCode}`);
+    log.info(
+      `${LOG_PREFIX} requesting latest completed inspection of cobalt code: ${propertyCode}`
+    );
 
     let propertySnap;
     try {
-      propertySnap = await db.ref('properties').orderByChild('code').equalTo(propertyCode).limitToFirst(1).once('value');
-    } catch(e) {
+      propertySnap = await db
+        .ref('properties')
+        .orderByChild('code')
+        .equalTo(propertyCode)
+        .limitToFirst(1)
+        .once('value');
+    } catch (e) {
       log.error(`${LOG_PREFIX} ${e}`);
-      return retres.status(500).send('Unable to retrieve data');
+      return res.status(500).send('Unable to retrieve data');
     }
 
     if (!propertySnap.exists()) {
@@ -49,7 +58,11 @@ module.exports = function createGetLatestCompletedInspection(db) {
 
     let inspectionsSnapshot;
     try {
-      inspectionsSnapshot = await db.ref('inspections').orderByChild('property').equalTo(propertyId).once('value');
+      inspectionsSnapshot = await db
+        .ref('inspections')
+        .orderByChild('property')
+        .equalTo(propertyId)
+        .once('value');
     } catch (e) {
       // Handle any errors
       log.error(`${LOG_PREFIX} ${e}`);
@@ -64,7 +77,7 @@ module.exports = function createGetLatestCompletedInspection(db) {
       latestInspection,
       latestInspectionId,
       latestInspectionByDate,
-      latestInspectionByDateId
+      latestInspectionByDateId,
     } = findLatestInspectionData(inspectionsSnapshot, dateForInspection);
 
     if (!latestInspection) {
@@ -72,9 +85,19 @@ module.exports = function createGetLatestCompletedInspection(db) {
     }
 
     // Successful response
-    const responseData = latestInspectionResponseData(new Date(), propertyId, latestInspection, latestInspectionId);
+    const responseData = latestInspectionResponseData(
+      new Date(),
+      propertyId,
+      latestInspection,
+      latestInspectionId
+    );
     if (latestInspectionByDate) {
-      responseData.latest_inspection_by_date = latestInspectionResponseData(new Date(otherDate), propertyId, latestInspectionByDate, latestInspectionByDateId);
+      responseData.latest_inspection_by_date = latestInspectionResponseData(
+        new Date(otherDate),
+        propertyId,
+        latestInspectionByDate,
+        latestInspectionByDateId
+      );
     }
 
     res.status(200).send(responseData);
@@ -86,7 +109,7 @@ module.exports = function createGetLatestCompletedInspection(db) {
   app.use(cors());
   app.get('/', getlatestCompletedInspectionHandler);
   return app;
-}
+};
 
 /**
  * Find latest inspection from inspections snapshot
@@ -100,19 +123,20 @@ function findLatestInspectionData(inspectionsSnapshot, dateForInspection) {
     latestInspection: null,
     latestInspectionId: null,
     latestInspectionByDate: null,
-    latestInspectionByDateId: null
+    latestInspectionByDateId: null,
   };
   const inspections = [];
 
   // Top level, single, inspection
   // TODO: remove inspections snapshot always has children
   if (!inspectionsSnapshot.hasChildren()) {
-    let inspection = inspectionsSnapshot.val();
+    const inspection = inspectionsSnapshot.val();
 
     if (
       inspection.inspectionCompleted &&
       inspection.completionDate &&
-      inspection.template.name.indexOf(TEMP_NAME_LOOKUP) > -1) {
+      inspection.template.name.indexOf(TEMP_NAME_LOOKUP) > -1
+    ) {
       result.latestInspection = inspection;
       result.latestInspectionId = inspectionsSnapshot.key;
     }
@@ -127,20 +151,24 @@ function findLatestInspectionData(inspectionsSnapshot, dateForInspection) {
     if (
       insp.inspectionCompleted &&
       insp.completionDate &&
-      insp.template.name.indexOf(TEMP_NAME_LOOKUP) > -1) {
-      inspections.push({inspection: insp, key});
+      insp.template.name.indexOf(TEMP_NAME_LOOKUP) > -1
+    ) {
+      inspections.push({ inspection: insp, key });
     }
   });
 
   if (inspections.length > 0) {
-    const sortedInspections = inspections.sort((a, b) => b.inspection.creationDate - a.inspection.creationDate);  // DESC
+    const sortedInspections = inspections.sort(
+      (a, b) => b.inspection.creationDate - a.inspection.creationDate
+    ); // DESC
     result.latestInspection = sortedInspections[0].inspection;
     result.latestInspectionId = sortedInspections[0].key;
 
     // Latest Inspection by provided date
     if (dateForInspection) {
-      const [latestByDate] = sortedInspections.filter(keyInspection =>
-        keyInspection.inspection.completionDate <= dateForInspection
+      const [latestByDate] = sortedInspections.filter(
+        keyInspection =>
+          keyInspection.inspection.completionDate <= dateForInspection
       );
 
       if (latestByDate) {
@@ -161,14 +189,23 @@ function findLatestInspectionData(inspectionsSnapshot, dateForInspection) {
  * @param  {String} latestInspectionId
  * @return {Object} - response JSON
  */
-function latestInspectionResponseData(date, propertyId, latestInspection, latestInspectionId) {
+function latestInspectionResponseData(
+  date,
+  propertyId,
+  latestInspection,
+  latestInspectionId
+) {
   const currentTimeSecs = date.getTime() / 1000;
   const currentDay = currentTimeSecs / 60 / 60 / 24;
   const creationDateDay = latestInspection.creationDate / 60 / 60 / 24; // days since Unix Epoch
   const completionDateDay = latestInspection.completionDate / 60 / 60 / 24; // days since Unix Epoch
   const score = Math.round(Number(latestInspection.score));
   const inspectionURL = `https://sparkle-production.herokuapp.com/properties/${propertyId}/update-inspection/${latestInspectionId}`;
-  const inspectionOverdue = isInspectionOverdue(currentDay, creationDateDay, completionDateDay);
+  const inspectionOverdue = isInspectionOverdue(
+    currentDay,
+    creationDateDay,
+    completionDateDay
+  );
 
   let alert = '';
   let complianceAlert = '';
@@ -176,11 +213,14 @@ function latestInspectionResponseData(date, propertyId, latestInspection, latest
   if (inspectionOverdue) {
     alert = 'Blueshift Product Inspection OVERDUE (Last: ';
     alert += moment(latestInspection.creationDate * 1000).format('MM/DD/YY');
-    alert += `, Completed: ${moment(latestInspection.completionDate * 1000).format('MM/DD/YY')}).`;
+    alert += `, Completed: ${moment(
+      latestInspection.completionDate * 1000
+    ).format('MM/DD/YY')}).`;
 
     // Append extra alert for past max duration warning
     if (completionDateDay - creationDateDay > 3) {
-      alert += ' Over 3-day max duration, please start and complete inspection within 3 days.';
+      alert +=
+        ' Over 3-day max duration, please start and complete inspection within 3 days.';
     }
 
     complianceAlert = alert;
@@ -196,13 +236,17 @@ function latestInspectionResponseData(date, propertyId, latestInspection, latest
   }
 
   return {
-    creationDate: moment(latestInspection.creationDate * 1000).format('MM/DD/YY'),
-    completionDate: moment(latestInspection.completionDate * 1000).format('MM/DD/YY'),
+    creationDate: moment(latestInspection.creationDate * 1000).format(
+      'MM/DD/YY'
+    ),
+    completionDate: moment(latestInspection.completionDate * 1000).format(
+      'MM/DD/YY'
+    ),
     score: `${score}%`,
     inspectionReportURL: latestInspection.inspectionReportURL,
     alert: alert || undefined,
-    complianceAlert: complianceAlert || undefined ,
-    inspectionURL
+    complianceAlert: complianceAlert || undefined,
+    inspectionURL,
   };
 }
 
@@ -214,7 +258,7 @@ function latestInspectionResponseData(date, propertyId, latestInspection, latest
  * @return {Boolean}
  */
 function isInspectionOverdue(currentDay, creationDateDay, completionDateDay) {
-  var differenceDays;
+  let differenceDays;
 
   if (currentDay - completionDateDay > 3) {
     // Formula when completed more than 3 days ago

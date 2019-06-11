@@ -24,17 +24,16 @@ module.exports = {
       .forEach(attr => {
         const srcValue = src[attr];
         if (typeof srcValue === 'object') {
-          return updates[attr] = JSON.parse(JSON.stringify(srcValue));
-        } else {
-          return updates[attr] = srcValue;
+          return (updates[attr] = JSON.parse(JSON.stringify(srcValue)));
         }
+        return (updates[attr] = srcValue);
       });
 
     return updates;
   },
 
-  diff
-}
+  diff,
+};
 
 /**
  * Determine if two values are different
@@ -45,7 +44,6 @@ module.exports = {
 function diff(a, b) {
   if (typeof a === 'object' && typeof b === 'object') {
     return JSON.stringify(a) !== JSON.stringify(b); // deep equal
-  } else {
-    return a !== b;
   }
+  return a !== b;
 }

@@ -14,16 +14,21 @@ module.exports = modelSetup({
 
     try {
       // load all properties team associations (source of truth)
-      await adminUtils.forEachChild(db, '/properties', function buildSourceOfTruth(propertyId, property) {
-        if (property.team) {
-          propertyAndTeam[property.team] = propertyAndTeam[property.team] || {};
-          propertyAndTeam[property.team][propertyId] = true;
+      await adminUtils.forEachChild(
+        db,
+        '/properties',
+        function buildSourceOfTruth(propertyId, property) {
+          if (property.team) {
+            propertyAndTeam[property.team] =
+              propertyAndTeam[property.team] || {};
+            propertyAndTeam[property.team][propertyId] = true;
+          }
         }
-      });
+      );
     } catch (err) {
       throw Error(`${LOG_PREFIX} getPropertyRelationships: ${err}`); // wrap error
     }
 
-    return propertyAndTeam
-  }
+    return propertyAndTeam;
+  },
 });

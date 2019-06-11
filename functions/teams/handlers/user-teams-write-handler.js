@@ -9,7 +9,12 @@ const LOG_PREFIX = 'user-teams: user-teams-sync:';
  * @param  {String} userTeamsTopic
  * @return {Function} - /users/{userId}/teams/{teamId} onWrite handler
  */
-module.exports = function createOnUserTeamWriteHandler(db, storage, pubsubClient, userTeamsTopic) {
+module.exports = function createOnUserTeamWriteHandler(
+  db,
+  storage,
+  pubsubClient,
+  userTeamsTopic
+) {
   return async (propertySnap, event) => {
     const { userId } = event.params;
 
@@ -17,8 +22,8 @@ module.exports = function createOnUserTeamWriteHandler(db, storage, pubsubClient
 
     // publishing the sync request after 10 seconds
     setTimeout(() => {
-        const publisher = pubsubClient.topic(userTeamsTopic).publisher();
-        return publisher.publish(Buffer.from(userId));
+      const publisher = pubsubClient.topic(userTeamsTopic).publisher();
+      return publisher.publish(Buffer.from(userId));
     }, 10000);
   };
-}
+};

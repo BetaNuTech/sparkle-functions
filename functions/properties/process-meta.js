@@ -12,7 +12,7 @@ const FOLLOW_UP_ACTION_VALUES = deficientItems.followUpActionStates;
 const propertyMetaUpdates = pipe([
   updateNumOfInspections,
   updateLastInspectionAttrs,
-  updateDeficientItemsAttrs
+  updateDeficientItemsAttrs,
 ]);
 
 /**
@@ -25,27 +25,49 @@ const propertyMetaUpdates = pipe([
 module.exports = async function processMeta(db, propertyId) {
   try {
     // Find all property's inspections
-    const inspectionsSnap = await db.ref('/inspections').orderByChild('property').equalTo(propertyId).once('value');
-    const inspectionsData = inspectionsSnap.exists() ? inspectionsSnap.val() : {};
-    const inspections = Object.keys(inspectionsData).map(inspId => Object.assign({id: inspId}, inspectionsData[inspId]));
+    const inspectionsSnap = await db
+      .ref('/inspections')
+      .orderByChild('property')
+      .equalTo(propertyId)
+      .once('value');
+    const inspectionsData = inspectionsSnap.exists()
+      ? inspectionsSnap.val()
+      : {};
+    const inspections = Object.keys(inspectionsData).map(inspId =>
+      Object.assign({ id: inspId }, inspectionsData[inspId])
+    );
 
     if (!inspections.length) {
       return {};
     }
 
     // Find any deficient items data for property
-    const propertyInspectionDeficientItemsSnap = await defItemsModel.findAllByProperty(db, propertyId);
-    const propertyInspectionDeficientItemsData = propertyInspectionDeficientItemsSnap.exists() ? propertyInspectionDeficientItemsSnap.val() : {};
-    const deficientItemsCurrent = Object.keys(propertyInspectionDeficientItemsData)
-      .filter(defItemId => Boolean(propertyInspectionDeficientItemsData[defItemId].state)) // require state
-      .map(defItemId => Object.assign({id: defItemId}, propertyInspectionDeficientItemsData[defItemId]))
+    const propertyInspectionDeficientItemsSnap = await defItemsModel.findAllByProperty(
+      db,
+      propertyId
+    );
+    const propertyInspectionDeficientItemsData = propertyInspectionDeficientItemsSnap.exists()
+      ? propertyInspectionDeficientItemsSnap.val()
+      : {};
+    const deficientItemsCurrent = Object.keys(
+      propertyInspectionDeficientItemsData
+    )
+      .filter(defItemId =>
+        Boolean(propertyInspectionDeficientItemsData[defItemId].state)
+      ) // require state
+      .map(defItemId =>
+        Object.assign(
+          { id: defItemId },
+          propertyInspectionDeficientItemsData[defItemId]
+        )
+      );
 
     // Collect updates to write to property's metadata attrs
     const { updates } = propertyMetaUpdates({
       propertyId,
       inspections,
       deficientItems: deficientItemsCurrent,
-      updates: Object.create(null)
+      updates: Object.create(null),
     });
 
     // Atomically write each metadata update
@@ -55,13 +77,17 @@ module.exports = async function processMeta(db, propertyId) {
       await db.ref(path).set(updates[path]);
     }
 
-    log.info(`${LOG_PREFIX} successfully updated property ${propertyId} metadata`);
+    log.info(
+      `${LOG_PREFIX} successfully updated property ${propertyId} metadata`
+    );
     return updates;
   } catch (e) {
-    log.error(`${LOG_PREFIX} failed updating property ${propertyId} metadata ${e}`);
+    log.error(
+      `${LOG_PREFIX} failed updating property ${propertyId} metadata ${e}`
+    );
     return null;
   }
-}
+};
 
 /**
  * Configure update for all a property's
@@ -71,14 +97,17 @@ module.exports = async function processMeta(db, propertyId) {
  * @param  {Object} updates
  * @return {Object} - configuration
  */
-function updateNumOfInspections(config = { propertyId: '', inspections: [], updates: {} }) {
-  config.updates[`/properties/${config.propertyId}/numOfInspections`] = config.inspections.reduce(
-    (acc, { inspectionCompleted }) => {
-      if (inspectionCompleted) {
-        acc += 1;
-      }
+function updateNumOfInspections(
+  config = { propertyId: '', inspections: [], updates: {} }
+) {
+  config.updates[
+    `/properties/${config.propertyId}/numOfInspections`
+  ] = config.inspections.reduce((acc, { inspectionCompleted }) => {
+    if (inspectionCompleted) {
+      acc += 1;
+    }
 
-      return acc;
+    return acc;
   }, 0);
 
   return config;
@@ -92,12 +121,18 @@ function updateNumOfInspections(config = { propertyId: '', inspections: [], upda
  * @param  {Object} updates
  * @return {Object} - configuration
  */
-function updateLastInspectionAttrs(config = { propertyId: '', inspections: [], updates: {} }) {
-  const [latestInspection] = config.inspections.sort((a, b) => b.creationDate - a.creationDate); // DESC
+function updateLastInspectionAttrs(
+  config = { propertyId: '', inspections: [], updates: {} }
+) {
+  const [latestInspection] = config.inspections.sort(
+    (a, b) => b.creationDate - a.creationDate
+  ); // DESC
 
   if (latestInspection && latestInspection.inspectionCompleted) {
-    config.updates[`/properties/${config.propertyId}/lastInspectionScore`] = latestInspection.score;
-    config.updates[`/properties/${config.propertyId}/lastInspectionDate`] = latestInspection.creationDate;
+    config.updates[`/properties/${config.propertyId}/lastInspectionScore`] =
+      latestInspection.score;
+    config.updates[`/properties/${config.propertyId}/lastInspectionDate`] =
+      latestInspection.creationDate;
   }
 
   return config;
@@ -117,45 +152,65 @@ function updateLastInspectionAttrs(config = { propertyId: '', inspections: [], u
  * @param  {Object} updates
  * @return {Object} - configuration
  */
-function updateDeficientItemsAttrs(config = { propertyId: '', inspections: [], deficientItems: [], updates: {} }) {
-  const deficientItemsLatest = [].concat(...config.inspections // flatten
-    .filter(({ inspectionCompleted, template }) =>
-      inspectionCompleted && Boolean(template.trackDeficientItems) && Boolean(template.items)) // only completed, DI enabled, /w items
-    .map(inspection => createDeficientItems(inspection)) // create inspection's deficient items
-    .filter(calcDeficientItems => Object.keys(calcDeficientItems).length) // remove non-deficient inspections
-    .map(defItems => {
-      // Merge latest state from:
-      // `/propertyInspectionDeficientItems/...` into
-      // deficient items calculated from inspections
-      Object.keys(defItems).forEach(id => {
-        const itemId = defItems[id].item;
-        const inspId = defItems[id].inspection;
-        const [existingDefItem] = config.deficientItems.filter(
-          ({item, inspection}) => item === itemId && inspection === inspId
+function updateDeficientItemsAttrs(
+  config = {
+    propertyId: '',
+    inspections: [],
+    deficientItems: [],
+    updates: {},
+  }
+) {
+  const deficientItemsLatest = [].concat(
+    ...config.inspections // flatten
+      .filter(
+        ({ inspectionCompleted, template }) =>
+          inspectionCompleted &&
+          Boolean(template.trackDeficientItems) &&
+          Boolean(template.items)
+      ) // only completed, DI enabled, /w items
+      .map(inspection => createDeficientItems(inspection)) // create inspection's deficient items
+      .filter(calcDeficientItems => Object.keys(calcDeficientItems).length) // remove non-deficient inspections
+      .map(defItems => {
+        // Merge latest state from:
+        // `/propertyInspectionDeficientItems/...` into
+        // deficient items calculated from inspections
+        Object.keys(defItems).forEach(id => {
+          const itemId = defItems[id].item;
+          const inspId = defItems[id].inspection;
+          const [existingDefItem] = config.deficientItems.filter(
+            ({ item, inspection }) => item === itemId && inspection === inspId
+          );
+          Object.assign(defItems[id], existingDefItem || {}); // merge existingDefItem state
+        });
+        return defItems;
+      })
+      .map(defItems => {
+        // Convert nested objects of inspections DI's
+        // into grouped array's of inspection DI's
+        const defItemsArr = [];
+        Object.keys(defItems).forEach(defItemId =>
+          defItemsArr.push(defItems[defItemId])
         );
-        Object.assign(defItems[id], existingDefItem || {}); // merge existingDefItem state
-      });
-      return defItems;
-    })
-    .map(defItems => {
-      // Convert nested objects of inspections DI's
-      // into grouped array's of inspection DI's
-      const defItemsArr = [];
-      Object.keys(defItems).forEach(defItemId => defItemsArr.push(defItems[defItemId]));
-      return defItemsArr;
-    }));
+        return defItemsArr;
+      })
+  );
 
   // Count all deficient items
-  config.updates[`/properties/${config.propertyId}/numOfDeficientItems`] = deficientItemsLatest.length;
+  config.updates[`/properties/${config.propertyId}/numOfDeficientItems`] =
+    deficientItemsLatest.length;
 
   // Count all deficient items where state requires action
-  config.updates[`/properties/${config.propertyId}/numOfRequiredActionsForDeficientItems`] = deficientItemsLatest.filter(
-    ({state}) => REQUIRED_ACTIONS_VALUES.includes(state)
+  config.updates[
+    `/properties/${config.propertyId}/numOfRequiredActionsForDeficientItems`
+  ] = deficientItemsLatest.filter(({ state }) =>
+    REQUIRED_ACTIONS_VALUES.includes(state)
   ).length;
 
   // Count all deficient items where state requires follow up
-  config.updates[`/properties/${config.propertyId}/numOfFollowUpActionsForDeficientItems`] = deficientItemsLatest.filter(
-    ({state}) => FOLLOW_UP_ACTION_VALUES.includes(state)
+  config.updates[
+    `/properties/${config.propertyId}/numOfFollowUpActionsForDeficientItems`
+  ] = deficientItemsLatest.filter(({ state }) =>
+    FOLLOW_UP_ACTION_VALUES.includes(state)
   ).length;
 
   return config;

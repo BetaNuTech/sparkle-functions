@@ -1,5 +1,5 @@
 const log = require('../../utils/logger');
-const {forEachChild} = require('../../utils/firebase-admin');
+const { forEachChild } = require('../../utils/firebase-admin');
 const processPropertyMeta = require('../process-meta');
 
 const LOG_PREFIX = 'properties: cron: sync-meta:';
@@ -12,22 +12,30 @@ const LOG_PREFIX = 'properties: cron: sync-meta:';
  * @param  {firebaseadmin.database} db
  * @return {functions.cloudfunction}
  */
-module.exports = function createSyncPropertiesMetahandler(topic = '', pubsub, db) {
+module.exports = function createSyncPropertiesMetahandler(
+  topic = '',
+  pubsub,
+  db
+) {
   return pubsub
-  .topic(topic)
-  .onPublish(async function syncPropertiesMetaHandler() {
-    const updates = {};
-    log.info(`${LOG_PREFIX} received ${Date.now()}`);
+    .topic(topic)
+    .onPublish(async function syncPropertiesMetaHandler() {
+      const updates = {};
+      log.info(`${LOG_PREFIX} received ${Date.now()}`);
 
-    await forEachChild(db, '/properties', async function proccessPropertyMetaWrite(propertyId) {
-      try {
-        const propMetaUpdate = await processPropertyMeta(db, propertyId);
-        Object.assign(updates, propMetaUpdate);
-      } catch (e) {
-        log.error(`${LOG_PREFIX} ${e}`);
-      }
+      await forEachChild(
+        db,
+        '/properties',
+        async function proccessPropertyMetaWrite(propertyId) {
+          try {
+            const propMetaUpdate = await processPropertyMeta(db, propertyId);
+            Object.assign(updates, propMetaUpdate);
+          } catch (e) {
+            log.error(`${LOG_PREFIX} ${e}`);
+          }
+        }
+      );
+
+      return updates;
     });
-
-    return updates;
-  });
-}
+};

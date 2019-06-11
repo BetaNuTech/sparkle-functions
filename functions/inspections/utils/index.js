@@ -1,3 +1,3 @@
 module.exports = {
-  createDeficientItems: require('./create-deficient-items')
+  createDeficientItems: require('./create-deficient-items'),
 };
