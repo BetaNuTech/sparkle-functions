@@ -13,6 +13,7 @@
     "func-names": "off",
     "no-await-in-loop": "off",
     "no-plusplus": "off",
-    "no-param-reassign": "off"
+    "no-param-reassign": "off",
+    "import/no-extraneous-dependencies": "off"
   }
 }
