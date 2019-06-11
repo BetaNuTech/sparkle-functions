@@ -12,12 +12,15 @@ module.exports = modelSetup({
     assert(teamId && typeof teamId === 'string', 'has team id');
 
     const allUsers = await db.ref('/users').once('value');
-    const allUserVals = allUsers.val();
+    const allUserVals = allUsers.val() || {};
     const userIds = Object.keys(allUserVals);
 
     // filtering out users that are not in the defined team
     return userIds.filter(
-      user => allUserVals[user] && allUserVals[user].teams[teamId]
+      user =>
+        allUserVals[user] &&
+        allUserVals[user].teams &&
+        allUserVals[user].teams[teamId]
     );
   },
 });
