@@ -58,7 +58,7 @@ module.exports = function createSyncUserTeamHandler(topic = '', pubsub, db) {
           (updatedTeams, teamId) => {
             updatedTeams[teamId] = propertyAndTeam[teamId]
               ? propertyAndTeam[teamId]
-              : null;
+              : true;
             return updatedTeams;
           },
           {}
