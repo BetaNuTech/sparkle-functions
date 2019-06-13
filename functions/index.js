@@ -135,6 +135,14 @@ exports.userTeamWriteStaging = functionsStagingDatabase
     )
   );
 
+// teams onDelete
+exports.teamDelete = functions.database
+  .ref('/teams/{teamId}')
+  .onDelete(teams.teamDeleteHandler(db));
+exports.teamDeleteStaging = functionsStagingDatabase
+  .ref('/teams/{teamId}')
+  .onDelete(teams.teamDeleteHandler(dbStaging));
+
 // Deficient Items
 exports.deficientItemsWrite = functions.database
   .ref('/inspections/{inspectionId}/updatedLastDate')

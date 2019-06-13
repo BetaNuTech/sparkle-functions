@@ -31,4 +31,18 @@ module.exports = modelSetup({
 
     return propertyAndTeam;
   },
+
+  /**
+   * This function will retrieve all properties that belong to the requested team
+   * @param {firebaseAdmin.database} db firbase database
+   * @param {number} teamId this is the id of the team we are looking for
+   * @returns this will return an firebase snapshot containing all properties that belong to the requested team
+   */
+  getPropertiesByTeamId(db, teamId) {
+    return db
+      .ref('properties')
+      .orderByChild('team')
+      .equalTo(teamId)
+      .once('value');
+  },
 });
