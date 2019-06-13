@@ -13,7 +13,8 @@
     },
     "properties": {
       ".indexOn": [
-        "code"
+        "code",
+        "team"
       ]
     },
     "templates": {
