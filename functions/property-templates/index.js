@@ -1,4 +1,3 @@
-const co = require('co');
 const log = require('../utils/logger');
 const adminUtils = require('../utils/firebase-admin');
 const findRemovedKeys = require('../utils/find-removed-keys');
@@ -13,8 +12,7 @@ module.exports = {
    * @param  {Object} templatesHash
    * @return {Promise} - resolves {Object} hash of updates
    */
-  processWrite(database, propertyId, templatesHash) {
-    const self = this;
+  async processWrite(database, propertyId, templatesHash) {
     const updates = {};
     const templateKeys = Object.keys(templatesHash || {});
 
@@ -23,35 +21,41 @@ module.exports = {
     }
 
     log.info(
-      `Writing to /propertyTemplates/${propertyId} with count: ${templateKeys.length}`
+      `${LOG_PREFIX} Writing to /propertyTemplates/${propertyId} with count: ${templateKeys.length}`
     );
 
-    return co(function*() {
-      for (let i = 0; i < templateKeys.length; i++) {
-        const templateId = templateKeys[i];
-        const templateSnapshot = yield database
-          .ref(`/templates/${templateId}`)
-          .once('value');
+    for (let i = 0; i < templateKeys.length; i++) {
+      const templateId = templateKeys[i];
+      const templateSnapshot = await database
+        .ref(`/templates/${templateId}`)
+        .once('value');
 
-        if (!templateSnapshot.exists()) {
-          continue;
-        }
+      if (!templateSnapshot.exists()) {
+        continue; // eslint-disable-line no-continue
+      }
 
+      try {
         const template = templateSnapshot.val(); // Assumed hash data, with no children
-        const templateCopy = self._toTemplateProxy(template);
-        yield database
+        const templateCopy = this._toTemplateProxy(template); // eslint-disable-line no-underscore-dangle
+        await database
           .ref(`/propertyTemplates/${propertyId}/${templateId}`)
           .set(templateCopy);
-        yield database
+        await database
           .ref(`/propertyTemplatesList/${propertyId}/${templateId}`)
           .set(templateCopy);
         updates[`/propertyTemplates/${propertyId}/${templateId}`] = 'upserted';
         updates[`/propertyTemplatesList/${propertyId}/${templateId}`] =
           'upserted';
+      } catch (err) {
+        log.error(
+          `${LOG_PREFIX} processWrite: failed for property ${propertyId} with template: ${templateId} | ${err}`
+        );
       }
+    }
 
-      // Check updated /propertyTemplates to remove templates that shouldn't be there
-      const propTmplsSnap = yield database
+    // Check updated /propertyTemplates to remove templates that shouldn't be there
+    try {
+      const propTmplsSnap = await database
         .ref(`/propertyTemplates/${propertyId}`)
         .once('value');
 
@@ -63,10 +67,10 @@ module.exports = {
 
         if (templatesRemoved.length > 0) {
           log.info(
-            `/propertyTemplates removed count: ${templatesRemoved.length}`
+            `${LOG_PREFIX} /propertyTemplates removed count: ${templatesRemoved.length}`
           );
 
-          yield Promise.all(
+          await Promise.all(
             templatesRemoved.map(id => {
               updates[`/propertyTemplates/${propertyId}/${id}`] = 'removed';
               return database
@@ -78,7 +82,7 @@ module.exports = {
       }
 
       // Check updated /propertyTemplates to remove templates that shouldn't be there
-      const propTmplsListSnap = yield database
+      const propTmplsListSnap = await database
         .ref(`/propertyTemplatesList/${propertyId}`)
         .once('value');
 
@@ -90,10 +94,10 @@ module.exports = {
 
         if (templatesListRemoved.length > 0) {
           log.info(
-            `/propertyTemplatesList removed count: ${templatesListRemoved.length}`
+            `${LOG_PREFIX} /propertyTemplatesList removed count: ${templatesListRemoved.length}`
           );
 
-          yield Promise.all(
+          await Promise.all(
             templatesListRemoved.map(id => {
               updates[`/propertyTemplatesList/${propertyId}/${id}`] = 'removed';
               return database
@@ -103,9 +107,11 @@ module.exports = {
           );
         }
       }
+    } catch (err) {
+      log.error(`${LOG_PREFIX} processWrite: ${err}`);
+    }
 
-      return updates;
-    });
+    return updates;
   },
 
   /**
@@ -116,18 +122,19 @@ module.exports = {
    * @param  {Object} template
    * @return {Promise} - resolves {Object} updates hash
    */
-  upsert(db, templateId, template) {
+  async upsert(db, templateId, template) {
     const updates = {};
-    const templateCopy = this._toTemplateProxy(template);
+    const templateCopy = this._toTemplateProxy(template); // eslint-disable-line no-underscore-dangle
 
-    return co(function*() {
-      const allPropertyIds = yield adminUtils.fetchRecordIds(db, '/properties');
-      const templatesPropertyIds = [];
+    const allPropertyIds = await adminUtils.fetchRecordIds(db, '/properties');
+    const templatesPropertyIds = [];
 
-      // Collect all properties associated with template
-      for (let i = 0; i < allPropertyIds.length; i++) {
-        const propertyId = allPropertyIds[i];
-        const propertyTemplateIds = yield adminUtils.fetchRecordIds(
+    // Collect all properties associated with template
+    for (let i = 0; i < allPropertyIds.length; i++) {
+      const propertyId = allPropertyIds[i];
+
+      try {
+        const propertyTemplateIds = await adminUtils.fetchRecordIds(
           db,
           `/properties/${propertyId}/templates`
         );
@@ -135,25 +142,33 @@ module.exports = {
         if (propertyTemplateIds.includes(templateId)) {
           templatesPropertyIds.push(propertyId);
         }
+      } catch (err) {
+        log.error(
+          `${LOG_PREFIX} upsert: "properties/${propertyId}/templates" lookup failed | ${err}`
+        );
       }
+    }
 
-      // Upsert all templates proxies
-      for (let i = 0; i < templatesPropertyIds.length; i++) {
-        const propertyId = templatesPropertyIds[i];
+    // Upsert all templates proxies
+    for (let i = 0; i < templatesPropertyIds.length; i++) {
+      const propertyId = templatesPropertyIds[i];
 
+      try {
         const target = `/propertyTemplates/${propertyId}/${templateId}`;
-        yield db.ref(target).set(templateCopy);
+        await db.ref(target).set(templateCopy);
         log.info(`${LOG_PREFIX} upsert: template at ${target}`);
         updates[target] = 'upsert';
 
         const targetList = `/propertyTemplatesList/${propertyId}/${templateId}`;
-        yield db.ref(targetList).set(templateCopy);
+        await db.ref(targetList).set(templateCopy);
         log.info(`${LOG_PREFIX} upsert: template at ${targetList}`);
         updates[targetList] = 'upsert';
+      } catch (err) {
+        log.error(`${LOG_PREFIX} upsert: proxy upsert failed | ${err}`);
       }
+    }
 
-      return updates;
-    });
+    return updates;
   },
 
   /**
@@ -164,48 +179,65 @@ module.exports = {
    * @param  {String} attribute
    * @return {Promise} - resolves {Object} hash of updates
    */
-  remove(db, templateId, attribute = '') {
-    return co(function*() {
-      const updates = {};
-      const propTmplsSnap = yield db.ref('/propertyTemplates').once('value');
-      const propTmplsListSnap = yield db
-        .ref('/propertyTemplatesList')
-        .once('value');
+  async remove(db, templateId, attribute = '') {
+    const updates = {};
+    let propTmplsSnap = null;
+    let propTmplsListSnap = null;
 
-      // Remove in `/propertyTemplates`
-      if (propTmplsSnap.exists()) {
-        const propertyTemplates = propTmplsSnap.val();
-        const activePropertyIds = Object.keys(propertyTemplates).filter(
-          propertyId => propertyTemplates[propertyId][templateId]
-        );
+    try {
+      propTmplsSnap = await db.ref('/propertyTemplates').once('value');
+      propTmplsListSnap = await db.ref('/propertyTemplatesList').once('value');
+    } catch (err) {
+      throw Error(`${LOG_PREFIX} remove: lookup failed | ${err}`);
+    }
 
-        for (let i = 0; i < activePropertyIds.length; i++) {
-          const propertyId = activePropertyIds[i];
-          const target = `/propertyTemplates/${propertyId}/${templateId}${attribute}`;
-          yield db.ref(target).remove();
-          log.info(target);
+    // Remove in `/propertyTemplates`
+    if (propTmplsSnap.exists()) {
+      const propertyTemplates = propTmplsSnap.val();
+      const activePropertyIds = Object.keys(propertyTemplates).filter(
+        propertyId => propertyTemplates[propertyId][templateId]
+      );
+
+      for (let i = 0; i < activePropertyIds.length; i++) {
+        const propertyId = activePropertyIds[i];
+        const target = `/propertyTemplates/${propertyId}/${templateId}${attribute}`;
+
+        try {
+          await db.ref(target).remove();
+          log.info(`${LOG_PREFIX} remove: successfully removed ${target}`);
           updates[target] = 'removed';
+        } catch (err) {
+          log.error(
+            `${LOG_PREFIX} remove: failed to remove ${target} | ${err}`
+          );
         }
       }
+    }
 
-      // Remove in `/propertyTemplatesList`
-      if (propTmplsListSnap.exists()) {
-        const propertyTemplatesList = propTmplsListSnap.val();
-        const activePropertyIds = Object.keys(propertyTemplatesList).filter(
-          propertyId => propertyTemplatesList[propertyId][templateId]
-        );
+    // Remove in `/propertyTemplatesList`
+    if (propTmplsListSnap.exists()) {
+      const propertyTemplatesList = propTmplsListSnap.val();
+      const activePropertyIds = Object.keys(propertyTemplatesList).filter(
+        propertyId => propertyTemplatesList[propertyId][templateId]
+      );
 
-        for (let i = 0; i < activePropertyIds.length; i++) {
-          const propertyId = activePropertyIds[i];
-          const target = `/propertyTemplatesList/${propertyId}/${templateId}${attribute}`;
-          yield db.ref(target).remove();
-          log.info(`templates removed ${target}`);
+      for (let i = 0; i < activePropertyIds.length; i++) {
+        const propertyId = activePropertyIds[i];
+        const target = `/propertyTemplatesList/${propertyId}/${templateId}${attribute}`;
+
+        try {
+          await db.ref(target).remove();
+          log.info(`${LOG_PREFIX} remove: successfully removed ${target}`);
           updates[target] = 'removed';
+        } catch (err) {
+          log.error(
+            `${LOG_PREFIX} remove: failed to remove ${target} | ${err}`
+          );
         }
       }
+    }
 
-      return updates;
-    });
+    return updates;
   },
 
   /**

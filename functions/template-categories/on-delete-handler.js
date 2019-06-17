@@ -1,4 +1,3 @@
-const co = require('co');
 const assert = require('assert');
 const log = require('../utils/logger');
 const templatesList = require('../templates/list');

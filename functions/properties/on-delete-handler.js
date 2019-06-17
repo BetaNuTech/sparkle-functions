@@ -1,4 +1,3 @@
-const co = require('co');
 const log = require('../utils/logger');
 const inspections = require('../inspections');
 const teams = require('../teams');
@@ -23,61 +22,73 @@ module.exports = function createOnDeleteHandler(
   pubsubClient,
   userTeamsTopic
 ) {
-  return (propertySnap, event) =>
-    co(function*() {
-      const { propertyId } = event.params;
+  return async (propertySnap, event) => {
+    const updates = Object.create(null);
+    const { propertyId } = event.params;
 
-      log.info(`${LOG_PREFIX} property ${propertyId} deleted`);
-      const inspUpdates = yield inspections.removeForProperty(
+    log.info(`${LOG_PREFIX} property ${propertyId} deleted`);
+
+    try {
+      const inspUpdates = await inspections.removeForProperty(
         db,
         storage,
         propertyId
       );
-      const teamUpdates = yield teams.removeForProperty(
+      Object.assign(updates, inspUpdates);
+    } catch (err) {
+      log.error(`${LOG_PREFIX} ${err}`);
+    }
+
+    try {
+      const teamUpdates = await teams.removeForProperty(
         db,
         propertyId,
         pubsubClient,
         userTeamsTopic
       );
+      Object.assign(updates, teamUpdates);
+    } catch (err) {
+      log.error(`${LOG_PREFIX} ${err}`);
+    }
 
-      yield propertyTemplates.removeForProperty(db, propertyId);
+    try {
+      await propertyTemplates.removeForProperty(db, propertyId);
+      updates[`/propertyTemplates/${propertyId}`] = 'removed';
+      updates[`/propertyTemplatesList/${propertyId}`] = 'removed';
+    } catch (err) {
+      log.error(`${LOG_PREFIX} ${err}`);
+    }
 
-      // Cleanup deleted property's images
-      const property = propertySnap.val() || {};
-      const imgUrls = [property.photoURL, property.bannerPhotoURL].filter(
-        Boolean
-      );
+    // Cleanup deleted property's images
+    const property = propertySnap.val() || {};
+    const imgUrls = [property.photoURL, property.bannerPhotoURL].filter(
+      Boolean
+    );
 
-      if (imgUrls.length) {
-        for (let i = 0; i < imgUrls.length; i++) {
-          const url = imgUrls[i];
-          const imgType = ['profile', 'banner'][i];
+    if (imgUrls.length) {
+      for (let i = 0; i < imgUrls.length; i++) {
+        const url = imgUrls[i];
+        const imgType = ['profile', 'banner'][i];
 
-          try {
-            const fileName = (decodeURIComponent(url).split('?')[0] || '')
-              .split('/')
-              .pop();
-            yield storage
-              .bucket()
-              .file(`${PROPERTY_BUCKET_NAME}/${fileName}`)
-              .delete();
-            log.info(
-              `${LOG_PREFIX} property: ${propertyId} ${imgType} removal succeeded`
-            );
-          } catch (e) {
-            log.error(
-              `${LOG_PREFIX} property: ${propertyId} ${imgType} removal at ${url} failed ${e}`
-            );
-          }
+        try {
+          const fileName = (decodeURIComponent(url).split('?')[0] || '')
+            .split('/')
+            .pop();
+          await storage
+            .bucket()
+            .file(`${PROPERTY_BUCKET_NAME}/${fileName}`)
+            .delete();
+          log.info(
+            `${LOG_PREFIX} property: ${propertyId} ${imgType} removal succeeded`
+          );
+        } catch (e) {
+          log.error(
+            `${LOG_PREFIX} property: ${propertyId} ${imgType} removal at ${url} failed ${e}`
+          );
         }
       }
+    }
 
-      // Remove all property template proxies
-      return {
-        [`/propertyTemplates/${propertyId}`]: 'removed',
-        [`/propertyTemplatesList/${propertyId}`]: 'removed',
-        ...inspUpdates,
-        ...teamUpdates,
-      };
-    });
+    return updates;
+  };
 };

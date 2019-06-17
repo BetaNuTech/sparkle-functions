@@ -1,6 +1,3 @@
-const co = require('co');
-const log = require('../utils/logger');
-const adminUtils = require('../utils/firebase-admin');
 const processWrite = require('./process-write');
 const deleteUploads = require('./delete-uploads');
 const cron = require('./cron');
@@ -20,44 +17,52 @@ module.exports = {
    * @param  {String} propertyId
    * @return {Promise} - resolves {Object} hash of updates
    */
-  removeForProperty(db, storage, propertyId) {
+  async removeForProperty(db, storage, propertyId) {
     const updates = Object.create(null);
 
-    return co(function*() {
-      const inspectionsSnap = yield db
-        .ref('/inspections')
-        .orderByChild('property')
-        .equalTo(propertyId)
-        .once('value');
-      const inspections = inspectionsSnap.val();
-      const inspectionsIds = Object.keys(inspections);
+    const inspectionsSnap = await db
+      .ref('/inspections')
+      .orderByChild('property')
+      .equalTo(propertyId)
+      .once('value');
+    const inspections = inspectionsSnap.val();
+    const inspectionsIds = Object.keys(inspections || {});
 
-      // Remove each inspections' items' uploads
-      for (let i = 0; i < inspectionsIds.length; i++) {
-        const inspId = inspectionsIds[i];
+    // Remove each inspections' items' uploads
+    for (let i = 0; i < inspectionsIds.length; i++) {
+      const inspId = inspectionsIds[i];
 
-        try {
-          const uploadUpdates = yield deleteUploads(db, storage, inspId);
-          Object.assign(updates, uploadUpdates);
-        } catch (e) {}
+      try {
+        await deleteUploads(db, storage, inspId);
+      } catch (err) {
+        // wrap error
+        throw Error(
+          `${LOG_PREFIX} removeForProperty: upload delete failed: ${err}`
+        );
       }
+    }
 
-      // Collect inspections to delete in `updates`
-      inspectionsIds.forEach(inspectionId => {
-        updates[`/inspections/${inspectionId}`] = null;
-      });
+    // Collect inspections to delete in `updates`
+    inspectionsIds.forEach(inspectionId => {
+      updates[`/inspections/${inspectionId}`] = null;
+    });
 
-      // Remove all `/propertyInspections`
-      updates[`/propertyInspections/${propertyId}`] = null;
+    // Remove all `/propertyInspections`
+    updates[`/propertyInspections/${propertyId}`] = null;
 
-      // Remove all `/propertyInspectionsList`
-      updates[`/propertyInspectionsList/${propertyId}`] = null;
+    // Remove all `/propertyInspectionsList`
+    updates[`/propertyInspectionsList/${propertyId}`] = null;
 
-      yield db.ref().update(updates);
-      return updates;
-    }).catch(
-      e => new Error(`${LOG_PREFIX} removeForProperty: ${e}`) // wrap error
-    );
+    try {
+      await db.ref().update(updates);
+    } catch (err) {
+      // wrap error
+      throw Error(
+        `${LOG_PREFIX} removeForProperty: update inspection failed: ${err}`
+      );
+    }
+
+    return updates;
   },
 
   cron,

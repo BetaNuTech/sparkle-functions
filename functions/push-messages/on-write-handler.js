@@ -1,4 +1,3 @@
-const co = require('co');
 const sendToRecipient = require('./send-to-recipient');
 
 /**
@@ -8,19 +7,18 @@ const sendToRecipient = require('./send-to-recipient');
  * @return {Function} - push messages onWrite handler
  */
 module.exports = function createPushMessagesOnWriteHandler(db, messaging) {
-  return (change, event) =>
-    co(function*() {
-      // Exit when the data is deleted.
-      if (!change.after.exists()) {
-        return false;
-      }
+  return async (change, event) => {
+    // Exit when the data is deleted.
+    if (!change.after.exists()) {
+      return false;
+    }
 
-      const pushMessage = change.after.val();
-      const { recipientId } = pushMessage;
-      const { messageId } = event.params;
+    const pushMessage = change.after.val();
+    const { recipientId } = pushMessage;
+    const { messageId } = event.params;
 
-      yield sendToRecipient(db, messaging, recipientId, pushMessage);
+    await sendToRecipient(db, messaging, recipientId, pushMessage);
 
-      return db.ref(`/sendMessages/${messageId}`).remove();
-    });
+    return db.ref(`/sendMessages/${messageId}`).remove();
+  };
 };

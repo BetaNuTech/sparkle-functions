@@ -1,4 +1,3 @@
-const co = require('co');
 const log = require('../utils/logger');
 const processPropertyMeta = require('../properties/process-meta');
 const deleteUploads = require('./delete-uploads');
@@ -12,75 +11,75 @@ const LOG_PREFIX = 'inspections: on-delete:';
  * @return {Function} - inspection onDelete handler
  */
 module.exports = function createOnDeleteHandler(db, storage) {
-  return (inspectionSnap, event) =>
-    co(function*() {
-      const { inspectionId } = event.params;
-      const inspection = inspectionSnap.val() || {};
-      const propertyId = inspection.property;
-      const isCompleted = Boolean(inspection.inspectionCompleted);
-      const updates = Object.create(null);
-      const requests = [];
+  return async (inspectionSnap, event) => {
+    const { inspectionId } = event.params;
+    const inspection = inspectionSnap.val() || {};
+    const propertyId = inspection.property;
+    const isCompleted = Boolean(inspection.inspectionCompleted);
+    const updates = Object.create(null);
+    const requests = [];
 
-      log.info(`${LOG_PREFIX} ${inspectionId} deleted`);
+    log.info(`${LOG_PREFIX} ${inspectionId} deleted`);
 
-      if (!propertyId || !inspection) {
-        log.error(
-          `${LOG_PREFIX} inspection ${inspectionId} missing property reference`
-        );
-        return Promise.resolve(updates);
-      }
+    if (!propertyId || !inspection) {
+      log.error(
+        `${LOG_PREFIX} inspection ${inspectionId} missing property reference`
+      );
+      return Promise.resolve(updates);
+    }
 
-      // Remove any completed inspection proxies
-      if (isCompleted) {
-        updates[`/completedInspections/${inspectionId}`] = 'removed';
-        updates[`/completedInspectionsList/${inspectionId}`] = 'removed';
-
-        requests.push(
-          db.ref(`/completedInspections/${inspectionId}`).remove(),
-          db.ref(`/completedInspectionsList/${inspectionId}`).remove()
-        );
-      }
-
-      // Remove property inspection proxies
-      updates[
-        `/propertyInspections/${propertyId}/inspections/${inspectionId}`
-      ] = 'removed';
-      updates[
-        `/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`
-      ] = 'removed';
+    // Remove any completed inspection proxies
+    if (isCompleted) {
+      updates[`/completedInspections/${inspectionId}`] = 'removed';
+      updates[`/completedInspectionsList/${inspectionId}`] = 'removed';
 
       requests.push(
-        db
-          .ref(`/propertyInspections/${propertyId}/inspections/${inspectionId}`)
-          .remove(),
-        db
-          .ref(
-            `/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`
-          )
-          .remove()
+        db.ref(`/completedInspections/${inspectionId}`).remove(),
+        db.ref(`/completedInspectionsList/${inspectionId}`).remove()
       );
+    }
 
-      // Wait for proxy removal
-      try {
-        yield Promise.all(requests).then(() => updates);
-      } catch (e) {
-        log.error(
-          `${LOG_PREFIX} ${inspectionId} proxy record cleanup failed: ${e}`
-        );
-      }
+    // Remove property inspection proxies
+    updates[`/propertyInspections/${propertyId}/inspections/${inspectionId}`] =
+      'removed';
+    updates[
+      `/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`
+    ] = 'removed';
 
-      // Update property attributes related
-      // to completed inspection meta data
-      if (isCompleted) {
-        const metaUpdates = yield processPropertyMeta(db, propertyId);
-        Object.assign(updates, metaUpdates); // combine updates
-      }
+    requests.push(
+      db
+        .ref(`/propertyInspections/${propertyId}/inspections/${inspectionId}`)
+        .remove(),
+      db
+        .ref(
+          `/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`
+        )
+        .remove()
+    );
 
-      // Removal all uploads, ignoring errors
-      try {
-        yield deleteUploads(db, storage, inspectionId);
-      } catch (e) {}
+    // Wait for proxy removal
+    try {
+      await Promise.all(requests).then(() => updates);
+    } catch (e) {
+      log.error(
+        `${LOG_PREFIX} ${inspectionId} proxy record cleanup failed: ${e}`
+      );
+    }
 
-      return updates;
-    });
+    // Update property attributes related
+    // to completed inspection meta data
+    if (isCompleted) {
+      const metaUpdates = await processPropertyMeta(db, propertyId);
+      Object.assign(updates, metaUpdates); // combine updates
+    }
+
+    // Removal all uploads, ignoring errors
+    try {
+      await deleteUploads(db, storage, inspectionId);
+    } catch (err) {
+      log.error(`${LOG_PREFIX} ${err}`);
+    }
+
+    return updates;
+  };
 };

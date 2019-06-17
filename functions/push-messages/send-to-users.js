@@ -1,4 +1,3 @@
-const co = require('co');
 const assert = require('assert');
 const sendToRecipient = require('./send-to-recipient');
 const createSendMessage = require('./create-send-message');
@@ -19,7 +18,7 @@ const LOG_PREFIX = 'push-messages: send-to-users:';
  * @param  {Boolean} allowCorp
  * @return {Promise} - resolves {Object[]} messages
  */
-module.exports = function sendToUsers({
+module.exports = async function sendToUsers({
   db,
   messaging,
   title,
@@ -47,68 +46,66 @@ module.exports = function sendToUsers({
     `${LOG_PREFIX} has array of excluded strings`
   );
 
-  return co(function*() {
-    // Request and flatten response hash to array
-    let users = yield db.ref('/users').once('value');
-    users = users.val();
-    if (!users) return [];
-    users = keys(users).map(id => assign({ id }, users[id]));
-    const recipients = getRecepients({
-      users,
-      property,
-      excludes,
-      allowCorp,
-    });
+  // Request and flatten response hash to array
+  let users = await db.ref('/users').once('value');
+  users = users.val();
+  if (!users) return [];
+  users = keys(users).map(id => assign({ id }, users[id]));
+  const recipients = getRecepients({
+    users,
+    property,
+    excludes,
+    allowCorp,
+  });
 
-    let messages;
+  let messages;
 
-    try {
-      // Create `/sendMessages/<recipient-id>` database records for recipients
-      messages = yield Promise.all(
-        recipients.map(recipientId =>
-          createSendMessage(db, {
+  try {
+    // Create `/sendMessages/<recipient-id>` database records for recipients
+    messages = await Promise.all(
+      recipients.map(recipientId =>
+        createSendMessage(db, {
+          title,
+          message,
+          recipientId,
+          createdAt,
+        })
+      )
+    );
+  } catch (err) {
+    throw Error(`${LOG_PREFIX} create-send-messages: ${err}`); // wrap error
+  }
+
+  let results = [];
+
+  try {
+    // Collect results of sending push notifications
+    results = await Promise.all(
+      recipients.map(
+        recipientId =>
+          sendToRecipient(db, messaging, recipientId, {
             title,
             message,
-            recipientId,
-            createdAt,
-          })
-        )
-      );
-    } catch (e) {
-      throw new Error(`${LOG_PREFIX} create-send-messages: ${e}`); // wrap error
-    }
+          }).then(r => !(r instanceof Error)) // failed : succeeded
+      )
+    );
+  } catch (err) {
+    throw Error(`${LOG_PREFIX} send-to-recipient: ${err}`); // wrap error
+  }
 
-    let results = [];
+  try {
+    // Cleanup sent messages
+    // Allow unsent messages to linger to retry during push notification sync
+    await Promise.all(
+      results.map((result, i) =>
+        result === false || !messages[i]
+          ? Promise.resolve()
+          : db.ref(`/sendMessages/${messages[i].id}`).remove()
+      )
+    );
+  } catch (err) {
+    throw Error(`${LOG_PREFIX} remove-send-messages: ${err}`); // wrap error
+  }
 
-    try {
-      // Collect results of sending push notifications
-      results = yield Promise.all(
-        recipients.map(
-          recipientId =>
-            sendToRecipient(db, messaging, recipientId, {
-              title,
-              message,
-            }).then(r => !(r instanceof Error)) // failed : succeeded
-        )
-      );
-    } catch (e) {
-      throw new Error(`${LOG_PREFIX} send-to-recipient: ${e}`); // wrap error
-    }
-
-    try {
-      // Cleanup sent messages
-      // Allow unsent messages to linger to retry during push notification sync
-      yield Promise.all(
-        results.map((result, i) =>
-          result === false || !messages[i]
-            ? Promise.resolve()
-            : db.ref(`/sendMessages/${messages[i].id}`).remove()
-        )
-      );
-    } catch (e) {
-      throw new Error(`${LOG_PREFIX} remove-send-messages: ${e}`); // wrap error
-    }
-
-    return messages;
-  });
+  return messages;
 };
