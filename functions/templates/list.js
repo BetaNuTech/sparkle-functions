@@ -1,4 +1,3 @@
-const co = require('co');
 const assert = require('assert');
 const log = require('../utils/logger');
 const adminUtils = require('../utils/firebase-admin');
@@ -73,13 +72,13 @@ module.exports = {
    * @param  {String} categoryId
    * @return {Promise} - resolves (Object) hash of updates
    */
-  removeCategory(db, categoryId) {
+  async removeCategory(db, categoryId) {
     assert(categoryId && typeof categoryId === 'string', 'has category ID');
 
     const updates = Object.create(null);
 
-    return co(function*() {
-      const templatesListItemsInCategory = yield db
+    try {
+      const templatesListItemsInCategory = await db
         .ref('/templatesList')
         .orderByChild('category')
         .equalTo(categoryId)
@@ -99,17 +98,16 @@ module.exports = {
 
       // Update database
       if (Object.keys(updates).length) {
-        yield db.ref().update(updates);
+        await db.ref().update(updates);
       }
+    } catch (err) {
+      // wrap error
+      throw Error(
+        `${LOG_PREFIX} removeCategory: ${categoryId} from /templatesList failed | ${err}`
+      );
+    }
 
-      return updates;
-    }).catch(e =>
-      Promise.reject(
-        new Error(
-          `${LOG_PREFIX} category ${categoryId} removal from /templatesList failed ${e}`
-        ) // wrap error
-      )
-    );
+    return updates;
   },
 
   /**
@@ -120,7 +118,7 @@ module.exports = {
    * @param  {utils}    adminUtils
    * @return {Promise} - resolves {Object} updates hash
    */
-  removeOrphans(db, existingTemplateIds = [], utils = adminUtils) {
+  async removeOrphans(db, existingTemplateIds = [], utils = adminUtils) {
     assert(
       Array.isArray(existingTemplateIds) &&
         existingTemplateIds.every(id => id && typeof id === 'string'),
@@ -129,8 +127,8 @@ module.exports = {
 
     const updates = Object.create(null);
 
-    return co(function*() {
-      const templatesListIds = yield utils.fetchRecordIds(db, '/templatesList');
+    try {
+      const templatesListIds = await utils.fetchRecordIds(db, '/templatesList');
 
       templatesListIds
         .filter(id => existingTemplateIds.indexOf(id) === -1)
@@ -141,14 +139,13 @@ module.exports = {
 
       // Update database
       if (Object.keys(updates).length) {
-        yield db.ref().update(updates);
+        await db.ref().update(updates);
       }
+    } catch (err) {
+      // wrap error
+      throw Error(`${LOG_PREFIX} removeOrphans: ${err}`);
+    }
 
-      return updates;
-    }).catch(e =>
-      Promise.reject(
-        new Error(`${LOG_PREFIX} orphan removal failed ${e}`) // wrap error
-      )
-    );
+    return updates;
   },
 };
