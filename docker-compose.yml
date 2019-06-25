@@ -30,12 +30,15 @@ services:
     working_dir: /src/functions
     command: [sh, -c, "yarn test-unit"]
     volumes:
+      - ./auth.json:/src/auth.json
       - ./functions:/src/functions
 
   test-e2e-fn:
     image: "circleci/node:8"
     working_dir: /src/functions
     env_file: .env
+    environment:
+      - AUTH_FILE_PATH=/src/auth.json
     command: [sh, -c, "yarn && yarn test-e2e"]
     volumes:
       - ./auth.json:/src/auth.json
@@ -43,11 +46,11 @@ services:
 
   deploy-staging-fn:
     image: okuyan/firebase-tools
-    working_dir: /src/functions
+    working_dir: /srv
     env_file: .env
-    command: [sh, -c, "../scripts/deploy-functions.sh staging"]
+    command: [sh, -c, "./scripts/deploy-functions.sh staging"]
     volumes:
-      - .:/src
+      - .:/srv
 
   gcloud:
     build:

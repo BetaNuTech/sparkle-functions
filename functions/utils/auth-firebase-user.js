@@ -9,9 +9,10 @@ const LOG_PREFIX = 'utils: auth-firebase-user:';
  * NOTE: Side effect sets `req.user` upon successful lookup or rejects request
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
  * @param  {firebaseAdmin.Auth} auth - Firebase service for user auth
+ * @param  {Boolean?} shouldBeAdmin
  * @return {Promise} verification & lookup requests
  */
-module.exports = function authFirebaseUser(db, auth) {
+module.exports = function authFirebaseUser(db, auth, shouldBeAdmin = false) {
   assert(Boolean(db), 'has firebase database instance');
   assert(Boolean(auth), 'has firebase auth instance');
 
@@ -34,7 +35,7 @@ module.exports = function authFirebaseUser(db, auth) {
 
     try {
       const decodedToken = await auth.verifyIdToken(idToken);
-      const userResult = await getUserById(db, decodedToken.uid);
+      const userResult = await getUserById(db, decodedToken.uid, shouldBeAdmin);
 
       // set request user
       req.user = req.user || {};
@@ -57,9 +58,10 @@ module.exports = function authFirebaseUser(db, auth) {
  * Request a user by their id
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
  * @param  {String} userId
+ * @param  {Boolean} shouldBeAdmin
  * @return {Promise} - resolves {Object} user
  */
-function getUserById(db, userId) {
+function getUserById(db, userId, shouldBeAdmin) {
   assert(Boolean(db), 'has firebase database instance');
   assert(
     userId && typeof userId === 'string',
@@ -77,6 +79,9 @@ function getUserById(db, userId) {
           return reject(null);
         }
 
+        if (shouldBeAdmin && !user.admin) {
+          reject(Error('Only admins can access this route'));
+        }
         user.id = userId;
         resolve(user); // Success
       }, reject)

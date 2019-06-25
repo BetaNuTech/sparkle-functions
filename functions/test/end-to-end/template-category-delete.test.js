@@ -162,7 +162,7 @@ describe('Template Category Delete', () => {
 
     // Setup database
     await db.ref(`/templates/${tmpl1Id}`).set(tmpl1Data); // add template #1
-    await db.ref(`/property/${propertyId}`).set({
+    await db.ref(`/properties/${propertyId}`).set({
       templates: { [tmpl1Id]: true, [tmpl2Id]: true, [tmpl3Id]: true },
     }); // required
     await db

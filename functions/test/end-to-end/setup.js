@@ -1,25 +1,15 @@
-const fs = require('fs');
-
-const AUTH_FILE_PATH = '../auth.json';
-
-// Write firbase auth file from environment if non-existent
-if (process.env.FIREBASE_FUNCTIONS_AUTH && !fs.existsSync(AUTH_FILE_PATH)) {
-  fs.writeFileSync(
-    AUTH_FILE_PATH,
-    Buffer.from(process.env.FIREBASE_FUNCTIONS_AUTH, 'hex')
-  );
-}
-
-const testConfig = {
-  databaseURL: 'https://test-sapphire-inspections-8a9e3.firebaseio.com',
-  storageBucket: 'sapphire-inspections.appspot.com',
-  projectId: 'test-sapphire-inspections-8a9e3',
-};
-const test = require('firebase-functions-test')(testConfig, AUTH_FILE_PATH);
-const sinon = require('sinon');
 const admin = require('firebase-admin');
+
+// Force `NODE_ENV` to "test"
+// to ensure no production db is used
+process.env.NODE_ENV = 'test';
+
+const sinon = require('sinon');
 const PubSub = require('@google-cloud/pubsub');
 const CONFIG = require('../../config');
+
+const { firebase: testConfig } = CONFIG;
+const test = require('firebase-functions-test')(testConfig); // eslint-disable-line
 const s3Client = require('../../utils/s3-client');
 
 admin.initializeApp(testConfig);
@@ -60,6 +50,7 @@ module.exports = {
   auth,
   test,
   storage,
+  uid: testConfig.databaseAuthVariableOverride.uid,
   cloudFunctions: require('../../index'), // eslint-disable-line
 
   /**
