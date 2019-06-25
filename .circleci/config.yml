@@ -29,8 +29,7 @@ jobs:
           command: yarn
           working_directory: functions
       - run:
-          command: ../scripts/deploy-functions.sh staging
-          working_directory: functions
+          command: NODE_ENV=production ./scripts/deploy-functions.sh staging
 
   deploy-production:
     docker:
@@ -42,8 +41,7 @@ jobs:
           command: yarn
           working_directory: functions
       - run:
-          command: ../scripts/deploy-functions.sh production
-          working_directory: functions
+          command: NODE_ENV=production ./scripts/deploy-functions.sh production
 
 workflows:
   version: 2
