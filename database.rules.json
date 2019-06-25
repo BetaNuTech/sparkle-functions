@@ -1,45 +1,99 @@
 {
   "rules": {
-    "users": {
-      ".indexOn": [
-        "email"
-      ]
-    },
-    "inspections": {
-      ".indexOn": [
-        "property",
-        "inspectionCompleted"
-      ]
-    },
-    "properties": {
-      ".indexOn": [
-        "code",
-        "team"
-      ]
-    },
-    "templates": {
-      ".indexOn": [
-        "category"
-      ]
-    },
-    "templatesList": {
-      ".indexOn": [
-        "category"
-      ]
-    },
-    "propertyInspectionDeficientItems": {
-      "$propertyID": {
-        ".indexOn": ["item"]
-      }
-    },
     "archive": {
+      ".read": "auth != null",
+      ".write": "auth != null",
       "propertyInspectionDeficientItems": {
         "$propertyID": {
           ".indexOn": ["item"]
         }
       }
     },
-    ".read": "auth != null",
-    ".write": "auth != null"
+    "completedInspections": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "completedInspectionsList": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "inspections": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".indexOn": ["property", "inspectionCompleted"]
+    },
+    "properties": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".indexOn": ["code", "team"]
+    },
+    "propertyInspectionDeficientItems": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$propertyID": {
+        ".indexOn": ["item"]
+      }
+    },
+    "propertyInspections": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "propertyInspectionsList": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "propertyTemplates": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "propertyTemplatesList": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "registrationTokens": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "teams": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "templateCategories": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "templates": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".indexOn": ["category"]
+    },
+    "templatesList": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".indexOn": ["category"]
+    },
+    "users": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".indexOn": ["email"]
+    },
+    "sendMessages": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "system": {
+      "integrations": {
+        "trello": {
+          "properties": {
+            "$propertyID": {
+              "$uid": {
+                ".read": "$uid === auth.uid",
+                ".write": "$uid === auth.uid"
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }

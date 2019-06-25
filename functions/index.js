@@ -8,9 +8,10 @@ const inspections = require('./inspections');
 const properties = require('./properties');
 const deficientItems = require('./deficient-items');
 const teams = require('./teams');
+const trello = require('./trello');
 const regTokens = require('./reg-tokens');
+const { firebase: config } = require('./config');
 
-const config = functions.config().firebase;
 const defaultApp = admin.initializeApp(config);
 const db = defaultApp.database();
 const auth = admin.auth();
@@ -20,12 +21,8 @@ const pubsubClient = new PubSub({
 });
 
 // Staging
-const functionsStagingDatabase = functions.database.instance(
-  'staging-sapphire-inspections'
-);
-const dbStaging = defaultApp.database(
-  'https://staging-sapphire-inspections.firebaseio.com'
-);
+const functionsStagingDatabase = functions.database.instance(config.projectId);
+const dbStaging = defaultApp.database(config.stagingDatabaseURL);
 
 // Send API version
 exports.latestVersion = functions.https.onRequest((request, response) =>
@@ -54,6 +51,14 @@ exports.createSendMessages = functions.https.onRequest(
 );
 exports.createSendMessagesStaging = functions.https.onRequest(
   pushMessages.onCreateRequestHandler(dbStaging, auth)
+);
+
+// POST /integrations/trello/:propertyId/authorization
+exports.upsertTrelloToken = functions.https.onRequest(
+  trello.createOnUpsertTrelloTokenHandler(db, auth)
+);
+exports.upsertTrelloTokenStaging = functions.https.onRequest(
+  trello.createOnUpsertTrelloTokenHandler(dbStaging, auth)
 );
 
 // For migrating to a new architecture only, setting a newer date

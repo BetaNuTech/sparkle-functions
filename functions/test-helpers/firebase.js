@@ -65,7 +65,27 @@ module.exports = {
   },
 
   cleanDb(db) {
-    return db.ref('/').set(null);
+    return Promise.all(
+      [
+        'archive',
+        'completedInspections',
+        'completedInspectionsList',
+        'inspections',
+        'properties',
+        'propertyInspectionDeficientItems',
+        'propertyInspections',
+        'propertyInspectionsList',
+        'propertyTemplates',
+        'propertyTemplatesList',
+        'registrationTokens',
+        'teams',
+        'templateCategories',
+        'templates',
+        'templatesList',
+        'users',
+        'sendMessages',
+      ].map(path => db.ref(path).set(null))
+    );
   },
 
   /**
@@ -86,5 +106,19 @@ module.exports = {
     return bucket
       .getFiles({ prefix })
       .then(([files]) => files.filter(f => f.name.search(fileName) > -1)[0]);
+  },
+
+  /**
+   * Stubbed auth of methods used by
+   * utils/auth-firebase-user module
+   * @param  {String} userId
+   * @return {Object} - stubbed firebaseAdmin.auth
+   */
+  stubFirbaseAuth(userId) {
+    assert(userId && typeof userId === 'string', 'has user id');
+
+    return {
+      verifyIdToken: () => Promise.resolve({ uid: userId }),
+    };
   },
 };

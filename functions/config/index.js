@@ -1,11 +1,14 @@
 const s3Config = require('./s3.json');
 const inspectionItems = require('./inspection-items');
 const deficientItems = require('./deficient-items');
+const firebaseConfig = require('./firebase');
 
 const env = process.env.NODE_ENV || 'production';
 
-if (env === 'development' || env === 'test') {
-  // development settings
+if (env === 'development') {
+  // Development settings
+} else if (env === 'test') {
+  // Test settings
 } else {
   // Production (default) settings
 }
@@ -17,5 +20,6 @@ module.exports = Object.assign(
   { env },
   { s3: s3Config },
   { inspectionItems },
-  { deficientItems }
+  { deficientItems },
+  { firebase: firebaseConfig }
 );
