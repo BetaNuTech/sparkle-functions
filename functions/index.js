@@ -21,7 +21,9 @@ const pubsubClient = new PubSub({
 });
 
 // Staging
-const functionsStagingDatabase = functions.database.instance(config.projectId);
+const functionsStagingDatabase = functions.database.instance(
+  config.stagingDatabaseName
+);
 const dbStaging = defaultApp.database(config.stagingDatabaseURL);
 
 // Send API version
