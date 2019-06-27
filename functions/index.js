@@ -63,6 +63,14 @@ exports.upsertTrelloTokenStaging = functions.https.onRequest(
   trello.createOnUpsertTrelloTokenHandler(dbStaging, auth)
 );
 
+//  GET /integrations/trello/{propertyId}/boards
+exports.getAllTrelloBoards = functions.https.onRequest(
+  trello.createOnGetAllTrelloBoardsHandler(db, auth)
+);
+exports.getAllTrelloBoardsStaging = functions.https.onRequest(
+  trello.createOnGetAllTrelloBoardsHandler(dbStaging, auth)
+);
+
 // For migrating to a new architecture only, setting a newer date
 // This allow the updatedLastDate to stay as-is (make sure client doesn't update it though)
 exports.inspectionMigrationDateWrite = functions.database
