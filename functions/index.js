@@ -28,7 +28,7 @@ const dbStaging = defaultApp.database(config.stagingDatabaseURL);
 
 // Send API version
 exports.latestVersion = functions.https.onRequest((request, response) =>
-  response.status(200).send({ ios: '1.1.0' })
+  response.status(200).send({ ios: '1.3.1' })
 );
 
 // Latest Completed Inspections
