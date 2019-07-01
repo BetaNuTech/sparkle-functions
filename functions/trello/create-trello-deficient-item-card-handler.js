@@ -83,9 +83,10 @@ module.exports = function createOnTrelloDeficientItemCardHandler(db, auth) {
 
       if (!trelloIntegrationSnap.exists()) throw Error();
       trelloPropertyConfig = trelloIntegrationSnap.val();
+      if (!trelloPropertyConfig.list) throw Error();
     } catch (err) {
       return res.status(409).send({
-        message: 'Trello integration details for this property not found',
+        message: 'Trello integration details for property not found or invalid',
       });
     }
 

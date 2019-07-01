@@ -148,7 +148,7 @@ describe('Trello Create Deficient Item Cards', () => {
 
     // Assertions
     expect(result.body.message).to.equal(
-      'Trello integration details for this property not found'
+      'Trello integration details for property not found or invalid'
     );
   });
 
