@@ -112,14 +112,14 @@ module.exports = function createOnTrelloDeficientItemCardHandler(db, auth) {
     try {
       const trelloCardPayload = {
         name: deficientItem.itemTitle, // source inspection item name
-        desc: `
-        DEFICIENT ITEM (${deficientItem.createdAt})
-        Score: ${deficientItem.itemScore} ${
-          highestItemScore > 0 ? 'of' : ''
-        } ${highestItemScore || ''}
-        Inspector Notes: ${deficientItem.itemInspectorNotes}
-        Plan to fix: ${deficientItem.currentPlanToFix}
-        `,
+        desc: [
+          `DEFICIENT ITEM (${deficientItem.createdAt})`,
+          `Score: ${deficientItem.itemScore || 0} ${
+            highestItemScore > 0 ? 'of' : ''
+          } ${highestItemScore || ''}`.trim(),
+          `Inspector Notes: ${deficientItem.itemInspectorNotes}`,
+          `Plan to fix: ${deficientItem.currentPlanToFix}`,
+        ].join('\n'),
         due: deficientItem.currentDueDate,
         idMembers: trelloCredentials.member,
       };
