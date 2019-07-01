@@ -120,9 +120,15 @@ module.exports = function createOnTrelloDeficientItemCardHandler(db, auth) {
           `Score: ${deficientItem.itemScore || 0} ${
             highestItemScore > 0 ? 'of' : ''
           } ${highestItemScore || ''}`.trim(),
-          deficientItem.itemInspectorNotes ? `Inspector Notes: ${deficientItem.itemInspectorNotes}` : '',
-          deficientItem.currentPlanToFix ? `Plan to fix: ${deficientItem.currentPlanToFix}` : ''
-        ].join('\n'),
+          deficientItem.itemInspectorNotes
+            ? `Inspector Notes: ${deficientItem.itemInspectorNotes}`
+            : '',
+          deficientItem.currentPlanToFix
+            ? `Plan to fix: ${deficientItem.currentPlanToFix}`
+            : '',
+        ]
+          .filter(Boolean)
+          .join('\n'),
         due: deficientItem.currentDueDate,
         idMembers: trelloCredentials.member,
       };
