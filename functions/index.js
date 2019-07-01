@@ -28,7 +28,7 @@ const dbStaging = defaultApp.database(config.stagingDatabaseURL);
 
 // Send API version
 exports.latestVersion = functions.https.onRequest((request, response) =>
-  response.status(200).send({ ios: '1.3.1' })
+  response.status(200).send({ ios: '1.1.0' })
 );
 
 // Latest Completed Inspections
@@ -77,6 +77,14 @@ exports.getAllTrelloBoardLists = functions.https.onRequest(
 );
 exports.getAllTrelloBoardListsStaging = functions.https.onRequest(
   trello.createOnGetAllTrelloBoardListsHandler(dbStaging, auth)
+);
+
+//  POST /deficient-items/trello/card
+exports.createTrelloDeficientItemCard = functions.https.onRequest(
+  trello.createOnTrelloDeficientItemCardHandler(db, auth)
+);
+exports.createTrelloDeficientItemCardStaging = functions.https.onRequest(
+  trello.createOnTrelloDeficientItemCardHandler(dbStaging, auth)
 );
 
 // For migrating to a new architecture only, setting a newer date

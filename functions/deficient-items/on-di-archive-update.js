@@ -29,6 +29,14 @@ module.exports = function createOnDiArchiveUpdateHandler(db) {
       const diSnap = await change.after.ref.parent.once('value');
       const archiveUpdates = await model.archive(db, diSnap);
       Object.assign(updates, archiveUpdates);
+
+      // Log archived Trello card
+      if (archiveUpdates.trelloCardAchived) {
+        log.info(
+          `${LOG_PREFIX} archived Trello card ${archiveUpdates.trelloCardAchived}`
+        );
+      }
+
       log.info(
         `${LOG_PREFIX} archived requested deficient item ${deficientItemId}`
       );
