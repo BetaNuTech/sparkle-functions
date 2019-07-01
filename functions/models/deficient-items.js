@@ -1,10 +1,38 @@
 const assert = require('assert');
 const modelSetup = require('./utils/model-setup');
 const createStateHistory = require('../deficient-items/utils/create-state-history');
+const systemModel = require('./system');
+const { firebase: firebaseConfig } = require('../config');
+
+const SERVICE_ACCOUNT_CLIENT_ID =
+  firebaseConfig.databaseAuthVariableOverride.uid;
 
 const API_PATH = '/propertyInspectionDeficientItems';
+const PREFIX = 'deficient-items: on-di-archive-update:';
 
 module.exports = modelSetup({
+  /**
+   * Lookup single deficient item
+   * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+   * @param  {String} propertyId
+   * @param  {String} deficientItemId
+   * @return {Promise} - resolves {DataSnapshot} deficient item snapshot
+   */
+  find(db, propertyId, deficientItemId) {
+    assert(
+      propertyId && typeof propertyId === 'string',
+      `${PREFIX} has property id`
+    );
+    assert(
+      deficientItemId && typeof deficientItemId === 'string',
+      `${PREFIX} has deficient item id`
+    );
+
+    return db
+      .ref(`/propertyInspectionDeficientItems/${propertyId}/${deficientItemId}`)
+      .once('value');
+  },
+
   /**
    * Find all DI's associated with an inspection
    * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
@@ -27,7 +55,7 @@ module.exports = modelSetup({
           if (deficientItemsSnap.val().inspection === inspectionId) {
             result.push(deficientItemsSnap);
           }
-        } catch (e) {}
+        } catch (e) {} // eslint-disable-line no-empty
       });
     });
 
@@ -54,7 +82,6 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {Object} JSON of path and update
    */
   async createRecord(db, propertyId, recordData) {
-    const updates = Object.create(null);
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(recordData && typeof recordData === 'object', 'has record data');
     assert(Boolean(recordData.inspection), 'has inspection reference');
@@ -134,14 +161,99 @@ module.exports = modelSetup({
   async archive(db, diSnap) {
     const updates = Object.create(null);
     const activePath = diSnap.ref.path.toString();
+    const deficientItem = diSnap.val();
 
-    await db.ref(`/archive${activePath}`).set(diSnap.val());
-    updates[`/archive${activePath}`] = 'created';
+    try {
+      await db.ref(`/archive${activePath}`).set(deficientItem);
+      updates[`/archive${activePath}`] = 'created';
+    } catch (err) {
+      throw Error(`${PREFIX} archive write failed: ${err}`);
+    }
 
-    await db.ref(activePath).remove();
-    updates[activePath] = 'removed';
+    try {
+      await db.ref(activePath).remove();
+      updates[activePath] = 'removed';
+    } catch (err) {
+      throw Error(`${PREFIX} deficient item removal failed: ${err}`);
+    }
+
+    try {
+      const archiveResponse = await this.archiveTrelloCard(db, deficientItem);
+      if (archiveResponse) updates.trelloCardAchived = archiveResponse.id;
+    } catch (err) {
+      throw Error(`${PREFIX} associated Trello card archive failed: ${err}`);
+    }
 
     return updates;
+  },
+
+  /**
+   * check trello for deficient item card
+   * and archive if exists
+   * @param  {firebaseadmin.database} db
+   * @param  {Object} deficientItem
+   * @return {Promise}
+   */
+  async archiveTrelloCard(db, deficientItem) {
+    // Lookup inspection
+    let inspectionSnap;
+    try {
+      inspectionSnap = await db
+        .ref(`inspections/${deficientItem.inspection}`)
+        .once('value');
+    } catch (err) {
+      throw Error(`${PREFIX} inspection lookup failed: ${err}`);
+    }
+
+    const { property: propertyId } = inspectionSnap.val();
+
+    // Lookup system credentials
+    let propertyTrelloCredentialsSnap;
+    try {
+      propertyTrelloCredentialsSnap = await db
+        .ref(
+          `/system/integrations/trello/properties/${propertyId}/${SERVICE_ACCOUNT_CLIENT_ID}`
+        )
+        .once('value');
+    } catch (err) {
+      throw Error(`${PREFIX} failed trello system credential lookup: ${err}`);
+    }
+
+    if (!propertyTrelloCredentialsSnap.exists()) {
+      return null;
+    }
+
+    const trelloCredentials = propertyTrelloCredentialsSnap.val();
+
+    if (!trelloCredentials.cards) {
+      return null;
+    }
+
+    // Find any card reference stored for DI
+    const [cardId] = Object.keys(trelloCredentials.cards).filter(
+      id => trelloCredentials.cards[id] === deficientItem.item
+    );
+
+    if (!cardId) {
+      return null;
+    }
+
+    let response;
+    try {
+      response = await systemModel.trelloCardRequest(
+        cardId,
+        trelloCredentials.apikey,
+        trelloCredentials.authToken,
+        'PUT',
+        true
+      );
+    } catch (err) {
+      throw Error(
+        `${PREFIX} archive PUT card ${cardId} to trello API failed: ${err}`
+      );
+    }
+
+    return response;
   },
 
   /**

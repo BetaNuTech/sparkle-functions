@@ -2,10 +2,60 @@ const { expect } = require('chai');
 const uuid = require('../../test-helpers/uuid');
 const mocking = require('../../test-helpers/mocking');
 const { cleanDb } = require('../../test-helpers/firebase');
-const { db, test, cloudFunctions } = require('./setup');
+const systemModel = require('../../models/system');
+const {
+  db,
+  test,
+  cloudFunctions,
+  uid: SERVICE_ACCOUNT_ID,
+} = require('./setup');
+
+const PROPERTY_ID = uuid();
+const DEFICIENT_ITEM_ID = uuid();
+
+const USER_ID = uuid();
+
+const TRELLO_MEMBER_ID = '57c864cb46ef602b2be03a80';
+const TRELLO_API_KEY = 'f4a04dd872b7a2e33bfc33aac9516965';
+const TRELLO_AUTH_TOKEN =
+  'fab424b6f18b2845b3d60eac800e42e5f3ab2fdb25d21c90264032a0ecf16ceb';
+const TRELLO_BOARD_ID = '5d0ab7754066f880369a4d97';
+const TRELLO_LIST_ID = '5d0ab7754066f880369a4d99';
+const TRELLO_CARD_ID = '5d0ab7754066f880369a4db2';
+
+const TRELLO_SYSTEM_INTEGRATION_DATA = {
+  member: TRELLO_MEMBER_ID,
+  user: USER_ID,
+  apikey: TRELLO_API_KEY,
+  authToken: TRELLO_AUTH_TOKEN,
+  cards: { [TRELLO_CARD_ID]: DEFICIENT_ITEM_ID },
+};
+
+const INTEGRATIONS_DATA = {
+  grantedBy: USER_ID,
+  grantedAt: Date.now(),
+  board: TRELLO_BOARD_ID,
+  boardName: 'Test Board',
+  list: TRELLO_LIST_ID,
+  listName: 'TO DO',
+};
+
+const TRELLO_CREDENTIAL_DB_PATH = `/system/integrations/trello/properties/${PROPERTY_ID}/${SERVICE_ACCOUNT_ID}`;
+const TRELLO_INTEGRATIONS_DB_PATH = `/integrations/trello/properties/${PROPERTY_ID}`;
 
 describe('Deficient Items Archiving', () => {
-  afterEach(() => cleanDb(db));
+  afterEach(async () => {
+    await cleanDb(db);
+
+    // ensure card we test for archiving starts as un-archived
+    await systemModel.trelloCardRequest(
+      TRELLO_CARD_ID,
+      TRELLO_API_KEY,
+      TRELLO_AUTH_TOKEN,
+      'PUT',
+      false
+    );
+  });
 
   it('should not archive a deficient item when not archived', async () => {
     const propertyId = uuid();
@@ -112,5 +162,88 @@ describe('Deficient Items Archiving', () => {
 
     // Assertions
     expect(actual.exists()).to.equal(true, 'archived the deficient item');
+  });
+
+  it('should archive a deficient item when requested', async () => {
+    const inspectionId = uuid();
+    const inspectionData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: PROPERTY_ID,
+
+      template: {
+        trackDeficientItems: true,
+        items: {
+          // Create single deficient item on inspection
+          [DEFICIENT_ITEM_ID]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true
+          ),
+        },
+      },
+    });
+
+    // Setup database
+    await db.ref(`/properties/${PROPERTY_ID}`).set({ name: 'test' });
+    await db.ref(`/inspections/${inspectionId}`).set(inspectionData); // Add inspection
+    const diRef = db
+      .ref(`/propertyInspectionDeficientItems/${PROPERTY_ID}`)
+      .push();
+    const diPath = diRef.path.toString();
+    const diID = diPath.split('/').pop();
+    await diRef.set({
+      state: 'requires-action',
+      inspection: inspectionId,
+      item: DEFICIENT_ITEM_ID,
+    });
+
+    await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
+    await db.ref(TRELLO_INTEGRATIONS_DB_PATH).set(INTEGRATIONS_DATA);
+
+    const beforeSnap = await db.ref(`${diPath}/archive`).once('value'); // Create before
+    await diRef.update({ archive: true });
+    const afterSnap = await db.ref(`${diPath}/archive`).once('value'); // Create after
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.deficientItemsArchiving);
+    await wrapped(changeSnap, {
+      params: { propertyId: PROPERTY_ID, itemId: diID },
+    });
+
+    // Test result
+    const actual = await db
+      .ref(`/archive/propertyInspectionDeficientItems/${PROPERTY_ID}/${diID}`)
+      .once('value');
+
+    // getting card details so we can check if card is successfully archived on trello
+    let cardDetails;
+    try {
+      cardDetails = await systemModel.trelloCardRequest(
+        TRELLO_CARD_ID,
+        TRELLO_API_KEY,
+        TRELLO_AUTH_TOKEN,
+        'GET',
+        false
+      );
+    } catch (error) {
+      expect(error).to.undefined(true, 'Error from trello API');
+    }
+
+    // Assertions
+    expect(cardDetails.body.closed).to.equal(
+      true,
+      'archived trello card successfully'
+    );
+    expect(actual.exists()).to.equal(true, 'archived the deficient item');
+
+    // Cleanup (reopen closed Trello Card)
+    await systemModel.trelloCardRequest(
+      TRELLO_CARD_ID,
+      TRELLO_API_KEY,
+      TRELLO_AUTH_TOKEN,
+      'PUT',
+      false
+    );
   });
 });

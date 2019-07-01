@@ -1,4 +1,5 @@
 const assert = require('assert');
+const got = require('got');
 const modelSetup = require('./utils/model-setup');
 const { firebase: firebaseConfig } = require('../config');
 
@@ -24,5 +25,68 @@ module.exports = modelSetup({
         `/system/integrations/trello/properties/${propertyId}/${SERVICE_ACCOUNT_CLIENT_ID}`
       )
       .once('value');
+  },
+  /**
+   * for interacting with trello cards
+   * @param  {String} cardID ID of card which needs interaction
+   * @param  {String} apikey api key for trello
+   * @param  {String} authToken authToken for trello
+   * @param  {String} method - HTTP method
+   * @param  {Boolean?} closed - archive/unarchive Trello card
+   * @return {Promise} - resolves {Object} Trello card JSON
+   */
+  trelloCardRequest(cardID, apikey, authToken, method, closed = true) {
+    assert(cardID && typeof cardID === 'string', `${PREFIX} has card id`);
+    assert(apikey && typeof apikey === 'string', `${PREFIX} has api key`);
+    assert(
+      authToken && typeof authToken === 'string',
+      `${PREFIX} has authentication token`
+    );
+    assert(method && typeof method === 'string', `${PREFIX} has HTTP method`);
+
+    return got(
+      `https://api.trello.com/1/cards/${cardID}?key=${apikey}&token=${authToken}`,
+      {
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: method !== 'GET' ? { closed } : null,
+        responseType: 'json',
+        method,
+        json: true,
+      }
+    );
+  },
+
+  /**
+   * Appends a Trello card reference to system's
+   * integration record for a specified property
+   * @param  {firebaseAdmin.database} db firbase database
+   * @param  {String} propertyId
+   * @param  {String} trelloCard
+   * @param  {String} inspectionItem
+   * @return {Promise} - resolves {undefined}
+   */
+  createPropertyTrelloCard(db, settings) {
+    const { property, trelloCard, inspectionItem } = settings;
+
+    assert(
+      property && typeof property === 'string',
+      `${PREFIX} has property id`
+    );
+    assert(
+      trelloCard && typeof trelloCard === 'string',
+      `${PREFIX} has trello card id`
+    );
+    assert(
+      inspectionItem && typeof inspectionItem === 'string',
+      `${PREFIX} has inspection item id`
+    );
+
+    return db
+      .ref(
+        `/system/integrations/trello/properties/${property}/${SERVICE_ACCOUNT_CLIENT_ID}/cards/${trelloCard}`
+      )
+      .set(inspectionItem);
   },
 });
