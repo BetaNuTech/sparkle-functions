@@ -1,7 +1,6 @@
 const assert = require('assert');
 const express = require('express');
 const cors = require('cors');
-const bodyParser = require('body-parser');
 const got = require('got');
 const log = require('../utils/logger');
 const authUser = require('../utils/auth-firebase-user');
@@ -30,79 +29,82 @@ module.exports = function createOnTrelloDeficientItemCardHandler(db, auth) {
    * @return {Promise}
    */
   const createTrelloDeficientItemCardHandler = async (req, res) => {
-    const { body, user } = req;
-    const { propertyId, deficientItemId, listId, boardId } = body;
+    const { params, user } = req;
+    const { propertyId, deficientItemId } = params;
 
     log.info(`${PREFIX} requested by user: ${user.id}`);
 
-    if (!propertyId || !deficientItemId || !listId || !boardId) {
+    if (!propertyId || !deficientItemId) {
       let message = '';
-      if (!listId) message = 'request missing listId property';
-      if (!boardId) message = ' request missing boardId property';
-      if (!propertyId) message = ' request missing propertyId property';
+      if (!propertyId) message = 'request URL missing Property wildcard';
       if (!deficientItemId)
-        message = ' request missing deficientItemId property';
-
+        message = ' request URL missing Deficient Item wildcard';
       return res.status(400).send({ message: message.trim() });
     }
 
-    let deficientItemSnap;
+    // Lookup Deficient Item
+    let deficientItem;
     try {
-      deficientItemSnap = await deficientItemsModel.find(
+      const deficientItemSnap = await deficientItemsModel.find(
         db,
         propertyId,
         deficientItemId
       );
+
       if (!deficientItemSnap.exists()) throw Error();
+      deficientItem = deficientItemSnap.val();
     } catch (err) {
       return res.status(409).send({
         message: 'Requested property or deficient item could not be found',
       });
     }
 
-    const deficientItem = deficientItemSnap.val();
-
+    // Lookup Trello credentials
     let trelloCredentials = null;
-    let trelloBoardDetails = null;
-
     try {
       const savedTokenCredentials = await systemModel.findTrelloCredentialsForProperty(
         db,
         propertyId
       );
-      if (!savedTokenCredentials.exists()) throw Error();
 
+      if (!savedTokenCredentials.exists()) throw Error();
+      trelloCredentials = savedTokenCredentials.val();
+    } catch (err) {
+      return res.status(403).send({ message: 'Error accessing trello token' });
+    }
+
+    // Lookup integration data
+    let trelloPropertyConfig = null;
+    try {
       const trelloIntegrationSnap = await integrationsModel.findByTrelloProperty(
         db,
         propertyId
       );
 
-      if (!trelloIntegrationSnap.exists()) {
-        return res.status(409).send({
-          message: 'Trello integration details for this property not found',
-        });
-      }
-
-      trelloCredentials = savedTokenCredentials.val();
-      trelloBoardDetails = trelloIntegrationSnap.val();
+      if (!trelloIntegrationSnap.exists()) throw Error();
+      trelloPropertyConfig = trelloIntegrationSnap.val();
     } catch (err) {
-      log.error(`${PREFIX} Error accessing trello token: ${err}`);
-      return res.status(403).send({ message: 'Error accessing trello token' });
+      return res.status(409).send({
+        message: 'Trello integration details for this property not found',
+      });
     }
 
-    let inspectionItemSnap = null;
+    // Look DI's Inspection
+    let inspectionItem = null;
     try {
-      inspectionItemSnap = await inspectionsModel.findItem(
+      const inspectionItemSnap = await inspectionsModel.findItem(
         db,
         deficientItem.inspection,
         deficientItem.item
       );
+      if (!inspectionItemSnap.exists()) throw Error();
+      inspectionItem = inspectionItemSnap.val();
     } catch (err) {
       log.error(`${PREFIX} inspection item lookup failed ${err}`);
-      return res.status(500).send({ message: 'Error creating Trello Card' });
+      return res
+        .status(409)
+        .send({ message: 'Inspection of Deficient Item does not exist' });
     }
-
-    const inspectionItem = inspectionItemSnap.val();
 
     // Lookup and sort for item's largest score value
     const [highestItemScore] = ITEM_VALUE_NAMES.map(name =>
@@ -125,7 +127,7 @@ module.exports = function createOnTrelloDeficientItemCardHandler(db, auth) {
       };
 
       const trelloResponse = await got(
-        `https://api.trello.com/1/cards?idList=${trelloBoardDetails.list}&keyFromSource=all&key=${trelloCredentials.apikey}&token=${trelloCredentials.authToken}`,
+        `https://api.trello.com/1/cards?idList=${trelloPropertyConfig.list}&keyFromSource=all&key=${trelloCredentials.apikey}&token=${trelloCredentials.authToken}`,
         {
           headers: { 'content-type': 'application/json' },
           body: trelloCardPayload,
@@ -154,9 +156,9 @@ module.exports = function createOnTrelloDeficientItemCardHandler(db, auth) {
 
   // Create express app with single POST endpoint
   const app = express();
-  app.use(cors(), bodyParser.json());
+  app.use(cors());
   app.post(
-    '/deficient-items/trello/card',
+    '/properties/:propertyId/deficient-items/:deficientItemId/trello/card',
     authUser(db, auth, true),
     createTrelloDeficientItemCardHandler
   );

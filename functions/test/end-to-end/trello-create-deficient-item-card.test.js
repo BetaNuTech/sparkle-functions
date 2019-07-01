@@ -20,6 +20,7 @@ const TRELLO_AUTH_TOKEN =
   'fab424b6f18b2845b3d60eac800e42e5f3ab2fdb25d21c90264032a0ecf16ceb';
 const TRELLO_BOARD_ID = '5d0ab7754066f880369a4d97';
 const TRELLO_LIST_ID = '5d0ab7754066f880369a4d99';
+const API_PATH = `/properties/${PROPERTY_ID}/deficient-items/${DEFICIENT_ITEM_ID}/trello/card`;
 
 const DEFICIENT_ITEM_DATA = {
   createdAt: Date.now(),
@@ -81,13 +82,8 @@ describe('Trello Create Deficient Item Cards', () => {
       stubFirbaseAuth(USER_ID)
     );
     const result = await request(app)
-      .post(`/deficient-items/trello/card`)
-      .send({
-        propertyId: PROPERTY_ID,
-        deficientItemId: DEFICIENT_ITEM_ID,
-        listId: TRELLO_LIST_ID,
-        boardId: TRELLO_BOARD_ID,
-      })
+      .post(API_PATH)
+      .send()
       .set('Accept', 'application/json')
       .set('Authorization', 'fb-jwt stubbed-by-auth')
       .expect('Content-Type', /json/)
@@ -111,13 +107,8 @@ describe('Trello Create Deficient Item Cards', () => {
       stubFirbaseAuth(USER_ID)
     );
     const result = await request(app)
-      .post(`/deficient-items/trello/card`)
-      .send({
-        propertyId: PROPERTY_ID,
-        deficientItemId: DEFICIENT_ITEM_ID,
-        listId: TRELLO_LIST_ID,
-        boardId: TRELLO_BOARD_ID,
-      })
+      .post(API_PATH)
+      .send()
       .set('Accept', 'application/json')
       .set('Authorization', 'fb-jwt stubbed-by-auth')
       .expect('Content-Type', /json/)
@@ -148,13 +139,8 @@ describe('Trello Create Deficient Item Cards', () => {
       stubFirbaseAuth(USER_ID)
     );
     const result = await request(app)
-      .post(`/deficient-items/trello/card`)
-      .send({
-        propertyId: PROPERTY_ID,
-        deficientItemId: DEFICIENT_ITEM_ID,
-        listId: TRELLO_LIST_ID,
-        boardId: TRELLO_BOARD_ID,
-      })
+      .post(API_PATH)
+      .send()
       .set('Accept', 'application/json')
       .set('Authorization', 'fb-jwt stubbed-by-auth')
       .expect('Content-Type', /json/)
@@ -186,13 +172,8 @@ describe('Trello Create Deficient Item Cards', () => {
       stubFirbaseAuth(USER_ID)
     );
     const result = await request(app)
-      .post(`/deficient-items/trello/card`)
-      .send({
-        propertyId: PROPERTY_ID,
-        deficientItemId: DEFICIENT_ITEM_ID,
-        listId: TRELLO_LIST_ID,
-        boardId: TRELLO_BOARD_ID,
-      })
+      .post(API_PATH)
+      .send()
       .set('Accept', 'application/json')
       .set('Authorization', 'fb-jwt stubbed-by-auth')
       .expect('Content-Type', /json/)
