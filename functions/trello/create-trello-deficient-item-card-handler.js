@@ -129,9 +129,13 @@ module.exports = function createOnTrelloDeficientItemCardHandler(db, auth) {
         ]
           .filter(Boolean)
           .join('\n'),
-        due: deficientItem.currentDueDate,
         idMembers: trelloCredentials.member,
       };
+
+      // Append current due date as date string
+      if (deficientItem.currentDueDateDay) {
+        trelloCardPayload.due = deficientItem.currentDueDateDay;
+      }
 
       const trelloResponse = await got(
         `https://api.trello.com/1/cards?idList=${trelloPropertyConfig.list}&keyFromSource=all&key=${trelloCredentials.apikey}&token=${trelloCredentials.authToken}`,
