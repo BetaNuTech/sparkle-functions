@@ -116,7 +116,11 @@ module.exports = function createOnTrelloDeficientItemCardHandler(db, auth) {
       const trelloCardPayload = {
         name: deficientItem.itemTitle, // source inspection item name
         desc: [
-          `DEFICIENT ITEM (${deficientItem.createdAt})`,
+          `DEFICIENT ITEM (${new Date(deficientItem.createdAt * 1000)
+            .toGMTString()
+            .split(' ')
+            .slice(0, 4)
+            .join(' ')})`,
           `Score: ${deficientItem.itemScore || 0} ${
             highestItemScore > 0 ? 'of' : ''
           } ${highestItemScore || ''}`.trim(),

@@ -23,8 +23,8 @@ const TRELLO_LIST_ID = '5d0ab7754066f880369a4d99';
 const API_PATH = `/properties/${PROPERTY_ID}/deficient-items/${DEFICIENT_ITEM_ID}/trello/card`;
 
 const DEFICIENT_ITEM_DATA = {
-  createdAt: Date.now(),
-  currentDueDate: Date.now(),
+  createdAt: Date.now() / 1000,
+  currentDueDate: Date.now() / 1000,
   currentDueDateDay: '01/15/2025',
   itemTitle: 'Broken Pipe',
   itemScore: 4,
@@ -51,7 +51,7 @@ const INSPECTION_ITEM_DATA = {
 
 const INTEGRATIONS_DATA = {
   grantedBy: USER_ID,
-  grantedAt: Date.now(),
+  grantedAt: Date.now() / 1000,
   board: TRELLO_BOARD_ID,
   boardName: 'Test Board',
   list: TRELLO_LIST_ID,
