@@ -25,6 +25,7 @@ const API_PATH = `/properties/${PROPERTY_ID}/deficient-items/${DEFICIENT_ITEM_ID
 const DEFICIENT_ITEM_DATA = {
   createdAt: Date.now(),
   currentDueDate: Date.now(),
+  currentDueDateDay: '01/15/2025',
   itemTitle: 'Broken Pipe',
   itemScore: 4,
   itemInspectorNotes: 'a lot of rust around pipe',
