@@ -3,6 +3,7 @@ const modelSetup = require('./utils/model-setup');
 const createStateHistory = require('../deficient-items/utils/create-state-history');
 const systemModel = require('./system');
 const { firebase: firebaseConfig } = require('../config');
+const log = require('../utils/logger');
 
 const SERVICE_ACCOUNT_CLIENT_ID =
   firebaseConfig.databaseAuthVariableOverride.uid;
@@ -156,32 +157,48 @@ module.exports = modelSetup({
    * and remove it from its' active location
    * @param  {firebaseadmin.database} db
    * @param  {DataSnapshot} diSnap
+   * @param  {Boolean} archiving is the function either archiving or unarchiving this deficient item?
    * @return {Promise} - resolves {Object} updates hash
    */
-  async archive(db, diSnap) {
+  async toggleArchive(db, diSnap, archiving = true) {
     const updates = Object.create(null);
     const activePath = diSnap.ref.path.toString();
     const deficientItem = diSnap.val();
+    const toggleType = archiving ? 'archive' : 'unarchive';
+
+    // DI Destination path
+    const destPath = archiving
+      ? `/archive${activePath}`
+      : activePath.replace(/^\/archive/, '');
+
+    // Current DI path
+    const removePath = activePath;
 
     try {
-      await db.ref(`/archive${activePath}`).set(deficientItem);
-      updates[`/archive${activePath}`] = 'created';
+      await db.ref(destPath).set(deficientItem);
+      updates[destPath] = 'created';
     } catch (err) {
-      throw Error(`${PREFIX} archive write failed: ${err}`);
+      throw Error(`${PREFIX} ${toggleType} write failed: ${err}`);
     }
 
     try {
-      await db.ref(activePath).remove();
-      updates[activePath] = 'removed';
+      await db.ref(removePath).remove();
+      updates[removePath] = 'removed';
     } catch (err) {
       throw Error(`${PREFIX} deficient item removal failed: ${err}`);
     }
 
     try {
-      const archiveResponse = await this.archiveTrelloCard(db, deficientItem);
-      if (archiveResponse) updates.trelloCardAchived = archiveResponse.id;
+      const archiveResponse = await this.archiveTrelloCard(
+        db,
+        deficientItem,
+        archiving
+      );
+      if (archiveResponse) updates.trelloCardChanged = archiveResponse.id;
     } catch (err) {
-      throw Error(`${PREFIX} associated Trello card archive failed: ${err}`);
+      throw Error(
+        `${PREFIX} associated Trello card ${toggleType} failed: ${err}`
+      );
     }
 
     return updates;
@@ -192,9 +209,10 @@ module.exports = modelSetup({
    * and archive if exists
    * @param  {firebaseadmin.database} db
    * @param  {Object} deficientItem
+   * @param  {Boolean} archiving if the trello card should be archived or unarchived
    * @return {Promise}
    */
-  async archiveTrelloCard(db, deficientItem) {
+  async archiveTrelloCard(db, deficientItem, archiving) {
     // Lookup inspection
     let inspectionSnap;
     try {
@@ -207,13 +225,12 @@ module.exports = modelSetup({
 
     const { property: propertyId } = inspectionSnap.val();
 
+    const integrationPath = `/system/integrations/trello/properties/${propertyId}/${SERVICE_ACCOUNT_CLIENT_ID}`;
     // Lookup system credentials
     let propertyTrelloCredentialsSnap;
     try {
       propertyTrelloCredentialsSnap = await db
-        .ref(
-          `/system/integrations/trello/properties/${propertyId}/${SERVICE_ACCOUNT_CLIENT_ID}`
-        )
+        .ref(integrationPath)
         .once('value');
     } catch (err) {
       throw Error(`${PREFIX} failed trello system credential lookup: ${err}`);
@@ -245,9 +262,21 @@ module.exports = modelSetup({
         trelloCredentials.apikey,
         trelloCredentials.authToken,
         'PUT',
-        true
+        archiving
       );
     } catch (err) {
+      if (err.statusCode === 404) {
+        try {
+          await db.ref(`${integrationPath}/cards/${cardId}`).remove();
+        } catch (error) {
+          log.error(
+            `${PREFIX} error when removing card from trello integration path`
+          );
+        }
+        log.info(
+          `${PREFIX} card not found, removing card from trello integration object`
+        );
+      }
       throw Error(
         `${PREFIX} archive PUT card ${cardId} to trello API failed: ${err}`
       );

@@ -41,7 +41,7 @@ module.exports = function createOnInspectionWriteHandler(db) {
         );
         const archiveUpdates = await Promise.all(
           deficientItemSnapshots.map(deficientItemSnap =>
-            model.archive(db, deficientItemSnap)
+            model.toggleArchive(db, deficientItemSnap)
           )
         );
         archiveUpdates.forEach(archiveUpdate =>
@@ -88,7 +88,7 @@ module.exports = function createOnInspectionWriteHandler(db) {
         const [deficientItemSnap] = currentDeficientItemSnaps.filter(
           ({ key: id }) => id === removeDeficientItemId
         );
-        const archiveUpdates = await model.archive(db, deficientItemSnap);
+        const archiveUpdates = await model.toggleArchive(db, deficientItemSnap);
         Object.assign(updates, archiveUpdates);
         log.info(
           `${LOG_PREFIX} archived no longer deficient item ${removeDeficientItemId}`
