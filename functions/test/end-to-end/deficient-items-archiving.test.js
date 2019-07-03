@@ -342,7 +342,7 @@ describe('Deficient Items Unarchiving', () => {
     await db.ref(TRELLO_INTEGRATIONS_DB_PATH).remove();
   });
 
-  it('should not unarchive a deficient item when archived', async () => {
+  it('should not unarchive a deficient item when not unarchived', async () => {
     const propertyId = uuid();
     const inspectionId = uuid();
     const itemId = uuid();
