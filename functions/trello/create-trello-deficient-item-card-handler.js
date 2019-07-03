@@ -152,11 +152,18 @@ module.exports = function createOnTrelloDeficientItemCardHandler(db, auth) {
       );
 
       const newTrelloCardID = trelloResponse.body.id;
-      await systemModel.createPropertyTrelloCard(db, {
-        property: propertyId,
-        trelloCard: newTrelloCardID,
-        inspectionItem: deficientItem.item,
-      });
+      try {
+        await systemModel.createPropertyTrelloCard(db, {
+          property: propertyId,
+          trelloCard: newTrelloCardID,
+          deficientItem: deficientItemId,
+        });
+      } catch (error) {
+        log.error(`${PREFIX} Error creating trello card: ${error}`);
+        return res.status(409).send({
+          message: 'Trello card for this deficient item already exists',
+        });
+      }
     } catch (err) {
       log.error(`${PREFIX} Error retrieved from Trello API: ${err}`);
       return res.status(err.statusCode || 500).send({

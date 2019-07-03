@@ -187,9 +187,61 @@ describe('Trello Create Deficient Item Cards', () => {
     const trelloIntegration = trelloIntegrationSnap.val();
     // Assertions
     Object.keys(trelloIntegration.cards).forEach(trelloCardId => {
-      expect(trelloIntegration.cards[trelloCardId]).to.equal(ITEM_ID);
+      expect(trelloIntegration.cards[trelloCardId]).to.equal(DEFICIENT_ITEM_ID);
     });
 
     expect(result.body.message).to.equal('successfully created trello card');
+  });
+
+  it('should return an error when attempting to create duplicate cards', async function() {
+    // setup database
+    await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
+    await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
+    await db
+      .ref(
+        `/propertyInspectionDeficientItems/${PROPERTY_ID}/${DEFICIENT_ITEM_ID}`
+      )
+      .set(DEFICIENT_ITEM_DATA);
+    await db
+      .ref(`/inspections/${INSPECTION_ID}/template/items/${ITEM_ID}`)
+      .set(INSPECTION_ITEM_DATA);
+    await db.ref(TRELLO_INTEGRATIONS_DB_PATH).set(INTEGRATIONS_DATA);
+
+    // Execute & Get Result
+    const app = createTrelloDeficientItemCardHandler(
+      db,
+      stubFirbaseAuth(USER_ID)
+    );
+    const result = await request(app)
+      .post(API_PATH)
+      .send()
+      .set('Accept', 'application/json')
+      .set('Authorization', 'fb-jwt stubbed-by-auth')
+      .expect('Content-Type', /json/)
+      .expect(201);
+
+    // create a second card with same details which should respond with an error
+    const result2 = await request(app)
+      .post(API_PATH)
+      .send()
+      .set('Accept', 'application/json')
+      .set('Authorization', 'fb-jwt stubbed-by-auth')
+      .expect('Content-Type', /json/)
+      .expect(409);
+
+    const trelloIntegrationSnap = await db
+      .ref(TRELLO_CREDENTIAL_DB_PATH)
+      .once('value');
+
+    const trelloIntegration = trelloIntegrationSnap.val();
+    // Assertions
+    Object.keys(trelloIntegration.cards).forEach(trelloCardId => {
+      expect(trelloIntegration.cards[trelloCardId]).to.equal(DEFICIENT_ITEM_ID);
+    });
+
+    expect(result.body.message).to.equal('successfully created trello card');
+    expect(result2.body.message).to.equal(
+      'Trello card for this deficient item already exists'
+    );
   });
 });

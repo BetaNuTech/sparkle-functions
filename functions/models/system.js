@@ -64,11 +64,11 @@ module.exports = modelSetup({
    * @param  {firebaseAdmin.database} db firbase database
    * @param  {String} propertyId
    * @param  {String} trelloCard
-   * @param  {String} inspectionItem
+   * @param  {String} deficientItem
    * @return {Promise} - resolves {undefined}
    */
-  createPropertyTrelloCard(db, settings) {
-    const { property, trelloCard, inspectionItem } = settings;
+  async createPropertyTrelloCard(db, settings) {
+    const { property, trelloCard, deficientItem } = settings;
 
     assert(
       property && typeof property === 'string',
@@ -79,14 +79,32 @@ module.exports = modelSetup({
       `${PREFIX} has trello card id`
     );
     assert(
-      inspectionItem && typeof inspectionItem === 'string',
-      `${PREFIX} has inspection item id`
+      deficientItem && typeof deficientItem === 'string',
+      `${PREFIX} has deficient item id`
     );
+
+    const cardsSnap = await db
+      .ref(
+        `/system/integrations/trello/properties/${property}/${SERVICE_ACCOUNT_CLIENT_ID}/cards`
+      )
+      .once('value');
+
+    // checking if there already exists a trello card for this inspection item, if so will throw error
+    if (cardsSnap.exists()) {
+      const cards = cardsSnap.val();
+      const trelloCardExists = Object.values(cards).includes(deficientItem);
+
+      if (trelloCardExists) {
+        throw Error(
+          `${PREFIX} Trello card for this inspection item already exists`
+        );
+      }
+    }
 
     return db
       .ref(
         `/system/integrations/trello/properties/${property}/${SERVICE_ACCOUNT_CLIENT_ID}/cards/${trelloCard}`
       )
-      .set(inspectionItem);
+      .set(deficientItem);
   },
 });
