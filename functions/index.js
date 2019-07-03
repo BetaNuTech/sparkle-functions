@@ -79,7 +79,7 @@ exports.getAllTrelloBoardListsStaging = functions.https.onRequest(
   trello.createOnGetAllTrelloBoardListsHandler(dbStaging, auth)
 );
 
-//  POST /deficient-items/trello/card
+//  POST /properties/:propertyId/deficient-items/:deficientItemId/trello/card
 exports.createTrelloDeficientItemCard = functions.https.onRequest(
   trello.createOnTrelloDeficientItemCardHandler(db, auth)
 );
@@ -190,11 +190,26 @@ exports.deficientItemsPropertyMetaSyncStaging = functionsStagingDatabase
   .onUpdate(deficientItems.createOnDiStateUpdate(dbStaging));
 
 exports.deficientItemsArchiving = functions.database
-  .ref('/propertyInspectionDeficientItems/{propertyId}/{itemId}/archive')
-  .onUpdate(deficientItems.createOnDiArchiveUpdate(db));
+  .ref(
+    '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/archive'
+  )
+  .onUpdate(deficientItems.createOnDiToggleArchiveUpdate(db));
 exports.deficientItemsArchivingStaging = functionsStagingDatabase
-  .ref('/propertyInspectionDeficientItems/{propertyId}/{itemId}/archive')
-  .onUpdate(deficientItems.createOnDiArchiveUpdate(dbStaging));
+  .ref(
+    '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/archive'
+  )
+  .onUpdate(deficientItems.createOnDiToggleArchiveUpdate(dbStaging));
+
+exports.deficientItemsUnarchiving = functions.database
+  .ref(
+    '/archive/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/archive'
+  )
+  .onUpdate(deficientItems.createOnDiToggleArchiveUpdate(db));
+exports.deficientItemsUnarchivingStaging = functionsStagingDatabase
+  .ref(
+    '/archive/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/archive'
+  )
+  .onUpdate(deficientItems.createOnDiToggleArchiveUpdate(dbStaging));
 
 // Template onWrite
 exports.templateWrite = functions.database

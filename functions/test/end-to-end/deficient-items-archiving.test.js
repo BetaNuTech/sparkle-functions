@@ -22,6 +22,7 @@ const TRELLO_AUTH_TOKEN =
 const TRELLO_BOARD_ID = '5d0ab7754066f880369a4d97';
 const TRELLO_LIST_ID = '5d0ab7754066f880369a4d99';
 const TRELLO_CARD_ID = '5d0ab7754066f880369a4db2';
+const TRELLO_DELETED_CARD_ID = '5d0ab7754066f880369a4dae';
 
 const TRELLO_SYSTEM_INTEGRATION_DATA = {
   member: TRELLO_MEMBER_ID,
@@ -55,6 +56,9 @@ describe('Deficient Items Archiving', () => {
       'PUT',
       false
     );
+
+    await db.ref(TRELLO_CREDENTIAL_DB_PATH).remove();
+    await db.ref(TRELLO_INTEGRATIONS_DB_PATH).remove();
   });
 
   it('should not archive a deficient item when not archived', async () => {
@@ -98,7 +102,9 @@ describe('Deficient Items Archiving', () => {
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
     const wrapped = test.wrap(cloudFunctions.deficientItemsArchiving);
-    await wrapped(changeSnap, { params: { propertyId, itemId: diID } });
+    await wrapped(changeSnap, {
+      params: { propertyId, deficientItemId: diID },
+    });
 
     // Test result
     const actual = await db
@@ -153,18 +159,29 @@ describe('Deficient Items Archiving', () => {
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
     const wrapped = test.wrap(cloudFunctions.deficientItemsArchiving);
-    await wrapped(changeSnap, { params: { propertyId, itemId: diID } });
+    await wrapped(changeSnap, {
+      params: { propertyId, deficientItemId: diID },
+    });
 
     // Test result
     const actual = await db
       .ref(`/archive/propertyInspectionDeficientItems/${propertyId}/${diID}`)
       .once('value');
+    const actual2 = await db
+      .ref(
+        `/archive/propertyInspectionDeficientItems/${propertyId}/${diID}/archive`
+      )
+      .once('value');
 
     // Assertions
     expect(actual.exists()).to.equal(true, 'archived the deficient item');
+    expect(actual2.exists()).to.equal(
+      true,
+      'archived deficient item /archive should equal true'
+    );
   });
 
-  it('should archive a deficient item when requested', async () => {
+  it('should archive a deficient items trello card when requested', async () => {
     const inspectionId = uuid();
     const inspectionData = mocking.createInspection({
       deficienciesExist: true,
@@ -208,7 +225,7 @@ describe('Deficient Items Archiving', () => {
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
     const wrapped = test.wrap(cloudFunctions.deficientItemsArchiving);
     await wrapped(changeSnap, {
-      params: { propertyId: PROPERTY_ID, itemId: diID },
+      params: { propertyId: PROPERTY_ID, deficientItemId: diID },
     });
 
     // Test result
@@ -236,14 +253,353 @@ describe('Deficient Items Archiving', () => {
       'archived trello card successfully'
     );
     expect(actual.exists()).to.equal(true, 'archived the deficient item');
+  });
 
-    // Cleanup (reopen closed Trello Card)
+  it('should remove old Trello card references when it detects the card has been deleted', async () => {
+    const inspectionId = uuid();
+    const inspectionData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: PROPERTY_ID,
+
+      template: {
+        trackDeficientItems: true,
+        items: {
+          // Create single deficient item on inspection
+          [DEFICIENT_ITEM_ID]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true
+          ),
+        },
+      },
+    });
+
+    // Setup database
+    await db.ref(`/properties/${PROPERTY_ID}`).set({ name: 'test' });
+    await db.ref(`/inspections/${inspectionId}`).set(inspectionData); // Add inspection
+    const diRef = db
+      .ref(`/propertyInspectionDeficientItems/${PROPERTY_ID}`)
+      .push();
+    const diPath = diRef.path.toString();
+    const diID = diPath.split('/').pop();
+    await diRef.set({
+      state: 'requires-action',
+      inspection: inspectionId,
+      item: DEFICIENT_ITEM_ID,
+    });
+
+    // setting up integration path with one that should be remove and one that should stay
+    await db.ref(TRELLO_CREDENTIAL_DB_PATH).set({
+      ...TRELLO_SYSTEM_INTEGRATION_DATA,
+      cards: {
+        [TRELLO_CARD_ID]: DEFICIENT_ITEM_ID,
+        [TRELLO_DELETED_CARD_ID]: DEFICIENT_ITEM_ID,
+      },
+    });
+    await db.ref(TRELLO_INTEGRATIONS_DB_PATH).set(INTEGRATIONS_DATA);
+
+    const beforeSnap = await db.ref(`${diPath}/archive`).once('value'); // Create before
+    await diRef.update({ archive: true });
+    const afterSnap = await db.ref(`${diPath}/archive`).once('value'); // Create after
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.deficientItemsArchiving);
+
+    try {
+      await wrapped(changeSnap, {
+        params: { propertyId: PROPERTY_ID, deficientItemId: diID },
+      });
+    } catch (error) {
+      // Test result
+      const actualTrelloCardDetails = await db
+        .ref(`${TRELLO_CREDENTIAL_DB_PATH}/cards/${TRELLO_DELETED_CARD_ID}`)
+        .once('value');
+
+      // Assertions
+      expect(actualTrelloCardDetails.exists()).to.equal(
+        false,
+        'deleted card has been removed from trello integration'
+      );
+    }
+  });
+});
+
+describe('Deficient Items Unarchiving', () => {
+  afterEach(async () => {
+    await cleanDb(db);
+
+    // ensure card we test for archiving starts as archived
     await systemModel.trelloCardRequest(
       TRELLO_CARD_ID,
       TRELLO_API_KEY,
       TRELLO_AUTH_TOKEN,
       'PUT',
-      false
+      true
     );
+
+    await db.ref(TRELLO_CREDENTIAL_DB_PATH).remove();
+    await db.ref(TRELLO_INTEGRATIONS_DB_PATH).remove();
+  });
+
+  it('should not unarchive a deficient item when archived', async () => {
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const itemId = uuid();
+    const inspectionData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: propertyId,
+
+      template: {
+        trackDeficientItems: true,
+        items: {
+          // Create single deficient item on inspection
+          [itemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true
+          ),
+        },
+      },
+    });
+
+    // Setup database
+    await db.ref(`/properties/${propertyId}`).set({ name: 'test' });
+    await db.ref(`/inspections/${inspectionId}`).set(inspectionData); // Add inspection
+    const diRef = db
+      .ref(`/archive/propertyInspectionDeficientItems/${propertyId}`)
+      .push();
+    const diPath = diRef.path.toString();
+    const diID = diPath.split('/').pop();
+    await diRef.set({
+      state: 'requires-action',
+      inspection: inspectionId,
+      item: itemId,
+    });
+    const beforeSnap = await db.ref(`${diPath}/archive`).once('value'); // Create before
+    await diRef.update({ archive: true });
+    const afterSnap = await db.ref(`${diPath}/archive`).once('value'); // Create after
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.deficientItemsUnarchiving);
+    await wrapped(changeSnap, {
+      params: { propertyId, deficientItemId: diID },
+    });
+
+    // Test result
+    const actual = await db
+      .ref(`/propertyInspectionDeficientItems/${propertyId}/${diID}`)
+      .once('value');
+
+    // Assertions
+    expect(actual.exists()).to.equal(
+      false,
+      'did not archive the deficient item'
+    );
+  });
+
+  it('should unarchive a deficient item when requested', async () => {
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const itemId = uuid();
+    const inspectionData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: propertyId,
+
+      template: {
+        trackDeficientItems: true,
+        items: {
+          // Create single deficient item on inspection
+          [itemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true
+          ),
+        },
+      },
+    });
+
+    // Setup database
+    await db.ref(`/properties/${propertyId}`).set({ name: 'test' });
+    await db.ref(`/inspections/${inspectionId}`).set(inspectionData); // Add inspection
+    const diRef = db
+      .ref(`/archive/propertyInspectionDeficientItems/${propertyId}`)
+      .push();
+    const diPath = diRef.path.toString();
+    const diID = diPath.split('/').pop();
+    await diRef.set({
+      state: 'requires-action',
+      inspection: inspectionId,
+      item: itemId,
+    });
+    const beforeSnap = await db.ref(`${diPath}/archive`).once('value'); // Create before
+    await diRef.update({ archive: false });
+    const afterSnap = await db.ref(`${diPath}/archive`).once('value'); // Create after
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.deficientItemsUnarchiving);
+    await wrapped(changeSnap, {
+      params: { propertyId, deficientItemId: diID },
+    });
+
+    // Test result
+    const actual = await db
+      .ref(`/propertyInspectionDeficientItems/${propertyId}/${diID}`)
+      .once('value');
+    const actual2 = await db
+      .ref(`/propertyInspectionDeficientItems/${propertyId}/${diID}/archive`)
+      .once('value');
+
+    // Assertions
+    expect(actual.exists()).to.equal(true, 'unarchived the deficient item');
+    expect(actual2.val()).to.equal(
+      false,
+      'unarchived deficient item /archive should still equal false'
+    );
+  });
+
+  it('should unarchive a deficient items trello card when requested', async () => {
+    const inspectionId = uuid();
+    const inspectionData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: PROPERTY_ID,
+
+      template: {
+        trackDeficientItems: true,
+        items: {
+          // Create single deficient item on inspection
+          [DEFICIENT_ITEM_ID]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true
+          ),
+        },
+      },
+    });
+
+    // Setup database
+    await db.ref(`/properties/${PROPERTY_ID}`).set({ name: 'test' });
+    await db.ref(`/inspections/${inspectionId}`).set(inspectionData); // Add inspection
+    const diRef = db
+      .ref(`/archive/propertyInspectionDeficientItems/${PROPERTY_ID}`)
+      .push();
+    const diPath = diRef.path.toString();
+    const diID = diPath.split('/').pop();
+    await diRef.set({
+      state: 'requires-action',
+      inspection: inspectionId,
+      item: DEFICIENT_ITEM_ID,
+    });
+
+    await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
+    await db.ref(TRELLO_INTEGRATIONS_DB_PATH).set(INTEGRATIONS_DATA);
+
+    const beforeSnap = await db.ref(`${diPath}/archive`).once('value'); // Create before
+    await diRef.update({ archive: false });
+    const afterSnap = await db.ref(`${diPath}/archive`).once('value'); // Create after
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.deficientItemsUnarchiving);
+    await wrapped(changeSnap, {
+      params: { propertyId: PROPERTY_ID, deficientItemId: diID },
+    });
+
+    // Test result
+    const actual = await db
+      .ref(`/propertyInspectionDeficientItems/${PROPERTY_ID}/${diID}`)
+      .once('value');
+
+    // getting card details so we can check if card is successfully archived on trello
+    let cardDetails;
+    try {
+      cardDetails = await systemModel.trelloCardRequest(
+        TRELLO_CARD_ID,
+        TRELLO_API_KEY,
+        TRELLO_AUTH_TOKEN,
+        'GET',
+        false
+      );
+    } catch (error) {
+      expect(error).to.undefined(true, 'Error from trello API');
+    }
+
+    // Assertions
+    expect(cardDetails.body.closed).to.equal(
+      false,
+      'unarchived trello card successfully'
+    );
+    expect(actual.exists()).to.equal(true, 'archived the deficient item');
+  });
+
+  it('should remove old Trello card references when it detects the card has been deleted', async () => {
+    const inspectionId = uuid();
+    const inspectionData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: PROPERTY_ID,
+
+      template: {
+        trackDeficientItems: true,
+        items: {
+          // Create single deficient item on inspection
+          [DEFICIENT_ITEM_ID]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true
+          ),
+        },
+      },
+    });
+
+    // Setup database
+    await db.ref(`/properties/${PROPERTY_ID}`).set({ name: 'test' });
+    await db.ref(`/inspections/${inspectionId}`).set(inspectionData); // Add inspection
+    const diRef = db
+      .ref(`/archive/propertyInspectionDeficientItems/${PROPERTY_ID}`)
+      .push();
+    const diPath = diRef.path.toString();
+    const diID = diPath.split('/').pop();
+    await diRef.set({
+      state: 'requires-action',
+      inspection: inspectionId,
+      item: DEFICIENT_ITEM_ID,
+    });
+
+    // setting up integration path with one that should be remove and one that should stay
+    await db.ref(TRELLO_CREDENTIAL_DB_PATH).set({
+      ...TRELLO_SYSTEM_INTEGRATION_DATA,
+      cards: {
+        [TRELLO_CARD_ID]: DEFICIENT_ITEM_ID,
+        [TRELLO_DELETED_CARD_ID]: DEFICIENT_ITEM_ID,
+      },
+    });
+    await db.ref(TRELLO_INTEGRATIONS_DB_PATH).set(INTEGRATIONS_DATA);
+
+    const beforeSnap = await db.ref(`${diPath}/archive`).once('value'); // Create before
+    await diRef.update({ archive: false });
+    const afterSnap = await db.ref(`${diPath}/archive`).once('value'); // Create after
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.deficientItemsUnarchiving);
+
+    try {
+      await wrapped(changeSnap, {
+        params: { propertyId: PROPERTY_ID, deficientItemId: diID },
+      });
+    } catch (error) {
+      // Test result
+      const actualTrelloCardDetails = await db
+        .ref(`${TRELLO_CREDENTIAL_DB_PATH}/cards/${TRELLO_DELETED_CARD_ID}`)
+        .once('value');
+
+      // Assertions
+      expect(actualTrelloCardDetails.exists()).to.equal(
+        false,
+        'deleted card has been removed from trello integration'
+      );
+    }
   });
 });
