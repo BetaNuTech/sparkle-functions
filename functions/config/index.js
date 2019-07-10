@@ -2,6 +2,7 @@ const s3Config = require('./s3.json');
 const inspectionItems = require('./inspection-items');
 const deficientItems = require('./deficient-items');
 const firebaseConfig = require('./firebase');
+const slackApp = require('./slack-app');
 
 const env = process.env.NODE_ENV || 'production';
 
@@ -21,5 +22,6 @@ module.exports = Object.assign(
   { s3: s3Config },
   { inspectionItems },
   { deficientItems },
+  { slackApp },
   { firebase: firebaseConfig }
 );
