@@ -44,6 +44,7 @@ module.exports = {
     return {
       topic: () => ({
         onPublish: fn => fn(),
+        publisher: () => ({ publish: () => Promise.resolve('done') }),
       }),
     };
   },
@@ -84,6 +85,8 @@ module.exports = {
         'templatesList',
         'users',
         'sendMessages',
+        'integrations',
+        'notifications',
       ].map(path => db.ref(path).set(null))
     );
   },
