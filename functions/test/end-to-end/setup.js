@@ -1,4 +1,15 @@
+const path = require('path');
+const dotenv = require('dotenv');
 const admin = require('firebase-admin');
+
+try {
+  const cwd = process.cwd();
+
+  // Consume any `.env` in cwd and/or 2 parent directories
+  dotenv.config();
+  dotenv.config({ path: path.resolve(`${cwd}/..`, '.env') });
+  dotenv.config({ path: path.resolve(`${cwd}/../..`, '.env') });
+} catch (err) {} // eslint-disable-line no-empty
 
 // Force `NODE_ENV` to "test"
 // to ensure no production db is used

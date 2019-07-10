@@ -9,6 +9,7 @@ const properties = require('./properties');
 const deficientItems = require('./deficient-items');
 const teams = require('./teams');
 const trello = require('./trello');
+const slack = require('./slack');
 const regTokens = require('./reg-tokens');
 const { firebase: config } = require('./config');
 
@@ -85,6 +86,14 @@ exports.createTrelloDeficientItemCard = functions.https.onRequest(
 );
 exports.createTrelloDeficientItemCardStaging = functions.https.onRequest(
   trello.createOnTrelloDeficientItemCardHandler(dbStaging, auth)
+);
+
+//  POST /integrations/slack/authorization
+exports.createSlackAppAuth = functions.https.onRequest(
+  slack.createOnSlackAppAuthHandler(db, auth)
+);
+exports.createSlackAppAuthStaging = functions.https.onRequest(
+  slack.createOnSlackAppAuthHandler(dbStaging, auth)
 );
 
 // For migrating to a new architecture only, setting a newer date
