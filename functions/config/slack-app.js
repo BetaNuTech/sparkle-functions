@@ -5,6 +5,6 @@ if (!SLACK_CLIENT_SECRET) {
 }
 
 module.exports = {
-  clientId: '148699982064.678105000770',
+  clientId: '3817900792.677820426034',
   clientSecret: SLACK_CLIENT_SECRET,
 };

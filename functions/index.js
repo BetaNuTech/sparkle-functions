@@ -96,6 +96,24 @@ exports.createSlackAppAuthStaging = functions.https.onRequest(
   slack.createOnSlackAppAuthHandler(dbStaging, auth)
 );
 
+//  POST /notifications
+exports.createSlackNotifications = functions.https.onRequest(
+  slack.createOnSlackNotificationHandler(
+    db,
+    auth,
+    pubsubClient,
+    'notifications-sync'
+  )
+);
+exports.createSlackNotificationsStaging = functions.https.onRequest(
+  slack.createOnSlackNotificationHandler(
+    dbStaging,
+    auth,
+    pubsubClient,
+    'staging-notifications-sync'
+  )
+);
+
 // For migrating to a new architecture only, setting a newer date
 // This allow the updatedLastDate to stay as-is (make sure client doesn't update it though)
 exports.inspectionMigrationDateWrite = functions.database
