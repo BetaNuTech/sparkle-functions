@@ -7,6 +7,14 @@ cron:
   url: /publish/staging-push-messages-sync
   schedule: every 1 hours
 
+- description: Trigger publishing of pending slack notifications /notifications
+  url: /publish/notifications-sync
+  schedule: every 1 hours
+
+- description: Trigger publishing of pending staging slack notifications /notifications
+  url: /publish/staging-notifications-sync
+  schedule: every 1 hours
+
 - description: Trigger sync of all /inspections
   url: /publish/inspections-sync
   schedule: every 24 hours from 00:00 to 01:00

@@ -409,3 +409,15 @@ exports.userTeamsSyncStaging = teams.cron.createSyncUserTeamHandler(
   functions.pubsub,
   dbStaging
 );
+
+exports.notifications = slack.cron.publishSlackNotificationHandler(
+  'notifications-sync',
+  functions.pubsub,
+  db
+);
+
+exports.notificationsStaging = slack.cron.publishSlackNotificationHandler(
+  'staging-notifications-sync',
+  functions.pubsub,
+  dbStaging
+);

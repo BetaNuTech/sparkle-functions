@@ -26,6 +26,20 @@ module.exports = modelSetup({
       )
       .once('value');
   },
+
+  /**
+   * Lookup Slack integration credentials
+   * @param  {firebaseAdmin.database} db firbase database
+   * @return {Promise} - resolves {DataSnapshot} Slack system integration
+   */
+  findSlackCredentials(db) {
+    return db
+      .ref(
+        `/system/integrations/slack/organization/${SERVICE_ACCOUNT_CLIENT_ID}`
+      )
+      .once('value');
+  },
+
   /**
    * for interacting with trello cards
    * @param  {String} cardID ID of card which needs interaction
