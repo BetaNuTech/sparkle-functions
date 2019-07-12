@@ -21,7 +21,7 @@ const pubsubClient = new PubSub({
   projectId: config ? config.projectId : '',
 });
 
-// Staging
+// Staging database
 const functionsStagingDatabase = functions.database.instance(
   config.stagingDatabaseName
 );
