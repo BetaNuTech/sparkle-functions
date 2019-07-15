@@ -119,7 +119,7 @@ module.exports = function createOnSlackNotificationHandler(
     // and queue notification sync task
     try {
       const notificationRef = db
-        .ref(`/notifications/slack/${channelName}`)
+        .ref(`/notifications/slack/${channelName.replace(/#/g, '')}`)
         .push();
       await notificationRef.set({ title, message: userMessage });
 

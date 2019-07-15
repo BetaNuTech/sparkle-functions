@@ -143,7 +143,7 @@ describe('Slack Notification Records', () => {
   it('should successfully save property notifications under their configured channel name', async function() {
     const propertyData = {
       name: 'Mt. Bedrock',
-      slackChannel: 'bedrock',
+      slackChannel: '#bedrock',
     };
     // Setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
@@ -172,9 +172,11 @@ describe('Slack Notification Records', () => {
 
     // Actuals
     const slackNotificationsSnap = await db
-      .ref(`/notifications/slack/${propertyData.slackChannel}`)
+      .ref(`/notifications/slack`)
       .once('value');
-    const [actual] = Object.values(slackNotificationsSnap.val());
+    const slackNotifications = slackNotificationsSnap.val();
+    const [slackChannel] = Object.keys(slackNotifications);
+    const [actual] = Object.values(slackNotifications[slackChannel]);
 
     // Assertions
     expect(result.body.message).to.equal(
