@@ -31,7 +31,12 @@ describe('Slack Notification Records', () => {
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
 
     // Execute & Get Result
-    const app = slackNotificationEndpoint(db, stubFirbaseAuth(USER_ID));
+    const app = slackNotificationEndpoint(
+      db,
+      stubFirbaseAuth(USER_ID),
+      createPubSubStub(),
+      'notifications-sync'
+    );
     const result = await request(app)
       .post(`/notifications`)
       .send({})
@@ -54,7 +59,12 @@ describe('Slack Notification Records', () => {
     await db.ref(`/users/${userId2}`).set(user2); // add non-admin user
 
     // Execute & Get Result
-    const app = slackNotificationEndpoint(db, stubFirbaseAuth(userId2));
+    const app = slackNotificationEndpoint(
+      db,
+      stubFirbaseAuth(userId2),
+      createPubSubStub(),
+      'notifications-sync'
+    );
     const result = await request(app)
       .post(`/notifications`)
       .set('Accept', 'application/json')
@@ -71,7 +81,12 @@ describe('Slack Notification Records', () => {
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
 
     // Execute & Get Result
-    const app = slackNotificationEndpoint(db, stubFirbaseAuth(USER_ID));
+    const app = slackNotificationEndpoint(
+      db,
+      stubFirbaseAuth(USER_ID),
+      createPubSubStub(),
+      'notifications-sync'
+    );
     const result = await request(app)
       .post(`/notifications`)
       .send({
@@ -94,7 +109,12 @@ describe('Slack Notification Records', () => {
     await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
     // Execute & Get Result
-    const app = slackNotificationEndpoint(db, stubFirbaseAuth(USER_ID));
+    const app = slackNotificationEndpoint(
+      db,
+      stubFirbaseAuth(USER_ID),
+      createPubSubStub(),
+      'notifications-sync'
+    );
     const result = await request(app)
       .post(`/notifications`)
       .send({

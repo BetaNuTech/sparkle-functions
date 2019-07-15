@@ -12,7 +12,7 @@ const PREFIX = 'slack: create notification record:';
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
  * @param  {firebaseAdmin.auth} auth - Firebase authentication object
  * @param  {firebaseAdmin.pubsubClient} pubsubClient - Firebase pubsub client
- * @param  {string} notificationTopic - topic which should be published to when function is complete
+ * @param  {String} notificationTopic - topic which should be published to when function is complete
  * @return {Function} - onRequest handler
  */
 module.exports = function createOnSlackNotificationHandler(
@@ -23,6 +23,13 @@ module.exports = function createOnSlackNotificationHandler(
 ) {
   assert(Boolean(db), 'has firebase database instance');
   assert(Boolean(auth), 'has firebase auth instance');
+  assert(Boolean(pubsubClient), 'has pubsub client');
+  assert(
+    notificationTopic && typeof notificationTopic === 'string',
+    'has pubsub topic'
+  );
+
+  const publisher = pubsubClient.topic(notificationTopic).publisher();
 
   /**
    * Write slack app notification
@@ -115,16 +122,17 @@ module.exports = function createOnSlackNotificationHandler(
       channelName = slackAdminChannelNameSnap.val();
     }
 
+    // Ensure channel `#` removed
+    channelName = channelName.replace(/#/g, '');
+
     // Create notification record
     // and queue notification sync task
     try {
       const notificationRef = db
-        .ref(`/notifications/slack/${channelName.replace(/#/g, '')}`)
+        .ref(`/notifications/slack/${channelName}`)
         .push();
       await notificationRef.set({ title, message: userMessage });
-
-      const publisher = pubsubClient.topic(notificationTopic).publisher();
-      await publisher.publish();
+      await publisher.publish(Buffer.from(channelName));
 
       log.info(
         `${PREFIX} created slack notification: ${notificationRef.path.toString()}`
