@@ -1,26 +1,21 @@
 const { expect } = require('chai');
 const request = require('supertest');
-
+const nock = require('nock');
 const getAllBoardListsAppEndpoint = require('../../trello/get-all-trello-board-lists-handler');
 const uuid = require('../../test-helpers/uuid');
 const { cleanDb, stubFirbaseAuth } = require('../../test-helpers/firebase');
 const { db, uid: SERVICE_ACCOUNT_ID } = require('./setup');
+const allTrelloBoardListsPayload = require('../../test-helpers/mocks/get-all-trello-board-lists.json');
 
 const PROPERTY_ID = uuid();
-const PROPERTY_DATA = {
-  name: `name${PROPERTY_ID}`,
-};
-
+const PROPERTY_DATA = { name: `name${PROPERTY_ID}` };
 const USER_ID = uuid();
 const USER = { admin: true, corporate: true };
-
 const TRELLO_API_KEY = 'f4a04dd872b7a2e33bfc33aac9516965';
 const TRELLO_AUTH_TOKEN =
   'fab424b6f18b2845b3d60eac800e42e5f3ab2fdb25d21c90264032a0ecf16ceb';
 const TRELLO_BOARD_ID = '5d0ab7754066f880369a4d97';
-const EMPTY_TRELLO_BOARD_ID = '5d0fcb47d665c204cb10c59f';
 const TRELLO_BOARD_LIST_URL = `/integrations/trello/${PROPERTY_ID}/boards/${TRELLO_BOARD_ID}/lists`;
-const TRELLO_EMPTY_BOARD_LIST_URL = `/integrations/trello/${PROPERTY_ID}/boards/${EMPTY_TRELLO_BOARD_ID}/lists`;
 const TRELLO_CREDENTIAL_DB_PATH = `/system/integrations/trello/properties/${PROPERTY_ID}/${SERVICE_ACCOUNT_ID}`;
 
 describe('Trello Get All Board Lists', () => {
@@ -95,6 +90,11 @@ describe('Trello Get All Board Lists', () => {
   });
 
   it('should relay a bad request response from the Trello API', async function() {
+    // Stub Requests
+    nock('https://api.trello.com')
+      .get(`/1/boards/${TRELLO_BOARD_ID}/lists?key=123&token=123`)
+      .reply(401, 'invalid key');
+
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
     await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
@@ -118,6 +118,13 @@ describe('Trello Get All Board Lists', () => {
   });
 
   it('should return an unfound response when trello member has no boards', async function() {
+    // Stub Requests
+    nock('https://api.trello.com')
+      .get(
+        `/1/boards/${TRELLO_BOARD_ID}/lists?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}`
+      )
+      .reply(200, []);
+
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
     await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
@@ -132,7 +139,7 @@ describe('Trello Get All Board Lists', () => {
     // Execute & Get Result
     const app = getAllBoardListsAppEndpoint(db, stubFirbaseAuth(USER_ID));
     await request(app)
-      .get(TRELLO_EMPTY_BOARD_LIST_URL)
+      .get(TRELLO_BOARD_LIST_URL)
       .set('Accept', 'application/json')
       .set('Authorization', 'fb-jwt stubbed-by-auth')
       .expect('Content-Type', /json/)
@@ -140,6 +147,13 @@ describe('Trello Get All Board Lists', () => {
   });
 
   it("should respond successfully with any discovered trello board's lists", async function() {
+    // Stub Requests
+    nock('https://api.trello.com')
+      .get(
+        `/1/boards/${TRELLO_BOARD_ID}/lists?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}`
+      )
+      .reply(200, allTrelloBoardListsPayload);
+
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
     await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
@@ -159,44 +173,24 @@ describe('Trello Get All Board Lists', () => {
       .set('Authorization', 'fb-jwt stubbed-by-auth')
       .expect('Content-Type', /json/)
       .expect(200);
+    const actual = result.body.data;
 
     // Assertions
-    expect(result.body.data).to.deep.equal([
-      {
-        type: 'trello-list',
-        id: '5d0ab7754066f880369a4d98',
-        attributes: {
-          name: 'Icebox',
-        },
-      },
-      {
-        type: 'trello-list',
-        id: '5d0ab7754066f880369a4d99',
-        attributes: {
-          name: 'Pending',
-        },
-      },
-      {
-        type: 'trello-list',
-        id: '5d0ab7754066f880369a4d9a',
-        attributes: {
-          name: 'WIP (Work in progress) ',
-        },
-      },
-      {
-        type: 'trello-list',
-        id: '5d0ab7754066f880369a4d9b',
-        attributes: {
-          name: 'Review',
-        },
-      },
-      {
-        type: 'trello-list',
-        id: '5d0ab7754066f880369a4d9c',
-        attributes: {
-          name: 'Done',
-        },
-      },
-    ]);
+    expect(actual.length).to.equal(
+      allTrelloBoardListsPayload.length,
+      'resolved all payload records'
+    );
+    expect(actual.every(({ type }) => type === 'trello-list')).to.equal(
+      true,
+      'set resource type on payloads'
+    );
+    expect(actual.every(({ id }) => Boolean(id))).to.equal(
+      true,
+      'set resource id on payloads'
+    );
+    expect(actual.every(({ attributes }) => Boolean(attributes))).to.equal(
+      true,
+      'set JSON-API attributes'
+    );
   });
 });

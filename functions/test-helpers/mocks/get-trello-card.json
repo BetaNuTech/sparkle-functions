@@ -1,0 +1,53 @@
+{
+   "id":"5d2fa70421e13d3b8bbc3c6a",
+   "badges":{
+      "attachmentsByType":{
+         "trello":{
+            "board":0,
+            "card":0
+         }
+      },
+      "location":false,
+      "votes":0,
+      "viewingMemberVoted":false,
+      "subscribed":false,
+      "fogbugz":"",
+      "checkItems":0,
+      "checkItemsChecked":0,
+      "comments":0,
+      "attachments":0,
+      "description":true,
+      "due":"2025-01-15T05:00:00.000Z",
+      "dueComplete":false
+   },
+   "attachments":[ ],
+   "checkItemStates":[ ],
+   "closed":false,
+   "dueComplete":false,
+   "dateLastActivity":"2019-07-17T22:53:56.796Z",
+   "desc":"DEFICIENT ITEM (Wed, 17 Jul 2019)\nScore: 4 of 3\nInspector Notes: a lot of rust around pipe\nPlan to fix: replace pipe completely",
+   "descData":{ "emoji":{ } },
+   "due":"2025-01-15T05:00:00.000Z",
+   "dueReminder":null,
+   "email":null,
+   "idBoard":"5d0ab7754066f880369a4d97",
+   "idChecklists":[ ],
+   "stickers":[ ],
+   "idList":"5d0ab7754066f880369a4d99",
+   "idMembers":[
+      "57c864cb46ef602b2be03a80"
+   ],
+   "idMembersVoted":[ ],
+   "idShort":268,
+   "idAttachmentCover":null,
+   "labels":[ ],
+   "idLabels":[ ],
+   "manualCoverAttachment":false,
+   "name":"Broken Pipe",
+   "pos":4177919,
+   "shortLink":"dSSOXpgT",
+   "shortUrl":"https://trello.com/c/dSSOXpgT",
+   "subscribed":false,
+   "url":"https://trello.com/c/dSSOXpgT/268-broken-pipe",
+   "limits":{}
+}
