@@ -41,6 +41,46 @@ module.exports = modelSetup({
   },
 
   /**
+   * Create or update system's Trello credentials
+   * for a property
+   * @param  {firebaseAdmin.database} db firbase database
+   * @param  {Object} config
+   * @return {Promise}
+   */
+  upsertPropertyTrelloCredentials(db, config) {
+    const { propertyId, member, authToken, apikey, user } = config;
+
+    assert(
+      propertyId && typeof propertyId === 'string',
+      `${PREFIX} has property id`
+    );
+    assert(
+      member && typeof member === 'string',
+      `${PREFIX} has Trello member id`
+    );
+    assert(
+      authToken && typeof authToken === 'string',
+      `${PREFIX} has Trello auth token`
+    );
+    assert(
+      apikey && typeof apikey === 'string',
+      `${PREFIX} has Trello API key`
+    );
+    assert(user && typeof user === 'string', `${PREFIX} has Firebase User id`);
+
+    // Update system credentials /wo overwriting
+    // any other date under property's cendentials
+    return db
+      .ref(`/system/integrations/trello/properties/${propertyId}`)
+      .update({
+        [`${SERVICE_ACCOUNT_CLIENT_ID}/member`]: member,
+        [`${SERVICE_ACCOUNT_CLIENT_ID}/authToken`]: authToken,
+        [`${SERVICE_ACCOUNT_CLIENT_ID}/apikey`]: apikey,
+        [`${SERVICE_ACCOUNT_CLIENT_ID}/user`]: user,
+      });
+  },
+
+  /**
    * for interacting with trello cards
    * @param  {String} cardID ID of card which needs interaction
    * @param  {String} apikey api key for trello
