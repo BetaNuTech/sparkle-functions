@@ -77,8 +77,13 @@ module.exports = function createOnUpsertTrelloTokenHandler(db, auth) {
         `https://api.trello.com/1/tokens/${authToken}?key=${apikey}`
       );
       const responseBody = JSON.parse(response.body);
-      memberID =
-        responseBody && responseBody.idMember ? responseBody.idMember : null;
+
+      // Lookup Member ID
+      if (responseBody && responseBody.idMember) {
+        memberID = responseBody.idMember;
+      } else {
+        throw Error('Trello member ID not found in payload');
+      }
     } catch (err) {
       log.error(`${PREFIX} Error retrieving trello data: ${err}`);
       return res.status(401).send({ message: 'trello request not authorized' });

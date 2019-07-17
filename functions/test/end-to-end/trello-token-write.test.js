@@ -1,6 +1,6 @@
 const { expect } = require('chai');
 const request = require('supertest');
-
+const nock = require('nock');
 const trelloTokenAppEndpoint = require('../../trello/on-create-request-handler');
 const uuid = require('../../test-helpers/uuid');
 const { cleanDb, stubFirbaseAuth } = require('../../test-helpers/firebase');
@@ -13,14 +13,36 @@ const PROPERTY_DATA = {
 
 const USER_ID = uuid();
 const USER = { admin: true, corporate: true };
-
-const TRELLO_MEMBER_ID = '57c864cb46ef602b2be03a80';
 const TRELLO_API_KEY = '42717812300353f59dea0f62446ab1e5';
 const TRELLO_AUTH_TOKEN =
   '65a38f006f3e81cdab47ec3044cf83364aa66d3469c3923e8190c2a8e60325f1';
+const GET_TRELLO_TOKEN_PAYLOAD = {
+  id: '5d1254d6579aa969efb86d2d',
+  identifier: 'Server Token',
+  idMember: '57c864cb46ef602b2be03a80',
+  dateCreated: '2019-06-25T17:07:34.268Z',
+  dateExpires: null,
+  permissions: [
+    {
+      idModel: '57c864cb46ef602b2be03a80',
+      modelType: 'Member',
+      read: true,
+      write: true,
+    },
+    { idModel: '*', modelType: 'Board', read: true, write: true },
+    { idModel: '*', modelType: 'Organization', read: true, write: true },
+  ],
+};
 
 describe('Trello Upsert Token', () => {
-  afterEach(() => cleanDb(db));
+  afterEach(async () => {
+    await cleanDb(db);
+    return db
+      .ref(
+        `/system/integrations/trello/properties/${PROPERTY_ID}/${SERVICE_ACCOUNT_ID}`
+      )
+      .remove();
+  });
 
   it('should reject request with invalid property IDs', async function() {
     // setup database
@@ -60,16 +82,16 @@ describe('Trello Upsert Token', () => {
   });
 
   it('should reject request from non-admin user with an unauthorized status', async function() {
-    const USER_ID2 = uuid();
-    const USER2 = { admin: false, corporate: true };
+    const user2Id = uuid();
+    const user2 = { admin: false, corporate: true };
 
     // Setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
-    await db.ref(`/users/${USER_ID2}`).set(USER2); // add non-admin user
+    await db.ref(`/users/${user2Id}`).set(user2); // add non-admin user
     await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
     // Execute & Get Result
-    const app = trelloTokenAppEndpoint(db, stubFirbaseAuth(USER_ID2));
+    const app = trelloTokenAppEndpoint(db, stubFirbaseAuth(user2Id));
     const result = await request(app)
       .post(`/integrations/trello/${PROPERTY_ID}/authorization`)
       .set('Accept', 'application/json')
@@ -104,6 +126,16 @@ describe('Trello Upsert Token', () => {
   });
 
   it('should lookup Trello member identifier and save it to private system database', async function() {
+    const expected = 'test-trello-member-id';
+
+    // Stub Requests
+    nock('https://api.trello.com')
+      .get(`/1/tokens/${TRELLO_AUTH_TOKEN}?key=${TRELLO_API_KEY}`)
+      .reply(
+        200,
+        Object.assign({}, GET_TRELLO_TOKEN_PAYLOAD, { idMember: expected })
+      );
+
     // Setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
     await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
@@ -122,27 +154,23 @@ describe('Trello Upsert Token', () => {
       .expect(201);
 
     // actuals
-    const actual = await db
+    const result = await db
       .ref(
         `/system/integrations/trello/properties/${PROPERTY_ID}/${SERVICE_ACCOUNT_ID}/member`
       )
       .once('value');
+    const actual = result.val();
 
     // Assertions
-    expect(actual.val()).to.equal(
-      TRELLO_MEMBER_ID,
-      'users trello member ID successfully saved.'
-    );
-
-    // Manual cleanup
-    await db
-      .ref(
-        `/system/integrations/trello/properties/${PROPERTY_ID}/${SERVICE_ACCOUNT_ID}/member`
-      )
-      .remove();
+    expect(actual).to.equal(expected);
   });
 
   it('should save users Trello credentials to private system database', async function() {
+    // Stub Requests
+    nock('https://api.trello.com')
+      .get(`/1/tokens/${TRELLO_AUTH_TOKEN}?key=${TRELLO_API_KEY}`)
+      .reply(200, Object.assign({}, GET_TRELLO_TOKEN_PAYLOAD));
+
     // Setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
     await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
@@ -161,51 +189,33 @@ describe('Trello Upsert Token', () => {
       .expect(201);
 
     // actuals
-    const actualMemberId = await db
-      .ref(
-        `/system/integrations/trello/properties/${PROPERTY_ID}/${SERVICE_ACCOUNT_ID}/member`
-      )
-      .once('value');
-    const actualAuthToken = await db
-      .ref(
-        `/system/integrations/trello/properties/${PROPERTY_ID}/${SERVICE_ACCOUNT_ID}/authToken`
-      )
-      .once('value');
-    const actualApiKey = await db
-      .ref(
-        `/system/integrations/trello/properties/${PROPERTY_ID}/${SERVICE_ACCOUNT_ID}/apikey`
-      )
-      .once('value');
-    const actualUserID = await db
-      .ref(
-        `/system/integrations/trello/properties/${PROPERTY_ID}/${SERVICE_ACCOUNT_ID}/user`
-      )
-      .once('value');
-
-    // Assertions
-    expect(actualMemberId.val()).to.equal(
-      TRELLO_MEMBER_ID,
-      'users trello member ID successfully saved.'
-    );
-    expect(actualAuthToken.val()).to.equal(
-      TRELLO_AUTH_TOKEN,
-      'users trello auth token successfully saved.'
-    );
-    expect(actualApiKey.val()).to.equal(
-      TRELLO_API_KEY,
-      'users trello apiKey successfully saved.'
-    );
-    expect(actualUserID.val()).to.equal(
-      USER_ID,
-      'users firebase uid successfully saved.'
-    );
-
-    // Manual cleanup
-    await db
+    const credentialsSnap = await db
       .ref(
         `/system/integrations/trello/properties/${PROPERTY_ID}/${SERVICE_ACCOUNT_ID}`
       )
-      .remove();
+      .once('value');
+    const credentials = credentialsSnap.val();
+
+    // Assertions
+    [
+      {
+        name: 'member',
+        expected: GET_TRELLO_TOKEN_PAYLOAD.idMember,
+        actual: credentials.member,
+      },
+      {
+        name: 'authToken',
+        expected: TRELLO_AUTH_TOKEN,
+        actual: credentials.authToken,
+      },
+      { name: 'apikey', expected: TRELLO_API_KEY, actual: credentials.apikey },
+      { name: 'user', expected: USER_ID, actual: credentials.user },
+    ].forEach(({ name, expected, actual }) => {
+      expect(actual).to.equal(
+        expected,
+        `system credential "${name}" persisted correctly`
+      );
+    });
   });
 
   it('rejects reading and writing to unauthorized private system database', async () => {
