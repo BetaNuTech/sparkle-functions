@@ -1,27 +1,19 @@
 const { expect } = require('chai');
 const request = require('supertest');
-
+const nock = require('nock');
 const getAllBoardsAppEndpoint = require('../../trello/get-all-trello-boards-handler');
 const uuid = require('../../test-helpers/uuid');
 const { cleanDb, stubFirbaseAuth } = require('../../test-helpers/firebase');
 const { db, uid: SERVICE_ACCOUNT_ID } = require('./setup');
+const allTrelloBoardsPayload = require('../../test-helpers/mocks/get-all-trello-boards.json');
 
 const PROPERTY_ID = uuid();
-const PROPERTY_DATA = {
-  name: `name${PROPERTY_ID}`,
-};
-
+const PROPERTY_DATA = { name: `name${PROPERTY_ID}` };
 const USER_ID = uuid();
 const USER = { admin: true, corporate: true };
-
 const TRELLO_API_KEY = 'f4a04dd872b7a2e33bfc33aac9516965';
 const TRELLO_AUTH_TOKEN =
   'fab424b6f18b2845b3d60eac800e42e5f3ab2fdb25d21c90264032a0ecf16ceb';
-
-const TRELLO_API_KEY_WITHOUT_CONTENT = '9fbc5188392b34f4f6ced30138a0d219';
-const TRELLO_AUTH_TOKEN_WITHOUT_CONTENT =
-  'f163d4004e688512382909e5c72b83cf9bb991f8f6c76cc165f54f8267c625b7';
-
 const TRELLO_CREDENTIAL_DB_PATH = `/system/integrations/trello/properties/${PROPERTY_ID}/${SERVICE_ACCOUNT_ID}`;
 
 describe('Trello Get All Boards', () => {
@@ -96,6 +88,11 @@ describe('Trello Get All Boards', () => {
   });
 
   it('should relay a bad request response from the Trello API', async function() {
+    // Stub Requests
+    nock('https://api.trello.com')
+      .get('/1/members/me/boards?key=123&token=123')
+      .reply(401, 'invalid key');
+
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
     await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
@@ -118,6 +115,13 @@ describe('Trello Get All Boards', () => {
   });
 
   it('should return unfound response when trello member has no boards', async function() {
+    // Stub Requests
+    nock('https://api.trello.com')
+      .get(
+        `/1/members/me/boards?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}`
+      )
+      .reply(200, []);
+
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
     await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
@@ -125,8 +129,8 @@ describe('Trello Get All Boards', () => {
     // Valid trello credentials
     await db.ref(TRELLO_CREDENTIAL_DB_PATH).set({
       user: USER_ID,
-      apikey: TRELLO_API_KEY_WITHOUT_CONTENT,
-      authToken: TRELLO_AUTH_TOKEN_WITHOUT_CONTENT,
+      apikey: TRELLO_API_KEY,
+      authToken: TRELLO_AUTH_TOKEN,
     });
 
     // Execute & Get Result
@@ -140,6 +144,13 @@ describe('Trello Get All Boards', () => {
   });
 
   it('should respond successfully with any discovered trello boards', async function() {
+    // Stub Requests
+    nock('https://api.trello.com')
+      .get(
+        `/1/members/me/boards?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}`
+      )
+      .reply(200, allTrelloBoardsPayload);
+
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
     await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
@@ -159,23 +170,24 @@ describe('Trello Get All Boards', () => {
       .set('Authorization', 'fb-jwt stubbed-by-auth')
       .expect('Content-Type', /json/)
       .expect(200);
+    const actual = result.body.data;
 
     // Assertions
-    expect(result.body.data).to.deep.equal([
-      {
-        type: 'trello-board',
-        id: '5d0fcb47d665c204cb10c59f',
-        attributes: {
-          name: 'Empty Board',
-        },
-      },
-      {
-        type: 'trello-board',
-        id: '5d0ab7754066f880369a4d97',
-        attributes: {
-          name: 'Project Manager Sample Board',
-        },
-      },
-    ]);
+    expect(actual.length).to.equal(
+      allTrelloBoardsPayload.length,
+      'resolved all payload records'
+    );
+    expect(actual.every(({ type }) => type === 'trello-board')).to.equal(
+      true,
+      'set resource type on payloads'
+    );
+    expect(actual.every(({ id }) => Boolean(id))).to.equal(
+      true,
+      'set resource id on payloads'
+    );
+    expect(actual.every(({ attributes }) => Boolean(attributes))).to.equal(
+      true,
+      'set JSON-API attributes'
+    );
   });
 });
