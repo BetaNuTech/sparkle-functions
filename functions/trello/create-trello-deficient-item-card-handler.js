@@ -73,6 +73,17 @@ module.exports = function createOnTrelloDeficientItemCardHandler(db, auth) {
       return res.status(403).send({ message: 'Error accessing trello token' });
     }
 
+    // Reject request to create Trello Card
+    // when already successfully created
+    const defItemsIdsWithTrelloCards = Object.values(
+      trelloCredentials.cards || {}
+    );
+    if (defItemsIdsWithTrelloCards.includes(deficientItemId)) {
+      return res
+        .status(409)
+        .send({ message: 'Deficient Item already has published Trello Card' });
+    }
+
     // Lookup integration data
     let trelloPropertyConfig = null;
     try {
@@ -112,6 +123,7 @@ module.exports = function createOnTrelloDeficientItemCardHandler(db, auth) {
       typeof inspectionItem[name] === 'number' ? inspectionItem[name] : 0
     ).sort((a, b) => b - a);
 
+    let trelloPayload = null;
     try {
       const trelloCardPayload = {
         name: deficientItem.itemTitle, // source inspection item name
@@ -150,24 +162,25 @@ module.exports = function createOnTrelloDeficientItemCardHandler(db, auth) {
           json: true,
         }
       );
-
-      const newTrelloCardID = trelloResponse.body.id;
-      try {
-        await systemModel.createPropertyTrelloCard(db, {
-          property: propertyId,
-          trelloCard: newTrelloCardID,
-          deficientItem: deficientItemId,
-        });
-      } catch (error) {
-        log.error(`${PREFIX} Error creating trello card: ${error}`);
-        return res.status(409).send({
-          message: 'Trello card for this deficient item already exists',
-        });
-      }
+      trelloPayload = trelloResponse && trelloResponse.body;
+      if (!trelloPayload) throw Error('bad payload');
     } catch (err) {
       log.error(`${PREFIX} Error retrieved from Trello API: ${err}`);
       return res.status(err.statusCode || 500).send({
         message: 'Error from trello API',
+      });
+    }
+
+    try {
+      await systemModel.createPropertyTrelloCard(db, {
+        property: propertyId,
+        trelloCard: trelloPayload.id,
+        deficientItem: deficientItemId,
+      });
+    } catch (err) {
+      log.error(`${PREFIX} Error persisting trello reference: ${err}`);
+      return res.status(500).send({
+        message: 'Trello card reference failed to save',
       });
     }
 

@@ -1,0 +1,47 @@
+[
+   {
+      "id":"5d0ab7754066f880369a4d98",
+      "name":"Icebox",
+      "closed":false,
+      "idBoard":"5d0ab7754066f880369a4d97",
+      "pos":65535,
+      "subscribed":false,
+      "softLimit":null
+   },
+   {
+      "id":"5d0ab7754066f880369a4d99",
+      "name":"Pending",
+      "closed":false,
+      "idBoard":"5d0ab7754066f880369a4d97",
+      "pos":131071,
+      "subscribed":false,
+      "softLimit":null
+   },
+   {
+      "id":"5d0ab7754066f880369a4d9a",
+      "name":"WIP (Work in progress) ",
+      "closed":false,
+      "idBoard":"5d0ab7754066f880369a4d97",
+      "pos":196607,
+      "subscribed":false,
+      "softLimit":null
+   },
+   {
+      "id":"5d0ab7754066f880369a4d9b",
+      "name":"Review",
+      "closed":false,
+      "idBoard":"5d0ab7754066f880369a4d97",
+      "pos":262143,
+      "subscribed":false,
+      "softLimit":null
+   },
+   {
+      "id":"5d0ab7754066f880369a4d9c",
+      "name":"Done",
+      "closed":false,
+      "idBoard":"5d0ab7754066f880369a4d97",
+      "pos":327679,
+      "subscribed":false,
+      "softLimit":null
+   }
+]
