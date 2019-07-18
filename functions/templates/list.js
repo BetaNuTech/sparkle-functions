@@ -45,10 +45,10 @@ module.exports = {
 
     // Required attributes
     upsertData.name = after.name;
+    upsertData.category = after.category || null;
 
     // Optional attributes
     if (after.description) upsertData.description = after.description;
-    if (after.category) upsertData.category = after.category;
 
     return db
       .ref(target)

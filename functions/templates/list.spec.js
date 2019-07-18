@@ -24,13 +24,13 @@ describe('Templates List', () => {
         { name: 'before' },
         { name: '' } // New template has no name
       )
-        .then(actual => expect(true).to.equal(false, 'should not resolve'))
+        .then(() => expect(true).to.equal(false, 'should not resolve'))
         .catch(e => expect(e).to.be.instanceof(Error, 'rejected with error')));
 
     it('should resolve upserted data on template upsert', () => {
       const tests = [
-        { name: 'test-1' },
-        { name: 'test-2', description: 'desc-2' },
+        { name: 'test-1', category: null },
+        { name: 'test-2', description: 'desc-2', category: null },
         { name: 'test-3', category: 'category-3' },
         { name: 'test-4', category: 'category-4', description: 'desc-4' },
       ].map((expected, i) =>
