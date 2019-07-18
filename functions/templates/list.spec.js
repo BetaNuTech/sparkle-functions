@@ -24,7 +24,7 @@ describe('Templates List', () => {
         { name: 'before' },
         { name: '' } // New template has no name
       )
-        .then(actual => expect(true).to.equal(false, 'should not resolve'))
+        .then(() => expect(true).to.equal(false, 'should not resolve'))
         .catch(e => expect(e).to.be.instanceof(Error, 'rejected with error')));
 
     it('should resolve upserted data on template upsert', () => {

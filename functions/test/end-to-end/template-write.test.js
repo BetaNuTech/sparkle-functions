@@ -300,4 +300,36 @@ describe('Templates Write', () => {
     // Assertions
     expect(actual.exists()).to.equal(false);
   });
+
+  it("should remove a proxy templates' category when it becomes uncategorized", async () => {
+    const tmplId = uuid();
+    const categoryId = uuid();
+    const expected = {
+      name: `test${tmplId}`,
+      description: `desc${tmplId}`,
+    };
+    const beforeData = Object.assign({}, expected, { category: categoryId });
+
+    // Setup database
+    await db.ref(`/templates/${tmplId}`).set(beforeData); // add template /w category
+    await db
+      .ref(`/templateCategories/${categoryId}`)
+      .set({ name: `name${categoryId}` }); // sanity check
+    await db.ref(`/templatesList/${tmplId}`).set(beforeData); // add proxy templateList
+    const beforeSnap = await db.ref(`/templates/${tmplId}`).once('value');
+    await db.ref(`/templates/${tmplId}/category`).remove(); // Uncategorize (delete source template's category)
+    const afterSnap = await db.ref(`/templates/${tmplId}`).once('value');
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.templateWrite);
+    await wrapped(changeSnap, { params: { templateId: tmplId } });
+
+    // Test result
+    const result = await db.ref(`/templatesList/${tmplId}`).once('value');
+    const actual = result.val();
+
+    // Assertions
+    expect(actual).to.deep.equal(expected);
+  });
 });
