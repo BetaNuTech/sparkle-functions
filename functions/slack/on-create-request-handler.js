@@ -3,23 +3,23 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const got = require('got');
+const systemModel = require('../models/system');
 const log = require('../utils/logger');
 const authUser = require('../utils/auth-firebase-user');
-const { firebase: firebaseConfig, slackApp } = require('../config');
+const { slackApp } = require('../config');
 
 const PREFIX = 'slack: app authorization on create:';
 const SLACK_APP_CLIENT_ID = slackApp.clientId;
 const SLACK_APP_CLIENT_SECRET = slackApp.clientSecret;
-const SERVICE_ACCOUNT_CLIENT_ID =
-  firebaseConfig.databaseAuthVariableOverride.uid;
+
 /**
  * Factory for slack app authorization endpoint
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
  * @return {Function} - onRequest handler
  */
 module.exports = function createOnSlackAppAuthHandler(db, auth) {
-  assert(Boolean(db), 'has firebase database instance');
-  assert(Boolean(auth), 'has firebase auth instance');
+  assert(Boolean(db), `${PREFIX} has firebase database instance`);
+  assert(Boolean(auth), `${PREFIX} has firebase auth instance`);
 
   /**
    * Write slack app auth to integration/slack
@@ -95,20 +95,14 @@ module.exports = function createOnSlackAppAuthHandler(db, auth) {
     );
 
     try {
-      await db
-        .ref(
-          `/system/integrations/slack/organization/${SERVICE_ACCOUNT_CLIENT_ID}`
-        )
-        .set({
-          accessToken: slackResponse.access_token,
-          scope: slackResponse.scope,
-          createdAt: Date.now(),
-        });
-    } catch (error) {
-      log.error(
-        `${PREFIX} Error attempting to save slack integration: ${error}`
+      await systemModel.upsertSlackAppCredentials(
+        db,
+        slackResponse.access_token,
+        slackResponse.scope
       );
-      return res.status(error.statusCode || 500).send({
+    } catch (err) {
+      log.error(`${PREFIX} Error attempting to save slack integration: ${err}`);
+      return res.status(err.statusCode || 500).send({
         message: 'Error from slack API',
       });
     }

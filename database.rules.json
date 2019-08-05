@@ -91,23 +91,9 @@
     },
     "system": {
       "integrations": {
-        "trello": {
-          "properties": {
-            "$propertyID": {
-              "$uid": {
-                ".read": "$uid === auth.uid",
-                ".write": "$uid === auth.uid"
-              }
-            }
-          }
-        },
-        "slack": {
-          "organization": {
-            "$uid": {
-              ".read": "$uid === auth.uid",
-              ".write":"$uid === auth.uid"
-            }
-          }
+        "$uid": {
+          ".read": "$uid === auth.uid",
+          ".write": "$uid === auth.uid"
         }
       }
     }

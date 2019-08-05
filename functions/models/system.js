@@ -9,6 +9,7 @@ const SERVICE_ACCOUNT_CLIENT_ID =
   firebaseConfig.databaseAuthVariableOverride.uid;
 const TRELLO_ORG_PATH = `/system/integrations/${SERVICE_ACCOUNT_CLIENT_ID}/trello/organization`;
 const TRELLO_PROPERTIES_PATH = `/system/integrations/${SERVICE_ACCOUNT_CLIENT_ID}/trello/properties`;
+const SLACK_ORG_PATH = `/system/integrations/${SERVICE_ACCOUNT_CLIENT_ID}/slack/organization`;
 
 module.exports = modelSetup({
   /**
@@ -26,16 +27,26 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {DataSnapshot} Slack system integration
    */
   findSlackCredentials(db) {
-    return db
-      .ref(
-        `/system/integrations/slack/organization/${SERVICE_ACCOUNT_CLIENT_ID}`
-      )
-      .once('value');
+    return db.ref(SLACK_ORG_PATH).once('value');
   },
 
   /**
-   * Create or update system's Trello credentials
-   * for a property
+   * Create or update organizations' Slack credentials
+   * @param  {firebaseAdmin.database} db firbase database
+   * @param  {String} accessToken
+   * @param  {String} scope - scope for provided access token
+   * @return {Promise}
+   */
+  upsertSlackAppCredentials(db, accessToken, scope) {
+    return db.ref(SLACK_ORG_PATH).update({
+      accessToken,
+      scope,
+      createdAt: Date.now() / 1000,
+    });
+  },
+
+  /**
+   * Create or update organization's Trello credentials
    * @param  {firebaseAdmin.database} db firbase database
    * @param  {Object} config
    * @return {Promise}

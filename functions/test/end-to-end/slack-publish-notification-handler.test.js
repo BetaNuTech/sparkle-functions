@@ -10,7 +10,7 @@ const {
 } = require('./setup');
 
 const SLACK_CHANNEL = 'development';
-const SYSTEM_SLACK_INTEGRATION_PATH = `/system/integrations/slack/organization/${SERVICE_ACCOUNT_ID}`;
+const SLACK_CREDENTIAL_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/slack/organization`;
 const INTEGRATION_PAYLOAD = {
   accessToken: 'xoxp-3817900792-3817900802',
   scope: 'identify,incoming-webhook,chat:write,chat:write:bot',
@@ -19,7 +19,7 @@ const INTEGRATION_PAYLOAD = {
 describe('Slack publish notification', () => {
   afterEach(async () => {
     await cleanDb(db);
-    return db.ref(SYSTEM_SLACK_INTEGRATION_PATH).remove();
+    return db.ref(`/system/integrations/${SERVICE_ACCOUNT_ID}`).remove();
   });
 
   it('should successfully send message and remove sent pending notifications', async () => {
@@ -87,7 +87,7 @@ describe('Slack publish notification', () => {
     const notificationId2 = uuid();
 
     // Setup database
-    await db.ref(SYSTEM_SLACK_INTEGRATION_PATH).set(INTEGRATION_PAYLOAD); // adding slack integration configuration
+    await db.ref(SLACK_CREDENTIAL_DB_PATH).set(INTEGRATION_PAYLOAD); // adding slack integration configuration
 
     await db
       .ref(`/notifications/slack/${SLACK_CHANNEL}/${notificationId}`)
