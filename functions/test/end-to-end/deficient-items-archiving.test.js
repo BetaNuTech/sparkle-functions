@@ -12,9 +12,7 @@ const {
 
 const PROPERTY_ID = uuid();
 const DEFICIENT_ITEM_ID = uuid();
-
 const USER_ID = uuid();
-
 const TRELLO_MEMBER_ID = '57c864cb46ef602b2be03a80';
 const TRELLO_API_KEY = 'f4a04dd872b7a2e33bfc33aac9516965';
 const TRELLO_AUTH_TOKEN =
@@ -23,7 +21,6 @@ const TRELLO_BOARD_ID = '5d0ab7754066f880369a4d97';
 const TRELLO_LIST_ID = '5d0ab7754066f880369a4d99';
 const TRELLO_CARD_ID = '5d0ab7754066f880369a4db2';
 const TRELLO_DELETED_CARD_ID = '5d0ab7754066f880369a4dae';
-
 const TRELLO_SYSTEM_INTEGRATION_DATA = {
   member: TRELLO_MEMBER_ID,
   user: USER_ID,
@@ -31,7 +28,6 @@ const TRELLO_SYSTEM_INTEGRATION_DATA = {
   authToken: TRELLO_AUTH_TOKEN,
   cards: { [TRELLO_CARD_ID]: DEFICIENT_ITEM_ID },
 };
-
 const INTEGRATIONS_DATA = {
   grantedBy: USER_ID,
   grantedAt: Date.now(),
@@ -40,8 +36,8 @@ const INTEGRATIONS_DATA = {
   list: TRELLO_LIST_ID,
   listName: 'TO DO',
 };
-
-const TRELLO_CREDENTIAL_DB_PATH = `/system/integrations/trello/properties/${PROPERTY_ID}/${SERVICE_ACCOUNT_ID}`;
+const TRELLO_CREDENTIAL_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/organization`;
+const TRELLO_PROPERTY_CARDS_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/properties/${PROPERTY_ID}/cards`
 const TRELLO_INTEGRATIONS_DB_PATH = `/integrations/trello/properties/${PROPERTY_ID}`;
 
 describe('Deficient Items Archiving', () => {
@@ -57,8 +53,8 @@ describe('Deficient Items Archiving', () => {
       false
     );
 
-    await db.ref(TRELLO_CREDENTIAL_DB_PATH).remove();
-    await db.ref(TRELLO_INTEGRATIONS_DB_PATH).remove();
+    await db.ref(`/system/integrations/${SERVICE_ACCOUNT_ID}`).remove();
+    return db.ref(TRELLO_INTEGRATIONS_DB_PATH).remove();
   });
 
   it('should not archive a deficient item when not archived', async () => {
@@ -175,7 +171,7 @@ describe('Deficient Items Archiving', () => {
 
     // Assertions
     expect(actual.exists()).to.equal(true, 'archived the deficient item');
-    expect(actual2.exists()).to.equal(
+    expect(actual2.val()).to.equal(
       true,
       'archived deficient item /archive should equal true'
     );
@@ -592,7 +588,7 @@ describe('Deficient Items Unarchiving', () => {
     } catch (error) {
       // Test result
       const actualTrelloCardDetails = await db
-        .ref(`${TRELLO_CREDENTIAL_DB_PATH}/cards/${TRELLO_DELETED_CARD_ID}`)
+        .ref(`${TRELLO_PROPERTY_CARDS_PATH}/${TRELLO_DELETED_CARD_ID}`)
         .once('value');
 
       // Assertions
