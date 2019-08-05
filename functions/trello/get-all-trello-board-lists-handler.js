@@ -26,20 +26,12 @@ module.exports = function createOnGetAllTrelloBoardListsHandler(db, auth) {
    */
   const getAllTrelloBoardListsHandler = async (req, res) => {
     const { user, params } = req;
-    const { propertyId, boardId } = params;
+    const { boardId } = params;
 
-    if (!propertyId || !boardId) {
-      let message = '';
-      if (!propertyId) message = 'request missing propertyId parameter';
-      if (!boardId) message = ' request missing boardId parameter';
-      return res.status(404).send({ message });
-    }
-
-    const property = await db.ref(`/properties/${propertyId}`).once('value');
-
-    if (!property.exists()) {
-      const message = 'invalid propertyId';
-      return res.status(404).send({ message });
+    if (!boardId) {
+      return res
+        .status(404)
+        .send({ message: 'request missing boardId parameter' });
     }
 
     if (!user) {
@@ -102,7 +94,7 @@ module.exports = function createOnGetAllTrelloBoardListsHandler(db, auth) {
   const app = express();
   app.use(cors(), bodyParser.json());
   app.get(
-    '/integrations/trello/:propertyId/boards/:boardId/lists',
+    '/integrations/trello/boards/:boardId/lists',
     authUser(db, auth, true),
     getAllTrelloBoardListsHandler
   );
