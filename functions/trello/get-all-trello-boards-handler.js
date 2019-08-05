@@ -48,10 +48,7 @@ module.exports = function createOnGetAllTrelloBoardsHandler(db, auth) {
 
     let trelloCredentials = {};
     try {
-      const savedTokenCredentials = await systemModel.findTrelloCredentials(
-        db,
-        propertyId
-      );
+      const savedTokenCredentials = await systemModel.findTrelloCredentials(db);
 
       if (!savedTokenCredentials.exists()) {
         return res.status(404).send({ message: 'User trello token not found' });
