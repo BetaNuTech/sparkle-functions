@@ -48,7 +48,7 @@ module.exports = function createOnGetAllTrelloBoardsHandler(db, auth) {
 
     let trelloCredentials = {};
     try {
-      const savedTokenCredentials = await systemModel.findTrelloCredentialsForProperty(
+      const savedTokenCredentials = await systemModel.findTrelloCredentials(
         db,
         propertyId
       );

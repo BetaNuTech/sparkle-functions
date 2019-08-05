@@ -62,7 +62,7 @@ module.exports = function createOnTrelloDeficientItemCardHandler(db, auth) {
     // Lookup Trello credentials
     let trelloCredentials = null;
     try {
-      const savedTokenCredentials = await systemModel.findTrelloCredentialsForProperty(
+      const savedTokenCredentials = await systemModel.findTrelloCredentials(
         db,
         propertyId
       );

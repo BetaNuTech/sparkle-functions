@@ -7,25 +7,17 @@ const log = require('../utils/logger');
 const PREFIX = 'models: system:';
 const SERVICE_ACCOUNT_CLIENT_ID =
   firebaseConfig.databaseAuthVariableOverride.uid;
+const TRELLO_ORG_PATH = `/system/integrations/${SERVICE_ACCOUNT_CLIENT_ID}/trello/organization`;
+const TRELLO_PROPERTIES_PATH = `/system/integrations/${SERVICE_ACCOUNT_CLIENT_ID}/trello/properties`;
 
 module.exports = modelSetup({
   /**
    * Lookup Trello integration credentials for property
    * @param  {firebaseAdmin.database} db firbase database
-   * @param  {String} propertyId
    * @return {Promise} - resolves {DataSnapshot} trello system integration
    */
-  findTrelloCredentialsForProperty(db, propertyId) {
-    assert(
-      propertyId && typeof propertyId === 'string',
-      `${PREFIX} has property id`
-    );
-
-    return db
-      .ref(
-        `/system/integrations/trello/properties/${propertyId}/${SERVICE_ACCOUNT_CLIENT_ID}`
-      )
-      .once('value');
+  findTrelloCredentials(db) {
+    return db.ref(TRELLO_ORG_PATH).once('value');
   },
 
   /**
@@ -49,12 +41,8 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   upsertPropertyTrelloCredentials(db, config) {
-    const { propertyId, member, authToken, apikey, user } = config;
+    const { member, authToken, apikey, user } = config;
 
-    assert(
-      propertyId && typeof propertyId === 'string',
-      `${PREFIX} has property id`
-    );
     assert(
       member && typeof member === 'string',
       `${PREFIX} has Trello member id`
@@ -71,14 +59,12 @@ module.exports = modelSetup({
 
     // Update system credentials /wo overwriting
     // any other date under property's cendentials
-    return db
-      .ref(`/system/integrations/trello/properties/${propertyId}`)
-      .update({
-        [`${SERVICE_ACCOUNT_CLIENT_ID}/member`]: member,
-        [`${SERVICE_ACCOUNT_CLIENT_ID}/authToken`]: authToken,
-        [`${SERVICE_ACCOUNT_CLIENT_ID}/apikey`]: apikey,
-        [`${SERVICE_ACCOUNT_CLIENT_ID}/user`]: user,
-      });
+    return db.ref(TRELLO_ORG_PATH).update({
+      member,
+      authToken,
+      apikey,
+      user,
+    });
   },
 
   /**
@@ -107,9 +93,7 @@ module.exports = modelSetup({
     );
 
     const cardsSnap = await db
-      .ref(
-        `/system/integrations/trello/properties/${property}/${SERVICE_ACCOUNT_CLIENT_ID}/cards`
-      )
+      .ref(`${TRELLO_PROPERTIES_PATH}/${property}/cards`)
       .once('value');
 
     // checking if there already exists a trello card for this inspection item, if so will throw error
@@ -125,14 +109,12 @@ module.exports = modelSetup({
     }
 
     return db
-      .ref(
-        `/system/integrations/trello/properties/${property}/${SERVICE_ACCOUNT_CLIENT_ID}/cards/${trelloCard}`
-      )
+      .ref(`${TRELLO_PROPERTIES_PATH}/${property}/cards/${trelloCard}`)
       .set(deficientItem);
   },
 
   /**
-   * check trello for deficient item card
+   * Check trello for deficient item card
    * and archive if exists
    * @param  {firebaseadmin.database} db
    * @param  {Object} deficientItem
@@ -152,34 +134,46 @@ module.exports = modelSetup({
 
     const { property: propertyId } = inspectionSnap.val();
 
-    const integrationPath = `/system/integrations/trello/properties/${propertyId}/${SERVICE_ACCOUNT_CLIENT_ID}`;
     // Lookup system credentials
-    let propertyTrelloCredentialsSnap;
+    let propertyTrelloCardsSnap;
     try {
-      propertyTrelloCredentialsSnap = await db
-        .ref(integrationPath)
+      propertyTrelloCardsSnap = await db
+        .ref(`${TRELLO_PROPERTIES_PATH}/${propertyId}/cards`)
         .once('value');
     } catch (err) {
-      throw Error(`${PREFIX} failed trello system credential lookup: ${err}`);
+      throw Error(
+        `${PREFIX} failed to fetch trello cards for property: "${propertyId}" | ${err}`
+      );
     }
 
-    if (!propertyTrelloCredentialsSnap.exists()) {
+    if (!propertyTrelloCardsSnap.exists()) {
       return null;
     }
 
-    const trelloCredentials = propertyTrelloCredentialsSnap.val();
+    const propertyTrelloCards = propertyTrelloCardsSnap.val();
 
-    if (!trelloCredentials.cards) {
+    if (!propertyTrelloCards.cards) {
       return null;
     }
 
     // Find any card reference stored for DI
-    const [cardId] = Object.keys(trelloCredentials.cards).filter(
-      id => trelloCredentials.cards[id] === deficientItem.item
+    const [cardId] = Object.keys(propertyTrelloCards).filter(
+      id => propertyTrelloCards[id] === deficientItem.item
     );
 
     if (!cardId) {
       return null;
+    }
+
+    // Lookup Trello credentials
+    let trelloCredentials = null;
+    try {
+      const trelloCredentialsSnap = await this.findTrelloCredentials(db);
+
+      if (!trelloCredentialsSnap.exists()) throw Error();
+      trelloCredentials = trelloCredentialsSnap.val();
+    } catch (err) {
+      throw Error(`${PREFIX} failed to recover trello credentials: ${err}`);
     }
 
     let response;
@@ -198,7 +192,9 @@ module.exports = modelSetup({
         );
 
         try {
-          await db.ref(`${integrationPath}/cards/${cardId}`).remove();
+          await db
+            .ref(`${TRELLO_PROPERTIES_PATH}/${propertyId}/cards/${cardId}`)
+            .remove();
         } catch (error) {
           log.error(
             `${PREFIX} error when removing card from trello integration path`

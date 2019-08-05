@@ -37,11 +37,7 @@ const GET_TRELLO_TOKEN_PAYLOAD = {
 describe('Trello Upsert Token', () => {
   afterEach(async () => {
     await cleanDb(db);
-    return db
-      .ref(
-        `/system/integrations/trello/properties/${PROPERTY_ID}/${SERVICE_ACCOUNT_ID}`
-      )
-      .remove();
+    return db.ref(`/system/integrations/${SERVICE_ACCOUNT_ID}`).remove();
   });
 
   it('should reject request with invalid property IDs', async function() {
@@ -156,7 +152,7 @@ describe('Trello Upsert Token', () => {
     // actuals
     const result = await db
       .ref(
-        `/system/integrations/trello/properties/${PROPERTY_ID}/${SERVICE_ACCOUNT_ID}/member`
+        `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/organization/member`
       )
       .once('value');
     const actual = result.val();
@@ -190,9 +186,7 @@ describe('Trello Upsert Token', () => {
 
     // actuals
     const credentialsSnap = await db
-      .ref(
-        `/system/integrations/trello/properties/${PROPERTY_ID}/${SERVICE_ACCOUNT_ID}`
-      )
+      .ref(`/system/integrations/${SERVICE_ACCOUNT_ID}/trello/organization`)
       .once('value');
     const credentials = credentialsSnap.val();
 
@@ -223,7 +217,7 @@ describe('Trello Upsert Token', () => {
 
     try {
       await db
-        .ref(`/system/integrations/trello/properties/${PROPERTY_ID}/unauth-id`)
+        .ref('/system/integrations/unauth-id/trello/organization')
         .once('value');
     } catch (err) {
       expect(err.toString().toLowerCase()).to.have.string(
@@ -235,7 +229,7 @@ describe('Trello Upsert Token', () => {
 
     try {
       await db
-        .ref(`/system/integrations/trello/properties/${PROPERTY_ID}/unauth-id`)
+        .ref('/system/integrations/unauth-id/trello/organization')
         .set({ user: '123', apikey: '123', authToken: '123' });
     } catch (err) {
       expect(err.toString().toLowerCase()).to.have.string(
