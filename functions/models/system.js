@@ -2,6 +2,7 @@ const assert = require('assert');
 const got = require('got');
 const modelSetup = require('./utils/model-setup');
 const { firebase: firebaseConfig } = require('../config');
+const log = require('../utils/logger');
 
 const PREFIX = 'models: system:';
 const SERVICE_ACCOUNT_CLIENT_ID =
@@ -81,38 +82,6 @@ module.exports = modelSetup({
   },
 
   /**
-   * for interacting with trello cards
-   * @param  {String} cardID ID of card which needs interaction
-   * @param  {String} apikey api key for trello
-   * @param  {String} authToken authToken for trello
-   * @param  {String} method - HTTP method
-   * @param  {Boolean?} closed - archive/unarchive Trello card
-   * @return {Promise} - resolves {Object} Trello card JSON
-   */
-  trelloCardRequest(cardID, apikey, authToken, method, closed = true) {
-    assert(cardID && typeof cardID === 'string', `${PREFIX} has card id`);
-    assert(apikey && typeof apikey === 'string', `${PREFIX} has api key`);
-    assert(
-      authToken && typeof authToken === 'string',
-      `${PREFIX} has authentication token`
-    );
-    assert(method && typeof method === 'string', `${PREFIX} has HTTP method`);
-
-    return got(
-      `https://api.trello.com/1/cards/${cardID}?key=${apikey}&token=${authToken}`,
-      {
-        headers: {
-          'content-type': 'application/json',
-        },
-        body: method !== 'GET' ? { closed } : null,
-        responseType: 'json',
-        method,
-        json: true,
-      }
-    );
-  },
-
-  /**
    * Appends a Trello card reference to system's
    * integration record for a specified property
    * @param  {firebaseAdmin.database} db firbase database
@@ -161,4 +130,125 @@ module.exports = modelSetup({
       )
       .set(deficientItem);
   },
+
+  /**
+   * check trello for deficient item card
+   * and archive if exists
+   * @param  {firebaseadmin.database} db
+   * @param  {Object} deficientItem
+   * @param  {Boolean} archiving if the trello card should be archived or unarchived
+   * @return {Promise}
+   */
+  async archiveTrelloCard(db, deficientItem, archiving) {
+    // Lookup inspection
+    let inspectionSnap;
+    try {
+      inspectionSnap = await db
+        .ref(`inspections/${deficientItem.inspection}`)
+        .once('value');
+    } catch (err) {
+      throw Error(`${PREFIX} inspection lookup failed: ${err}`);
+    }
+
+    const { property: propertyId } = inspectionSnap.val();
+
+    const integrationPath = `/system/integrations/trello/properties/${propertyId}/${SERVICE_ACCOUNT_CLIENT_ID}`;
+    // Lookup system credentials
+    let propertyTrelloCredentialsSnap;
+    try {
+      propertyTrelloCredentialsSnap = await db
+        .ref(integrationPath)
+        .once('value');
+    } catch (err) {
+      throw Error(`${PREFIX} failed trello system credential lookup: ${err}`);
+    }
+
+    if (!propertyTrelloCredentialsSnap.exists()) {
+      return null;
+    }
+
+    const trelloCredentials = propertyTrelloCredentialsSnap.val();
+
+    if (!trelloCredentials.cards) {
+      return null;
+    }
+
+    // Find any card reference stored for DI
+    const [cardId] = Object.keys(trelloCredentials.cards).filter(
+      id => trelloCredentials.cards[id] === deficientItem.item
+    );
+
+    if (!cardId) {
+      return null;
+    }
+
+    let response;
+    try {
+      response = await trelloCardRequest(
+        cardId,
+        trelloCredentials.apikey,
+        trelloCredentials.authToken,
+        'PUT',
+        archiving
+      );
+    } catch (err) {
+      if (err.statusCode === 404) {
+        log.info(
+          `${PREFIX} card not found, removing card from trello integration object`
+        );
+
+        try {
+          await db.ref(`${integrationPath}/cards/${cardId}`).remove();
+        } catch (error) {
+          log.error(
+            `${PREFIX} error when removing card from trello integration path`
+          );
+        }
+      }
+
+      throw Error(
+        `${PREFIX} archive PUT card ${cardId} to trello API failed: ${err}`
+      );
+    }
+
+    return response;
+  },
+
+  /**
+   * TODO: Deprecate after nocking
+   * Trello card archiving E2E tests
+   */
+  trelloCardRequest,
 });
+
+/**
+ * for interacting with trello cards
+ * @param  {string} cardId id of card which needs interaction
+ * @param  {string} apikey api key for trello
+ * @param  {string} authToken authToken for trello
+ * @param  {string} method - http method
+ * @param  {boolean?} closed - archive/unarchive trello card
+ * @return {promise} - resolves {object} trello card json
+ */
+function trelloCardRequest(cardId, apikey, authToken, method, closed = true) {
+  assert(cardId && typeof cardId === 'string', `${PREFIX} has card id`);
+  assert(apikey && typeof apikey === 'string', `${PREFIX} has api key`);
+  assert(
+    authToken && typeof authToken === 'string',
+    `${PREFIX} has authentication token`
+  );
+  assert(method && typeof method === 'string', `${PREFIX} has http method`);
+
+  return got(
+    `https://api.trello.com/1/cards/${cardId}?key=${apikey}&token=${authToken}`,
+    {
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: method !== 'GET' ? { closed } : null,
+      responseType: 'json',
+      method,
+      json: true,
+    }
+  );
+}

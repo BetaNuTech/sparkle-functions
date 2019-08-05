@@ -2,11 +2,6 @@ const assert = require('assert');
 const modelSetup = require('./utils/model-setup');
 const createStateHistory = require('../deficient-items/utils/create-state-history');
 const systemModel = require('./system');
-const { firebase: firebaseConfig } = require('../config');
-const log = require('../utils/logger');
-
-const SERVICE_ACCOUNT_CLIENT_ID =
-  firebaseConfig.databaseAuthVariableOverride.uid;
 
 const API_PATH = '/propertyInspectionDeficientItems';
 const PREFIX = 'deficient-items: on-di-archive-update:';
@@ -189,7 +184,7 @@ module.exports = modelSetup({
     }
 
     try {
-      const archiveResponse = await this.archiveTrelloCard(
+      const archiveResponse = await systemModel.archiveTrelloCard(
         db,
         deficientItem,
         archiving
@@ -202,87 +197,6 @@ module.exports = modelSetup({
     }
 
     return updates;
-  },
-
-  /**
-   * check trello for deficient item card
-   * and archive if exists
-   * @param  {firebaseadmin.database} db
-   * @param  {Object} deficientItem
-   * @param  {Boolean} archiving if the trello card should be archived or unarchived
-   * @return {Promise}
-   */
-  async archiveTrelloCard(db, deficientItem, archiving) {
-    // Lookup inspection
-    let inspectionSnap;
-    try {
-      inspectionSnap = await db
-        .ref(`inspections/${deficientItem.inspection}`)
-        .once('value');
-    } catch (err) {
-      throw Error(`${PREFIX} inspection lookup failed: ${err}`);
-    }
-
-    const { property: propertyId } = inspectionSnap.val();
-
-    const integrationPath = `/system/integrations/trello/properties/${propertyId}/${SERVICE_ACCOUNT_CLIENT_ID}`;
-    // Lookup system credentials
-    let propertyTrelloCredentialsSnap;
-    try {
-      propertyTrelloCredentialsSnap = await db
-        .ref(integrationPath)
-        .once('value');
-    } catch (err) {
-      throw Error(`${PREFIX} failed trello system credential lookup: ${err}`);
-    }
-
-    if (!propertyTrelloCredentialsSnap.exists()) {
-      return null;
-    }
-
-    const trelloCredentials = propertyTrelloCredentialsSnap.val();
-
-    if (!trelloCredentials.cards) {
-      return null;
-    }
-
-    // Find any card reference stored for DI
-    const [cardId] = Object.keys(trelloCredentials.cards).filter(
-      id => trelloCredentials.cards[id] === deficientItem.item
-    );
-
-    if (!cardId) {
-      return null;
-    }
-
-    let response;
-    try {
-      response = await systemModel.trelloCardRequest(
-        cardId,
-        trelloCredentials.apikey,
-        trelloCredentials.authToken,
-        'PUT',
-        archiving
-      );
-    } catch (err) {
-      if (err.statusCode === 404) {
-        try {
-          await db.ref(`${integrationPath}/cards/${cardId}`).remove();
-        } catch (error) {
-          log.error(
-            `${PREFIX} error when removing card from trello integration path`
-          );
-        }
-        log.info(
-          `${PREFIX} card not found, removing card from trello integration object`
-        );
-      }
-      throw Error(
-        `${PREFIX} archive PUT card ${cardId} to trello API failed: ${err}`
-      );
-    }
-
-    return response;
   },
 
   /**
