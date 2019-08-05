@@ -7,8 +7,6 @@ const { cleanDb, stubFirbaseAuth } = require('../../test-helpers/firebase');
 const { db, uid: SERVICE_ACCOUNT_ID } = require('./setup');
 const allTrelloBoardsPayload = require('../../test-helpers/mocks/get-all-trello-boards.json');
 
-const PROPERTY_ID = uuid();
-const PROPERTY_DATA = { name: `name${PROPERTY_ID}` };
 const USER_ID = uuid();
 const USER = { admin: true, corporate: true };
 const TRELLO_API_KEY = 'f4a04dd872b7a2e33bfc33aac9516965';
@@ -22,35 +20,17 @@ describe('Trello Get All Boards', () => {
     return db.ref(`/system/integrations/${SERVICE_ACCOUNT_ID}`).remove();
   });
 
-  it('should reject request for non-existent property', async function() {
-    // setup database
-    await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
-
-    // Execute & Get Result
-    const app = getAllBoardsAppEndpoint(db, stubFirbaseAuth(USER_ID));
-    const result = await request(app)
-      .get(`/integrations/trello/${PROPERTY_ID}/boards`)
-      .set('Accept', 'application/json')
-      .set('Authorization', 'fb-jwt stubbed-by-auth')
-      .expect('Content-Type', /json/)
-      .expect(404);
-
-    // Assertions
-    expect(result.body.message).to.equal('invalid propertyId');
-  });
-
   it('should reject a non-admin requester with an unauthorized response', async function() {
     const userId2 = uuid();
 
     // Setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
     await db.ref(`/users/${userId2}`).set({ admin: false, corporate: true }); // add non-admin user
-    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
     // Execute & Get Result
     const app = getAllBoardsAppEndpoint(db, stubFirbaseAuth(userId2));
     const result = await request(app)
-      .get(`/integrations/trello/${PROPERTY_ID}/boards`)
+      .get('/integrations/trello/boards')
       .set('Accept', 'application/json')
       .set('Authorization', 'fb-jwt stubbed-by-auth')
       .expect('Content-Type', /json/)
@@ -65,7 +45,6 @@ describe('Trello Get All Boards', () => {
 
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
-    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
     // Another user's Trello crendientials
     await db
@@ -75,7 +54,7 @@ describe('Trello Get All Boards', () => {
     // Execute & Get Result
     const app = getAllBoardsAppEndpoint(db, stubFirbaseAuth(USER_ID));
     const result = await request(app)
-      .get(`/integrations/trello/${PROPERTY_ID}/boards`)
+      .get('/integrations/trello/boards')
       .set('Accept', 'application/json')
       .set('Authorization', 'fb-jwt stubbed-by-auth')
       .expect('Content-Type', /json/)
@@ -95,7 +74,6 @@ describe('Trello Get All Boards', () => {
 
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
-    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
     await db
       .ref(TRELLO_CREDENTIAL_DB_PATH)
@@ -104,7 +82,7 @@ describe('Trello Get All Boards', () => {
     // Execute & Get Result
     const app = getAllBoardsAppEndpoint(db, stubFirbaseAuth(USER_ID));
     const result = await request(app)
-      .get(`/integrations/trello/${PROPERTY_ID}/boards`)
+      .get('/integrations/trello/boards')
       .set('Accept', 'application/json')
       .set('Authorization', 'fb-jwt stubbed-by-auth')
       .expect('Content-Type', /json/)
@@ -124,7 +102,6 @@ describe('Trello Get All Boards', () => {
 
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
-    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
     // Valid trello credentials
     await db.ref(TRELLO_CREDENTIAL_DB_PATH).set({
@@ -136,7 +113,7 @@ describe('Trello Get All Boards', () => {
     // Execute & Get Result
     const app = getAllBoardsAppEndpoint(db, stubFirbaseAuth(USER_ID));
     await request(app)
-      .get(`/integrations/trello/${PROPERTY_ID}/boards`)
+      .get('/integrations/trello/boards')
       .set('Accept', 'application/json')
       .set('Authorization', 'fb-jwt stubbed-by-auth')
       .expect('Content-Type', /json/)
@@ -153,7 +130,6 @@ describe('Trello Get All Boards', () => {
 
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
-    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
     // Valid trello credentials
     await db.ref(TRELLO_CREDENTIAL_DB_PATH).set({
@@ -165,7 +141,7 @@ describe('Trello Get All Boards', () => {
     // Execute & Get Result
     const app = getAllBoardsAppEndpoint(db, stubFirbaseAuth(USER_ID));
     const result = await request(app)
-      .get(`/integrations/trello/${PROPERTY_ID}/boards`)
+      .get('/integrations/trello/boards')
       .set('Accept', 'application/json')
       .set('Authorization', 'fb-jwt stubbed-by-auth')
       .expect('Content-Type', /json/)

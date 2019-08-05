@@ -15,8 +15,8 @@ const PREFIX = 'trello: get all boards:';
  * @return {Function} - onRequest handler
  */
 module.exports = function createOnGetAllTrelloBoardsHandler(db, auth) {
-  assert(Boolean(db), 'has firebase database instance');
-  assert(Boolean(auth), 'has firebase auth instance');
+  assert(Boolean(db), `${PREFIX} has firebase database instance`);
+  assert(Boolean(auth), `${PREFIX} has firebase auth instance`);
 
   /**
    * get all trello boards for the user requesting
@@ -25,20 +25,7 @@ module.exports = function createOnGetAllTrelloBoardsHandler(db, auth) {
    * @return {Promise}
    */
   const getAllTrelloBoardsHandler = async (req, res) => {
-    const { user, params } = req;
-    const { propertyId } = params;
-
-    if (!propertyId) {
-      const message = 'request missing propertyId parameter';
-      return res.status(404).send({ message });
-    }
-
-    const property = await db.ref(`/properties/${propertyId}`).once('value');
-
-    if (!property.exists()) {
-      const message = 'invalid propertyId';
-      return res.status(404).send({ message });
-    }
+    const { user } = req;
 
     if (!user) {
       return res.status(401).send({ message: 'request not authorized' });
@@ -100,7 +87,7 @@ module.exports = function createOnGetAllTrelloBoardsHandler(db, auth) {
   const app = express();
   app.use(cors(), bodyParser.json());
   app.get(
-    '/integrations/trello/:propertyId/boards',
+    '/integrations/trello/boards',
     authUser(db, auth, true),
     getAllTrelloBoardsHandler
   );
