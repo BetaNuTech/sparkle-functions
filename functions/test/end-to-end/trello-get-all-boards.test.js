@@ -14,12 +14,12 @@ const USER = { admin: true, corporate: true };
 const TRELLO_API_KEY = 'f4a04dd872b7a2e33bfc33aac9516965';
 const TRELLO_AUTH_TOKEN =
   'fab424b6f18b2845b3d60eac800e42e5f3ab2fdb25d21c90264032a0ecf16ceb';
-const TRELLO_CREDENTIAL_DB_PATH = `/system/integrations/trello/properties/${PROPERTY_ID}/${SERVICE_ACCOUNT_ID}`;
+const TRELLO_CREDENTIAL_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/organization`;
 
 describe('Trello Get All Boards', () => {
   afterEach(async () => {
     await cleanDb(db);
-    return db.ref(TRELLO_CREDENTIAL_DB_PATH).remove();
+    return db.ref(`/system/integrations/${SERVICE_ACCOUNT_ID}`).remove();
   });
 
   it('should reject request for non-existent property', async function() {

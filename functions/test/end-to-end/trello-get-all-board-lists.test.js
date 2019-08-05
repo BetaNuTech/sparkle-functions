@@ -16,12 +16,12 @@ const TRELLO_AUTH_TOKEN =
   'fab424b6f18b2845b3d60eac800e42e5f3ab2fdb25d21c90264032a0ecf16ceb';
 const TRELLO_BOARD_ID = '5d0ab7754066f880369a4d97';
 const TRELLO_BOARD_LIST_URL = `/integrations/trello/${PROPERTY_ID}/boards/${TRELLO_BOARD_ID}/lists`;
-const TRELLO_CREDENTIAL_DB_PATH = `/system/integrations/trello/properties/${PROPERTY_ID}/${SERVICE_ACCOUNT_ID}`;
+const TRELLO_CREDENTIAL_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/organization`;
 
 describe('Trello Get All Board Lists', () => {
   afterEach(async () => {
     await cleanDb(db);
-    return db.ref(TRELLO_CREDENTIAL_DB_PATH).remove();
+    return db.ref(`/system/integrations/${SERVICE_ACCOUNT_ID}`).remove();
   });
 
   it('should reject request for non-existent property', async function() {
