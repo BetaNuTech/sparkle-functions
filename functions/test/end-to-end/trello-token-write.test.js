@@ -6,11 +6,6 @@ const uuid = require('../../test-helpers/uuid');
 const { cleanDb, stubFirbaseAuth } = require('../../test-helpers/firebase');
 const { db, uid: SERVICE_ACCOUNT_ID } = require('./setup');
 
-const PROPERTY_ID = uuid();
-const PROPERTY_DATA = {
-  name: `name${PROPERTY_ID}`,
-};
-
 const USER_ID = uuid();
 const USER = { admin: true, corporate: true };
 const TRELLO_API_KEY = '42717812300353f59dea0f62446ab1e5';
@@ -37,39 +32,17 @@ const GET_TRELLO_TOKEN_PAYLOAD = {
 describe('Trello Upsert Token', () => {
   afterEach(async () => {
     await cleanDb(db);
-    return db
-      .ref(
-        `/system/integrations/trello/properties/${PROPERTY_ID}/${SERVICE_ACCOUNT_ID}`
-      )
-      .remove();
-  });
-
-  it('should reject request with invalid property IDs', async function() {
-    // setup database
-    await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
-
-    // Execute & Get Result
-    const app = trelloTokenAppEndpoint(db, stubFirbaseAuth(USER_ID));
-    const result = await request(app)
-      .post(`/integrations/trello/${PROPERTY_ID}/authorization`)
-      .set('Accept', 'application/json')
-      .set('Authorization', 'fb-jwt stubbed-by-auth')
-      .expect('Content-Type', /json/)
-      .expect(404);
-
-    // Assertions
-    expect(result.body.message).to.equal('invalid propertyId');
+    return db.ref(`/system/integrations/${SERVICE_ACCOUNT_ID}`).remove();
   });
 
   it('should reject requests missing required trello credentials', async function() {
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
-    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
     // Execute & Get Result
     const app = trelloTokenAppEndpoint(db, stubFirbaseAuth(USER_ID));
     const result = await request(app)
-      .post(`/integrations/trello/${PROPERTY_ID}/authorization`)
+      .post('/integrations/trello/authorization')
       .send({})
       .set('Authorization', 'fb-jwt stubbed-by-auth')
       .expect('Content-Type', /json/)
@@ -88,12 +61,11 @@ describe('Trello Upsert Token', () => {
     // Setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
     await db.ref(`/users/${user2Id}`).set(user2); // add non-admin user
-    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
     // Execute & Get Result
     const app = trelloTokenAppEndpoint(db, stubFirbaseAuth(user2Id));
     const result = await request(app)
-      .post(`/integrations/trello/${PROPERTY_ID}/authorization`)
+      .post('/integrations/trello/authorization')
       .set('Accept', 'application/json')
       .set('Authorization', 'fb-jwt stubbed-by-auth')
       .expect('Content-Type', /json/)
@@ -106,12 +78,11 @@ describe('Trello Upsert Token', () => {
   it('should return an authorization error when invalid trello credentials are provided', async function() {
     // Setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
-    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
     // Execute & Get Result
     const app = trelloTokenAppEndpoint(db, stubFirbaseAuth(USER_ID));
     const result = await request(app)
-      .post(`/integrations/trello/${PROPERTY_ID}/authorization`)
+      .post('/integrations/trello/authorization')
       .send({
         apikey: '1234',
         authToken: '1234',
@@ -138,12 +109,11 @@ describe('Trello Upsert Token', () => {
 
     // Setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
-    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
     // Execute & Get Result
     const app = trelloTokenAppEndpoint(db, stubFirbaseAuth(USER_ID));
     await request(app)
-      .post(`/integrations/trello/${PROPERTY_ID}/authorization`)
+      .post('/integrations/trello/authorization')
       .send({
         apikey: TRELLO_API_KEY,
         authToken: TRELLO_AUTH_TOKEN,
@@ -156,7 +126,7 @@ describe('Trello Upsert Token', () => {
     // actuals
     const result = await db
       .ref(
-        `/system/integrations/trello/properties/${PROPERTY_ID}/${SERVICE_ACCOUNT_ID}/member`
+        `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/organization/member`
       )
       .once('value');
     const actual = result.val();
@@ -173,12 +143,11 @@ describe('Trello Upsert Token', () => {
 
     // Setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
-    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
     // Execute & Get Result
     const app = trelloTokenAppEndpoint(db, stubFirbaseAuth(USER_ID));
     await request(app)
-      .post(`/integrations/trello/${PROPERTY_ID}/authorization`)
+      .post('/integrations/trello/authorization')
       .send({
         apikey: TRELLO_API_KEY,
         authToken: TRELLO_AUTH_TOKEN,
@@ -190,9 +159,7 @@ describe('Trello Upsert Token', () => {
 
     // actuals
     const credentialsSnap = await db
-      .ref(
-        `/system/integrations/trello/properties/${PROPERTY_ID}/${SERVICE_ACCOUNT_ID}`
-      )
+      .ref(`/system/integrations/${SERVICE_ACCOUNT_ID}/trello/organization`)
       .once('value');
     const credentials = credentialsSnap.val();
 
@@ -223,7 +190,7 @@ describe('Trello Upsert Token', () => {
 
     try {
       await db
-        .ref(`/system/integrations/trello/properties/${PROPERTY_ID}/unauth-id`)
+        .ref('/system/integrations/unauth-id/trello/organization')
         .once('value');
     } catch (err) {
       expect(err.toString().toLowerCase()).to.have.string(
@@ -235,7 +202,7 @@ describe('Trello Upsert Token', () => {
 
     try {
       await db
-        .ref(`/system/integrations/trello/properties/${PROPERTY_ID}/unauth-id`)
+        .ref('/system/integrations/unauth-id/trello/organization')
         .set({ user: '123', apikey: '123', authToken: '123' });
     } catch (err) {
       expect(err.toString().toLowerCase()).to.have.string(

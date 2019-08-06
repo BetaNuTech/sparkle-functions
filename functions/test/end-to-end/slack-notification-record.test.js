@@ -8,23 +8,15 @@ const {
   stubFirbaseAuth,
   createPubSubStub,
 } = require('../../test-helpers/firebase');
-const { db, uid: SERVICE_ACCOUNT_ID } = require('./setup');
+const { db } = require('./setup');
 
 const USER_ID = uuid();
 const USER = { admin: true, corporate: true };
-
 const PROPERTY_ID = uuid();
-const PROPERTY_DATA = {
-  name: `name${PROPERTY_ID}`,
-};
-
-const SLACK_CREDENTIAL_DB_PATH = `/system/integrations/slack/organization/${SERVICE_ACCOUNT_ID}`;
+const PROPERTY_DATA = { name: `name${PROPERTY_ID}` };
 
 describe('Slack Notification Records', () => {
-  afterEach(async () => {
-    await cleanDb(db);
-    return db.ref(SLACK_CREDENTIAL_DB_PATH).remove();
-  });
+  afterEach(() => cleanDb(db));
 
   it('should reject requests missing required payload', async function() {
     // setup database

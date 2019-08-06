@@ -10,18 +10,16 @@ const { slackApp } = require('../../config');
 
 const USER_ID = uuid();
 const USER = { admin: true, corporate: true };
-
 const SLACK_CODE = '1234';
 const SLACK_REDIRECT_URI = 'http://sleepy-cliffs-61733.herokuapp.com';
 const SLACK_APP_CLIENT_ID = slackApp.clientId;
 const SLACK_APP_CLIENT_SECRET = slackApp.clientSecret;
-
-const SLACK_CREDENTIAL_DB_PATH = `/system/integrations/slack/organization/${SERVICE_ACCOUNT_ID}`;
+const SLACK_CREDENTIAL_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/slack/organization`;
 
 describe('Slack App Authorization', () => {
   afterEach(async () => {
     await cleanDb(db);
-    return db.ref(SLACK_CREDENTIAL_DB_PATH).remove();
+    await db.ref(`/system/integrations/${SERVICE_ACCOUNT_ID}`).remove();
   });
 
   it('should reject requests missing required payload', async function() {
