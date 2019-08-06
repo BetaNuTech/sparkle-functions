@@ -161,11 +161,7 @@ module.exports = modelSetup({
       return null;
     }
 
-    const propertyTrelloCards = propertyTrelloCardsSnap.val();
-
-    if (!propertyTrelloCards.cards) {
-      return null;
-    }
+    const propertyTrelloCards = propertyTrelloCardsSnap.val() || {};
 
     // Find any card reference stored for DI
     const [cardId] = Object.keys(propertyTrelloCards).filter(
@@ -220,12 +216,6 @@ module.exports = modelSetup({
 
     return response;
   },
-
-  /**
-   * TODO: Deprecate after nocking
-   * Trello card archiving E2E tests
-   */
-  trelloCardRequest,
 });
 
 /**
