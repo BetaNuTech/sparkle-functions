@@ -25,7 +25,7 @@ module.exports = function createOnGetAllTrelloBoardsHandler(db, auth) {
    * @param  {Object} res Express res
    * @return {Promise}
    */
-  const getAllTrelloBoardsHandler = async (req, res) => {
+  const handler = async (req, res) => {
     const { user } = req;
 
     if (!user) {
@@ -34,7 +34,10 @@ module.exports = function createOnGetAllTrelloBoardsHandler(db, auth) {
 
     log.info(`${PREFIX} requested by user: ${user.id}`);
 
-    let trelloCredentials = {};
+    // Configure JSON API response
+    res.set('Content-Type', 'application/vnd.api+json');
+
+    let trelloCredentials = null;
     try {
       const savedTokenCredentials = await systemModel.findTrelloCredentials(db);
 
@@ -87,10 +90,6 @@ module.exports = function createOnGetAllTrelloBoardsHandler(db, auth) {
   // Create express app with single GET endpoint
   const app = express();
   app.use(cors(), bodyParser.json());
-  app.get(
-    '/integrations/trello/boards',
-    authUser(db, auth, true),
-    getAllTrelloBoardsHandler
-  );
+  app.get('/integrations/trello/boards', authUser(db, auth, true), handler);
   return app;
 };
