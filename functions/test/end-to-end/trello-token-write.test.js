@@ -6,12 +6,15 @@ const uuid = require('../../test-helpers/uuid');
 const { cleanDb, stubFirbaseAuth } = require('../../test-helpers/firebase');
 const { db, uid: SERVICE_ACCOUNT_ID } = require('./setup');
 const GET_TRELLO_TOKEN_PAYLOAD = require('../../test-helpers/mocks/get-trello-token.json');
+const GET_TRELLO_MEMBER_PAYLOAD = require('../../test-helpers/mocks/get-trello-member.json');
 
 const USER_ID = uuid();
 const USER = { admin: true, corporate: true };
 const TRELLO_API_KEY = '42717812300353f59dea0f62446ab1e5';
 const TRELLO_AUTH_TOKEN =
   '65a38f006f3e81cdab47ec3044cf83364aa66d3469c3923e8190c2a8e60325f1';
+const TRELLO_MEMBER_ID = GET_TRELLO_TOKEN_PAYLOAD.idMember;
+const TRELLO_USERNAME = GET_TRELLO_MEMBER_PAYLOAD.username;
 
 describe('Trello Upsert Token', () => {
   afterEach(async () => {
@@ -60,6 +63,11 @@ describe('Trello Upsert Token', () => {
   });
 
   it('should return an authorization error when invalid trello credentials are provided', async function() {
+    // Stub Request
+    nock('https://api.trello.com')
+      .get(`/1/tokens/1234?key=1234`)
+      .reply(400, {});
+
     // Setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
 
@@ -77,53 +85,23 @@ describe('Trello Upsert Token', () => {
       .expect(401);
 
     // Assertions
-    expect(result.body.message).to.equal('trello request not authorized');
+    expect(result.body.message).to.equal('trello token request not authorized');
   });
 
-  it('should lookup Trello member identifier and save it to private system database', async function() {
-    const expected = 'test-trello-member-id';
-
-    // Stub Requests
-    nock('https://api.trello.com')
-      .get(`/1/tokens/${TRELLO_AUTH_TOKEN}?key=${TRELLO_API_KEY}`)
-      .reply(
-        200,
-        Object.assign({}, GET_TRELLO_TOKEN_PAYLOAD, { idMember: expected })
-      );
-
-    // Setup database
-    await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
-
-    // Execute & Get Result
-    const app = trelloTokenAppEndpoint(db, stubFirbaseAuth(USER_ID));
-    await request(app)
-      .post('/integrations/trello/authorization')
-      .send({
-        apikey: TRELLO_API_KEY,
-        authToken: TRELLO_AUTH_TOKEN,
-      })
-      .set('Accept', 'application/json')
-      .set('Authorization', 'fb-jwt stubbed-by-auth')
-      .expect('Content-Type', /json/)
-      .expect(201);
-
-    // actuals
-    const result = await db
-      .ref(
-        `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/organization/member`
-      )
-      .once('value');
-    const actual = result.val();
-
-    // Assertions
-    expect(actual).to.equal(expected);
-  });
-
-  it('should save users Trello credentials to private system database', async function() {
+  it('should save trello member ID, username, and credentials', async function() {
     // Stub Requests
     nock('https://api.trello.com')
       .get(`/1/tokens/${TRELLO_AUTH_TOKEN}?key=${TRELLO_API_KEY}`)
       .reply(200, Object.assign({}, GET_TRELLO_TOKEN_PAYLOAD));
+
+    nock('https://api.trello.com')
+      .get(
+        `/1/members/${TRELLO_MEMBER_ID}?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}`
+      )
+      .reply(
+        200,
+        Object.assign({}, GET_TRELLO_MEMBER_PAYLOAD, { id: TRELLO_MEMBER_ID })
+      );
 
     // Setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
@@ -151,7 +129,7 @@ describe('Trello Upsert Token', () => {
     [
       {
         name: 'member',
-        expected: GET_TRELLO_TOKEN_PAYLOAD.idMember,
+        expected: TRELLO_MEMBER_ID,
         actual: credentials.member,
       },
       {
@@ -161,6 +139,11 @@ describe('Trello Upsert Token', () => {
       },
       { name: 'apikey', expected: TRELLO_API_KEY, actual: credentials.apikey },
       { name: 'user', expected: USER_ID, actual: credentials.user },
+      {
+        name: 'trelloUsername',
+        expected: TRELLO_USERNAME,
+        actual: credentials.trelloUsername,
+      },
     ].forEach(({ name, expected, actual }) => {
       expect(actual).to.equal(
         expected,
