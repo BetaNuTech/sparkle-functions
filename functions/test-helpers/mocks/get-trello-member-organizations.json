@@ -1,0 +1,68 @@
+[{
+  "id": "5bd65c720e737a48723ac865",
+  "name": "organizationone",
+  "displayName": "Organization #1",
+  "desc": "",
+  "descData": null,
+  "idBoards": ["5d0fcb47d665c204cb10c59f"],
+  "idEnterprise": null,
+  "invited": false,
+  "invitations": [],
+  "limits": {
+    "orgs": {
+      "totalMembersPerOrg": {
+        "status": "ok",
+        "disableAt": 4000,
+        "warnAt": 3600
+      },
+      "freeBoardsPerOrg": {
+        "status": "warn",
+        "disableAt": 10,
+        "warnAt": 3,
+        "count": 6
+      }
+    }
+  },
+  "memberships": [{
+    "id": "5ad66c710e737a48733ac866",
+    "idMember": "560c3e7dbddb1cb7b3beb255",
+    "memberType": "admin",
+    "unconfirmed": false,
+    "deactivated": false
+  }],
+  "prefs": {
+    "permissionLevel": "private",
+    "orgInviteRestrict": [],
+    "boardInviteRestrict": "any",
+    "externalMembersDisabled": false,
+    "associatedDomain": null,
+    "googleAppsVersion": 1,
+    "boardVisibilityRestrict": {
+      "private": "org",
+      "org": "org",
+      "enterprise": "org",
+      "public": "org"
+    },
+    "boardDeleteRestrict": {
+      "private": "org",
+      "org": "org",
+      "enterprise": "org",
+      "public": "org"
+    },
+    "attachmentRestrictions": null
+  },
+  "powerUps": [],
+  "products": [],
+  "billableMemberCount": 5,
+  "activeBillableMemberCount": null,
+  "billableCollaboratorCount": 0,
+  "url": "https://trello.com/joyrideconsulting",
+  "website": null,
+  "logoHash": "4004db53df0a5cd2d0d274ce23398f68",
+  "logoUrl": "https://trello-logos.s3.amazonaws.com/4004db53df0a5cd2d0d274ce23398f68",
+  "premiumFeatures": [],
+  "enterpriseJoinRequest": {},
+  "availableLicenseCount": null,
+  "maximumLicenseCount": null,
+  "ixUpdate": "36"
+}]
