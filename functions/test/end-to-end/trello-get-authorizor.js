@@ -4,12 +4,24 @@ const getTrelloAuthorizorApp = require('../../trello/get-trello-authorizor-handl
 const uuid = require('../../test-helpers/uuid');
 const { cleanDb, stubFirbaseAuth } = require('../../test-helpers/firebase');
 const { db, uid: SERVICE_ACCOUNT_ID } = require('./setup');
+const EXPECTED_JSON_PAYLOAD = require('../../test-helpers/mocks/get-trello-authorizor-payload.json');
 
-const USER_ID = uuid();
-const USER = { admin: true, corporate: true };
-// const TRELLO_API_KEY = 'f4a04dd872b7a2e33bfc33aac9516965';
-// const TRELLO_AUTH_TOKEN = 'fab424b6f18b2845b3d60eac800e42e5f3ab2fdb25d21c90264032a0ecf16ceb';
-// const TRELLO_CREDENTIAL_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/organization`;
+const USER_ID = EXPECTED_JSON_PAYLOAD.data.id;
+const USER = {
+  firstName: EXPECTED_JSON_PAYLOAD.data.attributes.firstName,
+  lastName: EXPECTED_JSON_PAYLOAD.data.attributes.lastName,
+  email: EXPECTED_JSON_PAYLOAD.data.attributes.email,
+  admin: true,
+  corporate: true,
+};
+const TRELLO_CREDENTIAL_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/organization`;
+const TRELLO_CREDENTIALS_DATA = {
+  member: EXPECTED_JSON_PAYLOAD.data.attributes.trelloMember,
+  trelloUsername: EXPECTED_JSON_PAYLOAD.data.attributes.trelloUsername,
+  authToken: '1234',
+  apikey: '1234',
+  user: EXPECTED_JSON_PAYLOAD.data.id,
+};
 
 describe('Trello Get Authorizor', () => {
   afterEach(async () => {
@@ -52,6 +64,23 @@ describe('Trello Get Authorizor', () => {
 
     // Assertions
     expect(result.body.data).to.deep.equal({}, 'has no user data');
-    expect(result.body.includes).to.deep.equal([], 'has no side loaded data');
+  });
+
+  it('should return a populated response when trello credentials are set', async function() {
+    // setup database
+    await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
+    await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_CREDENTIALS_DATA);
+
+    // Execute & Get Result
+    const app = getTrelloAuthorizorApp(db, stubFirbaseAuth(USER_ID));
+    const result = await request(app)
+      .get('/integrations/trello')
+      .set('Accept', 'application/json')
+      .set('Authorization', 'fb-jwt stubbed-by-auth')
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    // Assertions
+    expect(result.body).to.deep.equal(EXPECTED_JSON_PAYLOAD);
   });
 });
