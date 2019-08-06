@@ -1,0 +1,23 @@
+{
+  "id": "5d1254d6579aa969efb86d2d",
+  "identifier": "Server Token",
+  "idMember": "57c864cb46ef602b2be03a80",
+  "dateCreated": "2019-06-25T17:07:34.268Z",
+  "dateExpires": null,
+  "permissions": [{
+    "idModel": "57c864cb46ef602b2be03a80",
+    "modelType": "Member",
+    "read": true,
+    "write": true
+  }, {
+    "idModel": "*",
+    "modelType": "Board",
+    "read": true,
+    "write": true
+  }, {
+    "idModel": "*",
+    "modelType": "Organization",
+    "read": true,
+    "write": true
+  }]
+}
