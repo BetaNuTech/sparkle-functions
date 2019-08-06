@@ -12,6 +12,7 @@ const PREFIX = 'trello: upsert token:';
 /**
  * Factory for trello token upsert endpoint
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+ * @param  {firebaseAdmin.auth} auth - Firebase Admin auth instance
  * @return {Function} - onRequest handler
  */
 module.exports = function createOnUpsertTrelloTokenHandler(db, auth) {
@@ -58,6 +59,7 @@ module.exports = function createOnUpsertTrelloTokenHandler(db, auth) {
 
     log.info(`${PREFIX} requested by user: ${user.id}`);
 
+    // Recover Trello Member ID
     let memberID;
     try {
       const response = await got(
@@ -69,11 +71,34 @@ module.exports = function createOnUpsertTrelloTokenHandler(db, auth) {
       if (responseBody && responseBody.idMember) {
         memberID = responseBody.idMember;
       } else {
-        throw Error('Trello member ID not found in payload');
+        throw Error('Trello member ID was not recovered');
       }
     } catch (err) {
-      log.error(`${PREFIX} Error retrieving trello data: ${err}`);
-      return res.status(401).send({ message: 'trello request not authorized' });
+      log.error(`${PREFIX} Error retrieving trello token: ${err}`);
+      return res
+        .status(401)
+        .send({ message: 'trello token request not authorized' });
+    }
+
+    // Recover Trello username
+    let trelloUsername;
+    try {
+      const response = await got(
+        `https://api.trello.com/1/members/${memberID}?key=${apikey}&token=${authToken}`
+      );
+      const responseBody = JSON.parse(response.body);
+
+      // Lookup username
+      if (responseBody && responseBody.username) {
+        trelloUsername = responseBody.username;
+      } else {
+        throw Error('Trello username was not recovered');
+      }
+    } catch (err) {
+      log.error(`${PREFIX} Error retrieving trello member: ${err}`);
+      return res
+        .status(401)
+        .send({ message: 'trello member request not authorized' });
     }
 
     try {
@@ -83,10 +108,13 @@ module.exports = function createOnUpsertTrelloTokenHandler(db, auth) {
         authToken,
         apikey,
         user: user.id,
+        trelloUsername,
       });
     } catch (err) {
-      log.error(`${PREFIX} Error saving users trello ID: ${err}`);
-      return res.status(400).send({ message: 'Error saving users trello ID' });
+      log.error(`${PREFIX} Error saving trello credentials: ${err}`);
+      return res
+        .status(500)
+        .send({ message: 'Error saving trello credentials' });
     }
 
     res.status(201).send({ message: 'successfully saved trello token' });

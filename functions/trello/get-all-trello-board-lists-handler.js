@@ -12,6 +12,7 @@ const PREFIX = 'trello: get all board lists:';
 /**
  * Factory for getting all trello board lists
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+ * @param  {firebaseAdmin.auth} auth - Firebase Admin auth instance
  * @return {Function} - onRequest handler
  */
 module.exports = function createOnGetAllTrelloBoardListsHandler(db, auth) {
