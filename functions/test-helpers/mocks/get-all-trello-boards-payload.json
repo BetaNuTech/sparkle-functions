@@ -1,0 +1,60 @@
+{
+  "data": [
+    {
+      "id": "5d0ab7754066f880369a4d98",
+      "type": "trello-board",
+      "attributes": {
+        "name": "Icebox"
+      },
+      "relationships": {
+        "trelloOrganization": {
+          "data": {
+            "id": "5bd65c720e737a48723ac865",
+            "type": "trello-organization"
+          }
+        }
+      }
+    },
+    {
+      "id": "5d0ab7754066f880369a4d99",
+      "type": "trello-board",
+      "attributes": {
+        "name": "Pending"
+      },
+      "relationships": {}
+    },
+    {
+      "id": "5d0ab7754066f880369a4d9a",
+      "type": "trello-board",
+      "attributes": {
+        "name": "WIP (Work in progress) "
+      },
+      "relationships": {}
+    },
+    {
+      "id": "5d0ab7754066f880369a4d9b",
+      "type": "trello-board",
+      "attributes": {
+        "name": "Review"
+      },
+      "relationships": {}
+    },
+    {
+      "id": "5d0ab7754066f880369a4d9c",
+      "type": "trello-board",
+      "attributes": {
+        "name": "Done"
+      },
+      "relationships": {}
+    }
+  ],
+  "included": [
+    {
+      "id": "5bd65c720e737a48723ac865",
+      "type": "trello-organization",
+      "attributes": {
+        "name": "Organization #1"
+      }
+    }
+  ]
+}
