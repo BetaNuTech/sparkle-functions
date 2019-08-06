@@ -5,29 +5,13 @@ const trelloTokenAppEndpoint = require('../../trello/on-create-request-handler')
 const uuid = require('../../test-helpers/uuid');
 const { cleanDb, stubFirbaseAuth } = require('../../test-helpers/firebase');
 const { db, uid: SERVICE_ACCOUNT_ID } = require('./setup');
+const GET_TRELLO_TOKEN_PAYLOAD = require('../../test-helpers/mocks/get-trello-token.json');
 
 const USER_ID = uuid();
 const USER = { admin: true, corporate: true };
 const TRELLO_API_KEY = '42717812300353f59dea0f62446ab1e5';
 const TRELLO_AUTH_TOKEN =
   '65a38f006f3e81cdab47ec3044cf83364aa66d3469c3923e8190c2a8e60325f1';
-const GET_TRELLO_TOKEN_PAYLOAD = {
-  id: '5d1254d6579aa969efb86d2d',
-  identifier: 'Server Token',
-  idMember: '57c864cb46ef602b2be03a80',
-  dateCreated: '2019-06-25T17:07:34.268Z',
-  dateExpires: null,
-  permissions: [
-    {
-      idModel: '57c864cb46ef602b2be03a80',
-      modelType: 'Member',
-      read: true,
-      write: true,
-    },
-    { idModel: '*', modelType: 'Board', read: true, write: true },
-    { idModel: '*', modelType: 'Organization', read: true, write: true },
-  ],
-};
 
 describe('Trello Upsert Token', () => {
   afterEach(async () => {
