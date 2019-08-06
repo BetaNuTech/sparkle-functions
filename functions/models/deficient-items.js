@@ -4,7 +4,7 @@ const createStateHistory = require('../deficient-items/utils/create-state-histor
 const systemModel = require('./system');
 
 const API_PATH = '/propertyInspectionDeficientItems';
-const PREFIX = 'deficient-items: on-di-archive-update:';
+const PREFIX = 'models: deficient-items:';
 
 module.exports = modelSetup({
   /**
@@ -162,7 +162,7 @@ module.exports = modelSetup({
     const toggleType = archiving ? 'archive' : 'unarchive';
 
     // DI Destination path
-    const destPath = archiving
+    const writePath = archiving
       ? `/archive${activePath}`
       : activePath.replace(/^\/archive/, '');
 
@@ -170,8 +170,8 @@ module.exports = modelSetup({
     const removePath = activePath;
 
     try {
-      await db.ref(destPath).set(deficientItem);
-      updates[destPath] = 'created';
+      await db.ref(writePath).set(deficientItem);
+      updates[writePath] = 'created';
     } catch (err) {
       throw Error(`${PREFIX} ${toggleType} write failed: ${err}`);
     }
