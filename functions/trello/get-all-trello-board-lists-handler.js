@@ -25,7 +25,7 @@ module.exports = function createOnGetAllTrelloBoardListsHandler(db, auth) {
    * @param  {Object} res Express res
    * @return {Promise}
    */
-  const getAllTrelloBoardListsHandler = async (req, res) => {
+  const handler = async (req, res) => {
     const { user, params } = req;
     const { boardId } = params;
 
@@ -40,6 +40,9 @@ module.exports = function createOnGetAllTrelloBoardListsHandler(db, auth) {
     }
 
     log.info(`${PREFIX} requested by user: ${user.id}`);
+
+    // Configure JSON API response
+    res.set('Content-Type', 'application/vnd.api+json');
 
     let trelloCredentials = {};
     try {
@@ -97,7 +100,7 @@ module.exports = function createOnGetAllTrelloBoardListsHandler(db, auth) {
   app.get(
     '/integrations/trello/boards/:boardId/lists',
     authUser(db, auth, true),
-    getAllTrelloBoardListsHandler
+    handler
   );
   return app;
 };
