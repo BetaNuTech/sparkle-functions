@@ -12,6 +12,7 @@ const PREFIX = 'trello: upsert token:';
 /**
  * Factory for trello token upsert endpoint
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+ * @param  {firebaseAdmin.auth} auth - Firebase Admin auth instance
  * @return {Function} - onRequest handler
  */
 module.exports = function createOnUpsertTrelloTokenHandler(db, auth) {

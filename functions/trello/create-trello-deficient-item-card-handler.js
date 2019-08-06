@@ -16,6 +16,7 @@ const ITEM_VALUE_NAMES = config.inspectionItems.valueNames;
 /**
  * Factory for creating trello cards for deficient items
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+ * @param  {firebaseAdmin.auth} auth - Firebase Admin auth instance
  * @return {Function} - onRequest handler
  */
 module.exports = function createOnTrelloDeficientItemCardHandler(db, auth) {
