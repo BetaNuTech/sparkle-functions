@@ -15,8 +15,8 @@ const PREFIX = 'trello: upsert token:';
  * @return {Function} - onRequest handler
  */
 module.exports = function createOnUpsertTrelloTokenHandler(db, auth) {
-  assert(Boolean(db), 'has firebase database instance');
-  assert(Boolean(auth), 'has firebase auth instance');
+  assert(Boolean(db), `${PREFIX} has firebase database instance`);
+  assert(Boolean(auth), `${PREFIX} has firebase auth instance`);
 
   /**
    * Write /trelloTokens to integration/trello
@@ -25,21 +25,8 @@ module.exports = function createOnUpsertTrelloTokenHandler(db, auth) {
    * @return {Promise}
    */
   const createTrelloTokenHandler = async (req, res) => {
-    const { user, body, params } = req;
+    const { user, body } = req;
     const { apikey, authToken } = body;
-    const { propertyId } = params;
-
-    if (!propertyId) {
-      const message = 'request missing propertyId parameter';
-      return res.status(404).send({ message });
-    }
-
-    const property = await db.ref(`/properties/${propertyId}`).once('value');
-
-    if (!property.exists()) {
-      const message = 'invalid propertyId';
-      return res.status(404).send({ message });
-    }
 
     // Reject impropertly stuctured request body
     if (!apikey || !authToken) {
@@ -92,7 +79,6 @@ module.exports = function createOnUpsertTrelloTokenHandler(db, auth) {
     try {
       // Persist Trello credentials to system DB
       await systemModel.upsertPropertyTrelloCredentials(db, {
-        propertyId,
         member: memberID,
         authToken,
         apikey,
@@ -110,7 +96,7 @@ module.exports = function createOnUpsertTrelloTokenHandler(db, auth) {
   const app = express();
   app.use(cors(), bodyParser.json());
   app.post(
-    '/integrations/trello/:propertyId/authorization',
+    '/integrations/trello/authorization',
     authUser(db, auth, true),
     createTrelloTokenHandler
   );
