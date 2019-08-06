@@ -64,7 +64,7 @@ exports.upsertTrelloTokenStaging = functions.https.onRequest(
   trello.createOnUpsertTrelloTokenHandler(dbStaging, auth)
 );
 
-//  GET /integrations/trello/{propertyId}/boards
+// GET /integrations/trello/{propertyId}/boards
 exports.getAllTrelloBoards = functions.https.onRequest(
   trello.createOnGetAllTrelloBoardsHandler(db, auth)
 );
@@ -72,7 +72,7 @@ exports.getAllTrelloBoardsStaging = functions.https.onRequest(
   trello.createOnGetAllTrelloBoardsHandler(dbStaging, auth)
 );
 
-//  GET /integrations/trello/{propertyId}/boards/{boardId}/lists
+// GET /integrations/trello/{propertyId}/boards/{boardId}/lists
 exports.getAllTrelloBoardLists = functions.https.onRequest(
   trello.createOnGetAllTrelloBoardListsHandler(db, auth)
 );
@@ -80,7 +80,7 @@ exports.getAllTrelloBoardListsStaging = functions.https.onRequest(
   trello.createOnGetAllTrelloBoardListsHandler(dbStaging, auth)
 );
 
-//  POST /properties/:propertyId/deficient-items/:deficientItemId/trello/card
+// POST /properties/:propertyId/deficient-items/:deficientItemId/trello/card
 exports.createTrelloDeficientItemCard = functions.https.onRequest(
   trello.createOnTrelloDeficientItemCardHandler(db, auth)
 );
@@ -88,7 +88,15 @@ exports.createTrelloDeficientItemCardStaging = functions.https.onRequest(
   trello.createOnTrelloDeficientItemCardHandler(dbStaging, auth)
 );
 
-//  POST /integrations/slack/authorization
+// GET /integrations/trello
+exports.getTrelloAuthorizor = functions.https.onRequest(
+  trello.createGetTrelloAuthorizorHandler(db, auth)
+);
+exports.getTrelloAuthorizorStaging = functions.https.onRequest(
+  trello.createGetTrelloAuthorizorHandler(dbStaging, auth)
+);
+
+// POST /integrations/slack/authorization
 exports.createSlackAppAuth = functions.https.onRequest(
   slack.createOnSlackAppAuthHandler(db, auth)
 );
