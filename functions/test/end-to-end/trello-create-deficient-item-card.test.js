@@ -49,8 +49,8 @@ const INTEGRATIONS_DATA = {
   grantedAt: Date.now() / 1000,
   board: TRELLO_BOARD_ID,
   boardName: 'Test Board',
-  list: TRELLO_LIST_ID,
-  listName: 'TO DO',
+  openList: TRELLO_LIST_ID,
+  openListName: 'TO DO',
 };
 const TRELLO_CREDENTIAL_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/organization`;
 const TRELLO_CARDS_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/properties/${PROPERTY_ID}/cards`;
@@ -116,7 +116,7 @@ describe('Trello Create Deficient Item Cards', () => {
     );
   });
 
-  it('should return conflict error when no trello board and/or list is configured for property', async function() {
+  it('should return conflict error when no trello board and/or open list is configured for property', async function() {
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
     await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);

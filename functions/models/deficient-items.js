@@ -158,6 +158,7 @@ module.exports = modelSetup({
   async toggleArchive(db, diSnap, archiving = true) {
     const updates = Object.create(null);
     const activePath = diSnap.ref.path.toString();
+    const [propertyId] = activePath.split('/').slice(-2, -1);
     const deficientItem = diSnap.val();
     const toggleType = archiving ? 'archive' : 'unarchive';
 
@@ -186,7 +187,8 @@ module.exports = modelSetup({
     try {
       const archiveResponse = await systemModel.archiveTrelloCard(
         db,
-        deficientItem,
+        propertyId,
+        diSnap.key,
         archiving
       );
       if (archiveResponse) updates.trelloCardChanged = archiveResponse.id;
