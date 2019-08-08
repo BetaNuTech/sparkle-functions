@@ -116,7 +116,7 @@ describe('Trello Create Deficient Item Cards', () => {
     );
   });
 
-  it('should return conflict error when no trello board and/or list is configured for property', async function() {
+  it('should return conflict error when no trello board and/or open list is configured for property', async function() {
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
     await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
