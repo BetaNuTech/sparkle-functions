@@ -133,16 +133,27 @@ module.exports = modelSetup({
    * Check trello for deficient item card
    * and archive if exists
    * @param  {firebaseadmin.database} db
-   * @param  {Object} deficientItem
+   * @param  {String} inspectionId
+   * @param  {String} deficientItemId
    * @param  {Boolean} archiving if the trello card should be archived or unarchived
    * @return {Promise}
    */
-  async archiveTrelloCard(db, deficientItem, archiving) {
+  async archiveTrelloCard(db, inspectionId, deficientItemId, archiving) {
+    assert(
+      inspectionId && typeof inspectionId === 'string',
+      `${PREFIX} has inspection id`
+    );
+    assert(
+      deficientItemId && typeof deficientItemId === 'string',
+      `${PREFIX} has deficient item id`
+    );
+    assert(typeof archiving === 'boolean', `${PREFIX} has archiving boolean`);
+
     // Lookup inspection
     let inspectionSnap;
     try {
       inspectionSnap = await db
-        .ref(`inspections/${deficientItem.inspection}`)
+        .ref(`inspections/${inspectionId}`)
         .once('value');
     } catch (err) {
       throw Error(`${PREFIX} inspection lookup failed: ${err}`);
@@ -170,7 +181,7 @@ module.exports = modelSetup({
 
     // Find any card reference stored for DI
     const [cardId] = Object.keys(propertyTrelloCards).filter(
-      id => propertyTrelloCards[id] === deficientItem.item
+      id => propertyTrelloCards[id] === deficientItemId
     );
 
     if (!cardId) {
@@ -190,7 +201,7 @@ module.exports = modelSetup({
 
     let response;
     try {
-      response = await trelloCardRequest(
+      response = await archiveTrelloCardRequest(
         cardId,
         trelloCredentials.apikey,
         trelloCredentials.authToken,
@@ -229,10 +240,16 @@ module.exports = modelSetup({
  * @param  {string} apikey api key for trello
  * @param  {string} authToken authToken for trello
  * @param  {string} method - http method
- * @param  {boolean?} closed - archive/unarchive trello card
+ * @param  {boolean?} archive - archive/unarchive trello card
  * @return {promise} - resolves {object} trello card json
  */
-function trelloCardRequest(cardId, apikey, authToken, method, closed = true) {
+function archiveTrelloCardRequest(
+  cardId,
+  apikey,
+  authToken,
+  method,
+  archive = true
+) {
   assert(cardId && typeof cardId === 'string', `${PREFIX} has card id`);
   assert(apikey && typeof apikey === 'string', `${PREFIX} has api key`);
   assert(
@@ -247,7 +264,7 @@ function trelloCardRequest(cardId, apikey, authToken, method, closed = true) {
       headers: {
         'content-type': 'application/json',
       },
-      body: method !== 'GET' ? { closed } : null,
+      body: method !== 'GET' ? { closed: archive } : null,
       responseType: 'json',
       method,
       json: true,
