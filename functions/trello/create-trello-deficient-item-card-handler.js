@@ -92,7 +92,7 @@ module.exports = function createOnTrelloDeficientItemCardHandler(db, auth) {
 
       if (!trelloIntegrationSnap.exists()) throw Error();
       trelloPropertyConfig = trelloIntegrationSnap.val();
-      if (!trelloPropertyConfig.list) throw Error();
+      if (!trelloPropertyConfig.openList) throw Error();
     } catch (err) {
       return res.status(409).send({
         message: 'Trello integration details for property not found or invalid',
@@ -152,7 +152,7 @@ module.exports = function createOnTrelloDeficientItemCardHandler(db, auth) {
       }
 
       const trelloResponse = await got(
-        `https://api.trello.com/1/cards?idList=${trelloPropertyConfig.list}&keyFromSource=all&key=${trelloCredentials.apikey}&token=${trelloCredentials.authToken}`,
+        `https://api.trello.com/1/cards?idList=${trelloPropertyConfig.openList}&keyFromSource=all&key=${trelloCredentials.apikey}&token=${trelloCredentials.authToken}`,
         {
           headers: { 'content-type': 'application/json' },
           body: trelloCardPayload,
