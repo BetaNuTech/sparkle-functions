@@ -186,7 +186,8 @@ module.exports = modelSetup({
     try {
       const archiveResponse = await systemModel.archiveTrelloCard(
         db,
-        deficientItem,
+        deficientItem.inspection,
+        diSnap.key,
         archiving
       );
       if (archiveResponse) updates.trelloCardChanged = archiveResponse.id;

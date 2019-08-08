@@ -181,7 +181,7 @@ describe('Deficient Items Archiving', () => {
         trackDeficientItems: true,
         items: {
           // Create single deficient item on inspection
-          [DEFICIENT_ITEM_ID]: mocking.createCompletedMainInputItem(
+          [uuid()]: mocking.createCompletedMainInputItem(
             'twoactions_checkmarkx',
             true
           ),
@@ -205,11 +205,8 @@ describe('Deficient Items Archiving', () => {
     // Setup database
     await db.ref(`/properties/${PROPERTY_ID}`).set({ name: 'test' });
     await db.ref(`/inspections/${inspectionId}`).set(inspectionData); // Add inspection
-    const diRef = db
-      .ref(`/propertyInspectionDeficientItems/${PROPERTY_ID}`)
-      .push();
-    const diPath = diRef.path.toString();
-    const diID = diPath.split('/').pop();
+    const diPath = `/propertyInspectionDeficientItems/${PROPERTY_ID}/${DEFICIENT_ITEM_ID}`;
+    const diRef = db.ref(diPath);
     await diRef.set({
       state: 'requires-action',
       inspection: inspectionId,
@@ -230,13 +227,11 @@ describe('Deficient Items Archiving', () => {
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
     const wrapped = test.wrap(cloudFunctions.deficientItemsArchiving);
     await wrapped(changeSnap, {
-      params: { propertyId: PROPERTY_ID, deficientItemId: diID },
+      params: { propertyId: PROPERTY_ID, deficientItemId: DEFICIENT_ITEM_ID },
     });
 
     // Test result
-    const actual = await db
-      .ref(`/archive/propertyInspectionDeficientItems/${PROPERTY_ID}/${diID}`)
-      .once('value');
+    const actual = await db.ref(`/archive/${diPath}`).once('value');
 
     // Assertions
     expect(actual.exists()).to.equal(true, 'archived the deficient item');
@@ -253,7 +248,7 @@ describe('Deficient Items Archiving', () => {
         trackDeficientItems: true,
         items: {
           // Create single deficient item on inspection
-          [DEFICIENT_ITEM_ID]: mocking.createCompletedMainInputItem(
+          [uuid()]: mocking.createCompletedMainInputItem(
             'twoactions_checkmarkx',
             true
           ),
@@ -264,11 +259,8 @@ describe('Deficient Items Archiving', () => {
     // Setup database
     await db.ref(`/properties/${PROPERTY_ID}`).set({ name: 'test' });
     await db.ref(`/inspections/${inspectionId}`).set(inspectionData); // Add inspection
-    const diRef = db
-      .ref(`/propertyInspectionDeficientItems/${PROPERTY_ID}`)
-      .push();
-    const diPath = diRef.path.toString();
-    const diID = diPath.split('/').pop();
+    const diPath = `/propertyInspectionDeficientItems/${PROPERTY_ID}/${DEFICIENT_ITEM_ID}`;
+    const diRef = db.ref(diPath);
     await diRef.set({
       state: 'requires-action',
       inspection: inspectionId,
@@ -295,7 +287,7 @@ describe('Deficient Items Archiving', () => {
 
     try {
       await wrapped(changeSnap, {
-        params: { propertyId: PROPERTY_ID, deficientItemId: diID },
+        params: { propertyId: PROPERTY_ID, deficientItemId: DEFICIENT_ITEM_ID },
       });
     } catch (error) {
       // Test result
@@ -319,7 +311,7 @@ describe('Deficient Items Unarchiving', () => {
     return db.ref(TRELLO_INTEGRATIONS_DB_PATH).remove();
   });
 
-  it('should not unarchive a deficient item when not unarchived', async () => {
+  it('should not unarchive a deficient item when archival requested', async () => {
     const propertyId = uuid();
     const inspectionId = uuid();
     const itemId = uuid();
@@ -343,11 +335,8 @@ describe('Deficient Items Unarchiving', () => {
     // Setup database
     await db.ref(`/properties/${propertyId}`).set({ name: 'test' });
     await db.ref(`/inspections/${inspectionId}`).set(inspectionData); // Add inspection
-    const diRef = db
-      .ref(`/archive/propertyInspectionDeficientItems/${propertyId}`)
-      .push();
-    const diPath = diRef.path.toString();
-    const diID = diPath.split('/').pop();
+    const diPath = `/archive/propertyInspectionDeficientItems/${propertyId}/${DEFICIENT_ITEM_ID}`;
+    const diRef = db.ref(diPath);
     await diRef.set({
       state: 'requires-action',
       inspection: inspectionId,
@@ -361,12 +350,14 @@ describe('Deficient Items Unarchiving', () => {
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
     const wrapped = test.wrap(cloudFunctions.deficientItemsUnarchiving);
     await wrapped(changeSnap, {
-      params: { propertyId, deficientItemId: diID },
+      params: { propertyId, deficientItemId: DEFICIENT_ITEM_ID },
     });
 
     // Test result
     const actual = await db
-      .ref(`/propertyInspectionDeficientItems/${propertyId}/${diID}`)
+      .ref(
+        `/propertyInspectionDeficientItems/${propertyId}/${DEFICIENT_ITEM_ID}`
+      )
       .once('value');
 
     // Assertions
@@ -376,7 +367,7 @@ describe('Deficient Items Unarchiving', () => {
     );
   });
 
-  it('should unarchive a deficient item when requested', async () => {
+  it('should unarchive a deficient item when unarchived', async () => {
     const propertyId = uuid();
     const inspectionId = uuid();
     const itemId = uuid();
@@ -400,11 +391,8 @@ describe('Deficient Items Unarchiving', () => {
     // Setup database
     await db.ref(`/properties/${propertyId}`).set({ name: 'test' });
     await db.ref(`/inspections/${inspectionId}`).set(inspectionData); // Add inspection
-    const diRef = db
-      .ref(`/archive/propertyInspectionDeficientItems/${propertyId}`)
-      .push();
-    const diPath = diRef.path.toString();
-    const diID = diPath.split('/').pop();
+    const diPath = `/archive/propertyInspectionDeficientItems/${propertyId}/${DEFICIENT_ITEM_ID}`;
+    const diRef = db.ref(diPath);
     await diRef.set({
       state: 'requires-action',
       inspection: inspectionId,
@@ -418,23 +406,18 @@ describe('Deficient Items Unarchiving', () => {
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
     const wrapped = test.wrap(cloudFunctions.deficientItemsUnarchiving);
     await wrapped(changeSnap, {
-      params: { propertyId, deficientItemId: diID },
+      params: { propertyId, deficientItemId: DEFICIENT_ITEM_ID },
     });
 
     // Test result
     const actual = await db
-      .ref(`/propertyInspectionDeficientItems/${propertyId}/${diID}`)
-      .once('value');
-    const actual2 = await db
-      .ref(`/propertyInspectionDeficientItems/${propertyId}/${diID}/archive`)
+      .ref(
+        `/propertyInspectionDeficientItems/${propertyId}/${DEFICIENT_ITEM_ID}`
+      )
       .once('value');
 
     // Assertions
     expect(actual.exists()).to.equal(true, 'unarchived the deficient item');
-    expect(actual2.val()).to.equal(
-      false,
-      'unarchived deficient item /archive should still equal false'
-    );
   });
 
   it('should unarchive a deficient items trello card when requested', async () => {
@@ -472,11 +455,8 @@ describe('Deficient Items Unarchiving', () => {
     // Setup database
     await db.ref(`/properties/${PROPERTY_ID}`).set({ name: 'test' });
     await db.ref(`/inspections/${inspectionId}`).set(inspectionData); // Add inspection
-    const diRef = db
-      .ref(`/archive/propertyInspectionDeficientItems/${PROPERTY_ID}`)
-      .push();
-    const diPath = diRef.path.toString();
-    const diID = diPath.split('/').pop();
+    const diPath = `/archive/propertyInspectionDeficientItems/${PROPERTY_ID}/${DEFICIENT_ITEM_ID}`;
+    const diRef = db.ref(diPath);
     await diRef.set({
       state: 'requires-action',
       inspection: inspectionId,
@@ -497,12 +477,14 @@ describe('Deficient Items Unarchiving', () => {
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
     const wrapped = test.wrap(cloudFunctions.deficientItemsUnarchiving);
     await wrapped(changeSnap, {
-      params: { propertyId: PROPERTY_ID, deficientItemId: diID },
+      params: { propertyId: PROPERTY_ID, deficientItemId: DEFICIENT_ITEM_ID },
     });
 
     // Test result
     const actual = await db
-      .ref(`/propertyInspectionDeficientItems/${PROPERTY_ID}/${diID}`)
+      .ref(
+        `/propertyInspectionDeficientItems/${PROPERTY_ID}/${DEFICIENT_ITEM_ID}`
+      )
       .once('value');
 
     // Assertions
@@ -531,11 +513,8 @@ describe('Deficient Items Unarchiving', () => {
     // Setup database
     await db.ref(`/properties/${PROPERTY_ID}`).set({ name: 'test' });
     await db.ref(`/inspections/${inspectionId}`).set(inspectionData); // Add inspection
-    const diRef = db
-      .ref(`/archive/propertyInspectionDeficientItems/${PROPERTY_ID}`)
-      .push();
-    const diPath = diRef.path.toString();
-    const diID = diPath.split('/').pop();
+    const diPath = `/archive/propertyInspectionDeficientItems/${PROPERTY_ID}/${DEFICIENT_ITEM_ID}`;
+    const diRef = db.ref(diPath);
     await diRef.set({
       state: 'requires-action',
       inspection: inspectionId,
@@ -562,7 +541,7 @@ describe('Deficient Items Unarchiving', () => {
 
     try {
       await wrapped(changeSnap, {
-        params: { propertyId: PROPERTY_ID, deficientItemId: diID },
+        params: { propertyId: PROPERTY_ID, deficientItemId: DEFICIENT_ITEM_ID },
       });
     } catch (error) {
       // Test result
