@@ -39,7 +39,9 @@ module.exports = function createDeleteTrelloAuthHandler(db, auth) {
     }
 
     try {
-      const result = await integrationsModel.archiveAllPropertyTrelloConfigs(db);
+      const result = await integrationsModel.archiveAllPropertyTrelloConfigs(
+        db
+      );
       if (result) log.info(`${PREFIX} archived trello property integrations`);
     } catch (err) {
       log.error(
