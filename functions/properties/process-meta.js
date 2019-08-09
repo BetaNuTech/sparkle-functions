@@ -7,6 +7,7 @@ const { createDeficientItems } = require('../inspections/utils');
 const LOG_PREFIX = 'properties: process-meta:';
 const REQUIRED_ACTIONS_VALUES = deficientItems.requiredActionStates;
 const FOLLOW_UP_ACTION_VALUES = deficientItems.followUpActionStates;
+const EXCLUDED_DI_COUNTER_VALUES = deficientItems.excludedPropertyNumOfDeficientItemsStates;
 
 // Pipeline of steps to update metadata
 const propertyMetaUpdates = pipe([
@@ -196,8 +197,11 @@ function updateDeficientItemsAttrs(
   );
 
   // Count all deficient items
-  config.updates[`/properties/${config.propertyId}/numOfDeficientItems`] =
-    deficientItemsLatest.length;
+  config.updates[
+    `/properties/${config.propertyId}/numOfDeficientItems`
+  ] = deficientItemsLatest.filter(
+    ({ state }) => !EXCLUDED_DI_COUNTER_VALUES.includes(state)
+  ).length;
 
   // Count all deficient items where state requires action
   config.updates[
