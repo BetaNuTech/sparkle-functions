@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const log = require('../utils/logger');
 const authUser = require('../utils/auth-firebase-user');
 const systemModel = require('../models/system');
+const integrationsModel = require('../models/integrations');
 
 const PREFIX = 'trello: delete authorization:';
 
@@ -30,14 +31,24 @@ module.exports = function createDeleteTrelloAuthHandler(db, auth) {
 
     log.info(`${PREFIX} requested by user: ${user.id}`);
 
-    res.status(200).send({ message: 'successful' });
-
     try {
       await systemModel.destroyTrelloCredentials(db);
     } catch (err) {
-      log.error(`${PREFIX} destry trello credentials failed | ${err}`);
+      log.error(`${PREFIX} destroy trello credentials failed | ${err}`);
       return res.status(500).send({ message: 'system failure' });
     }
+
+    try {
+      const result = await integrationsModel.archiveAllPropertyTrelloConfigs(db);
+      if (result) log.info(`${PREFIX} archived trello property integrations`);
+    } catch (err) {
+      log.error(
+        `${PREFIX} archiving trello property integrations failed | ${err}`
+      );
+      return res.status(500).send({ message: 'system failure' });
+    }
+
+    res.status(200).send({ message: 'successful' });
   };
 
   // Create express app with single DELETE endpoint

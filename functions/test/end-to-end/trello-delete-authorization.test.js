@@ -6,7 +6,8 @@ const { cleanDb, stubFirbaseAuth } = require('../../test-helpers/firebase');
 const { db, uid: SERVICE_ACCOUNT_ID } = require('./setup');
 
 const USER_ID = uuid();
-// const PROPERTY_ID = uuid();
+const PROPERTY_ONE_ID = uuid();
+const PROPERTY_TWO_ID = uuid();
 const USER_DATA = {
   firstName: 'mr',
   lastName: 'testor',
@@ -16,13 +17,22 @@ const USER_DATA = {
 };
 const API_PATH = '/integrations/trello/authorization';
 const TRELLO_CREDENTIAL_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/organization`;
-// const TRELLO_INTEGRATIONS_DB_PATH = `/integrations/trello/properties/${PROPERTY_ID}`;
+const TRELLO_INTEGRATIONS_DB_PATH_ONE = `/integrations/trello/properties/${PROPERTY_ONE_ID}`;
+const TRELLO_INTEGRATIONS_DB_PATH_TWO = `/integrations/trello/properties/${PROPERTY_TWO_ID}`;
 const TRELLO_CREDENTIALS_DATA = {
   member: 'akdf2334fasd',
   trelloUsername: 'jakew4',
   authToken: '1234dfasqruolfkj',
   apikey: '1234dlkfjasdlf',
   user: USER_ID,
+};
+const PROPERTY_INTEGRATIONS_DATA = {
+  grantedBy: USER_ID,
+  grantedAt: Date.now() / 1000,
+  board: 'dlkfjasdlkf',
+  boardName: 'Test Board',
+  openList: 'dflajsdflkjsd',
+  opentListName: 'TO DO',
 };
 
 describe('Trello Delete Authorization', () => {
@@ -99,5 +109,47 @@ describe('Trello Delete Authorization', () => {
 
     // Assertions
     expect(actual).to.equal(false);
+  });
+
+  it('should archive the trello integration configurations for all properties', async () => {
+    // Setup database
+    await db.ref(`/users/${USER_ID}`).set(USER_DATA);
+    await db
+      .ref(TRELLO_INTEGRATIONS_DB_PATH_ONE)
+      .set(PROPERTY_INTEGRATIONS_DATA);
+    await db
+      .ref(TRELLO_INTEGRATIONS_DB_PATH_TWO)
+      .set(PROPERTY_INTEGRATIONS_DATA);
+    const expectedSnap = await db
+      .ref('/integrations/trello/properties')
+      .once('value');
+    const expected = expectedSnap.val();
+
+    // Execute
+    const app = deleteTrelloAuthApp(db, stubFirbaseAuth(USER_ID));
+    await request(app)
+      .delete(API_PATH)
+      .set('Accept', 'application/json')
+      .set('Authorization', 'fb-jwt stubbed-by-auth')
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    // Results
+    const resultConfigs = await Promise.all([
+      db.ref(TRELLO_INTEGRATIONS_DB_PATH_ONE).once('value'),
+      db.ref(TRELLO_INTEGRATIONS_DB_PATH_TWO).once('value'),
+    ]);
+    const resultArchive = await db
+      .ref('/archive/integrations/trello/properties')
+      .once('value');
+    const actualConfigs = resultConfigs.map(r => r.exists());
+    const actual = resultArchive.val();
+
+    // Assertions
+    expect(actualConfigs).to.deep.equal(
+      [false, false],
+      'removed active configs'
+    );
+    expect(actual).to.deep.equal(expected, 'moved all configs to archive');
   });
 });

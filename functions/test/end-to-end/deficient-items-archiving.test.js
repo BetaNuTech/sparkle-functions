@@ -33,11 +33,11 @@ const TRELLO_SYSTEM_PROPERTY_CARDS_DATA = {
 };
 const INTEGRATIONS_DATA = {
   grantedBy: USER_ID,
-  grantedAt: Date.now(),
+  grantedAt: Date.now() / 1000,
   board: TRELLO_BOARD_ID,
   boardName: 'Test Board',
-  list: TRELLO_LIST_ID,
-  listName: 'TO DO',
+  openList: TRELLO_LIST_ID,
+  opentListName: 'TO DO',
 };
 const TRELLO_CREDENTIAL_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/organization`;
 const TRELLO_PROPERTY_CARDS_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/properties/${PROPERTY_ID}/cards`;
