@@ -14,12 +14,21 @@ const SLACK_ORG_PATH = `/system/integrations/${SERVICE_ACCOUNT_CLIENT_ID}/slack/
 
 module.exports = modelSetup({
   /**
-   * Lookup Trello integration credentials for property
+   * Lookup Trello integration credentials for organization
    * @param  {firebaseAdmin.database} db firbase database
    * @return {Promise} - resolves {DataSnapshot} trello system integration
    */
   findTrelloCredentials(db) {
     return db.ref(TRELLO_ORG_PATH).once('value');
+  },
+
+  /**
+   * Remove Trello integration credentials for organization
+   * @param  {firebaseAdmin.database} db firbase database
+   * @return {Promise}
+   */
+  destroyTrelloCredentials(db) {
+    return db.ref(TRELLO_ORG_PATH).remove();
   },
 
   /**

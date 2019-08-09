@@ -4,7 +4,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const log = require('../utils/logger');
 const authUser = require('../utils/auth-firebase-user');
-// const systemModel = require('../models/system');
+const systemModel = require('../models/system');
 
 const PREFIX = 'trello: delete authorization:';
 
@@ -31,6 +31,13 @@ module.exports = function createDeleteTrelloAuthHandler(db, auth) {
     log.info(`${PREFIX} requested by user: ${user.id}`);
 
     res.status(200).send({ message: 'successful' });
+
+    try {
+      await systemModel.destroyTrelloCredentials(db);
+    } catch (err) {
+      log.error(`${PREFIX} destry trello credentials failed | ${err}`);
+      return res.status(500).send({ message: 'system failure' });
+    }
   };
 
   // Create express app with single DELETE endpoint
