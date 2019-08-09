@@ -56,12 +56,20 @@ exports.createSendMessagesStaging = functions.https.onRequest(
   pushMessages.onCreateRequestHandler(dbStaging, auth)
 );
 
-// POST /integrations/trello/:propertyId/authorization
+// POST /integrations/trello/authorization
 exports.upsertTrelloToken = functions.https.onRequest(
   trello.createOnUpsertTrelloTokenHandler(db, auth)
 );
 exports.upsertTrelloTokenStaging = functions.https.onRequest(
   trello.createOnUpsertTrelloTokenHandler(dbStaging, auth)
+);
+
+// DELETE /integrations/trello/authorization
+exports.deleteTrelloAuthorization = functions.https.onRequest(
+  trello.createDeleteTrelloAuthHandler(db, auth)
+);
+exports.deleteTrelloAuthorizationtaging = functions.https.onRequest(
+  trello.createDeleteTrelloAuthHandler(dbStaging, auth)
 );
 
 // GET /integrations/trello/{propertyId}/boards

@@ -59,8 +59,7 @@ const TRELLO_INTEGRATIONS_DB_PATH = `/integrations/trello/properties/${PROPERTY_
 describe('Trello Create Deficient Item Cards', () => {
   afterEach(async () => {
     await cleanDb(db);
-    await db.ref(`/system/integrations/${SERVICE_ACCOUNT_ID}`).remove();
-    return db.ref(TRELLO_INTEGRATIONS_DB_PATH).remove();
+    return db.ref(`/system/integrations/${SERVICE_ACCOUNT_ID}`).remove();
   });
 
   it('should send forbidden error when property has no trello auth credentials', async function() {
