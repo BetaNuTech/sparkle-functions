@@ -18,8 +18,6 @@ const TRELLO_MEMBER_ID = '57c864cb46ef602b2be03a80';
 const TRELLO_API_KEY = 'f4a04dd872b7a2e33bfc33aac9516965';
 const TRELLO_AUTH_TOKEN =
   'fab424b6f18b2845b3d60eac800e42e5f3ab2fdb25d21c90264032a0ecf16ceb';
-const TRELLO_BOARD_ID = '5d0ab7754066f880369a4d97';
-const TRELLO_LIST_ID = '5d0ab7754066f880369a4d99';
 const TRELLO_CARD_ID = '5d0ab7754066f880369a4db2';
 const TRELLO_DELETED_CARD_ID = '5d0ab7754066f880369a4dae';
 const TRELLO_SYSTEM_INTEGRATION_DATA = {
@@ -34,9 +32,9 @@ const TRELLO_SYSTEM_PROPERTY_CARDS_DATA = {
 const INTEGRATIONS_DATA = {
   grantedBy: USER_ID,
   grantedAt: Date.now() / 1000,
-  board: TRELLO_BOARD_ID,
-  boardName: 'Test Board',
-  openList: TRELLO_LIST_ID,
+  openBoard: '5d0ab7754066f880369a4d97',
+  openBoardName: 'Test Board',
+  openList: '5d0ab7754066f880369a4d99',
   opentListName: 'TO DO',
 };
 const TRELLO_CREDENTIAL_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/organization`;
