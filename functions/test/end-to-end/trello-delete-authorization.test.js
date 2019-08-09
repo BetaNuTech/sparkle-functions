@@ -74,5 +74,30 @@ describe('Trello Delete Authorization', () => {
     expect(actual).to.equal(false);
   });
 
-  // it('should allow any admin to remove the trello credentials of an organization', async () => { });
+  it('should allow any admin to remove the trello credentials of an organization', async () => {
+    const altAdminUserId = uuid();
+
+    // Setup database
+    await db.ref(`/users/${USER_ID}`).set(USER_DATA);
+    await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_CREDENTIALS_DATA);
+    await db
+      .ref(`/users/${altAdminUserId}`)
+      .set({ admin: true, corporate: false }); // add another admin user
+
+    // Execute
+    const app = deleteTrelloAuthApp(db, stubFirbaseAuth(altAdminUserId));
+    await request(app)
+      .delete(API_PATH)
+      .set('Accept', 'application/json')
+      .set('Authorization', 'fb-jwt stubbed-by-auth')
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    // Result
+    const result = await db.ref(TRELLO_CREDENTIAL_DB_PATH).once('value');
+    const actual = result.exists();
+
+    // Assertions
+    expect(actual).to.equal(false);
+  });
 });
