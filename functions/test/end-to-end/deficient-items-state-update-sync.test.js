@@ -27,8 +27,8 @@ const TRELLO_SYSTEM_INTEGRATION_DATA = {
   authToken: TRELLO_AUTH_TOKEN,
 };
 const TRELLO_PROPERTY_INTEGRATION_DATA = {
-  board: uuid(),
-  boardName: 'Board',
+  openBoard: uuid(),
+  openBoardName: 'Board',
   closeList: TRELLO_CLOSE_LIST_ID,
   closeListName: 'Done',
 };
@@ -39,257 +39,257 @@ describe('Deficient Items Property Meta Sync', () => {
     return db.ref(SYSTEM_INTEGRATION_PATH).remove();
   });
 
-  // it("should not update property meta when an item's required action status does not change", async () => {
-  //   const propertyId = uuid();
-  //   const inspectionId = uuid();
-  //   const itemId = uuid();
-  //   const beforeData = mocking.createInspection({
-  //     deficienciesExist: true,
-  //     inspectionCompleted: true,
-  //     property: propertyId,
-  //
-  //     template: {
-  //       trackDeficientItems: true,
-  //       items: {
-  //         // Create single deficient item on inspection
-  //         [itemId]: mocking.createCompletedMainInputItem(
-  //           'twoactions_checkmarkx',
-  //           true
-  //         ),
-  //       },
-  //     },
-  //   });
-  //
-  //   // Test updates between all required action states
-  //   for (let i = 0; i < REQUIRED_ACTIONS_VALUES.length; i++) {
-  //     const initalActionState = REQUIRED_ACTIONS_VALUES[i];
-  //     const updatedActionState =
-  //       REQUIRED_ACTIONS_VALUES[i + 1] || REQUIRED_ACTIONS_VALUES[0]; // next or first required action
-  //
-  //     // Setup database
-  //     await db.ref(`/properties/${propertyId}`).set({ name: 'test' });
-  //     await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
-  //     const diRef = db
-  //       .ref(`/propertyInspectionDeficientItems/${propertyId}`)
-  //       .push();
-  //     const diPath = diRef.path.toString();
-  //     const diID = diPath.split('/').pop();
-  //     await diRef.set({
-  //       state: initalActionState, // requires action
-  //       inspection: inspectionId,
-  //       item: itemId,
-  //     });
-  //     const beforeSnap = await db.ref(`${diPath}/state`).once('value'); // Create before
-  //     await diRef.set({
-  //       state: updatedActionState, // still requires action
-  //       inspection: inspectionId,
-  //       item: itemId,
-  //     });
-  //     const afterSnap = await db.ref(`${diPath}/state`).once('value'); // Create after
-  //
-  //     // Execute
-  //     const changeSnap = test.makeChange(beforeSnap, afterSnap);
-  //     const wrapped = test.wrap(cloudFunctions.deficientItemsPropertyMetaSync);
-  //     await wrapped(changeSnap, { params: { propertyId, itemId: diID } });
-  //
-  //     // Test result
-  //     const actual = await db
-  //       .ref(`/properties/${propertyId}/numOfRequiredActionsForDeficientItems`)
-  //       .once('value');
-  //
-  //     // Assertions
-  //     expect(actual.exists()).to.equal(
-  //       false,
-  //       'did not update property\'s "numOfRequiredActionsForDeficientItems"'
-  //     );
-  //   }
-  // });
-  //
-  // it("should not update property meta when an item's follow up action status does not change", async () => {
-  //   const propertyId = uuid();
-  //   const inspectionId = uuid();
-  //   const itemId = uuid();
-  //   const beforeData = mocking.createInspection({
-  //     deficienciesExist: true,
-  //     inspectionCompleted: true,
-  //     property: propertyId,
-  //
-  //     template: {
-  //       trackDeficientItems: true,
-  //       items: {
-  //         // Create single deficient item on inspection
-  //         [itemId]: mocking.createCompletedMainInputItem(
-  //           'twoactions_checkmarkx',
-  //           true
-  //         ),
-  //       },
-  //     },
-  //   });
-  //
-  //   // Test updates between all required action states
-  //   for (let i = 0; i < FOLLOW_UP_ACTION_VALUES.length; i++) {
-  //     const initalActionState = FOLLOW_UP_ACTION_VALUES[i];
-  //     const updatedActionState =
-  //       FOLLOW_UP_ACTION_VALUES[i + 1] || FOLLOW_UP_ACTION_VALUES[0]; // next or first follow up action
-  //
-  //     // Setup database
-  //     await db.ref(`/properties/${propertyId}`).set({ name: 'test' });
-  //     await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
-  //     const diRef = db
-  //       .ref(`/propertyInspectionDeficientItems/${propertyId}`)
-  //       .push();
-  //     const diPath = diRef.path.toString();
-  //     const diID = diPath.split('/').pop();
-  //     await diRef.set({
-  //       state: initalActionState, // obvs requires action
-  //       inspection: inspectionId,
-  //       item: itemId,
-  //     });
-  //     const beforeSnap = await db.ref(`${diPath}/state`).once('value'); // Create before
-  //     await diRef.set({
-  //       state: updatedActionState, // still requires action
-  //       inspection: inspectionId,
-  //       item: itemId,
-  //     });
-  //     const afterSnap = await db.ref(`${diPath}/state`).once('value'); // Create after
-  //
-  //     // Execute
-  //     const changeSnap = test.makeChange(beforeSnap, afterSnap);
-  //     const wrapped = test.wrap(cloudFunctions.deficientItemsPropertyMetaSync);
-  //     await wrapped(changeSnap, { params: { propertyId, itemId: diID } });
-  //
-  //     // Test result
-  //     const actual = await db
-  //       .ref(`/properties/${propertyId}/numOfFollowUpActionsForDeficientItems`)
-  //       .once('value');
-  //
-  //     // Assertions
-  //     expect(actual.exists()).to.equal(
-  //       false,
-  //       'did not update property\'s "numOfFollowUpActionsForDeficientItems"'
-  //     );
-  //   }
-  // });
-  //
-  // it("should update property meta when an item's required action status changes", async () => {
-  //   const propertyId = uuid();
-  //   const inspectionId = uuid();
-  //   const itemId = uuid();
-  //   const beforeData = mocking.createInspection({
-  //     deficienciesExist: true,
-  //     inspectionCompleted: true,
-  //     property: propertyId,
-  //
-  //     template: {
-  //       trackDeficientItems: true,
-  //       items: {
-  //         // Create single deficient item on inspection
-  //         [itemId]: mocking.createCompletedMainInputItem(
-  //           'twoactions_checkmarkx',
-  //           true
-  //         ),
-  //       },
-  //     },
-  //   });
-  //
-  //   // Setup database
-  //   await db.ref(`/properties/${propertyId}`).set({ name: 'test' });
-  //   await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
-  //   const diRef = db
-  //     .ref(`/propertyInspectionDeficientItems/${propertyId}`)
-  //     .push();
-  //   const diPath = diRef.path.toString();
-  //   const diID = diPath.split('/').pop();
-  //   await diRef.set({
-  //     state: FOLLOW_UP_ACTION_VALUES[0], // NOT requiring action
-  //     inspection: inspectionId,
-  //     item: itemId,
-  //   });
-  //   const beforeSnap = await db.ref(`${diPath}/state`).once('value'); // Create before
-  //   await diRef.set({
-  //     state: REQUIRED_ACTIONS_VALUES[0], // Requires action
-  //     inspection: inspectionId,
-  //     item: itemId,
-  //   });
-  //   const afterSnap = await db.ref(`${diPath}/state`).once('value'); // Create after
-  //
-  //   // Execute
-  //   const changeSnap = test.makeChange(beforeSnap, afterSnap);
-  //   const wrapped = test.wrap(cloudFunctions.deficientItemsPropertyMetaSync);
-  //   await wrapped(changeSnap, { params: { propertyId, itemId: diID } });
-  //
-  //   // Test result
-  //   const actualSnap = await db
-  //     .ref(`/properties/${propertyId}/numOfRequiredActionsForDeficientItems`)
-  //     .once('value');
-  //   const actual = actualSnap.val();
-  //
-  //   // Assertions
-  //   expect(actual).to.equal(
-  //     1,
-  //     'updated property\'s "numOfRequiredActionsForDeficientItems"'
-  //   );
-  // });
-  //
-  // it("should update property meta when an item's follow up action status changes", async () => {
-  //   const propertyId = uuid();
-  //   const inspectionId = uuid();
-  //   const itemId = uuid();
-  //   const beforeData = mocking.createInspection({
-  //     deficienciesExist: true,
-  //     inspectionCompleted: true,
-  //     property: propertyId,
-  //
-  //     template: {
-  //       trackDeficientItems: true,
-  //       items: {
-  //         // Create single deficient item on inspection
-  //         [itemId]: mocking.createCompletedMainInputItem(
-  //           'twoactions_checkmarkx',
-  //           true
-  //         ),
-  //       },
-  //     },
-  //   });
-  //
-  //   // Setup database
-  //   await db.ref(`/properties/${propertyId}`).set({ name: 'test' });
-  //   await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
-  //   const diRef = db
-  //     .ref(`/propertyInspectionDeficientItems/${propertyId}`)
-  //     .push();
-  //   const diPath = diRef.path.toString();
-  //   const diID = diPath.split('/').pop();
-  //   await diRef.set({
-  //     state: REQUIRED_ACTIONS_VALUES[0], // requires action
-  //     inspection: inspectionId,
-  //     item: itemId,
-  //   });
-  //   const beforeSnap = await db.ref(`${diPath}/state`).once('value'); // Create before
-  //   await diRef.set({
-  //     state: FOLLOW_UP_ACTION_VALUES[0], // NOT requiring action
-  //     inspection: inspectionId,
-  //     item: itemId,
-  //   });
-  //   const afterSnap = await db.ref(`${diPath}/state`).once('value'); // Create after
-  //
-  //   // Execute
-  //   const changeSnap = test.makeChange(beforeSnap, afterSnap);
-  //   const wrapped = test.wrap(cloudFunctions.deficientItemsPropertyMetaSync);
-  //   await wrapped(changeSnap, { params: { propertyId, itemId: diID } });
-  //
-  //   // Test result
-  //   const actualSnap = await db
-  //     .ref(`/properties/${propertyId}/numOfFollowUpActionsForDeficientItems`)
-  //     .once('value');
-  //   const actual = actualSnap.val();
-  //
-  //   // Assertions
-  //   expect(actual).to.equal(
-  //     1,
-  //     'updated property\'s "numOfFollowUpActionsForDeficientItems"'
-  //   );
-  // });
+  it("should not update property meta when an item's required action status does not change", async () => {
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const itemId = uuid();
+    const beforeData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: propertyId,
+
+      template: {
+        trackDeficientItems: true,
+        items: {
+          // Create single deficient item on inspection
+          [itemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true
+          ),
+        },
+      },
+    });
+
+    // Test updates between all required action states
+    for (let i = 0; i < REQUIRED_ACTIONS_VALUES.length; i++) {
+      const initalActionState = REQUIRED_ACTIONS_VALUES[i];
+      const updatedActionState =
+        REQUIRED_ACTIONS_VALUES[i + 1] || REQUIRED_ACTIONS_VALUES[0]; // next or first required action
+
+      // Setup database
+      await db.ref(`/properties/${propertyId}`).set({ name: 'test' });
+      await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
+      const diRef = db
+        .ref(`/propertyInspectionDeficientItems/${propertyId}`)
+        .push();
+      const diPath = diRef.path.toString();
+      const diID = diPath.split('/').pop();
+      await diRef.set({
+        state: initalActionState, // requires action
+        inspection: inspectionId,
+        item: itemId,
+      });
+      const beforeSnap = await db.ref(`${diPath}/state`).once('value'); // Create before
+      await diRef.set({
+        state: updatedActionState, // still requires action
+        inspection: inspectionId,
+        item: itemId,
+      });
+      const afterSnap = await db.ref(`${diPath}/state`).once('value'); // Create after
+
+      // Execute
+      const changeSnap = test.makeChange(beforeSnap, afterSnap);
+      const wrapped = test.wrap(cloudFunctions.deficientItemsPropertyMetaSync);
+      await wrapped(changeSnap, { params: { propertyId, itemId: diID } });
+
+      // Test result
+      const actual = await db
+        .ref(`/properties/${propertyId}/numOfRequiredActionsForDeficientItems`)
+        .once('value');
+
+      // Assertions
+      expect(actual.exists()).to.equal(
+        false,
+        'did not update property\'s "numOfRequiredActionsForDeficientItems"'
+      );
+    }
+  });
+
+  it("should not update property meta when an item's follow up action status does not change", async () => {
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const itemId = uuid();
+    const beforeData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: propertyId,
+
+      template: {
+        trackDeficientItems: true,
+        items: {
+          // Create single deficient item on inspection
+          [itemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true
+          ),
+        },
+      },
+    });
+
+    // Test updates between all required action states
+    for (let i = 0; i < FOLLOW_UP_ACTION_VALUES.length; i++) {
+      const initalActionState = FOLLOW_UP_ACTION_VALUES[i];
+      const updatedActionState =
+        FOLLOW_UP_ACTION_VALUES[i + 1] || FOLLOW_UP_ACTION_VALUES[0]; // next or first follow up action
+
+      // Setup database
+      await db.ref(`/properties/${propertyId}`).set({ name: 'test' });
+      await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
+      const diRef = db
+        .ref(`/propertyInspectionDeficientItems/${propertyId}`)
+        .push();
+      const diPath = diRef.path.toString();
+      const diID = diPath.split('/').pop();
+      await diRef.set({
+        state: initalActionState, // obvs requires action
+        inspection: inspectionId,
+        item: itemId,
+      });
+      const beforeSnap = await db.ref(`${diPath}/state`).once('value'); // Create before
+      await diRef.set({
+        state: updatedActionState, // still requires action
+        inspection: inspectionId,
+        item: itemId,
+      });
+      const afterSnap = await db.ref(`${diPath}/state`).once('value'); // Create after
+
+      // Execute
+      const changeSnap = test.makeChange(beforeSnap, afterSnap);
+      const wrapped = test.wrap(cloudFunctions.deficientItemsPropertyMetaSync);
+      await wrapped(changeSnap, { params: { propertyId, itemId: diID } });
+
+      // Test result
+      const actual = await db
+        .ref(`/properties/${propertyId}/numOfFollowUpActionsForDeficientItems`)
+        .once('value');
+
+      // Assertions
+      expect(actual.exists()).to.equal(
+        false,
+        'did not update property\'s "numOfFollowUpActionsForDeficientItems"'
+      );
+    }
+  });
+
+  it("should update property meta when an item's required action status changes", async () => {
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const itemId = uuid();
+    const beforeData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: propertyId,
+
+      template: {
+        trackDeficientItems: true,
+        items: {
+          // Create single deficient item on inspection
+          [itemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true
+          ),
+        },
+      },
+    });
+
+    // Setup database
+    await db.ref(`/properties/${propertyId}`).set({ name: 'test' });
+    await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
+    const diRef = db
+      .ref(`/propertyInspectionDeficientItems/${propertyId}`)
+      .push();
+    const diPath = diRef.path.toString();
+    const diID = diPath.split('/').pop();
+    await diRef.set({
+      state: FOLLOW_UP_ACTION_VALUES[0], // NOT requiring action
+      inspection: inspectionId,
+      item: itemId,
+    });
+    const beforeSnap = await db.ref(`${diPath}/state`).once('value'); // Create before
+    await diRef.set({
+      state: REQUIRED_ACTIONS_VALUES[0], // Requires action
+      inspection: inspectionId,
+      item: itemId,
+    });
+    const afterSnap = await db.ref(`${diPath}/state`).once('value'); // Create after
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.deficientItemsPropertyMetaSync);
+    await wrapped(changeSnap, { params: { propertyId, itemId: diID } });
+
+    // Test result
+    const actualSnap = await db
+      .ref(`/properties/${propertyId}/numOfRequiredActionsForDeficientItems`)
+      .once('value');
+    const actual = actualSnap.val();
+
+    // Assertions
+    expect(actual).to.equal(
+      1,
+      'updated property\'s "numOfRequiredActionsForDeficientItems"'
+    );
+  });
+
+  it("should update property meta when an item's follow up action status changes", async () => {
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const itemId = uuid();
+    const beforeData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: propertyId,
+
+      template: {
+        trackDeficientItems: true,
+        items: {
+          // Create single deficient item on inspection
+          [itemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true
+          ),
+        },
+      },
+    });
+
+    // Setup database
+    await db.ref(`/properties/${propertyId}`).set({ name: 'test' });
+    await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
+    const diRef = db
+      .ref(`/propertyInspectionDeficientItems/${propertyId}`)
+      .push();
+    const diPath = diRef.path.toString();
+    const diID = diPath.split('/').pop();
+    await diRef.set({
+      state: REQUIRED_ACTIONS_VALUES[0], // requires action
+      inspection: inspectionId,
+      item: itemId,
+    });
+    const beforeSnap = await db.ref(`${diPath}/state`).once('value'); // Create before
+    await diRef.set({
+      state: FOLLOW_UP_ACTION_VALUES[0], // NOT requiring action
+      inspection: inspectionId,
+      item: itemId,
+    });
+    const afterSnap = await db.ref(`${diPath}/state`).once('value'); // Create after
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.deficientItemsPropertyMetaSync);
+    await wrapped(changeSnap, { params: { propertyId, itemId: diID } });
+
+    // Test result
+    const actualSnap = await db
+      .ref(`/properties/${propertyId}/numOfFollowUpActionsForDeficientItems`)
+      .once('value');
+    const actual = actualSnap.val();
+
+    // Assertions
+    expect(actual).to.equal(
+      1,
+      'updated property\'s "numOfFollowUpActionsForDeficientItems"'
+    );
+  });
 
   it("should move a closed deficient item's trello card to the configured closed list", async () => {
     const propertyId = uuid();

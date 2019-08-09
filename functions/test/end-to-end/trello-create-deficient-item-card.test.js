@@ -47,8 +47,8 @@ const INSPECTION_ITEM_DATA = {
 const INTEGRATIONS_DATA = {
   grantedBy: USER_ID,
   grantedAt: Date.now() / 1000,
-  board: TRELLO_BOARD_ID,
-  boardName: 'Test Board',
+  openBoard: TRELLO_BOARD_ID,
+  openBoardName: 'Test Board',
   openList: TRELLO_LIST_ID,
   openListName: 'TO DO',
 };
