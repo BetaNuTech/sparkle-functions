@@ -291,6 +291,61 @@ describe('Deficient Items Property Meta Sync', () => {
     );
   });
 
+  it("should decrement property's total DI counter when they become closed", async () => {
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const itemId = uuid();
+    const beforeData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: propertyId,
+
+      template: {
+        trackDeficientItems: true,
+        items: {
+          // Create single deficient item on inspection
+          [itemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true
+          ),
+        },
+      },
+    });
+
+    // Setup database
+    await db
+      .ref(`/properties/${propertyId}`)
+      .set({ name: 'test', numOfDeficientItems: 1 });
+    await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
+    const diRef = db
+      .ref(`/propertyInspectionDeficientItems/${propertyId}`)
+      .push();
+    const diPath = diRef.path.toString();
+    const diID = diPath.split('/').pop();
+    await diRef.set({
+      state: 'requires-action',
+      inspection: inspectionId,
+      item: itemId,
+    });
+    const beforeSnap = await db.ref(`${diPath}/state`).once('value'); // Create before
+    await diRef.update({ state: 'closed' });
+    const afterSnap = await db.ref(`${diPath}/state`).once('value'); // Create after
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.deficientItemsPropertyMetaSync);
+    await wrapped(changeSnap, { params: { propertyId, itemId: diID } });
+
+    // Test result
+    const actualSnap = await db
+      .ref(`/properties/${propertyId}/numOfDeficientItems`)
+      .once('value');
+    const actual = actualSnap.val();
+
+    // Assertions
+    expect(actual).to.equal(0);
+  });
+
   it("should move a closed deficient item's trello card to the configured closed list", async () => {
     const propertyId = uuid();
     const inspectionId = uuid();
