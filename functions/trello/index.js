@@ -3,6 +3,7 @@ const createOnGetAllTrelloBoardsHandler = require('./get-all-trello-boards-handl
 const createOnGetAllTrelloBoardListsHandler = require('./get-all-trello-board-lists-handler');
 const createOnTrelloDeficientItemCardHandler = require('./create-trello-deficient-item-card-handler');
 const createGetTrelloAuthorizorHandler = require('./get-trello-authorizor-handler');
+const createDeleteTrelloAuthHandler = require('./delete-trello-auth-handler');
 
 module.exports = {
   createOnUpsertTrelloTokenHandler,
@@ -10,4 +11,5 @@ module.exports = {
   createOnGetAllTrelloBoardListsHandler,
   createOnTrelloDeficientItemCardHandler,
   createGetTrelloAuthorizorHandler,
+  createDeleteTrelloAuthHandler,
 };

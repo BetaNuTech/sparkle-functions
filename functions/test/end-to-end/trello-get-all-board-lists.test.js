@@ -65,7 +65,7 @@ describe('Trello Get All Board Lists', () => {
 
     // Assertions
     expect(result.body.message).to.equal(
-      'This user never created this auth token'
+      'User did not create authorization token'
     );
   });
 

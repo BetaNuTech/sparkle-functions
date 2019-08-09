@@ -5,9 +5,9 @@ const bodyParser = require('body-parser');
 const got = require('got');
 const log = require('../utils/logger');
 const authUser = require('../utils/auth-firebase-user');
-const systemModel = require('../models/system');
+const authTrelloReq = require('../utils/auth-trello-request');
 
-const PREFIX = 'trello: get all board lists:';
+const PREFIX = 'trello: get board lists:';
 
 /**
  * Factory for getting all trello board lists
@@ -26,44 +26,21 @@ module.exports = function createOnGetAllTrelloBoardListsHandler(db, auth) {
    * @return {Promise}
    */
   const handler = async (req, res) => {
-    const { user, params } = req;
+    const { user, params, trelloCredentials } = req;
     const { boardId } = params;
+
+    log.info(`${PREFIX} requested by user: ${user.id}`);
 
     if (!boardId) {
       return res
-        .status(404)
+        .status(400)
         .send({ message: 'request missing boardId parameter' });
     }
-
-    if (!user) {
-      return res.status(401).send({ message: 'request not authorized' });
-    }
-
-    log.info(`${PREFIX} requested by user: ${user.id}`);
 
     // Configure JSON API response
     res.set('Content-Type', 'application/vnd.api+json');
 
-    let trelloCredentials = {};
-    try {
-      const savedTokenCredentials = await systemModel.findTrelloCredentials(db);
-
-      if (!savedTokenCredentials.exists()) {
-        return res.status(404).send({ message: 'User trello token not found' });
-      }
-
-      trelloCredentials = savedTokenCredentials.val();
-
-      if (user.id !== trelloCredentials.user) {
-        return res
-          .status(401)
-          .send({ message: 'This user never created this auth token' });
-      }
-    } catch (err) {
-      log.error(`${PREFIX} Error accessing trello token: ${err}`);
-      return res.status(401).send({ message: 'Error accessing trello token' });
-    }
-
+    // Request lists for Trello board
     let usersBoardLists;
     try {
       const trelloResponse = await got(
@@ -100,6 +77,7 @@ module.exports = function createOnGetAllTrelloBoardListsHandler(db, auth) {
   app.get(
     '/integrations/trello/boards/:boardId/lists',
     authUser(db, auth, true),
+    authTrelloReq(db),
     handler
   );
   return app;
