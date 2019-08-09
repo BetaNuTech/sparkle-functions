@@ -68,7 +68,7 @@ exports.upsertTrelloTokenStaging = functions.https.onRequest(
 exports.deleteTrelloAuthorization = functions.https.onRequest(
   trello.createDeleteTrelloAuthHandler(db, auth)
 );
-exports.deleteTrelloAuthorizationtaging = functions.https.onRequest(
+exports.deleteTrelloAuthorizationStaging = functions.https.onRequest(
   trello.createDeleteTrelloAuthHandler(dbStaging, auth)
 );
 
