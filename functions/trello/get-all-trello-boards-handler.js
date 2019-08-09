@@ -5,9 +5,9 @@ const bodyParser = require('body-parser');
 const got = require('got');
 const log = require('../utils/logger');
 const authUser = require('../utils/auth-firebase-user');
-const systemModel = require('../models/system');
+const authTrelloReq = require('../utils/auth-trello-request');
 
-const PREFIX = 'trello: get all boards:';
+const PREFIX = 'trello: get boards:';
 
 /**
  * Factory for getting all trello boards
@@ -26,41 +26,12 @@ module.exports = function createOnGetAllTrelloBoardsHandler(db, auth) {
    * @return {Promise}
    */
   const handler = async (req, res) => {
-    const { user } = req;
-
-    if (!user) {
-      return res.status(401).send({ message: 'request not authorized' });
-    }
+    const { user, trelloCredentials } = req;
 
     log.info(`${PREFIX} requested by user: ${user.id}`);
 
     // Configure JSON API response
     res.set('Content-Type', 'application/vnd.api+json');
-
-    // Lookup Trello Credentials
-    let trelloCredentials = null;
-    try {
-      const trelloCredentialsSnap = await systemModel.findTrelloCredentials(db);
-
-      if (!trelloCredentialsSnap.exists()) {
-        return res
-          .status(404)
-          .send({ message: 'Trello credentials not found' });
-      }
-
-      trelloCredentials = trelloCredentialsSnap.val();
-    } catch (err) {
-      log.error(`${PREFIX} Error accessing trello token: ${err}`);
-      return res.status(401).send({ message: 'Error accessing trello token' });
-    }
-
-    // Revoke unauthorized request for
-    // anthor authorizor's Trello boards
-    if (user.id !== trelloCredentials.user) {
-      return res
-        .status(401)
-        .send({ message: 'This user never created this auth token' });
-    }
 
     // Request user's Trello boards
     let boards = null;
@@ -117,7 +88,12 @@ module.exports = function createOnGetAllTrelloBoardsHandler(db, auth) {
   // Create express app with single GET endpoint
   const app = express();
   app.use(cors(), bodyParser.json());
-  app.get('/integrations/trello/boards', authUser(db, auth, true), handler);
+  app.get(
+    '/integrations/trello/boards',
+    authUser(db, auth, true),
+    authTrelloReq(db),
+    handler
+  );
   return app;
 };
 

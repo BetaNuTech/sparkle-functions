@@ -2,6 +2,7 @@ const assert = require('assert');
 const modelSetup = require('./utils/model-setup');
 
 const PREFIX = 'models: integrations:';
+const TRELLO_PROPERTIES_PATH = '/integrations/trello/properties';
 
 module.exports = modelSetup({
   /**
@@ -15,9 +16,51 @@ module.exports = modelSetup({
       propertyId && typeof propertyId === 'string',
       `${PREFIX} has property id`
     );
-    return db
-      .ref(`/integrations/trello/properties/${propertyId}`)
-      .once('value');
+    return db.ref(`${TRELLO_PROPERTIES_PATH}/${propertyId}`).once('value');
+  },
+
+  /**
+   * Archive all Trello property integrations
+   * @param  {firebaseAdmin.database} db firbase database
+   * @return {Promise} - resovles {DataSnapshot} property integrations snapshot
+   */
+  async archiveAllPropertyTrelloConfigs(db) {
+    // Lookup all trello property integrations
+    let propertyConfigsSnap = null;
+    try {
+      propertyConfigsSnap = await db.ref(TRELLO_PROPERTIES_PATH).once('value');
+    } catch (err) {
+      throw Error(
+        `${PREFIX} archiveAllPropertyTrelloConfigs: integrations lookup failed`
+      );
+    }
+
+    // No updates needed
+    if (!propertyConfigsSnap.exists()) {
+      return null;
+    }
+
+    // Move trello integrations into archive
+    try {
+      await db
+        .ref(`/archive${TRELLO_PROPERTIES_PATH}`)
+        .set(propertyConfigsSnap.val());
+    } catch (err) {
+      throw Error(
+        `${PREFIX} archiveAllPropertyTrelloConfigs: archive write failed`
+      );
+    }
+
+    // Destroy integrations for all properties
+    try {
+      await db.ref(TRELLO_PROPERTIES_PATH).remove();
+    } catch (err) {
+      throw Error(
+        `${PREFIX} archiveAllPropertyTrelloConfigs: integrations deletion failed`
+      );
+    }
+
+    return propertyConfigsSnap;
   },
 
   /**
