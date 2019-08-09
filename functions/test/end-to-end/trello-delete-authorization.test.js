@@ -29,8 +29,8 @@ const TRELLO_CREDENTIALS_DATA = {
 const PROPERTY_INTEGRATIONS_DATA = {
   grantedBy: USER_ID,
   grantedAt: Date.now() / 1000,
-  board: 'dlkfjasdlkf',
-  boardName: 'Test Board',
+  openBoard: 'dlkfjasdlkf',
+  openBoardName: 'Test Board',
   openList: 'dflajsdflkjsd',
   opentListName: 'TO DO',
 };
