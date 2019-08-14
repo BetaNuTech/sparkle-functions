@@ -2,7 +2,7 @@ const log = require('../utils/logger');
 const processPropertyMeta = require('../properties/process-meta');
 const deleteUploads = require('./delete-uploads');
 
-const LOG_PREFIX = 'inspections: on-delete:';
+const PREFIX = 'inspections: on-delete:';
 
 /**
  * Factory for inspection onDelete handler
@@ -19,22 +19,20 @@ module.exports = function createOnDeleteHandler(db, storage) {
     const updates = Object.create(null);
     const requests = [];
 
-    log.info(`${LOG_PREFIX} ${inspectionId} deleted`);
+    log.info(`${PREFIX} ${inspectionId} deleted`);
 
     if (!propertyId || !inspection) {
       log.error(
-        `${LOG_PREFIX} inspection ${inspectionId} missing property reference`
+        `${PREFIX} inspection ${inspectionId} missing property reference`
       );
       return Promise.resolve(updates);
     }
 
     // Remove any completed inspection proxies
     if (isCompleted) {
-      updates[`/completedInspections/${inspectionId}`] = 'removed';
       updates[`/completedInspectionsList/${inspectionId}`] = 'removed';
 
       requests.push(
-        db.ref(`/completedInspections/${inspectionId}`).remove(),
         db.ref(`/completedInspectionsList/${inspectionId}`).remove()
       );
     }
@@ -59,10 +57,10 @@ module.exports = function createOnDeleteHandler(db, storage) {
 
     // Wait for proxy removal
     try {
-      await Promise.all(requests).then(() => updates);
-    } catch (e) {
+      await Promise.all(requests);
+    } catch (err) {
       log.error(
-        `${LOG_PREFIX} ${inspectionId} proxy record cleanup failed: ${e}`
+        `${PREFIX} ${inspectionId} proxy record cleanup failed | ${err}`
       );
     }
 
@@ -77,7 +75,7 @@ module.exports = function createOnDeleteHandler(db, storage) {
     try {
       await deleteUploads(db, storage, inspectionId);
     } catch (err) {
-      log.error(`${LOG_PREFIX} ${err}`);
+      log.error(`${PREFIX} ${err}`);
     }
 
     return updates;

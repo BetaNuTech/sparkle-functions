@@ -31,7 +31,6 @@ describe('Inspection Write', () => {
     await db
       .ref(`/properties/${propertyId}`)
       .set({ name: `name${propertyId}` }); // required
-    await db.ref(`/completedInspections/${inspectionId}`).set(beforeData); // Add completedInspections
     await db.ref(`/completedInspectionsList/${inspectionId}`).set(beforeData); // Add completedInspectionsList
     await db
       .ref(`/propertyInspections/${propertyId}/inspections/${inspectionId}`)
@@ -54,7 +53,6 @@ describe('Inspection Write', () => {
 
     // Test result
     const paths = [
-      `/completedInspections/${inspectionId}/score`,
       `/completedInspectionsList/${inspectionId}/score`,
       `/propertyInspections/${propertyId}/inspections/${inspectionId}/score`,
       `/propertyInspectionsList/${propertyId}/inspections/${inspectionId}/score`,
@@ -68,7 +66,7 @@ describe('Inspection Write', () => {
     });
   });
 
-  it("should update inspections' proxy records with new data", async () => {
+  it("should update inspections' proxy record with new data", async () => {
     const inspectionId = uuid();
     const propertyId = uuid();
     const categoryId = uuid();
@@ -104,7 +102,6 @@ describe('Inspection Write', () => {
     await db
       .ref(`/templateCategories/${categoryId}`)
       .set({ name: `name${categoryId}` }); // Add inspections' category
-    await db.ref(`/completedInspections/${inspectionId}`).set(beforeData); // Add completedInspections
     await db.ref(`/completedInspectionsList/${inspectionId}`).set(beforeData); // Add completedInspections
     await db
       .ref(`/propertyInspections/${propertyId}/inspections/${inspectionId}`)
@@ -132,10 +129,7 @@ describe('Inspection Write', () => {
     const propertyInspectionList = await db
       .ref(`/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`)
       .once('value');
-    const completedInspection = await db
-      .ref(`/completedInspections/${inspectionId}`)
-      .once('value');
-    const completedInspectionList = await db
+    const completedInspectionProxy = await db
       .ref(`/completedInspectionsList/${inspectionId}`)
       .once('value');
 
@@ -155,17 +149,13 @@ describe('Inspection Write', () => {
     delete expectedCompleted.itemsCompleted;
     delete expectedCompleted.totalItems;
     delete expectedCompleted.templateCategory;
-    expect(completedInspection.val()).to.deep.equal(
-      expectedCompleted,
-      'updated /completedInspections proxy'
-    );
-    expect(completedInspectionList.val()).to.deep.equal(
+    expect(completedInspectionProxy.val()).to.deep.equal(
       expectedCompleted,
       'updated /completedInspectionsList proxy'
     );
   });
 
-  it('should update completedInspections when inspection becomes completed', async () => {
+  it("should update inspection's proxy record when inspection becomes completed", async () => {
     const inspectionId = uuid();
     const propertyId = uuid();
     const now = Date.now() / 1000;
@@ -208,28 +198,19 @@ describe('Inspection Write', () => {
     await wrapped(changeSnap, { params: { inspectionId } });
 
     // Test result
-    const actual = await db
-      .ref(`/completedInspections/${inspectionId}`)
-      .once('value');
-    const actualList = await db
+    const result = await db
       .ref(`/completedInspectionsList/${inspectionId}`)
       .once('value');
+    const actual = result.val();
 
     // Assertions
     const expected = Object.assign({}, afterData);
     delete expected.itemsCompleted;
     delete expected.totalItems;
-    expect(actual.val()).to.deep.equal(
-      expected,
-      'updated /completedInspections proxy'
-    );
-    expect(actualList.val()).to.deep.equal(
-      expected,
-      'updated /completedInspectionsList proxy'
-    );
+    expect(actual).to.deep.equal(expected);
   });
 
-  it('should ensure an incomplete inspection does not exist in any completed proxy records', async () => {
+  it('should ensure an incomplete inspection does not have a completed proxy record', async () => {
     const inspectionId = uuid();
     const propertyId = uuid();
     const now = Date.now() / 1000;
@@ -265,22 +246,13 @@ describe('Inspection Write', () => {
     await wrapped(changeSnap, { params: { inspectionId } });
 
     // Test result
-    const actual = await db
-      .ref(`/completedInspections/${inspectionId}`)
-      .once('value');
-    const actualList = await db
+    const result = await db
       .ref(`/completedInspectionsList/${inspectionId}`)
       .once('value');
+    const actual = result.exists();
 
     // Assertions
-    expect(actual.exists()).to.equal(
-      false,
-      '/completedInspections proxy does not exist'
-    );
-    expect(actualList.exists()).to.equal(
-      false,
-      '/completedInspectionsList proxy does not exist'
-    );
+    expect(actual).to.equal(false);
   });
 
   it("should update property with any meta data from its' completed inspections", async () => {

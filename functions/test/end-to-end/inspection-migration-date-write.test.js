@@ -60,10 +60,7 @@ describe('Inspections Migration Date Write', () => {
     const propertyInspectionList = await db
       .ref(`/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`)
       .once('value');
-    const completedInspection = await db
-      .ref(`/completedInspections/${inspectionId}`)
-      .once('value');
-    const completedInspectionList = await db
+    const completedInspectionProxy = await db
       .ref(`/completedInspectionsList/${inspectionId}`)
       .once('value');
 
@@ -85,11 +82,7 @@ describe('Inspections Migration Date Write', () => {
     delete expectedCompleted.itemsCompleted;
     delete expectedCompleted.totalItems;
     delete expectedCompleted.templateCategory;
-    expect(completedInspection.val()).to.deep.equal(
-      expectedCompleted,
-      'updated /completedInspections proxy'
-    );
-    expect(completedInspectionList.val()).to.deep.equal(
+    expect(completedInspectionProxy.val()).to.deep.equal(
       expectedCompleted,
       'updated /completedInspectionsList proxy'
     );

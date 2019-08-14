@@ -69,7 +69,6 @@ module.exports = {
     return Promise.all(
       [
         'archive',
-        'completedInspections',
         'completedInspectionsList',
         'inspections',
         'properties',

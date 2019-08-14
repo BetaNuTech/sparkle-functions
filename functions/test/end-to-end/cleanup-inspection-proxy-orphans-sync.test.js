@@ -134,9 +134,7 @@ describe('Cleanup Inspection Proxy Orphans Sync', () => {
 
     // Setup database
     await db.ref(`/inspections/${insp1Id}`).set(activeInspection); // create active inspection
-    await db.ref(`/completedInspections/${insp1Id}`).set(activeInspection); // TODO remove #53
     await db.ref(`/completedInspectionsList/${insp1Id}`).set(activeInspection);
-    await db.ref(`/completedInspections/${insp2Id}`).set(archivedInspection); // TODO remove #53
     await db
       .ref(`/completedInspectionsList/${insp2Id}`)
       .set(archivedInspection);
@@ -149,19 +147,13 @@ describe('Cleanup Inspection Proxy Orphans Sync', () => {
     await wrapped();
 
     // Test result
-    const actual = await Promise.all([
-      db.ref(`/completedInspections/${insp1Id}`).once('value'), // TODO remove #53
+    const results = await Promise.all([
       db.ref(`/completedInspectionsList/${insp1Id}`).once('value'),
-      db.ref(`/completedInspections/${insp2Id}`).once('value'), // TODO remove #53
       db.ref(`/completedInspectionsList/${insp2Id}`).once('value'),
     ]);
+    const actual = results.map(proxy => proxy.exists());
 
     // Assertions
-    expect(actual.map(proxy => proxy.exists())).to.deep.equal([
-      true,
-      true,
-      false,
-      false,
-    ]);
+    expect(actual).to.deep.equal([true, false]);
   });
 });
