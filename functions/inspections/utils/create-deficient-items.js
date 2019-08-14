@@ -41,6 +41,8 @@ const DEFAULT_DEFICIENT_ITEM = Object.freeze({
   itemPhotosData: null,
 });
 
+const WHITELISTED_FALSEY_ATTRS = ['itemMainInputSelection', 'hasItemPhotoData'];
+
 /**
  * Factory for an inspections deficient items
  * @param  {Object} inspection
@@ -105,6 +107,8 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
     const itemDataLastUpdatedDate =
       getLatestItemAdminEditTimestamp(item) || inspection.updatedLastDate;
 
+    const hasItemPhotoData = hasValidPhotosData(item.photosData);
+
     result[item.id] = Object.assign({}, DEFAULT_DEFICIENT_ITEM, {
       inspection: inspection.id,
       item: item.id,
@@ -115,9 +119,10 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
       itemTitle: item.title,
       itemInspectorNotes: item.inspectorNotes,
       itemAdminEdits: item.adminEdits ? deepClone(item.adminEdits) : null,
-      itemPhotosData: hasValidPhotosData(item.photosData)
+      itemPhotosData: hasItemPhotoData
         ? cleanedPhotoData(item.photosData)
         : null,
+      hasItemPhotoData,
       itemMainInputSelection: mainInputSelection,
       itemDataLastUpdatedDate,
       sectionSubtitle,
@@ -134,7 +139,7 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
     // Cleanup falsey values for item, except
     // "itemMainInputSelection" which may be 0
     Object.keys(result[item.id]).forEach(attr => {
-      if (!result[item.id][attr] && attr !== 'itemMainInputSelection') {
+      if (!result[item.id][attr] && !WHITELISTED_FALSEY_ATTRS.includes(attr)) {
         delete result[item.id][attr];
       }
     });
@@ -171,7 +176,7 @@ function getSectionItems(sectionId, inspection) {
  */
 function hasValidPhotosData(photosData = {}) {
   return (
-    Object.keys(photosData).filter(photoId =>
+    Object.keys(photosData || {}).filter(photoId =>
       Boolean(photosData[photoId].downloadURL)
     ).length > 0
   );
@@ -183,7 +188,7 @@ function hasValidPhotosData(photosData = {}) {
  * @return {Object} - cloned photos data
  */
 function cleanedPhotoData(photosData = {}) {
-  const result = deepClone(photosData);
+  const result = deepClone(photosData || {});
 
   Object.keys(result).forEach(photoId => {
     if (!result[photoId].downloadURL) {
