@@ -91,7 +91,6 @@ describe('Property Inspections List Sync', () => {
     await db
       .ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`)
       .set(oldInspection);
-    await db.ref(`/completedInspections/${inspId}`).set(oldInspection);
     await db.ref(`/completedInspectionsList/${inspId}`).set(oldInspection);
 
     // Execute
