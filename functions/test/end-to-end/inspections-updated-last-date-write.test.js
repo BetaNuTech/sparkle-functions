@@ -51,10 +51,7 @@ describe('Inspections Updated Last Date Write', () => {
     await wrapped(changeSnap, { params: { inspectionId } });
 
     // Test results
-    const propertyInspection = await db
-      .ref(`/propertyInspections/${propertyId}/inspections/${inspectionId}`)
-      .once('value');
-    const propertyInspectionList = await db
+    const propertyInspectionProxy = await db
       .ref(`/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`)
       .once('value');
     const completedInspectionProxy = await db
@@ -64,11 +61,7 @@ describe('Inspections Updated Last Date Write', () => {
     // Assertions
     const expected = Object.assign({}, inspectionData);
     delete expected.property;
-    expect(propertyInspection.val()).to.deep.equal(
-      expected,
-      'updated /propertyInspections proxy'
-    );
-    expect(propertyInspectionList.val()).to.deep.equal(
+    expect(propertyInspectionProxy.val()).to.deep.equal(
       expected,
       'updated /propertyInspectionsList proxy'
     );

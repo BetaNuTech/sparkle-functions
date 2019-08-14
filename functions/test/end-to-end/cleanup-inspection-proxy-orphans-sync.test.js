@@ -26,26 +26,17 @@ describe('Cleanup Inspection Proxy Orphans Sync', () => {
     // Setup database
     await db.ref(`/inspections/${insp1Id}`).set(inspectionOne);
     await db
-      .ref(`/propertyInspections/${archivedPropertyId}/inspections/${insp1Id}`)
-      .set(inspectionOne); // TODO remove #53
-    await db
       .ref(
         `/propertyInspectionsList/${archivedPropertyId}/inspections/${insp1Id}`
       )
       .set(inspectionOne);
     await db.ref(`/inspections/${insp2Id}`).set(inspectionTwo); // sanity check
     await db
-      .ref(`/propertyInspections/${archivedPropertyId}/inspections/${insp2Id}`)
-      .set(inspectionTwo); // TODO remove #53
-    await db
       .ref(
         `/propertyInspectionsList/${archivedPropertyId}/inspections/${insp2Id}`
       )
       .set(inspectionTwo);
     await db.ref(`/inspections/${insp3Id}`).set(inspectionThree); // sanity check
-    await db
-      .ref(`/propertyInspections/${activePropertyId}/inspections/${insp3Id}`)
-      .set(inspectionThree); // TODO remove #53
     await db
       .ref(
         `/propertyInspectionsList/${activePropertyId}/inspections/${insp3Id}`
@@ -60,20 +51,14 @@ describe('Cleanup Inspection Proxy Orphans Sync', () => {
     await wrapped();
 
     // Test result
-    const actual = await Promise.all([
-      db.ref(`/propertyInspections/${archivedPropertyId}`).once('value'), // TODO remove #53
+    const results = await Promise.all([
       db.ref(`/propertyInspectionsList/${archivedPropertyId}`).once('value'),
-      db.ref(`/propertyInspections/${activePropertyId}`).once('value'), // TODO remove #53
       db.ref(`/propertyInspectionsList/${activePropertyId}`).once('value'),
     ]);
+    const actual = results.map(proxy => proxy.exists());
 
     // Assertions
-    expect(actual.map(proxy => proxy.exists())).to.deep.equal([
-      false,
-      false,
-      true,
-      true,
-    ]);
+    expect(actual).to.deep.equal([false, true]);
   });
 
   it('should remove all inspection proxies of an archived inspection', async () => {
@@ -90,14 +75,8 @@ describe('Cleanup Inspection Proxy Orphans Sync', () => {
     // Setup database
     await db.ref(`/inspections/${insp1Id}`).set(activeInspection); // create active inspection
     await db
-      .ref(`/propertyInspections/${propertyId}/inspections/${insp1Id}`)
-      .set(activeInspection); // TODO remove #53
-    await db
       .ref(`/propertyInspectionsList/${propertyId}/inspections/${insp1Id}`)
       .set(activeInspection);
-    await db
-      .ref(`/propertyInspections/${propertyId}/inspections/${insp2Id}`)
-      .set(archivedInspection); // TODO remove #53
     await db
       .ref(`/propertyInspectionsList/${propertyId}/inspections/${insp2Id}`)
       .set(archivedInspection);
@@ -110,17 +89,13 @@ describe('Cleanup Inspection Proxy Orphans Sync', () => {
     await wrapped();
 
     // Test result
-    const results = await Promise.all([
-      db.ref(`/propertyInspections/${propertyId}/inspections`).once('value'), // TODO remove #53
-      db
-        .ref(`/propertyInspectionsList/${propertyId}/inspections`)
-        .once('value'),
-    ]);
+    const result = await db
+      .ref(`/propertyInspectionsList/${propertyId}/inspections`)
+      .once('value');
+    const actual = result.val();
 
     // Assertions
-    results
-      .map(r => r.val())
-      .forEach(actual => expect(actual).to.deep.equal(expected));
+    expect(actual).to.deep.equal(expected);
   });
 
   it('should remove all completed inspection proxies of an archived inspection', async () => {

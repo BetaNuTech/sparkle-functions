@@ -35,9 +35,6 @@ describe('Inspection Delete', () => {
       .set({ name: `name${propertyId}` }); // required
     await db.ref(`/completedInspectionsList/${inspId}`).set(inspectionData); // Add completedInspectionsList
     await db
-      .ref(`/propertyInspections/${propertyId}/inspections/${inspId}`)
-      .set(inspectionData); // Add propertyInspections
-    await db
       .ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`)
       .set(inspectionData); // Add propertyInspectionsList
     const snap = await db.ref(`/inspections/${inspId}`).once('value'); // Create snap
@@ -51,16 +48,13 @@ describe('Inspection Delete', () => {
     const result = await Promise.all([
       db.ref(`/completedInspectionsList/${inspId}`).once('value'),
       db
-        .ref(`/propertyInspections/${propertyId}/inspections/${inspId}`)
-        .once('value'),
-      db
         .ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`)
         .once('value'),
     ]);
     const actual = result.map(ds => ds.exists());
 
     // Assertions
-    expect(actual).to.deep.equal([false, false, false]);
+    expect(actual).to.deep.equal([false, false]);
   });
 
   it('should update property meta data when latest completed inspection is removed', async () => {

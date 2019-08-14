@@ -35,13 +35,6 @@ module.exports = function createCleanupProxyOrphansHandler(
           }
 
           try {
-            // Update legacy (TODO remove #53)
-            await db.ref(`/propertyInspections/${propertyId}`).remove();
-            updates[`/propertyInspections/${propertyId}`] = 'removed';
-            log.info(
-              `${PREFIX} removed archived property ${propertyId} proxies at /propertyInspections`
-            );
-
             // Update list version
             await db.ref(`/propertyInspectionsList/${propertyId}`).remove();
             updates[`/propertyInspectionsList/${propertyId}`] = 'removed';
@@ -49,9 +42,7 @@ module.exports = function createCleanupProxyOrphansHandler(
               `${PREFIX} removed archived property ${propertyId} proxies at /propertyInspectionsList`
             );
           } catch (e) {
-            log.error(
-              `${PREFIX} /propertyInspectionsList/${propertyId}: ${e}`
-            );
+            log.error(`${PREFIX} /propertyInspectionsList/${propertyId}: ${e}`);
           }
         }
       );
@@ -72,20 +63,6 @@ module.exports = function createCleanupProxyOrphansHandler(
             }
 
             try {
-              // Update legacy (TODO remove #53)
-              await db
-                .ref(
-                  `/propertyInspections/${propertyId}/inspections/${inspectionId}`
-                )
-                .remove();
-              updates[
-                `/propertyInspections/${propertyId}/inspections/${inspectionId}`
-              ] = 'removed';
-              log.info(
-                `${PREFIX} removed archived inspection: ${inspectionId} proxy at /propertyInspections/${propertyId}/inspections`
-              );
-
-              // Update list version
               await db
                 .ref(
                   `/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`
