@@ -37,17 +37,12 @@ module.exports = function createOnDeleteHandler(db, storage) {
       );
     }
 
-    // Remove property inspection proxies
-    updates[`/propertyInspections/${propertyId}/inspections/${inspectionId}`] =
-      'removed';
+    // Remove property inspection proxy
     updates[
       `/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`
     ] = 'removed';
 
     requests.push(
-      db
-        .ref(`/propertyInspections/${propertyId}/inspections/${inspectionId}`)
-        .remove(),
       db
         .ref(
           `/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`

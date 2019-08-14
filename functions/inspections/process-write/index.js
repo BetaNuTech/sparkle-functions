@@ -7,7 +7,7 @@ const LOG_PREFIX = 'inspections: process-write:';
 
 /**
  * Perform update of all inspection proxies: nested,
- * propertyInspections, and completedInspectionsList
+ * propertyInspectionsList and completedInspectionsList
  * @param  {firebaseAdmin.database} db
  * @param  {String} inspectionId
  * @param  {Object} inspection
@@ -26,9 +26,6 @@ module.exports = async function processWrite(db, inspectionId, inspection) {
     inspectionId,
     inspection,
   });
-  updates[
-    `/propertyInspections/${inspection.property}/inspections/${inspectionId}`
-  ] = 'upserted'; // TODO remove #53
   updates[
     `/propertyInspectionsList/${inspection.property}/inspections/${inspectionId}`
   ] = 'upserted';

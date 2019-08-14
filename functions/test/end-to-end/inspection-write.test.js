@@ -33,9 +33,6 @@ describe('Inspection Write', () => {
       .set({ name: `name${propertyId}` }); // required
     await db.ref(`/completedInspectionsList/${inspectionId}`).set(beforeData); // Add completedInspectionsList
     await db
-      .ref(`/propertyInspections/${propertyId}/inspections/${inspectionId}`)
-      .set(beforeData); // Add propertyInspections
-    await db
       .ref(`/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`)
       .set(beforeData); // Add propertyInspectionsList
     const beforeSnap = await db
@@ -54,7 +51,6 @@ describe('Inspection Write', () => {
     // Test result
     const paths = [
       `/completedInspectionsList/${inspectionId}/score`,
-      `/propertyInspections/${propertyId}/inspections/${inspectionId}/score`,
       `/propertyInspectionsList/${propertyId}/inspections/${inspectionId}/score`,
     ];
     const results = await Promise.all(paths.map(p => db.ref(p).once('value')));
@@ -104,9 +100,6 @@ describe('Inspection Write', () => {
       .set({ name: `name${categoryId}` }); // Add inspections' category
     await db.ref(`/completedInspectionsList/${inspectionId}`).set(beforeData); // Add completedInspections
     await db
-      .ref(`/propertyInspections/${propertyId}/inspections/${inspectionId}`)
-      .set(beforeData); // Add propertyInspections
-    await db
       .ref(`/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`)
       .set(beforeData); // Add propertyInspectionsList
     const beforeSnap = await db
@@ -123,10 +116,7 @@ describe('Inspection Write', () => {
     await wrapped(changeSnap, { params: { inspectionId } });
 
     // Test result
-    const propertyInspection = await db
-      .ref(`/propertyInspections/${propertyId}/inspections/${inspectionId}`)
-      .once('value');
-    const propertyInspectionList = await db
+    const propertyInspectionProxy = await db
       .ref(`/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`)
       .once('value');
     const completedInspectionProxy = await db
@@ -136,11 +126,7 @@ describe('Inspection Write', () => {
     // Assertions
     const expected = Object.assign({}, afterData);
     delete expected.property;
-    expect(propertyInspection.val()).to.deep.equal(
-      expected,
-      'updated /propertyInspections proxy'
-    );
-    expect(propertyInspectionList.val()).to.deep.equal(
+    expect(propertyInspectionProxy.val()).to.deep.equal(
       expected,
       'updated /propertyInspectionsList proxy'
     );
