@@ -7,7 +7,7 @@ const createOnDeleteHandler = require('./on-delete-handler');
 const createOnGetPDFReportHandler = require('./on-get-pdf-report');
 const getLatestCompleted = require('./get-latest-completed');
 
-const LOG_PREFIX = 'inspections:';
+const PREFIX = 'inspections:';
 
 module.exports = {
   /**
@@ -37,7 +37,7 @@ module.exports = {
       } catch (err) {
         // wrap error
         throw Error(
-          `${LOG_PREFIX} removeForProperty: upload delete failed: ${err}`
+          `${PREFIX} removeForProperty: upload delete failed: ${err}`
         );
       }
     }
@@ -47,9 +47,6 @@ module.exports = {
       updates[`/inspections/${inspectionId}`] = null;
     });
 
-    // Remove all `/propertyInspections`
-    updates[`/propertyInspections/${propertyId}`] = null;
-
     // Remove all `/propertyInspectionsList`
     updates[`/propertyInspectionsList/${propertyId}`] = null;
 
@@ -58,7 +55,7 @@ module.exports = {
     } catch (err) {
       // wrap error
       throw Error(
-        `${LOG_PREFIX} removeForProperty: update inspection failed: ${err}`
+        `${PREFIX} removeForProperty: update inspection failed: ${err}`
       );
     }
 

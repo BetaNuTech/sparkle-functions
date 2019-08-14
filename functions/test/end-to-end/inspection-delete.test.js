@@ -33,11 +33,7 @@ describe('Inspection Delete', () => {
     await db
       .ref(`/properties/${propertyId}`)
       .set({ name: `name${propertyId}` }); // required
-    await db.ref(`/completedInspections/${inspId}`).set(inspectionData); // Add completedInspections
     await db.ref(`/completedInspectionsList/${inspId}`).set(inspectionData); // Add completedInspectionsList
-    await db
-      .ref(`/propertyInspections/${propertyId}/inspections/${inspId}`)
-      .set(inspectionData); // Add propertyInspections
     await db
       .ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`)
       .set(inspectionData); // Add propertyInspectionsList
@@ -49,24 +45,16 @@ describe('Inspection Delete', () => {
     await wrapped(snap, { params: { inspectionId: inspId } });
 
     // Test result
-    const actual = await Promise.all([
-      db.ref(`/completedInspections/${inspId}`).once('value'),
+    const result = await Promise.all([
       db.ref(`/completedInspectionsList/${inspId}`).once('value'),
-      db
-        .ref(`/propertyInspections/${propertyId}/inspections/${inspId}`)
-        .once('value'),
       db
         .ref(`/propertyInspectionsList/${propertyId}/inspections/${inspId}`)
         .once('value'),
     ]);
+    const actual = result.map(ds => ds.exists());
 
     // Assertions
-    expect(actual.map(ds => ds.exists())).to.deep.equal([
-      false,
-      false,
-      false,
-      false,
-    ]);
+    expect(actual).to.deep.equal([false, false]);
   });
 
   it('should update property meta data when latest completed inspection is removed', async () => {

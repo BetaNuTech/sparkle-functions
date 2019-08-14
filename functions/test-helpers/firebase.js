@@ -69,14 +69,11 @@ module.exports = {
     return Promise.all(
       [
         'archive',
-        'completedInspections',
         'completedInspectionsList',
         'inspections',
         'properties',
         'propertyInspectionDeficientItems',
-        'propertyInspections',
         'propertyInspectionsList',
-        'propertyTemplates',
         'propertyTemplatesList',
         'registrationTokens',
         'teams',

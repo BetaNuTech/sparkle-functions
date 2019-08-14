@@ -3,7 +3,7 @@ const inspections = require('../inspections');
 const teams = require('../teams');
 const propertyTemplates = require('../property-templates');
 
-const LOG_PREFIX = 'properties: on-delete:';
+const PREFIX = 'properties: on-delete:';
 const PROPERTY_BUCKET_NAME = `propertyImages${
   process.env.NODE_ENV === 'test' ? 'Test' : ''
 }`;
@@ -26,7 +26,7 @@ module.exports = function createOnDeleteHandler(
     const updates = Object.create(null);
     const { propertyId } = event.params;
 
-    log.info(`${LOG_PREFIX} property ${propertyId} deleted`);
+    log.info(`${PREFIX} property ${propertyId} deleted`);
 
     try {
       const inspUpdates = await inspections.removeForProperty(
@@ -36,7 +36,7 @@ module.exports = function createOnDeleteHandler(
       );
       Object.assign(updates, inspUpdates);
     } catch (err) {
-      log.error(`${LOG_PREFIX} ${err}`);
+      log.error(`${PREFIX} ${err}`);
     }
 
     try {
@@ -48,15 +48,14 @@ module.exports = function createOnDeleteHandler(
       );
       Object.assign(updates, teamUpdates);
     } catch (err) {
-      log.error(`${LOG_PREFIX} ${err}`);
+      log.error(`${PREFIX} ${err}`);
     }
 
     try {
       await propertyTemplates.removeForProperty(db, propertyId);
-      updates[`/propertyTemplates/${propertyId}`] = 'removed';
       updates[`/propertyTemplatesList/${propertyId}`] = 'removed';
     } catch (err) {
-      log.error(`${LOG_PREFIX} ${err}`);
+      log.error(`${PREFIX} ${err}`);
     }
 
     // Cleanup deleted property's images
@@ -79,11 +78,11 @@ module.exports = function createOnDeleteHandler(
             .file(`${PROPERTY_BUCKET_NAME}/${fileName}`)
             .delete();
           log.info(
-            `${LOG_PREFIX} property: ${propertyId} ${imgType} removal succeeded`
+            `${PREFIX} property: ${propertyId} ${imgType} removal succeeded`
           );
         } catch (e) {
           log.error(
-            `${LOG_PREFIX} property: ${propertyId} ${imgType} removal at ${url} failed ${e}`
+            `${PREFIX} property: ${propertyId} ${imgType} removal at ${url} failed ${e}`
           );
         }
       }
