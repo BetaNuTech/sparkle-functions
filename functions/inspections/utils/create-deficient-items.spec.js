@@ -264,10 +264,13 @@ describe('Inspections | Utils | Create Deficient Items', () => {
     expect(actual).to.deep.equal(expected, 'cloned admin edits matches');
   });
 
-  it('should deeply clone any available item photos data', () => {
+  it('should not clone item with only invalid photo data', () => {
     const itemId = uuid();
     const expected = {
-      1554325519707: { caption: 'a caption!', downloadURL: 'google.com' },
+      1554325519707: {
+        caption: 'Invalid: missing download URL',
+        downloadURL: '',
+      },
     };
     const actual = createDeficientItems(
       createInspection(
@@ -279,6 +282,27 @@ describe('Inspections | Utils | Create Deficient Items', () => {
         }
       )
     )[itemId].itemPhotosData;
+    expect(actual).to.equal(undefined);
+  });
+
+  it('should deeply clone only valid item photos data', () => {
+    const itemId = uuid();
+    const expected = {
+      1554325519707: { caption: 'a caption!', downloadURL: 'google.com' },
+    };
+    const actual = createDeficientItems(
+      createInspection(
+        {},
+        {
+          [itemId]: createItem('twoactions_checkmarkx', true, {
+            photosData: {
+              ...expected,
+              1554325519708: { caption: 'invalid', downloadURL: '' }, // should be removed
+            },
+          }),
+        }
+      )
+    )[itemId].itemPhotosData;
     expect(actual).to.not.equal(expected, 'cloned new object');
     expect(actual).to.deep.equal(expected, 'cloned photos data matches');
   });
@@ -286,7 +310,6 @@ describe('Inspections | Utils | Create Deficient Items', () => {
   it("should set a subtitle from a multi-sections' first text input title", () => {
     const itemId = uuid();
     const sectionId = uuid();
-    const expected = 'multi';
 
     [
       {

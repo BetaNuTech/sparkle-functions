@@ -115,7 +115,9 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
       itemTitle: item.title,
       itemInspectorNotes: item.inspectorNotes,
       itemAdminEdits: item.adminEdits ? deepClone(item.adminEdits) : null,
-      itemPhotosData: item.photosData ? deepClone(item.photosData) : null,
+      itemPhotosData: hasValidPhotosData(item.photosData)
+        ? cleanedPhotoData(item.photosData)
+        : null,
       itemMainInputSelection: mainInputSelection,
       itemDataLastUpdatedDate,
       sectionSubtitle,
@@ -159,6 +161,37 @@ function getSectionItems(sectionId, inspection) {
     .map(itemId => Object.assign({}, inspection.template.items[itemId])) // Item hash to array
     .filter(item => item.sectionId === sectionId) // only section items
     .sort((a, b) => a.index - b.index); // sort ascending
+}
+
+/**
+ * Determine if the request has
+ * valid photos data before cloning
+ * @param  {Object} photosData
+ * @return {Boolean}
+ */
+function hasValidPhotosData(photosData = {}) {
+  return (
+    Object.keys(photosData).filter(photoId =>
+      Boolean(photosData[photoId].downloadURL)
+    ).length > 0
+  );
+}
+
+/**
+ * Clone only photos data with downloadURL
+ * @param  {Object} photosData
+ * @return {Object} - cloned photos data
+ */
+function cleanedPhotoData(photosData = {}) {
+  const result = deepClone(photosData);
+
+  Object.keys(result).forEach(photoId => {
+    if (!result[photoId].downloadURL) {
+      delete result[photoId];
+    }
+  });
+
+  return result;
 }
 
 /**
