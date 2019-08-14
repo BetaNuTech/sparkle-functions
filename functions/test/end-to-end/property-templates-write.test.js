@@ -22,9 +22,6 @@ describe('Property Templates Write', () => {
       .ref(`/properties/${propertyId}/templates`)
       .once('value'); // Get after templates
     await db
-      .ref(`/propertyTemplates/${propertyId}/${tmplId}`)
-      .set({ name: `test${tmplId}` });
-    await db
       .ref(`/propertyTemplatesList/${propertyId}/${tmplId}`)
       .set({ name: `test${tmplId}` });
 
@@ -34,19 +31,13 @@ describe('Property Templates Write', () => {
     await wrapped(changeSnap, { params: { propertyId } });
 
     // Test result
-    const actual = await db
-      .ref(`/propertyTemplates/${propertyId}`)
-      .once('value');
-    const actualList = await db
+    const result = await db
       .ref(`/propertyTemplatesList/${propertyId}`)
       .once('value');
+    const actual = result.exists();
 
     // Assertions
-    expect(actual.exists()).to.equal(false, 'removed /propertyTemplates proxy');
-    expect(actualList.exists()).to.equal(
-      false,
-      'removed /propertyTemplatesList proxy'
-    );
+    expect(actual).to.equal(false);
   });
 
   it("should remove a template's property proxies when it is disassociated from a property", async () => {
@@ -69,14 +60,8 @@ describe('Property Templates Write', () => {
       .ref(`/properties/${propertyId}/templates`)
       .once('value'); // Get after templates
     await db
-      .ref(`/propertyTemplates/${propertyId}/${tmplId1}`)
-      .set(expected[tmplId1]);
-    await db
       .ref(`/propertyTemplatesList/${propertyId}/${tmplId1}`)
       .set(expected[tmplId1]);
-    await db
-      .ref(`/propertyTemplates/${propertyId}/${tmplId2}`)
-      .set({ name: `test${tmplId2}` });
     await db
       .ref(`/propertyTemplatesList/${propertyId}/${tmplId2}`)
       .set({ name: `test${tmplId2}` });
@@ -87,22 +72,13 @@ describe('Property Templates Write', () => {
     await wrapped(changeSnap, { params: { propertyId } });
 
     // Test result
-    const actual = await db
-      .ref(`/propertyTemplates/${propertyId}`)
-      .once('value');
-    const actualList = await db
+    const result = await db
       .ref(`/propertyTemplatesList/${propertyId}`)
       .once('value');
+    const actual = result.val();
 
     // Assertions
-    expect(actual.val()).to.deep.equal(
-      expected,
-      'removed single /propertyTemplates proxy'
-    );
-    expect(actualList.val()).to.deep.equal(
-      expected,
-      'removed single /propertyTemplatesList proxy'
-    );
+    expect(actual).to.deep.equal(expected);
   });
 
   it('should update property template proxies when a template is added to a property', async () => {
@@ -139,9 +115,6 @@ describe('Property Templates Write', () => {
       .ref(`/properties/${propertyId}/templates`)
       .once('value'); // Get after templates
     await db
-      .ref(`/propertyTemplates/${propertyId}/${tmplId1}`)
-      .set(expected[tmplId1]); // Add 1st template proxy record
-    await db
       .ref(`/propertyTemplatesList/${propertyId}/${tmplId1}`)
       .set(expected[tmplId1]); // Add 1st template list proxy record
 
@@ -151,21 +124,12 @@ describe('Property Templates Write', () => {
     await wrapped(changeSnap, { params: { propertyId } });
 
     // Test result
-    const actual = await db
-      .ref(`/propertyTemplates/${propertyId}`)
-      .once('value');
-    const actualList = await db
+    const result = await db
       .ref(`/propertyTemplatesList/${propertyId}`)
       .once('value');
+    const actual = result.val();
 
     // Assertions
-    expect(actual.val()).to.deep.equal(
-      expected,
-      'has /propertyTemplates proxy'
-    );
-    expect(actualList.val()).to.deep.equal(
-      expected,
-      'has /propertyTemplatesList proxy'
-    );
+    expect(actual).to.deep.equal(expected);
   });
 });

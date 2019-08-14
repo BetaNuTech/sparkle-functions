@@ -9,10 +9,6 @@
         }
       }
     },
-    "completedInspections": {
-      ".read": "auth != null",
-      ".write": "auth != null"
-    },
     "completedInspectionsList": {
       ".read": "auth != null",
       ".write": "auth != null"
@@ -34,15 +30,7 @@
         ".indexOn": ["item"]
       }
     },
-    "propertyInspections": {
-      ".read": "auth != null",
-      ".write": "auth != null"
-    },
     "propertyInspectionsList": {
-      ".read": "auth != null",
-      ".write": "auth != null"
-    },
-    "propertyTemplates": {
       ".read": "auth != null",
       ".write": "auth != null"
     },
