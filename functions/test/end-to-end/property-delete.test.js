@@ -181,7 +181,7 @@ describe('Property Delete', () => {
     expect(actual).to.equal(undefined, 'removed inspection 2 upload');
   });
 
-  it("should remove all a property's /propertyInspectionsList proxies", async () => {
+  it("should remove all a property's inspection proxies", async () => {
     const insp1Id = uuid();
     const insp2Id = uuid();
     const propertyId = uuid();
@@ -192,17 +192,11 @@ describe('Property Delete', () => {
       .ref(`/inspections/${insp1Id}`)
       .set({ name: `name${insp1Id}`, property: propertyId }); // sanity check
     await db
-      .ref(`/propertyInspections/${propertyId}/inspections/${insp1Id}`)
-      .set({ name: `name${insp1Id}` });
-    await db
       .ref(`/propertyInspectionsList/${propertyId}/inspections/${insp1Id}`)
       .set({ name: `name${insp1Id}` });
     await db
       .ref(`/inspections/${insp2Id}`)
       .set({ name: `name${insp2Id}`, property: propertyId }); // sanity check
-    await db
-      .ref(`/propertyInspections/${propertyId}/inspections/${insp2Id}`)
-      .set({ name: `name${insp2Id}` });
     await db
       .ref(`/propertyInspectionsList/${propertyId}/inspections/${insp2Id}`)
       .set({ name: `name${insp2Id}` });
@@ -217,23 +211,17 @@ describe('Property Delete', () => {
 
     // Test results
     const paths = [
-      `/propertyInspections/${propertyId}/inspections/${insp1Id}`,
       `/propertyInspectionsList/${propertyId}/inspections/${insp1Id}`,
-      `/propertyInspections/${propertyId}/inspections/${insp2Id}`,
       `/propertyInspectionsList/${propertyId}/inspections/${insp2Id}`,
     ];
-    const actual = await Promise.all(paths.map(p => db.ref(p).once('value')));
+    const result = await Promise.all(paths.map(p => db.ref(p).once('value')));
+    const actual = result.map(snap => snap.exists());
 
     // Assertions
-    expect(actual.map(snap => snap.exists())).to.deep.equal([
-      false,
-      false,
-      false,
-      false,
-    ]);
+    expect(actual).to.deep.equal([false, false]);
   });
 
-  it("should remove all a deleted property's /propertyTemplatesList proxies", async () => {
+  it("should remove all a deleted property's template proxies", async () => {
     const tmplId = uuid();
     const propertyId = uuid();
     const templateData = { name: `test${tmplId}` };
@@ -243,9 +231,6 @@ describe('Property Delete', () => {
       .ref(`/properties/${propertyId}`)
       .set({ name: 'test', templates: { [tmplId]: true } }); // Add property with a template    await db.ref('/templates').set(expected);
     await db.ref(`/templates/${tmplId}`).set(templateData); // Add template
-    await db
-      .ref(`/propertyTemplates/${propertyId}/${tmplId}`)
-      .set(templateData); // Add propertyTemplates
     await db
       .ref(`/propertyTemplatesList/${propertyId}/${tmplId}`)
       .set(templateData); // Add propertyTemplatesList
@@ -259,19 +244,13 @@ describe('Property Delete', () => {
     await wrapped(propertyAfterSnap, { params: { propertyId } });
 
     // Test result
-    const actual = await db
-      .ref(`/propertyTemplates/${propertyId}`)
-      .once('value');
-    const actualList = await db
+    const result = await db
       .ref(`/propertyTemplatesList/${propertyId}`)
       .once('value');
+    const actual = result.exists();
 
     // Assertions
-    expect(actual.exists()).to.equal(false, 'removed /propertyTemplates proxy');
-    expect(actualList.exists()).to.equal(
-      false,
-      'removed /propertyTemplatesList proxy'
-    );
+    expect(actual).to.equal(false);
   });
 
   it('should remove the deleted property from any team it is associated with', async () => {

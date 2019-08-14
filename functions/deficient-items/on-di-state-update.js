@@ -2,8 +2,9 @@ const assert = require('assert');
 const log = require('../utils/logger');
 const config = require('../config');
 const processPropertyMeta = require('../properties/process-meta');
+const systemModel = require('../models/system');
 
-const LOG_PREFIX = 'deficient-items: on-di-state-update:';
+const PREFIX = 'deficient-items: on-di-state-update:';
 const REQUIRED_ACTIONS_VALUES = config.deficientItems.requiredActionStates;
 const FOLLOW_UP_ACTION_VALUES = config.deficientItems.followUpActionStates;
 
@@ -23,7 +24,7 @@ module.exports = function createOnDiStateUpdateHandler(db) {
     assert(Boolean(deficientItemId), 'has deficient item ID');
 
     log.info(
-      `${LOG_PREFIX} property: ${propertyId} | deficient item: ${deficientItemId}`
+      `${PREFIX} property: ${propertyId} | deficient item: ${deficientItemId}`
     );
 
     const beforeState = change.before.val();
@@ -43,8 +44,27 @@ module.exports = function createOnDiStateUpdateHandler(db) {
     ) {
       await processPropertyMeta(db, propertyId);
       log.info(
-        `${LOG_PREFIX} updated property: ${propertyId} deficient items associated metadata`
+        `${PREFIX} updated property: ${propertyId} deficient items associated metadata`
       );
+    }
+
+    // Close any Trello card for DI
+    let trelloCardResponse = null;
+    if (afterState === 'closed') {
+      try {
+        trelloCardResponse = await systemModel.closeDeficientItemsTrelloCard(
+          db,
+          propertyId,
+          deficientItemId
+        );
+        if (trelloCardResponse)
+          log.info(`${PREFIX} successfully closed Trello card`);
+      } catch (err) {
+        log.error(
+          `${PREFIX} Failed request to close DI Trello card status: "${err.status ||
+            'N/A'}" | message: "${err.body ? err.body.message : err}"`
+        );
+      }
     }
 
     return updates;

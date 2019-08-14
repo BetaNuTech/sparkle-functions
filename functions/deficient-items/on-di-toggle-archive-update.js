@@ -55,9 +55,7 @@ module.exports = function createOnDiToggleArchiveUpdateHandler(db) {
       );
     }
 
-    log.info(
-      `${PREFIX} ${archiveType} requested deficient item ${deficientItemId}`
-    );
+    log.info(`${PREFIX} ${archiveType} deficient item: ${deficientItemId}`);
 
     return updates;
   };

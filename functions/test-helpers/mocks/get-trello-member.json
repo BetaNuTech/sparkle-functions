@@ -1,0 +1,102 @@
+{
+  "id": "57r162cc46ed502b2be03q80",
+  "avatarHash": "d1074b24a68b02ce723615vv426ebfa6",
+  "avatarUrl": "https://trello-avatars.s3.amazonaws.com/d1074b24a68b02ce723615vv426ebfa6",
+  "bio": "",
+  "bioData": {
+    "emoji": {}
+  },
+  "confirmed": true,
+  "fullName": "Matt Walter",
+  "idEnterprise": null,
+  "idEnterprisesDeactivated": [],
+  "idMemberReferrer": null,
+  "idPremOrgsAdmin": [],
+  "initials": "MW",
+  "memberType": "normal",
+  "nonPublic": {},
+  "nonPublicAvailable": false,
+  "products": [],
+  "url": "https://trello.com/mattw",
+  "username": "mattw",
+  "status": "disconnected",
+  "aaEmail": null,
+  "aaId": null,
+  "avatarSource": "upload",
+  "email": "matt@email.ru",
+  "gravatarHash": "0efdc4666f071e551bf6b778607ca85b",
+  "idBoards": ["djflasdjfj2342", "fldkajsldfkjsadl2"],
+  "idOrganizations": ["1dfkjaslf32f32"],
+  "idEnterprisesAdmin": [],
+  "limits": {
+    "boards": {
+      "totalPerMember": {
+        "status": "ok",
+        "disableAt": 4500,
+        "warnAt": 4050
+      }
+    },
+    "orgs": {
+      "totalPerMember": {
+        "status": "ok",
+        "disableAt": 850,
+        "warnAt": 765
+      }
+    }
+  },
+  "loginTypes": ["android", "password", "google"],
+  "marketingOptIn": {
+    "optedIn": true,
+    "date": "2018-05-02T20:28:59.931Z"
+  },
+  "messagesDismissed": [{
+    "name": "ad-DirectoryBusinessClassBanner",
+    "count": 1,
+    "lastDismissed": "2018-08-01T21:42:47.882Z",
+    "_id": "5b6229574aedb0f339749fb0"
+  }, {
+    "name": "feedback-card-home-page-internal",
+    "count": 1,
+    "lastDismissed": "2018-08-07T00:09:23.254Z",
+    "_id": "5b68e333176c33067f4ecab9"
+  }, {
+    "name": "1-nov-2018-tos-change-accepted",
+    "count": 1,
+    "lastDismissed": "2018-11-10T22:58:51.143Z",
+    "_id": "5be762abcd5ad75e90ea8778"
+  }, {
+    "_id": "5d01040abee43c47a3eed536",
+    "name": "team-join-cta-banner-5ad66c710e737a48733ac865",
+    "count": 1,
+    "lastDismissed": "2019-06-12T13:54:18.306Z"
+  }, {
+    "_id": "5d01040ad5d5a21ac67e1b0b",
+    "name": "team-join-cta-banner-5bc9ee4b52aa7b7ab3fc7a05",
+    "count": 1,
+    "lastDismissed": "2019-06-12T13:54:18.799Z"
+  }, {
+    "_id": "5d443ffe03102e33ead3addf",
+    "name": "ad-subscribeOnComment",
+    "count": 1,
+    "lastDismissed": "2019-08-02T13:51:58.508Z"
+  }],
+  "oneTimeMessagesDismissed": ["OPEN_CARD_TIP"],
+  "prefs": {
+    "privacy": {
+      "fullName": "public",
+      "avatar": "public"
+    },
+    "sendSummaries": true,
+    "minutesBetweenSummaries": 1,
+    "minutesBeforeDeadlineToNotify": 1440,
+    "colorBlind": false,
+    "locale": "en-us"
+  },
+  "trophies": [],
+  "uploadedAvatarHash": "d1074b24a68b02ce723615aa426ebfa4",
+  "uploadedAvatarUrl": "https://trello-avatars.s3.amazonaws.com/d1074b24a68b02ce723615aa426ebfa4",
+  "premiumFeatures": [],
+  "isAaMastered": false,
+  "ixUpdate": "1550",
+  "idBoardsPinned": null
+}

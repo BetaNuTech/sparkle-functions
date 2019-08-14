@@ -27,14 +27,8 @@ describe('Property Write', () => {
       .ref(`/properties/${propertyId}`)
       .once('value'); // Get after templates
     await db
-      .ref(`/propertyTemplates/${propertyId}/${tmplId1}`)
-      .set(expected[tmplId1]);
-    await db
       .ref(`/propertyTemplatesList/${propertyId}/${tmplId1}`)
       .set(expected[tmplId1]);
-    await db
-      .ref(`/propertyTemplates/${propertyId}/${tmplId2}`)
-      .set({ name: `test${tmplId2}` });
     await db
       .ref(`/propertyTemplatesList/${propertyId}/${tmplId2}`)
       .set({ name: `test${tmplId2}` });
@@ -45,22 +39,13 @@ describe('Property Write', () => {
     await wrapped(changeSnap, { params: { propertyId } });
 
     // Test result
-    const actual = await db
-      .ref(`/propertyTemplates/${propertyId}`)
-      .once('value');
-    const actualList = await db
+    const result = await db
       .ref(`/propertyTemplatesList/${propertyId}`)
       .once('value');
+    const actual = result.val();
 
     // Assertions
-    expect(actual.val()).to.deep.equal(
-      expected,
-      'has /propertyTemplates proxy'
-    );
-    expect(actualList.val()).to.deep.equal(
-      expected,
-      'has /propertyTemplatesList proxy'
-    );
+    expect(actual).to.deep.equal(expected);
   });
 
   it('should upsert template property proxies when a property has template relationships', async () => {
@@ -90,9 +75,6 @@ describe('Property Write', () => {
       .ref(`/properties/${propertyId}`)
       .set({ name: 'test', templates: { [tmplId1]: true } }); // Only has 1st template
     await db
-      .ref(`/propertyTemplates/${propertyId}/${tmplId1}`)
-      .set(expected[tmplId1]); // Add 1st template proxy record
-    await db
       .ref(`/propertyTemplatesList/${propertyId}/${tmplId1}`)
       .set(expected[tmplId1]); // Add 1st template list proxy record
     const propertyBeforeSnap = await db
@@ -109,21 +91,12 @@ describe('Property Write', () => {
     await wrapped(changeSnap, { params: { propertyId } });
 
     // Test result
-    const actual = await db
-      .ref(`/propertyTemplates/${propertyId}`)
-      .once('value');
-    const actualList = await db
+    const result = await db
       .ref(`/propertyTemplatesList/${propertyId}`)
       .once('value');
+    const actual = result.val();
 
     // Assertions
-    expect(actual.val()).to.deep.equal(
-      expected,
-      'has /propertyTemplates proxy'
-    );
-    expect(actualList.val()).to.deep.equal(
-      expected,
-      'has /propertyTemplatesList proxy'
-    );
+    expect(actual).to.deep.equal(expected);
   });
 });

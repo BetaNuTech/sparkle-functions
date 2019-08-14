@@ -9,10 +9,6 @@
         }
       }
     },
-    "completedInspections": {
-      ".read": "auth != null",
-      ".write": "auth != null"
-    },
     "completedInspectionsList": {
       ".read": "auth != null",
       ".write": "auth != null"
@@ -34,15 +30,7 @@
         ".indexOn": ["item"]
       }
     },
-    "propertyInspections": {
-      ".read": "auth != null",
-      ".write": "auth != null"
-    },
     "propertyInspectionsList": {
-      ".read": "auth != null",
-      ".write": "auth != null"
-    },
-    "propertyTemplates": {
       ".read": "auth != null",
       ".write": "auth != null"
     },
@@ -91,23 +79,9 @@
     },
     "system": {
       "integrations": {
-        "trello": {
-          "properties": {
-            "$propertyID": {
-              "$uid": {
-                ".read": "$uid === auth.uid",
-                ".write": "$uid === auth.uid"
-              }
-            }
-          }
-        },
-        "slack": {
-          "organization": {
-            "$uid": {
-              ".read": "$uid === auth.uid",
-              ".write":"$uid === auth.uid"
-            }
-          }
+        "$uid": {
+          ".read": "$uid === auth.uid",
+          ".write": "$uid === auth.uid"
         }
       }
     }

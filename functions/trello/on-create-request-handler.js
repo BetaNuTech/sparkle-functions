@@ -12,11 +12,12 @@ const PREFIX = 'trello: upsert token:';
 /**
  * Factory for trello token upsert endpoint
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+ * @param  {firebaseAdmin.auth} auth - Firebase Admin auth instance
  * @return {Function} - onRequest handler
  */
 module.exports = function createOnUpsertTrelloTokenHandler(db, auth) {
-  assert(Boolean(db), 'has firebase database instance');
-  assert(Boolean(auth), 'has firebase auth instance');
+  assert(Boolean(db), `${PREFIX} has firebase database instance`);
+  assert(Boolean(auth), `${PREFIX} has firebase auth instance`);
 
   /**
    * Write /trelloTokens to integration/trello
@@ -25,21 +26,8 @@ module.exports = function createOnUpsertTrelloTokenHandler(db, auth) {
    * @return {Promise}
    */
   const createTrelloTokenHandler = async (req, res) => {
-    const { user, body, params } = req;
+    const { user, body } = req;
     const { apikey, authToken } = body;
-    const { propertyId } = params;
-
-    if (!propertyId) {
-      const message = 'request missing propertyId parameter';
-      return res.status(404).send({ message });
-    }
-
-    const property = await db.ref(`/properties/${propertyId}`).once('value');
-
-    if (!property.exists()) {
-      const message = 'invalid propertyId';
-      return res.status(404).send({ message });
-    }
 
     // Reject impropertly stuctured request body
     if (!apikey || !authToken) {
@@ -71,6 +59,7 @@ module.exports = function createOnUpsertTrelloTokenHandler(db, auth) {
 
     log.info(`${PREFIX} requested by user: ${user.id}`);
 
+    // Recover Trello Member ID
     let memberID;
     try {
       const response = await got(
@@ -82,25 +71,50 @@ module.exports = function createOnUpsertTrelloTokenHandler(db, auth) {
       if (responseBody && responseBody.idMember) {
         memberID = responseBody.idMember;
       } else {
-        throw Error('Trello member ID not found in payload');
+        throw Error('Trello member ID was not recovered');
       }
     } catch (err) {
-      log.error(`${PREFIX} Error retrieving trello data: ${err}`);
-      return res.status(401).send({ message: 'trello request not authorized' });
+      log.error(`${PREFIX} Error retrieving trello token: ${err}`);
+      return res
+        .status(401)
+        .send({ message: 'trello token request not authorized' });
+    }
+
+    // Recover Trello username
+    let trelloUsername;
+    try {
+      const response = await got(
+        `https://api.trello.com/1/members/${memberID}?key=${apikey}&token=${authToken}`
+      );
+      const responseBody = JSON.parse(response.body);
+
+      // Lookup username
+      if (responseBody && responseBody.username) {
+        trelloUsername = responseBody.username;
+      } else {
+        throw Error('Trello username was not recovered');
+      }
+    } catch (err) {
+      log.error(`${PREFIX} Error retrieving trello member: ${err}`);
+      return res
+        .status(401)
+        .send({ message: 'trello member request not authorized' });
     }
 
     try {
       // Persist Trello credentials to system DB
       await systemModel.upsertPropertyTrelloCredentials(db, {
-        propertyId,
         member: memberID,
         authToken,
         apikey,
         user: user.id,
+        trelloUsername,
       });
     } catch (err) {
-      log.error(`${PREFIX} Error saving users trello ID: ${err}`);
-      return res.status(400).send({ message: 'Error saving users trello ID' });
+      log.error(`${PREFIX} Error saving trello credentials: ${err}`);
+      return res
+        .status(500)
+        .send({ message: 'Error saving trello credentials' });
     }
 
     res.status(201).send({ message: 'successfully saved trello token' });
@@ -110,7 +124,7 @@ module.exports = function createOnUpsertTrelloTokenHandler(db, auth) {
   const app = express();
   app.use(cors(), bodyParser.json());
   app.post(
-    '/integrations/trello/:propertyId/authorization',
+    '/integrations/trello/authorization',
     authUser(db, auth, true),
     createTrelloTokenHandler
   );

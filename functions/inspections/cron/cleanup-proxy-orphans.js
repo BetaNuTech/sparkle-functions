@@ -1,7 +1,7 @@
 const log = require('../../utils/logger');
 const { fetchRecordIds, forEachChild } = require('../../utils/firebase-admin');
 
-const LOG_PREFIX = 'inspections: cron: cleanup-proxy-orphans:';
+const PREFIX = 'inspections: cron: cleanup-proxy-orphans:';
 
 /**
  * Cleanup all outdated inspecton proxies
@@ -19,7 +19,7 @@ module.exports = function createCleanupProxyOrphansHandler(
     .topic(topic)
     .onPublish(async function syncCleanupProxyOrphansHandler() {
       const updates = {};
-      log.info(`${LOG_PREFIX} received ${Date.now()}`);
+      log.info(`${PREFIX} received ${Date.now()}`);
 
       // Collect all property ID's
       const activePropertyIds = await fetchRecordIds(db, '/properties');
@@ -35,23 +35,14 @@ module.exports = function createCleanupProxyOrphansHandler(
           }
 
           try {
-            // Update legacy (TODO remove #53)
-            await db.ref(`/propertyInspections/${propertyId}`).remove();
-            updates[`/propertyInspections/${propertyId}`] = 'removed';
-            log.info(
-              `${LOG_PREFIX} removed archived property ${propertyId} proxies at /propertyInspections`
-            );
-
             // Update list version
             await db.ref(`/propertyInspectionsList/${propertyId}`).remove();
             updates[`/propertyInspectionsList/${propertyId}`] = 'removed';
             log.info(
-              `${LOG_PREFIX} removed archived property ${propertyId} proxies at /propertyInspectionsList`
+              `${PREFIX} removed archived property ${propertyId} proxies at /propertyInspectionsList`
             );
           } catch (e) {
-            log.error(
-              `${LOG_PREFIX} /propertyInspectionsList/${propertyId}: ${e}`
-            );
+            log.error(`${PREFIX} /propertyInspectionsList/${propertyId}: ${e}`);
           }
         }
       );
@@ -72,20 +63,6 @@ module.exports = function createCleanupProxyOrphansHandler(
             }
 
             try {
-              // Update legacy (TODO remove #53)
-              await db
-                .ref(
-                  `/propertyInspections/${propertyId}/inspections/${inspectionId}`
-                )
-                .remove();
-              updates[
-                `/propertyInspections/${propertyId}/inspections/${inspectionId}`
-              ] = 'removed';
-              log.info(
-                `${LOG_PREFIX} removed archived inspection: ${inspectionId} proxy at /propertyInspections/${propertyId}/inspections`
-              );
-
-              // Update list version
               await db
                 .ref(
                   `/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`
@@ -95,11 +72,11 @@ module.exports = function createCleanupProxyOrphansHandler(
                 `/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`
               ] = 'removed';
               log.info(
-                `${LOG_PREFIX} removed archived inspection: ${inspectionId} proxy at /propertyInspectionsList/${propertyId}/inspections`
+                `${PREFIX} removed archived inspection: ${inspectionId} proxy at /propertyInspectionsList/${propertyId}/inspections`
               );
             } catch (e) {
               log.error(
-                `${LOG_PREFIX} /propertyInspectionsList/${propertyId}/inspections/${inspectionId}: ${e}`
+                `${PREFIX} /propertyInspectionsList/${propertyId}/inspections/${inspectionId}: ${e}`
               );
             }
           }
@@ -117,22 +94,15 @@ module.exports = function createCleanupProxyOrphansHandler(
           }
 
           try {
-            // Update legacy (TODO remove #53)
-            await db.ref(`/completedInspections/${inspectionId}`).remove();
-            updates[`/completedInspections/${inspectionId}`] = 'removed';
-            log.info(
-              `${LOG_PREFIX} removed archived inspection ${inspectionId} proxies at /completedInspections`
-            );
-
             // Update list version
             await db.ref(`/completedInspectionsList/${inspectionId}`).remove();
             updates[`/completedInspectionsList/${inspectionId}`] = 'removed';
             log.info(
-              `${LOG_PREFIX} removed archived inspection ${inspectionId} proxies at /completedInspectionsList`
+              `${PREFIX} removed archived inspection ${inspectionId} proxies at /completedInspectionsList`
             );
           } catch (e) {
             log.error(
-              `${LOG_PREFIX} /completedInspectionsList/${inspectionId}: ${e}`
+              `${PREFIX} /completedInspectionsList/${inspectionId}: ${e}`
             );
           }
         }

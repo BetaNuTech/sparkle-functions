@@ -47,19 +47,19 @@ const INSPECTION_ITEM_DATA = {
 const INTEGRATIONS_DATA = {
   grantedBy: USER_ID,
   grantedAt: Date.now() / 1000,
-  board: TRELLO_BOARD_ID,
-  boardName: 'Test Board',
-  list: TRELLO_LIST_ID,
-  listName: 'TO DO',
+  openBoard: TRELLO_BOARD_ID,
+  openBoardName: 'Test Board',
+  openList: TRELLO_LIST_ID,
+  openListName: 'TO DO',
 };
-const TRELLO_CREDENTIAL_DB_PATH = `/system/integrations/trello/properties/${PROPERTY_ID}/${SERVICE_ACCOUNT_ID}`;
+const TRELLO_CREDENTIAL_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/organization`;
+const TRELLO_CARDS_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/properties/${PROPERTY_ID}/cards`;
 const TRELLO_INTEGRATIONS_DB_PATH = `/integrations/trello/properties/${PROPERTY_ID}`;
 
 describe('Trello Create Deficient Item Cards', () => {
   afterEach(async () => {
     await cleanDb(db);
-    await db.ref(TRELLO_CREDENTIAL_DB_PATH).remove();
-    return db.ref(TRELLO_INTEGRATIONS_DB_PATH).remove();
+    return db.ref(`/system/integrations/${SERVICE_ACCOUNT_ID}`).remove();
   });
 
   it('should send forbidden error when property has no trello auth credentials', async function() {
@@ -115,7 +115,7 @@ describe('Trello Create Deficient Item Cards', () => {
     );
   });
 
-  it('should return conflict error when no trello board and/or list is configured for property', async function() {
+  it('should return conflict error when no trello board and/or open list is configured for property', async function() {
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
     await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
@@ -218,14 +218,16 @@ describe('Trello Create Deficient Item Cards', () => {
       .expect('Content-Type', /json/)
       .expect(201);
 
-    const trelloIntegrationSnap = await db
-      .ref(TRELLO_CREDENTIAL_DB_PATH)
+    const propertyTrelloCardsSnap = await db
+      .ref(TRELLO_CARDS_DB_PATH)
       .once('value');
 
-    const trelloIntegration = trelloIntegrationSnap.val();
+    const propertyTrelloCards = propertyTrelloCardsSnap.val();
+    expect(propertyTrelloCards).to.not.equal(null, 'created Trello cards');
+
     // Assertions
-    Object.keys(trelloIntegration.cards).forEach(trelloCardId => {
-      expect(trelloIntegration.cards[trelloCardId]).to.equal(DEFICIENT_ITEM_ID);
+    Object.keys(propertyTrelloCards).forEach(trelloCardId => {
+      expect(propertyTrelloCards[trelloCardId]).to.equal(DEFICIENT_ITEM_ID);
     });
 
     expect(result.body.message).to.equal('successfully created trello card');

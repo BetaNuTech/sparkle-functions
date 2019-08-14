@@ -1,6 +1,8 @@
 const assert = require('assert');
 const { getTemplateName, getScore } = require('./utils');
 
+const PREFIX = 'inspections: process-write: completed-inspections-list:';
+
 /**
  * Write an inspection's `completedInspectionsList`
  * @param  {firebaseAdmin.database} db
@@ -19,29 +21,35 @@ module.exports = async function completedInspectionsList({
   assert(inspectionId && typeof inspectionId === 'string', 'has inspection ID');
   assert(Boolean(inspection), 'has inspection data');
 
+  let completedInspectionData = null;
+
   if (!inspection.inspectionCompleted) {
-    await db.ref(`/completedInspections/${inspectionId}`).remove(); // TODO remove #53
-    await db.ref(`/completedInspectionsList/${inspectionId}`).remove();
-    return null;
+    try {
+      await db.ref(`/completedInspectionsList/${inspectionId}`).remove();
+    } catch (err) {
+      throw Error(`${PREFIX} failed to remove incomplete inspection | ${err}`);
+    }
+  } else {
+    completedInspectionData = {
+      score: getScore(inspection),
+      templateName: getTemplateName(inspection),
+      inspector: inspection.inspector,
+      inspectorName: inspection.inspectorName,
+      creationDate: inspection.creationDate,
+      updatedLastDate: inspection.updatedLastDate,
+      deficienciesExist: inspection.deficienciesExist,
+      inspectionCompleted: inspection.inspectionCompleted,
+      property: inspection.property,
+    };
+
+    try {
+      await db
+        .ref(`/completedInspectionsList/${inspectionId}`)
+        .set(completedInspectionData);
+    } catch (err) {
+      throw Error(`${PREFIX} failed to set complete inspection data | ${err}`);
+    }
   }
 
-  const completedInspectionData = {
-    score: getScore(inspection),
-    templateName: getTemplateName(inspection),
-    inspector: inspection.inspector,
-    inspectorName: inspection.inspectorName,
-    creationDate: inspection.creationDate,
-    updatedLastDate: inspection.updatedLastDate,
-    deficienciesExist: inspection.deficienciesExist,
-    inspectionCompleted: inspection.inspectionCompleted,
-    property: inspection.property,
-  };
-
-  await db
-    .ref(`/completedInspections/${inspectionId}`)
-    .set(completedInspectionData); // TODO remove #53
-  await db
-    .ref(`/completedInspectionsList/${inspectionId}`)
-    .set(completedInspectionData);
   return completedInspectionData;
 };

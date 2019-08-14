@@ -5,13 +5,14 @@ const bodyParser = require('body-parser');
 const got = require('got');
 const log = require('../utils/logger');
 const authUser = require('../utils/auth-firebase-user');
-const systemModel = require('../models/system');
+const authTrelloReq = require('../utils/auth-trello-request');
 
-const PREFIX = 'trello: get all board lists:';
+const PREFIX = 'trello: get board lists:';
 
 /**
  * Factory for getting all trello board lists
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+ * @param  {firebaseAdmin.auth} auth - Firebase Admin auth instance
  * @return {Function} - onRequest handler
  */
 module.exports = function createOnGetAllTrelloBoardListsHandler(db, auth) {
@@ -24,53 +25,22 @@ module.exports = function createOnGetAllTrelloBoardListsHandler(db, auth) {
    * @param  {Object} res Express res
    * @return {Promise}
    */
-  const getAllTrelloBoardListsHandler = async (req, res) => {
-    const { user, params } = req;
-    const { propertyId, boardId } = params;
-
-    if (!propertyId || !boardId) {
-      let message = '';
-      if (!propertyId) message = 'request missing propertyId parameter';
-      if (!boardId) message = ' request missing boardId parameter';
-      return res.status(404).send({ message });
-    }
-
-    const property = await db.ref(`/properties/${propertyId}`).once('value');
-
-    if (!property.exists()) {
-      const message = 'invalid propertyId';
-      return res.status(404).send({ message });
-    }
-
-    if (!user) {
-      return res.status(401).send({ message: 'request not authorized' });
-    }
+  const handler = async (req, res) => {
+    const { user, params, trelloCredentials } = req;
+    const { boardId } = params;
 
     log.info(`${PREFIX} requested by user: ${user.id}`);
 
-    let trelloCredentials = {};
-    try {
-      const savedTokenCredentials = await systemModel.findTrelloCredentialsForProperty(
-        db,
-        propertyId
-      );
-
-      if (!savedTokenCredentials.exists()) {
-        return res.status(404).send({ message: 'User trello token not found' });
-      }
-
-      trelloCredentials = savedTokenCredentials.val();
-
-      if (user.id !== trelloCredentials.user) {
-        return res
-          .status(401)
-          .send({ message: 'This user never created this auth token' });
-      }
-    } catch (err) {
-      log.error(`${PREFIX} Error accessing trello token: ${err}`);
-      return res.status(401).send({ message: 'Error accessing trello token' });
+    if (!boardId) {
+      return res
+        .status(400)
+        .send({ message: 'request missing boardId parameter' });
     }
 
+    // Configure JSON API response
+    res.set('Content-Type', 'application/vnd.api+json');
+
+    // Request lists for Trello board
     let usersBoardLists;
     try {
       const trelloResponse = await got(
@@ -105,9 +75,10 @@ module.exports = function createOnGetAllTrelloBoardListsHandler(db, auth) {
   const app = express();
   app.use(cors(), bodyParser.json());
   app.get(
-    '/integrations/trello/:propertyId/boards/:boardId/lists',
+    '/integrations/trello/boards/:boardId/lists',
     authUser(db, auth, true),
-    getAllTrelloBoardListsHandler
+    authTrelloReq(db),
+    handler
   );
   return app;
 };

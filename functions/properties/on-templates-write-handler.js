@@ -2,7 +2,7 @@ const assert = require('assert');
 const log = require('../utils/logger');
 const propertyTemplates = require('../property-templates');
 
-const LOG_PREFIX = 'properties: on-template-write:';
+const PREFIX = 'properties: on-template-write:';
 
 /**
  * Factory for property template on write handler
@@ -17,19 +17,21 @@ module.exports = function createOnTemplatesWriteHandler(db) {
     const { propertyId } = event.params;
 
     if (!propertyId) {
-      log.warn(
-        `${LOG_PREFIX} incorrectly defined event parameter "propertyId"`
-      );
+      log.warn(`${PREFIX} incorrectly defined event parameter "propertyId"`);
       return;
     }
 
     // Property's templates deleted
     if (change.before.exists() && !change.after.exists()) {
-      await propertyTemplates.removeForProperty(db, propertyId);
-      log.info(`${LOG_PREFIX} all /properties/${propertyId} templates removed`);
-      updates[`/propertyTemplates/${propertyId}`] = 'removed'; // TODO remove #53
-      updates[`/propertyTemplatesList/${propertyId}`] = 'removed'; // TODO remove #53
-      return updates;
+      try {
+        await propertyTemplates.removeForProperty(db, propertyId);
+        log.info(`${PREFIX} all /properties/${propertyId} templates removed`);
+        updates[`/propertyTemplatesList/${propertyId}`] = 'removed';
+        return updates;
+      } catch (err) {
+        log.error(`${PREFIX} property template proxy removal failed | ${err}`);
+        throw err;
+      }
     }
 
     // Create/update property template proxies

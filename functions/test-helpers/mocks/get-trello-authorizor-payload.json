@@ -1,0 +1,13 @@
+{
+  "data": {
+    "type": "user",
+    "id": "adfkj23falsdkfaj32",
+    "attributes": {
+      "firstName": "Matt",
+      "lastName": "Walters",
+      "trelloUsername": "mattw",
+      "trelloMember": "57r162cc46ed502b2be03q80",
+      "email": "matt@email.ru"
+    }
+  }
+}

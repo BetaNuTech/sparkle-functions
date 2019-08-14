@@ -2,17 +2,17 @@ const log = require('../utils/logger');
 const adminUtils = require('../utils/firebase-admin');
 const findRemovedKeys = require('../utils/find-removed-keys');
 
-const LOG_PREFIX = 'property-templates:';
+const PREFIX = 'property-templates:';
 
 module.exports = {
   /**
-   * Add property's templates to `/propertyTemplates` & `/propertyTemplatesList`
+   * Add property's templates to `/propertyTemplatesList`
    * @param  {firebaseAdmin.database}
    * @param  {String} propertyId
    * @param  {Object} templatesHash
    * @return {Promise} - resolves {Object} hash of updates
    */
-  async processWrite(database, propertyId, templatesHash) {
+  async processWrite(db, propertyId, templatesHash) {
     const updates = {};
     const templateKeys = Object.keys(templatesHash || {});
 
@@ -21,12 +21,12 @@ module.exports = {
     }
 
     log.info(
-      `${LOG_PREFIX} Writing to /propertyTemplates/${propertyId} with count: ${templateKeys.length}`
+      `${PREFIX} Writing to /propertyTemplatesList/${propertyId} with count: ${templateKeys.length}`
     );
 
     for (let i = 0; i < templateKeys.length; i++) {
       const templateId = templateKeys[i];
-      const templateSnapshot = await database
+      const templateSnapshot = await db
         .ref(`/templates/${templateId}`)
         .once('value');
 
@@ -37,52 +37,21 @@ module.exports = {
       try {
         const template = templateSnapshot.val(); // Assumed hash data, with no children
         const templateCopy = this._toTemplateProxy(template); // eslint-disable-line no-underscore-dangle
-        await database
-          .ref(`/propertyTemplates/${propertyId}/${templateId}`)
-          .set(templateCopy);
-        await database
+        await db
           .ref(`/propertyTemplatesList/${propertyId}/${templateId}`)
           .set(templateCopy);
-        updates[`/propertyTemplates/${propertyId}/${templateId}`] = 'upserted';
         updates[`/propertyTemplatesList/${propertyId}/${templateId}`] =
           'upserted';
       } catch (err) {
         log.error(
-          `${LOG_PREFIX} processWrite: failed for property ${propertyId} with template: ${templateId} | ${err}`
+          `${PREFIX} processWrite: failed for property ${propertyId} with template: ${templateId} | ${err}`
         );
       }
     }
 
-    // Check updated /propertyTemplates to remove templates that shouldn't be there
     try {
-      const propTmplsSnap = await database
-        .ref(`/propertyTemplates/${propertyId}`)
-        .once('value');
-
-      if (propTmplsSnap.exists()) {
-        const templatesRemoved = findRemovedKeys(
-          propTmplsSnap.val(),
-          templatesHash
-        ); // Array of template keys
-
-        if (templatesRemoved.length > 0) {
-          log.info(
-            `${LOG_PREFIX} /propertyTemplates removed count: ${templatesRemoved.length}`
-          );
-
-          await Promise.all(
-            templatesRemoved.map(id => {
-              updates[`/propertyTemplates/${propertyId}/${id}`] = 'removed';
-              return database
-                .ref(`/propertyTemplates/${propertyId}/${id}`)
-                .remove();
-            })
-          );
-        }
-      }
-
-      // Check updated /propertyTemplates to remove templates that shouldn't be there
-      const propTmplsListSnap = await database
+      // Check updated /propertyTemplatesList to remove templates that shouldn't be there
+      const propTmplsListSnap = await db
         .ref(`/propertyTemplatesList/${propertyId}`)
         .once('value');
 
@@ -94,13 +63,13 @@ module.exports = {
 
         if (templatesListRemoved.length > 0) {
           log.info(
-            `${LOG_PREFIX} /propertyTemplatesList removed count: ${templatesListRemoved.length}`
+            `${PREFIX} /propertyTemplatesList removed count: ${templatesListRemoved.length}`
           );
 
           await Promise.all(
             templatesListRemoved.map(id => {
               updates[`/propertyTemplatesList/${propertyId}/${id}`] = 'removed';
-              return database
+              return db
                 .ref(`/propertyTemplatesList/${propertyId}/${id}`)
                 .remove();
             })
@@ -108,7 +77,7 @@ module.exports = {
         }
       }
     } catch (err) {
-      log.error(`${LOG_PREFIX} processWrite: ${err}`);
+      log.error(`${PREFIX} processWrite failed to remove proxies: ${err}`);
     }
 
     return updates;
@@ -116,7 +85,7 @@ module.exports = {
 
   /**
    * Create or update existing proxys in
-   * `/propertyTemplates` & `/propertyTemplatesList`
+   * `/propertyTemplatesList`
    * @param  {firebaseAdmin.database}
    * @param  {String} templateId
    * @param  {Object} template
@@ -144,7 +113,7 @@ module.exports = {
         }
       } catch (err) {
         log.error(
-          `${LOG_PREFIX} upsert: "properties/${propertyId}/templates" lookup failed | ${err}`
+          `${PREFIX} upsert: "properties/${propertyId}/templates" lookup failed | ${err}`
         );
       }
     }
@@ -154,17 +123,12 @@ module.exports = {
       const propertyId = templatesPropertyIds[i];
 
       try {
-        const target = `/propertyTemplates/${propertyId}/${templateId}`;
+        const target = `/propertyTemplatesList/${propertyId}/${templateId}`;
         await db.ref(target).set(templateCopy);
-        log.info(`${LOG_PREFIX} upsert: template at ${target}`);
+        log.info(`${PREFIX} upsert: template at ${target}`);
         updates[target] = 'upsert';
-
-        const targetList = `/propertyTemplatesList/${propertyId}/${templateId}`;
-        await db.ref(targetList).set(templateCopy);
-        log.info(`${LOG_PREFIX} upsert: template at ${targetList}`);
-        updates[targetList] = 'upsert';
       } catch (err) {
-        log.error(`${LOG_PREFIX} upsert: proxy upsert failed | ${err}`);
+        log.error(`${PREFIX} upsert: proxy upsert failed | ${err}`);
       }
     }
 
@@ -173,7 +137,7 @@ module.exports = {
 
   /**
    * Remove a template or attribute from all
-   * properties in `/propertyTemplates` & `/propertyTemplatesList`
+   * properties in `/propertyTemplatesList`
    * @param  {firebaseAdmin.database}
    * @param  {String} templateId
    * @param  {String} attribute
@@ -181,37 +145,12 @@ module.exports = {
    */
   async remove(db, templateId, attribute = '') {
     const updates = {};
-    let propTmplsSnap = null;
     let propTmplsListSnap = null;
 
     try {
-      propTmplsSnap = await db.ref('/propertyTemplates').once('value');
       propTmplsListSnap = await db.ref('/propertyTemplatesList').once('value');
     } catch (err) {
-      throw Error(`${LOG_PREFIX} remove: lookup failed | ${err}`);
-    }
-
-    // Remove in `/propertyTemplates`
-    if (propTmplsSnap.exists()) {
-      const propertyTemplates = propTmplsSnap.val();
-      const activePropertyIds = Object.keys(propertyTemplates).filter(
-        propertyId => propertyTemplates[propertyId][templateId]
-      );
-
-      for (let i = 0; i < activePropertyIds.length; i++) {
-        const propertyId = activePropertyIds[i];
-        const target = `/propertyTemplates/${propertyId}/${templateId}${attribute}`;
-
-        try {
-          await db.ref(target).remove();
-          log.info(`${LOG_PREFIX} remove: successfully removed ${target}`);
-          updates[target] = 'removed';
-        } catch (err) {
-          log.error(
-            `${LOG_PREFIX} remove: failed to remove ${target} | ${err}`
-          );
-        }
-      }
+      throw Error(`${PREFIX} remove: lookup failed | ${err}`);
     }
 
     // Remove in `/propertyTemplatesList`
@@ -227,12 +166,10 @@ module.exports = {
 
         try {
           await db.ref(target).remove();
-          log.info(`${LOG_PREFIX} remove: successfully removed ${target}`);
+          log.info(`${PREFIX} remove: successfully removed ${target}`);
           updates[target] = 'removed';
         } catch (err) {
-          log.error(
-            `${LOG_PREFIX} remove: failed to remove ${target} | ${err}`
-          );
+          log.error(`${PREFIX} remove: failed to remove ${target} | ${err}`);
         }
       }
     }
@@ -244,13 +181,10 @@ module.exports = {
    * Remove all template proxies belonging to a property
    * @param  {firebaseAdmin.database}
    * @param  {String} propertyId
-   * @return {Promise} - resolves {Boolean[]} remove() results
+   * @return {Promise} - resolves {Boolean} remove() results
    */
   removeForProperty(db, propertyId) {
-    return Promise.all([
-      db.ref(`/propertyTemplates/${propertyId}`).remove(),
-      db.ref(`/propertyTemplatesList/${propertyId}`).remove(),
-    ]);
+    return db.ref(`/propertyTemplatesList/${propertyId}`).remove();
   },
 
   /**

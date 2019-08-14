@@ -6,7 +6,7 @@ const adminUtils = require('../../utils/firebase-admin');
 const LOG_PREFIX = 'templates: cron: sync-property-templates-list:';
 
 /**
- * Sync templates with propertyTemplates and log
+ * Sync templates with propertyTemplatesList and log
  * any orphaned records
  * @param  {String} topic
  * @param  {functions.pubsub} pubSub
@@ -28,7 +28,7 @@ module.exports = function createSyncPropertyTemplatesListHandler(
       '/templates',
       async function propertyTemplateListWrite(templateId, template) {
         try {
-          // sync `/propertyTemplates` & `/propertyTemplatesList`
+          // sync `/propertyTemplatesList`
           const upsertUpdates = await propertyTemplates.upsert(
             db,
             templateId,
@@ -50,16 +50,12 @@ module.exports = function createSyncPropertyTemplatesListHandler(
           const currentTemplateIds = Object.keys(
             (property || {}).templates || {}
           );
-          const previousTemplateIds = await adminUtils.fetchRecordIds(
-            db,
-            `/propertyTemplates/${propertyId}`
-          );
           const previousTemplateListIds = await adminUtils.fetchRecordIds(
             db,
             `/propertyTemplatesList/${propertyId}`
           );
           const removedTemplateIds = []
-            .concat(previousTemplateIds, previousTemplateListIds)
+            .concat(previousTemplateListIds)
             .filter((tmplId, i, arr) => arr.indexOf(tmplId) === i) // Unique only
             .filter(tmplId => currentTemplateIds.indexOf(tmplId) === -1); // Proxy does not associated to property
 

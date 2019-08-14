@@ -5,40 +5,22 @@ const getAllBoardListsAppEndpoint = require('../../trello/get-all-trello-board-l
 const uuid = require('../../test-helpers/uuid');
 const { cleanDb, stubFirbaseAuth } = require('../../test-helpers/firebase');
 const { db, uid: SERVICE_ACCOUNT_ID } = require('./setup');
-const allTrelloBoardListsPayload = require('../../test-helpers/mocks/get-all-trello-board-lists.json');
+const TRELLO_BOARDS_PAYLOAD = require('../../test-helpers/mocks/get-all-trello-board-lists.json');
 
-const PROPERTY_ID = uuid();
-const PROPERTY_DATA = { name: `name${PROPERTY_ID}` };
 const USER_ID = uuid();
 const USER = { admin: true, corporate: true };
 const TRELLO_API_KEY = 'f4a04dd872b7a2e33bfc33aac9516965';
 const TRELLO_AUTH_TOKEN =
   'fab424b6f18b2845b3d60eac800e42e5f3ab2fdb25d21c90264032a0ecf16ceb';
-const TRELLO_BOARD_ID = '5d0ab7754066f880369a4d97';
-const TRELLO_BOARD_LIST_URL = `/integrations/trello/${PROPERTY_ID}/boards/${TRELLO_BOARD_ID}/lists`;
-const TRELLO_CREDENTIAL_DB_PATH = `/system/integrations/trello/properties/${PROPERTY_ID}/${SERVICE_ACCOUNT_ID}`;
+const TRELLO_MEMBER_ID = '57r162cc46ed502b2be03q80';
+const TRELLO_BOARD_ID = TRELLO_BOARDS_PAYLOAD[0].id;
+const TRELLO_BOARD_LIST_URL = `/integrations/trello/boards/${TRELLO_BOARD_ID}/lists`;
+const TRELLO_CREDENTIAL_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/organization`;
 
 describe('Trello Get All Board Lists', () => {
   afterEach(async () => {
     await cleanDb(db);
-    return db.ref(TRELLO_CREDENTIAL_DB_PATH).remove();
-  });
-
-  it('should reject request for non-existent property', async function() {
-    // setup database
-    await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
-
-    // Execute & Get Result
-    const app = getAllBoardListsAppEndpoint(db, stubFirbaseAuth(USER_ID));
-    const result = await request(app)
-      .get(TRELLO_BOARD_LIST_URL)
-      .set('Accept', 'application/json')
-      .set('Authorization', 'fb-jwt stubbed-by-auth')
-      .expect('Content-Type', /json/)
-      .expect(404);
-
-    // Assertions
-    expect(result.body.message).to.equal('invalid propertyId');
+    return db.ref(`/system/integrations/${SERVICE_ACCOUNT_ID}`).remove();
   });
 
   it('should reject a non-admin requester with an unauthorized response', async function() {
@@ -47,7 +29,6 @@ describe('Trello Get All Board Lists', () => {
     // Setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
     await db.ref(`/users/${userId2}`).set({ admin: false, corporate: true }); // add non-admin user
-    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
     // Execute & Get Result
     const app = getAllBoardListsAppEndpoint(db, stubFirbaseAuth(userId2));
@@ -67,7 +48,6 @@ describe('Trello Get All Board Lists', () => {
 
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
-    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
     // Invalid Trello credentials for requestor
     await db
@@ -85,7 +65,7 @@ describe('Trello Get All Board Lists', () => {
 
     // Assertions
     expect(result.body.message).to.equal(
-      'This user never created this auth token'
+      'User did not create authorization token'
     );
   });
 
@@ -97,7 +77,6 @@ describe('Trello Get All Board Lists', () => {
 
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
-    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
     // Invalid Trello apiKey & authToken
     await db
@@ -127,11 +106,11 @@ describe('Trello Get All Board Lists', () => {
 
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
-    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
     // Valid Trello credentials for property/requester
     await db.ref(TRELLO_CREDENTIAL_DB_PATH).set({
       user: USER_ID,
+      member: TRELLO_MEMBER_ID,
       apikey: TRELLO_API_KEY,
       authToken: TRELLO_AUTH_TOKEN,
     });
@@ -152,15 +131,15 @@ describe('Trello Get All Board Lists', () => {
       .get(
         `/1/boards/${TRELLO_BOARD_ID}/lists?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}`
       )
-      .reply(200, allTrelloBoardListsPayload);
+      .reply(200, TRELLO_BOARDS_PAYLOAD);
 
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
-    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
     // Valid Trello credentials for property/requstor
     await db.ref(TRELLO_CREDENTIAL_DB_PATH).set({
       user: USER_ID,
+      member: TRELLO_MEMBER_ID,
       apikey: TRELLO_API_KEY,
       authToken: TRELLO_AUTH_TOKEN,
     });
@@ -177,7 +156,7 @@ describe('Trello Get All Board Lists', () => {
 
     // Assertions
     expect(actual.length).to.equal(
-      allTrelloBoardListsPayload.length,
+      TRELLO_BOARDS_PAYLOAD.length,
       'resolved all payload records'
     );
     expect(actual.every(({ type }) => type === 'trello-list')).to.equal(
