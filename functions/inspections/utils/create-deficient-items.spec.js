@@ -281,8 +281,12 @@ describe('Inspections | Utils | Create Deficient Items', () => {
           }),
         }
       )
-    )[itemId].itemPhotosData;
-    expect(actual).to.equal(undefined);
+    )[itemId];
+    expect(actual.hasItemPhotoData).to.equal(false, 'has no item photos data');
+    expect(actual.itemPhotosData).to.equal(
+      undefined,
+      'undefined item photos data hash'
+    );
   });
 
   it('should deeply clone only valid item photos data', () => {
@@ -302,9 +306,13 @@ describe('Inspections | Utils | Create Deficient Items', () => {
           }),
         }
       )
-    )[itemId].itemPhotosData;
-    expect(actual).to.not.equal(expected, 'cloned new object');
-    expect(actual).to.deep.equal(expected, 'cloned photos data matches');
+    )[itemId];
+    expect(actual.hasItemPhotoData).to.equal(true, 'has item photos data');
+    expect(actual.itemPhotosData).to.not.equal(expected, 'cloned new object');
+    expect(actual.itemPhotosData).to.deep.equal(
+      expected,
+      'cloned photos data matches'
+    );
   });
 
   it("should set a subtitle from a multi-sections' first text input title", () => {
@@ -469,7 +477,7 @@ describe('Inspections | Utils | Create Deficient Items', () => {
     });
   });
 
-  it('should not return falsey fields, except "itemMainInputSelection", on the top level of an item\'s JSON', () => {
+  it('should only return falsey values for whitelisted on the top level attributes', () => {
     const itemId = uuid();
     const actual = createDeficientItems(
       createInspection(
@@ -479,7 +487,7 @@ describe('Inspections | Utils | Create Deficient Items', () => {
     )[itemId];
 
     Object.keys(actual).forEach(attr => {
-      if (attr !== 'itemMainInputSelection') {
+      if (attr !== 'itemMainInputSelection' && attr !== 'hasItemPhotoData') {
         expect(actual[attr], `field ${attr} is truthy`).to.be.ok;
       }
     });
