@@ -5,7 +5,7 @@ const adminUtils = require('../../utils/firebase-admin');
 const LOG_PREFIX = 'templates: cron: sync-templates-list:';
 
 /**
- * Sync templates with propertyTemplates and log
+ * Sync templates with propertyTemplatesList and log
  * any orphaned records
  * @param  {String} topic
  * @param  {functions.pubsub} pubSub

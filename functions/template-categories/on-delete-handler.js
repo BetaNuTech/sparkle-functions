@@ -67,7 +67,6 @@ module.exports = function createOnDeleteHandler(db) {
 
       // Remove each template's proxy record `category`
       for (let i = 0; i < templateIds.length; i++) {
-        updates[`/propertyTemplates/**/${templateIds[i]}/category`] = 'removed';
         updates[`/propertyTemplatesList/**/${templateIds[i]}/category`] =
           'removed';
         await propertyTemplates.remove(db, templateIds[i], '/category');

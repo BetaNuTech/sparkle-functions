@@ -50,9 +50,7 @@ describe('Templates Write', () => {
 
       // Test result
       const paths = [
-        `/propertyTemplates/${property1Id}/${tmplId}`,
         `/propertyTemplatesList/${property1Id}/${tmplId}`,
-        `/propertyTemplates/${property2Id}/${tmplId}`,
         `/propertyTemplatesList/${property2Id}/${tmplId}`,
       ];
       const results = await Promise.all(
@@ -80,14 +78,8 @@ describe('Templates Write', () => {
     // Setup database
     await db.ref(`/templates/${tmplId}`).set(templateData);
     await db
-      .ref(`/propertyTemplates/${property1Id}/${tmplId}`)
-      .set(templateData); // Property #1
-    await db
       .ref(`/propertyTemplatesList/${property1Id}/${tmplId}`)
       .set(templateData); // Property #1
-    await db
-      .ref(`/propertyTemplates/${property2Id}/${tmplId}`)
-      .set(templateData); // Property #2
     await db
       .ref(`/propertyTemplatesList/${property2Id}/${tmplId}`)
       .set(templateData); // Property #2
@@ -108,14 +100,12 @@ describe('Templates Write', () => {
 
     // Test result
     const actual = await Promise.all([
-      db.ref(`/propertyTemplates/${property1Id}/${tmplId}`).once('value'),
       db.ref(`/propertyTemplatesList/${property1Id}/${tmplId}`).once('value'),
-      db.ref(`/propertyTemplates/${property2Id}/${tmplId}`).once('value'),
       db.ref(`/propertyTemplatesList/${property2Id}/${tmplId}`).once('value'),
     ]);
 
     // Assertions
-    expect(actual.map(ds => ds.val())).to.deep.equal([null, null, null, null]);
+    expect(actual.map(ds => ds.val())).to.deep.equal([null, null]);
   });
 
   it("should update a template's property proxies with newest data", async () => {
@@ -158,14 +148,8 @@ describe('Templates Write', () => {
       const tmplId = tests.shift();
       await db.ref(`/templates/${tmplId}`).set(beforeData[tmplId]);
       await db
-        .ref(`/propertyTemplates/${property1Id}/${tmplId}`)
-        .set(beforeData[tmplId]); // Property #1
-      await db
         .ref(`/propertyTemplatesList/${property1Id}/${tmplId}`)
         .set(beforeData[tmplId]); // Property #1
-      await db
-        .ref(`/propertyTemplates/${property2Id}/${tmplId}`)
-        .set(beforeData[tmplId]); // Property #2
       await db
         .ref(`/propertyTemplatesList/${property2Id}/${tmplId}`)
         .set(beforeData[tmplId]); // Property #2
@@ -180,9 +164,7 @@ describe('Templates Write', () => {
 
       // Test result
       const paths = [
-        `/propertyTemplates/${property1Id}/${tmplId}`,
         `/propertyTemplatesList/${property1Id}/${tmplId}`,
-        `/propertyTemplates/${property2Id}/${tmplId}`,
         `/propertyTemplatesList/${property2Id}/${tmplId}`,
       ];
       const results = await Promise.all(
