@@ -264,10 +264,13 @@ describe('Inspections | Utils | Create Deficient Items', () => {
     expect(actual).to.deep.equal(expected, 'cloned admin edits matches');
   });
 
-  it('should deeply clone any available item photos data', () => {
+  it('should not clone item with only invalid photo data', () => {
     const itemId = uuid();
     const expected = {
-      1554325519707: { caption: 'a caption!', downloadURL: 'google.com' },
+      1554325519707: {
+        caption: 'Invalid: missing download URL',
+        downloadURL: '',
+      },
     };
     const actual = createDeficientItems(
       createInspection(
@@ -278,15 +281,43 @@ describe('Inspections | Utils | Create Deficient Items', () => {
           }),
         }
       )
-    )[itemId].itemPhotosData;
-    expect(actual).to.not.equal(expected, 'cloned new object');
-    expect(actual).to.deep.equal(expected, 'cloned photos data matches');
+    )[itemId];
+    expect(actual.hasItemPhotoData).to.equal(false, 'has no item photos data');
+    expect(actual.itemPhotosData).to.equal(
+      undefined,
+      'undefined item photos data hash'
+    );
+  });
+
+  it('should deeply clone only valid item photos data', () => {
+    const itemId = uuid();
+    const expected = {
+      1554325519707: { caption: 'a caption!', downloadURL: 'google.com' },
+    };
+    const actual = createDeficientItems(
+      createInspection(
+        {},
+        {
+          [itemId]: createItem('twoactions_checkmarkx', true, {
+            photosData: {
+              ...expected,
+              1554325519708: { caption: 'invalid', downloadURL: '' }, // should be removed
+            },
+          }),
+        }
+      )
+    )[itemId];
+    expect(actual.hasItemPhotoData).to.equal(true, 'has item photos data');
+    expect(actual.itemPhotosData).to.not.equal(expected, 'cloned new object');
+    expect(actual.itemPhotosData).to.deep.equal(
+      expected,
+      'cloned photos data matches'
+    );
   });
 
   it("should set a subtitle from a multi-sections' first text input title", () => {
     const itemId = uuid();
     const sectionId = uuid();
-    const expected = 'multi';
 
     [
       {
@@ -446,7 +477,7 @@ describe('Inspections | Utils | Create Deficient Items', () => {
     });
   });
 
-  it('should not return falsey fields, except "itemMainInputSelection", on the top level of an item\'s JSON', () => {
+  it('should only return falsey values for whitelisted on the top level attributes', () => {
     const itemId = uuid();
     const actual = createDeficientItems(
       createInspection(
@@ -456,7 +487,7 @@ describe('Inspections | Utils | Create Deficient Items', () => {
     )[itemId];
 
     Object.keys(actual).forEach(attr => {
-      if (attr !== 'itemMainInputSelection') {
+      if (attr !== 'itemMainInputSelection' && attr !== 'hasItemPhotoData') {
         expect(actual[attr], `field ${attr} is truthy`).to.be.ok;
       }
     });

@@ -1,6 +1,8 @@
 const assert = require('assert');
 const { getTemplateName, getScore } = require('./utils');
 
+const PREFIX = 'inspections: process-write: property-inspections-list:';
+
 /**
  * Write an inspection's `propertyInspectionsList`
  * @param  {firebaseAdmin.database} db
@@ -35,15 +37,15 @@ module.exports = async function propertyInspectionsList({
     inspectionData.templateCategory = inspection.templateCategory;
   }
 
-  await db
-    .ref(
-      `/propertyInspections/${inspection.property}/inspections/${inspectionId}`
-    )
-    .set(inspectionData); // TODO remove #53
-  await db
-    .ref(
-      `/propertyInspectionsList/${inspection.property}/inspections/${inspectionId}`
-    )
-    .set(inspectionData);
+  try {
+    await db
+      .ref(
+        `/propertyInspectionsList/${inspection.property}/inspections/${inspectionId}`
+      )
+      .set(inspectionData);
+  } catch (err) {
+    throw Error(`${PREFIX} set property inspection proxy failed | ${err}`);
+  }
+
   return inspectionData;
 };
