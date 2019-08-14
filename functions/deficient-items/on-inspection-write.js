@@ -6,7 +6,7 @@ const model = require('../models/deficient-items');
 const createDeficientItems = require('../inspections/utils/create-deficient-items');
 const getLatestItemAdminEditTimestamp = require('../inspections/utils/get-latest-admin-edit-timestamp');
 
-const LOG_PREFIX = 'deficient-items: on-inspection-write:';
+const PREFIX = 'deficient-items: on-inspection-write:';
 const DEFICIENT_ITEM_PROXY_ATTRS = Object.keys(
   config.deficientItems.inspectionItemProxyAttrs
 );
@@ -24,7 +24,7 @@ module.exports = function createOnInspectionWriteHandler(db) {
     const { inspectionId } = event.params;
 
     assert(Boolean(inspectionId), 'has inspection ID');
-    log.info(`${LOG_PREFIX} inspection ${inspectionId}`);
+    log.info(`${PREFIX} inspection ${inspectionId}`);
 
     try {
       const inspectionSnap = await change.after.ref.parent.once('value');
@@ -47,9 +47,7 @@ module.exports = function createOnInspectionWriteHandler(db) {
         archiveUpdates.forEach(archiveUpdate =>
           Object.assign(updates, archiveUpdate)
         );
-        log.info(
-          `${LOG_PREFIX} archived deficient items for deleted inspection`
-        );
+        log.info(`${PREFIX} archived deficient items for deleted inspection`);
       }
 
       // Inspection deleted, incomplete, or deficient list disabled
@@ -69,12 +67,11 @@ module.exports = function createOnInspectionWriteHandler(db) {
         inspectionId
       );
       const currentDeficientItems = {};
-      currentDeficientItemSnaps.forEach(
-        deficientItemsSnap =>
-          (currentDeficientItems[
-            deficientItemsSnap.key
-          ] = deficientItemsSnap.val())
-      );
+      currentDeficientItemSnaps.forEach(deficientItemsSnap => {
+        currentDeficientItems[
+          deficientItemsSnap.key
+        ] = deficientItemsSnap.val();
+      });
 
       // Archive any deficient item(s) belonging
       // to inspection items that are no longer deficient
@@ -91,7 +88,7 @@ module.exports = function createOnInspectionWriteHandler(db) {
         const archiveUpdates = await model.toggleArchive(db, deficientItemSnap);
         Object.assign(updates, archiveUpdates);
         log.info(
-          `${LOG_PREFIX} archived no longer deficient item ${removeDeficientItemId}`
+          `${PREFIX} archived no longer deficient item ${removeDeficientItemId}`
         );
       }
 
@@ -137,7 +134,7 @@ module.exports = function createOnInspectionWriteHandler(db) {
           await deficientItemSnap.ref.update(itemUpdates);
           updates[deficientItemSnap.ref.path.toString()] = 'updated';
           log.info(
-            `${LOG_PREFIX} updating out of date deficient item ${updateDeficientItemId}`
+            `${PREFIX} updating out of date deficient item ${updateDeficientItemId}`
           );
           Object.assign(
             currentDeficientItems[updateDeficientItemId],
@@ -165,13 +162,13 @@ module.exports = function createOnInspectionWriteHandler(db) {
         const addedDeficientItemID = Object.keys(addResult)[0];
         updates[addedDeficientItemID] = 'created';
         log.info(
-          `${LOG_PREFIX} added new deficient item: ${addedDeficientItemID
+          `${PREFIX} added new deficient item: ${addedDeficientItemID
             .split('/')
             .pop()}`
         );
       }
     } catch (e) {
-      log.error(`${LOG_PREFIX} ${e}`);
+      log.error(`${PREFIX} ${e}`);
     }
 
     return updates;
