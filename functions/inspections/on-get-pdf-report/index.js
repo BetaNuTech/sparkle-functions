@@ -7,11 +7,13 @@ const base64ItemImage = require('./base-64-item-image');
 const createAndUploadInspection = require('./create-and-upload-inspection-pdf');
 const sendToUsers = require('../../push-messages/send-to-users');
 const authUser = require('../../utils/auth-firebase-user');
+const propertiesModel = require('../../models/properties');
+const inspectionsModel = require('../../models/inspections');
 const log = require('../../utils/logger');
 
 const { keys, assign } = Object;
 const HTTPS_URL = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_+.~#?&//=]*)/; // eslint-disable-line max-len
-const LOG_PREFIX = 'inspections: pdf-reports:';
+const PREFIX = 'inspections: pdf-reports:';
 
 /**
  * Factory for inspection PDF generator endpoint
@@ -37,17 +39,40 @@ module.exports = function createOnGetPDFReportHandler(db, messaging, auth) {
    * @return {Promise}
    */
   const getInspectionPDFHandler = async (req, res) => {
-    // Lookup & adjust property / inspection records
-    const propertyReq = await db
-      .ref(`/properties/${req.params.property}`)
-      .once('value');
-    const property = propertyReq.val();
-    property.id = req.params.property;
-    const inspectionReq = await db
-      .ref(`/inspections/${req.params.inspection}`)
-      .once('value');
-    const inspection = await insertInspectionItemImageUris(inspectionReq.val());
-    inspection.id = req.params.inspection;
+    const { property: propertyId, inspection: inspectionId } = req.params;
+    log.info(`${PREFIX} inspection PDF requested for: ${inspectionId}`);
+
+    // Lookup property record
+    let property = null;
+    try {
+      const propertySnap = await propertiesModel.findRecord(db, propertyId);
+      property = propertySnap.val();
+      property.id = propertyId;
+    } catch (err) {
+      log.error(`${PREFIX} property lookup failed | ${err}`);
+      return res.status(400).send({ message: 'Bad Property' });
+    }
+
+    // Lookup Inspection
+    let inspectionSnap = null;
+    try {
+      inspectionSnap = await inspectionsModel.findRecord(db, inspectionId);
+    } catch (err) {
+      log.error(`${PREFIX} inspection lookup failed | ${err}`);
+      return res.status(400).send({ message: 'Bad Inspection' });
+    }
+
+    // Append item photo data
+    // to inspection record
+    let inspection = null;
+    try {
+      inspection = await insertInspectionItemImageUris(inspectionSnap.val());
+      inspection.id = inspectionId;
+    } catch (err) {
+      log.error(`${PREFIX} inspection item photo lookup failed | ${err}`);
+      return res.status(500).send({ message: 'Inspection Photo Error' });
+    }
+
     const adminEditor = req.query.adminEditor || '';
 
     // Optional incognito mode query
@@ -56,30 +81,29 @@ module.exports = function createOnGetPDFReportHandler(db, messaging, auth) {
       ? req.query.incognitoMode.search(/true/i) > -1
       : false;
 
-    log.info(
-      `${LOG_PREFIX} generating property: ${property.id} inspection report PDF for: ${inspection.id}`
-    );
-
     if (inspection.inspectionReportStatus === 'generating') {
+      log.info(`${PREFIX} inspection PDF report already requested`);
       return res.status(200).send({
         status: inspection.inspectionReportStatus,
         message: 'report is being generated',
       });
     }
     if (inspectionReportUpToDate(inspection)) {
+      log.info(`${PREFIX} inspection PDF report already up to date`);
       return res.status(304).send();
     }
+    if (!inspection.inspectionCompleted) {
+      log.info(`${PREFIX} inspection PDF is not completed`);
+      return res.status(400).send({ message: 'inspection not complete' });
+    }
 
-    // Set report generation status
+    // Set generating report generation status
     try {
-      await db
-        .ref(`/inspections/${inspection.id}/inspectionReportStatus`)
-        .set('generating');
-      log.info(
-        `${LOG_PREFIX} updated ${inspection.id} report status to generating`
-      );
+      await inspectionsModel.setPDFReportStatus(db, inspectionId, 'generating');
+      log.info(`${PREFIX} updated report status to "generating"`);
     } catch (err) {
-      log.error(`${LOG_PREFIX}: failed to set to "generating" ${err}`);
+      log.error(`${PREFIX} setting report status "generating" failed | ${err}`);
+      return res.status(500).send({ message: 'System Failure' });
     }
 
     // Payload
@@ -96,34 +120,58 @@ module.exports = function createOnGetPDFReportHandler(db, messaging, auth) {
         .map(s => s.trim())
         .filter(s => s.search(HTTPS_URL) > -1);
 
-      log.info(
-        `${LOG_PREFIX} inspection ${inspection.id} PDF report successfully generated`
-      );
+      log.info(`${PREFIX} PDF report successfully generated`);
 
-      // Set the report's last updated data
-      await db
-        .ref(`/inspections/${inspection.id}/inspectionReportURL`)
-        .set(inspectionReportURL);
-      log.info(`${LOG_PREFIX} updated ${inspection.id} report url`);
-      await db
-        .ref(`/inspections/${inspection.id}/inspectionReportUpdateLastDate`)
-        .set(Date.now() / 1000);
-      log.info(
-        `${LOG_PREFIX} updated ${inspection.id} report last update date`
-      );
-      await db
-        .ref(`/inspections/${inspection.id}/inspectionReportStatus`)
-        .set('completed_success');
-      log.info(
-        `${LOG_PREFIX} updated ${inspection.id} report status to successful`
-      );
+      // Set the report's URL
+      try {
+        await inspectionsModel.setReportURL(
+          db,
+          inspectionId,
+          inspectionReportURL
+        );
+        log.info(`${PREFIX} updated inspection report url`);
+      } catch (err) {
+        log.error(`${PREFIX} setting PDF report url failed`);
+        throw err;
+      }
+
+      // Set inspetion reports last update date
+      try {
+        await inspectionsModel.updatePDFReportTimestamp(db, inspectionId);
+        log.info(`${PREFIX} updated PDF report last update date`);
+      } catch (err) {
+        log.error(`${PREFIX} setting PDF report update date failed`);
+        throw err;
+      }
+
+      // Set PDF status to successful
+      try {
+        await inspectionsModel.setPDFReportStatus(
+          db,
+          inspectionId,
+          'completed_success'
+        );
+        log.info(`${PREFIX} updated report status to successful`);
+      } catch (err) {
+        log.error(`${PREFIX} setting report status "completed_success" failed`);
+        throw err;
+      }
     } catch (err) {
-      log.error(`${LOG_PREFIX} ${err}`);
+      log.error(`${PREFIX} ${err}`);
 
-      // Update report status for failure
-      db.ref(
-        `/inspections/${req.params.inspection}/inspectionReportStatus`
-      ).set('completed_failure');
+      // Update report status to failed
+      try {
+        await inspectionsModel.setPDFReportStatus(
+          db,
+          inspectionId,
+          'completed_failure'
+        );
+        log.info(`${PREFIX} updated report status to failure`);
+      } catch (errStatus) {
+        log.error(
+          `${PREFIX} setting report status "completed_failure" failed | ${errStatus}`
+        );
+      }
 
       // Send failed response
       res.status(500).send({ message: 'PDF generation failed' });
@@ -154,7 +202,7 @@ module.exports = function createOnGetPDFReportHandler(db, messaging, auth) {
           property: property.id,
         });
       } catch (err) {
-        log.error(`${LOG_PREFIX} send-to-users: ${err}`); // proceed with error
+        log.error(`${PREFIX} send-to-users: ${err}`); // proceed with error
       }
     }
 
