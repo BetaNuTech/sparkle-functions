@@ -36,7 +36,7 @@ describe('Inspection PDF Report', () => {
     if (reportURL.val()) {
       try {
         await deletePDFInspection(reportURL.val());
-      } catch (e) {}
+      } catch (e) {} // eslint-disable-line no-empty
     }
 
     return cleanDb(db);
@@ -54,6 +54,22 @@ describe('Inspection PDF Report', () => {
       .set('Accept', 'application/json')
       .expect('Content-Type', /json/)
       .expect(401);
+  });
+
+  it('should reject request for incompete inspection', async () => {
+    // Setup database
+    await db
+      .ref(`/inspections/${INSP_ID}`)
+      .set(Object.assign({}, INSPECTION_DATA, { inspectionCompleted: false }));
+    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
+
+    // Execute & Get Result
+    const app = createApp(db, {});
+    return request(app)
+      .get(`/${PROPERTY_ID}/${INSP_ID}`)
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(400);
   });
 
   it("should resolve an uploaded PDF's download link", async function() {
