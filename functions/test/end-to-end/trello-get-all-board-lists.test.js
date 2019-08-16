@@ -43,32 +43,6 @@ describe('Trello Get All Board Lists', () => {
     expect(result.body.message).to.equal('invalid credentials');
   });
 
-  it('should return unauthorized response when requesting user does did not provide stored credentials', async function() {
-    const userId2 = uuid();
-
-    // setup database
-    await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
-
-    // Invalid Trello credentials for requestor
-    await db
-      .ref(TRELLO_CREDENTIAL_DB_PATH)
-      .set({ user: userId2, apikey: '123', authToken: '123' });
-
-    // Execute & Get Result
-    const app = getAllBoardListsAppEndpoint(db, stubFirbaseAuth(USER_ID));
-    const result = await request(app)
-      .get(TRELLO_BOARD_LIST_URL)
-      .set('Accept', 'application/json')
-      .set('Authorization', 'fb-jwt stubbed-by-auth')
-      .expect('Content-Type', /json/)
-      .expect(401);
-
-    // Assertions
-    expect(result.body.message).to.equal(
-      'User did not create authorization token'
-    );
-  });
-
   it('should relay a bad request response from the Trello API', async function() {
     // Stub Requests
     nock('https://api.trello.com')
@@ -171,5 +145,37 @@ describe('Trello Get All Board Lists', () => {
       true,
       'set JSON-API attributes'
     );
+  });
+
+  it('should allow an admin user that did did not provide Trello credentials to request lists', async () => {
+    const userId2 = uuid();
+
+    // Stub Requests
+    nock('https://api.trello.com')
+      .get(
+        `/1/boards/${TRELLO_BOARD_ID}/lists?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}`
+      )
+      .reply(200, TRELLO_BOARDS_PAYLOAD);
+
+    // setup database
+    await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
+    await db.ref(`/users/${userId2}`).set(USER); // add requesting admin user
+
+    // Valid Trello credentials for property/requstor
+    await db.ref(TRELLO_CREDENTIAL_DB_PATH).set({
+      user: USER_ID,
+      member: TRELLO_MEMBER_ID,
+      apikey: TRELLO_API_KEY,
+      authToken: TRELLO_AUTH_TOKEN,
+    });
+
+    // Execute & Get Result
+    const app = getAllBoardListsAppEndpoint(db, stubFirbaseAuth(userId2));
+    await request(app)
+      .get(TRELLO_BOARD_LIST_URL)
+      .set('Accept', 'application/json')
+      .set('Authorization', 'fb-jwt stubbed-by-auth')
+      .expect('Content-Type', /json/)
+      .expect(200);
   });
 });
