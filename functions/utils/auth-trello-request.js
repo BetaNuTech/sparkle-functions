@@ -42,12 +42,12 @@ module.exports = function authTrelloRequest(db) {
 
     // Revoke unauthorized request for
     // anthor authorizor's Trello lists
-    if (user.id !== trelloCredentials.user) {
-      res
-        .status(401)
-        .send({ message: 'User did not create authorization token' });
-      return next(Error('User not authorized'));
-    }
+    // if (user.id !== trelloCredentials.user) {
+    //   res
+    //     .status(401)
+    //     .send({ message: 'User did not create authorization token' });
+    //   return next(Error('User not authorized'));
+    // }
 
     // Set Trello credentials on request
     req.trelloCredentials = req.trelloCredentials || Object.create(null);
