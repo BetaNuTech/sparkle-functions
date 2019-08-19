@@ -25,7 +25,7 @@ module.exports = function createOnUpsertTrelloTokenHandler(db, auth) {
    * @param  {Object} res Express res
    * @return {Promise}
    */
-  const createTrelloTokenHandler = async (req, res) => {
+  const handler = async (req, res) => {
     const { user, body } = req;
     const { apikey, authToken } = body;
 
@@ -132,7 +132,7 @@ module.exports = function createOnUpsertTrelloTokenHandler(db, auth) {
   app.post(
     '/integrations/trello/authorization',
     authUser(db, auth, true),
-    createTrelloTokenHandler
+    handler
   );
   return app;
 };
