@@ -196,9 +196,11 @@ module.exports = modelSetup({
       );
       if (archiveResponse) updates.trelloCardChanged = archiveResponse.id;
     } catch (err) {
-      throw Error(
-        `${PREFIX} associated Trello card ${toggleType} failed: ${err}`
+      const resultErr = Error(
+        `${PREFIX} associated Trello card ${toggleType} failed | ${err}`
       );
+      resultErr.code = err.code || 'ERR_ARCHIVE_TRELLO_CARD';
+      throw resultErr;
     }
 
     return updates;

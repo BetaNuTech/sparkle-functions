@@ -3,7 +3,6 @@ const got = require('got');
 const modelSetup = require('./utils/model-setup');
 const config = require('../config');
 const integrationsModel = require('./integrations');
-const log = require('../utils/logger');
 
 const PREFIX = 'models: system:';
 const SERVICE_ACCOUNT_CLIENT_ID =
@@ -205,9 +204,13 @@ module.exports = modelSetup({
     );
     assert(typeof archiving === 'boolean', `${PREFIX} has archiving boolean`);
 
-    let cardId;
+    let trelloCardId = '';
     try {
-      cardId = await this._findTrelloCardId(db, propertyId, deficientItemId);
+      trelloCardId = await this._findTrelloCardId(
+        db,
+        propertyId,
+        deficientItemId
+      );
     } catch (err) {
       throw Error(
         `${PREFIX}: archiveTrelloCard: trello card lookup failed: ${err}`
@@ -215,7 +218,7 @@ module.exports = modelSetup({
     }
 
     // DI has no Trello card to archive
-    if (!cardId) {
+    if (!trelloCardId) {
       return null;
     }
 
@@ -233,32 +236,34 @@ module.exports = modelSetup({
     let response;
     try {
       response = await archiveTrelloCardRequest(
-        cardId,
+        trelloCardId,
         trelloCredentials.apikey,
         trelloCredentials.authToken,
         'PUT',
         archiving
       );
     } catch (err) {
+      const resultErr = Error(
+        `${PREFIX} archive PUT card ${trelloCardId} to trello API failed: ${err}`
+      );
+
+      // Handle Deleted Trello card
       if (err.statusCode === 404) {
-        log.info(
-          `${PREFIX} card not found, removing card from trello integration object`
-        );
+        resultErr.code = 'ERR_TRELLO_CARD_DELETED';
 
         try {
-          await db
-            .ref(`${TRELLO_PROPERTIES_PATH}/${propertyId}/cards/${cardId}`)
-            .remove();
-        } catch (error) {
-          log.error(
-            `${PREFIX} error when removing card from trello integration path`
+          await this._cleanupDeletedTrelloCard(
+            db,
+            propertyId,
+            deficientItemId,
+            trelloCardId
           );
+        } catch (cleanUpErr) {
+          resultErr.message += `${cleanUpErr}`; // append to primary error
         }
       }
 
-      throw Error(
-        `${PREFIX} archive PUT card ${cardId} to trello API failed: ${err}`
-      );
+      throw resultErr;
     }
 
     return response;
@@ -335,6 +340,57 @@ module.exports = modelSetup({
         json: true,
       }
     );
+  },
+
+  /**
+   * Used to cleanup Trello card references
+   * when the card has been manually removed
+   * from the Trello admin and returns 404's
+   * to any API requests
+   * @param  {firebaseadmin.database} db
+   * @param  {String}  propertyId
+   * @param  {String}  deficientItemId
+   * @param  {String}  trelloCardId
+   * @return {Promise}
+   */
+  async _cleanupDeletedTrelloCard(
+    db,
+    propertyId,
+    deficientItemId,
+    trelloCardId
+  ) {
+    assert(
+      propertyId && typeof propertyId === 'string',
+      `${PREFIX} has property id`
+    );
+    assert(
+      deficientItemId && typeof deficientItemId === 'string',
+      `${PREFIX} has deficient item ID`
+    );
+    assert(
+      trelloCardId && typeof trelloCardId === 'string',
+      `${PREFIX} has Trello card ID`
+    );
+
+    try {
+      await db
+        .ref(`${TRELLO_PROPERTIES_PATH}/${propertyId}/cards/${trelloCardId}`)
+        .remove();
+    } catch (err) {
+      throw Error(
+        `${PREFIX} error removing card from trello integration path | ${err}`
+      );
+    }
+
+    try {
+      await db
+        .ref(
+          `${DI_DATABASE_PATH}/${propertyId}/${deficientItemId}/trelloCardURL`
+        )
+        .remove();
+    } catch (err) {
+      throw Error(`${PREFIX} error removing Trello card URL from DI | ${err}`);
+    }
   },
 });
 
