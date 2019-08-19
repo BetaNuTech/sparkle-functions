@@ -5,7 +5,7 @@ const createTrelloDeficientItemCardHandler = require('../../trello/create-trello
 const uuid = require('../../test-helpers/uuid');
 const { cleanDb, stubFirbaseAuth } = require('../../test-helpers/firebase');
 const { db, uid: SERVICE_ACCOUNT_ID } = require('./setup');
-const trelloCardPayload = require('../../test-helpers/mocks/get-trello-card.json');
+const trelloCardPayload = require('../../test-helpers/mocks/post-trello-card.json');
 
 const PROPERTY_ID = uuid();
 const DEFICIENT_ITEM_ID = uuid();
