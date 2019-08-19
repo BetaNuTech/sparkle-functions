@@ -5,7 +5,6 @@ const bodyParser = require('body-parser');
 const log = require('../utils/logger');
 const authUser = require('../utils/auth-firebase-user');
 const systemModel = require('../models/system');
-const usersModel = require('../models/users');
 
 const PREFIX = 'trello: get authorizor:';
 
@@ -62,43 +61,15 @@ module.exports = function createOnGetAllTrelloBoardsHandler(db, auth) {
       });
     }
 
-    // Lookup Sparkle user
-    let firebaseUser = null;
-    try {
-      const firebaseUserSnap = await usersModel.getUser(
-        db,
-        trelloCredentials.user
-      );
-
-      if (!firebaseUserSnap.exists()) {
-        throw Error('user does not exist');
-      }
-
-      firebaseUser = firebaseUserSnap.val();
-    } catch (err) {
-      log.error(`${PREFIX} Error accessing firebase user record: ${err}`);
-      return res.status(500).send({
-        errors: [
-          {
-            status: 500,
-            source: {},
-            title: 'Unexpected Error',
-            detail: 'Failed to access firebase user',
-          },
-        ],
-      });
-    }
-
     // Populate payload data
     Object.assign(payload.data, {
       type: 'user',
       id: trelloCredentials.user,
       attributes: {
-        firstName: firebaseUser.firstName,
-        lastName: firebaseUser.lastName,
+        fullName: trelloCredentials.trelloFullName,
         trelloUsername: trelloCredentials.trelloUsername,
         trelloMember: trelloCredentials.member,
-        email: firebaseUser.email,
+        email: trelloCredentials.trelloEmail,
       },
     });
 
