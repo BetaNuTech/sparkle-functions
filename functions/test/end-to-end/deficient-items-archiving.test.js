@@ -19,7 +19,6 @@ const TRELLO_API_KEY = 'f4a04dd872b7a2e33bfc33aac9516965';
 const TRELLO_AUTH_TOKEN =
   'fab424b6f18b2845b3d60eac800e42e5f3ab2fdb25d21c90264032a0ecf16ceb';
 const TRELLO_CARD_ID = '5d0ab7754066f880369a4db2';
-const TRELLO_DELETED_CARD_ID = '5d0ab7754066f880369a4dae';
 const TRELLO_SYSTEM_INTEGRATION_DATA = {
   member: TRELLO_MEMBER_ID,
   user: USER_ID,
@@ -40,6 +39,8 @@ const INTEGRATIONS_DATA = {
 const TRELLO_CREDENTIAL_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/organization`;
 const TRELLO_PROPERTY_CARDS_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/properties/${PROPERTY_ID}/cards`;
 const TRELLO_INTEGRATIONS_DB_PATH = `/integrations/trello/properties/${PROPERTY_ID}`;
+const DEFICIENT_ITEM_DB_PATH = `/propertyInspectionDeficientItems/${PROPERTY_ID}/${DEFICIENT_ITEM_ID}`;
+const DEFICIENT_ITEM_ARCHIVE_DB_PATH = `/archive${DEFICIENT_ITEM_DB_PATH}`;
 
 describe('Deficient Items Archiving', () => {
   afterEach(async () => {
@@ -254,30 +255,35 @@ describe('Deficient Items Archiving', () => {
       },
     });
 
+    // Stub requests
+    nock('https://api.trello.com')
+      .put(
+        `/1/cards/${TRELLO_CARD_ID}?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}`
+      )
+      .reply(404);
+
     // Setup database
     await db.ref(`/properties/${PROPERTY_ID}`).set({ name: 'test' });
     await db.ref(`/inspections/${inspectionId}`).set(inspectionData); // Add inspection
-    const diPath = `/propertyInspectionDeficientItems/${PROPERTY_ID}/${DEFICIENT_ITEM_ID}`;
-    const diRef = db.ref(diPath);
+    const diRef = db.ref(DEFICIENT_ITEM_DB_PATH);
     await diRef.set({
       state: 'requires-action',
       inspection: inspectionId,
-      item: DEFICIENT_ITEM_ID,
+      trelloCardURL: 'something',
     });
-
-    // setting up integration path with one that should be remove and one that should stay
-    await db.ref(TRELLO_CREDENTIAL_DB_PATH).set({
-      ...TRELLO_SYSTEM_INTEGRATION_DATA,
-      cards: {
-        [TRELLO_CARD_ID]: DEFICIENT_ITEM_ID,
-        [TRELLO_DELETED_CARD_ID]: DEFICIENT_ITEM_ID,
-      },
-    });
+    await db
+      .ref(TRELLO_PROPERTY_CARDS_PATH)
+      .set(TRELLO_SYSTEM_PROPERTY_CARDS_DATA);
+    await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
     await db.ref(TRELLO_INTEGRATIONS_DB_PATH).set(INTEGRATIONS_DATA);
 
-    const beforeSnap = await db.ref(`${diPath}/archive`).once('value'); // Create before
+    const beforeSnap = await db
+      .ref(`${DEFICIENT_ITEM_DB_PATH}/archive`)
+      .once('value'); // Create before
     await diRef.update({ archive: true });
-    const afterSnap = await db.ref(`${diPath}/archive`).once('value'); // Create after
+    const afterSnap = await db
+      .ref(`${DEFICIENT_ITEM_DB_PATH}/archive`)
+      .once('value'); // Create after
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -287,18 +293,26 @@ describe('Deficient Items Archiving', () => {
       await wrapped(changeSnap, {
         params: { propertyId: PROPERTY_ID, deficientItemId: DEFICIENT_ITEM_ID },
       });
-    } catch (error) {
-      // Test result
-      const actualTrelloCardDetails = await db
-        .ref(`${TRELLO_CREDENTIAL_DB_PATH}/cards/${TRELLO_DELETED_CARD_ID}`)
-        .once('value');
+    } catch (err) {} // eslint-disable-line no-empty
 
-      // Assertions
-      expect(actualTrelloCardDetails.exists()).to.equal(
-        false,
-        'deleted card has been removed from trello integration'
-      );
-    }
+    const trelloCardDetailsSnap = await db
+      .ref(`${TRELLO_PROPERTY_CARDS_PATH}/${TRELLO_CARD_ID}`)
+      .once('value');
+    const actualTrelloCardDetails = trelloCardDetailsSnap.exists();
+    const trelloCardURLSnap = await db
+      .ref(`${DEFICIENT_ITEM_ARCHIVE_DB_PATH}/trelloCardURL`)
+      .once('value');
+    const actualTrelloCardUrl = trelloCardURLSnap.exists();
+
+    // Assertions
+    expect(actualTrelloCardDetails).to.equal(
+      false,
+      'deleted card has been removed from trello integration'
+    );
+    expect(actualTrelloCardUrl).to.equal(
+      false,
+      'deleted Trello card URL from its deficient item'
+    );
   });
 });
 
@@ -389,16 +403,19 @@ describe('Deficient Items Unarchiving', () => {
     // Setup database
     await db.ref(`/properties/${propertyId}`).set({ name: 'test' });
     await db.ref(`/inspections/${inspectionId}`).set(inspectionData); // Add inspection
-    const diPath = `/archive/propertyInspectionDeficientItems/${propertyId}/${DEFICIENT_ITEM_ID}`;
-    const diRef = db.ref(diPath);
+    const diRef = db.ref(DEFICIENT_ITEM_ARCHIVE_DB_PATH);
     await diRef.set({
       state: 'requires-action',
       inspection: inspectionId,
       item: itemId,
     });
-    const beforeSnap = await db.ref(`${diPath}/archive`).once('value'); // Create before
+    const beforeSnap = await db
+      .ref(`${DEFICIENT_ITEM_ARCHIVE_DB_PATH}/archive`)
+      .once('value'); // Create before
     await diRef.update({ archive: false });
-    const afterSnap = await db.ref(`${diPath}/archive`).once('value'); // Create after
+    const afterSnap = await db
+      .ref(`${DEFICIENT_ITEM_ARCHIVE_DB_PATH}/archive`)
+      .once('value'); // Create after
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -408,14 +425,11 @@ describe('Deficient Items Unarchiving', () => {
     });
 
     // Test result
-    const actual = await db
-      .ref(
-        `/propertyInspectionDeficientItems/${propertyId}/${DEFICIENT_ITEM_ID}`
-      )
-      .once('value');
+    const result = await db.ref(DEFICIENT_ITEM_DB_PATH).once('value');
+    const actual = result.exists();
 
     // Assertions
-    expect(actual.exists()).to.equal(true, 'unarchived the deficient item');
+    expect(actual).to.equal(true);
   });
 
   it('should unarchive a deficient items trello card when requested', async () => {
@@ -453,8 +467,7 @@ describe('Deficient Items Unarchiving', () => {
     // Setup database
     await db.ref(`/properties/${PROPERTY_ID}`).set({ name: 'test' });
     await db.ref(`/inspections/${inspectionId}`).set(inspectionData); // Add inspection
-    const diPath = `/archive/propertyInspectionDeficientItems/${PROPERTY_ID}/${DEFICIENT_ITEM_ID}`;
-    const diRef = db.ref(diPath);
+    const diRef = db.ref(DEFICIENT_ITEM_ARCHIVE_DB_PATH);
     await diRef.set({
       state: 'requires-action',
       inspection: inspectionId,
@@ -467,9 +480,13 @@ describe('Deficient Items Unarchiving', () => {
       .set(TRELLO_SYSTEM_PROPERTY_CARDS_DATA);
     await db.ref(TRELLO_INTEGRATIONS_DB_PATH).set(INTEGRATIONS_DATA);
 
-    const beforeSnap = await db.ref(`${diPath}/archive`).once('value'); // Create before
+    const beforeSnap = await db
+      .ref(`${DEFICIENT_ITEM_ARCHIVE_DB_PATH}/archive`)
+      .once('value'); // Create before
     await diRef.update({ archive: false });
-    const afterSnap = await db.ref(`${diPath}/archive`).once('value'); // Create after
+    const afterSnap = await db
+      .ref(`${DEFICIENT_ITEM_ARCHIVE_DB_PATH}/archive`)
+      .once('value'); // Create after
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -508,30 +525,35 @@ describe('Deficient Items Unarchiving', () => {
       },
     });
 
+    // Stub requests
+    nock('https://api.trello.com')
+      .put(
+        `/1/cards/${TRELLO_CARD_ID}?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}`
+      )
+      .reply(404);
+
     // Setup database
     await db.ref(`/properties/${PROPERTY_ID}`).set({ name: 'test' });
     await db.ref(`/inspections/${inspectionId}`).set(inspectionData); // Add inspection
-    const diPath = `/archive/propertyInspectionDeficientItems/${PROPERTY_ID}/${DEFICIENT_ITEM_ID}`;
-    const diRef = db.ref(diPath);
+    const diRef = db.ref(DEFICIENT_ITEM_ARCHIVE_DB_PATH);
     await diRef.set({
       state: 'requires-action',
       inspection: inspectionId,
-      item: DEFICIENT_ITEM_ID,
+      trelloCardURL: 'something',
     });
-
-    // setting up integration path with one that should be remove and one that should stay
-    await db.ref(TRELLO_CREDENTIAL_DB_PATH).set({
-      ...TRELLO_SYSTEM_INTEGRATION_DATA,
-      cards: {
-        [TRELLO_CARD_ID]: DEFICIENT_ITEM_ID,
-        [TRELLO_DELETED_CARD_ID]: DEFICIENT_ITEM_ID,
-      },
-    });
+    await db
+      .ref(TRELLO_PROPERTY_CARDS_PATH)
+      .set(TRELLO_SYSTEM_PROPERTY_CARDS_DATA);
+    await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
     await db.ref(TRELLO_INTEGRATIONS_DB_PATH).set(INTEGRATIONS_DATA);
 
-    const beforeSnap = await db.ref(`${diPath}/archive`).once('value'); // Create before
+    const beforeSnap = await db
+      .ref(`${DEFICIENT_ITEM_ARCHIVE_DB_PATH}/archive`)
+      .once('value'); // Create before
     await diRef.update({ archive: false });
-    const afterSnap = await db.ref(`${diPath}/archive`).once('value'); // Create after
+    const afterSnap = await db
+      .ref(`${DEFICIENT_ITEM_ARCHIVE_DB_PATH}/archive`)
+      .once('value'); // Create after
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -541,17 +563,26 @@ describe('Deficient Items Unarchiving', () => {
       await wrapped(changeSnap, {
         params: { propertyId: PROPERTY_ID, deficientItemId: DEFICIENT_ITEM_ID },
       });
-    } catch (error) {
-      // Test result
-      const actualTrelloCardDetails = await db
-        .ref(`${TRELLO_PROPERTY_CARDS_PATH}/${TRELLO_DELETED_CARD_ID}`)
-        .once('value');
+    } catch (err) {} // eslint-disable-line no-empty
 
-      // Assertions
-      expect(actualTrelloCardDetails.exists()).to.equal(
-        false,
-        'deleted card has been removed from trello integration'
-      );
-    }
+    // Test result
+    const trelloCardDetailsSnap = await db
+      .ref(`${TRELLO_PROPERTY_CARDS_PATH}/${TRELLO_CARD_ID}`)
+      .once('value');
+    const actualTrelloCardDetails = trelloCardDetailsSnap.exists();
+    const trelloCardURLSnap = await db
+      .ref(`${DEFICIENT_ITEM_DB_PATH}/trelloCardURL`)
+      .once('value');
+    const actualTrelloCardUrl = trelloCardURLSnap.exists();
+
+    // Assertions
+    expect(actualTrelloCardDetails).to.equal(
+      false,
+      'deleted card has been removed from trello integration'
+    );
+    expect(actualTrelloCardUrl).to.equal(
+      false,
+      'deleted Trello card URL from its deficient item'
+    );
   });
 });
