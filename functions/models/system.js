@@ -233,7 +233,7 @@ module.exports = modelSetup({
       throw Error(`${PREFIX} failed to recover trello credentials: ${err}`);
     }
 
-    let response;
+    let response = null;
     try {
       response = await archiveTrelloCardRequest(
         trelloCardId,
@@ -372,6 +372,7 @@ module.exports = modelSetup({
       `${PREFIX} has Trello card ID`
     );
 
+    // Remove the Trello card reference from property integration
     try {
       await db
         .ref(`${TRELLO_PROPERTIES_PATH}/${propertyId}/cards/${trelloCardId}`)
@@ -382,12 +383,12 @@ module.exports = modelSetup({
       );
     }
 
+    // Remove any Trello card URL's on DI's
     try {
-      await db
-        .ref(
-          `${DI_DATABASE_PATH}/${propertyId}/${deficientItemId}/trelloCardURL`
-        )
-        .remove();
+      await db.ref().update({
+        [`${DI_DATABASE_PATH}/${propertyId}/${deficientItemId}/trelloCardURL`]: null,
+        [`archive${DI_DATABASE_PATH}/${propertyId}/${deficientItemId}/trelloCardURL`]: null,
+      });
     } catch (err) {
       throw Error(`${PREFIX} error removing Trello card URL from DI | ${err}`);
     }
