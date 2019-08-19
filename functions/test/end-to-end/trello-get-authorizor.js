@@ -8,9 +8,6 @@ const EXPECTED_JSON_PAYLOAD = require('../../test-helpers/mocks/get-trello-autho
 
 const USER_ID = EXPECTED_JSON_PAYLOAD.data.id;
 const USER = {
-  firstName: EXPECTED_JSON_PAYLOAD.data.attributes.firstName,
-  lastName: EXPECTED_JSON_PAYLOAD.data.attributes.lastName,
-  email: EXPECTED_JSON_PAYLOAD.data.attributes.email,
   admin: true,
   corporate: true,
 };
@@ -18,6 +15,8 @@ const TRELLO_CREDENTIAL_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/tr
 const TRELLO_CREDENTIALS_DATA = {
   member: EXPECTED_JSON_PAYLOAD.data.attributes.trelloMember,
   trelloUsername: EXPECTED_JSON_PAYLOAD.data.attributes.trelloUsername,
+  trelloFullName: EXPECTED_JSON_PAYLOAD.data.attributes.fullName,
+  trelloEmail: EXPECTED_JSON_PAYLOAD.data.attributes.email,
   authToken: '1234',
   apikey: '1234',
   user: EXPECTED_JSON_PAYLOAD.data.id,

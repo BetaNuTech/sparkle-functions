@@ -3,11 +3,10 @@
     "type": "user",
     "id": "adfkj23falsdkfaj32",
     "attributes": {
-      "firstName": "Matt",
-      "lastName": "Walters",
+      "email": "matt@email.ru",
+      "fullName": "Matt Walters",
       "trelloUsername": "mattw",
-      "trelloMember": "57r162cc46ed502b2be03q80",
-      "email": "matt@email.ru"
+      "trelloMember": "57r162cc46ed502b2be03q80"
     }
   }
 }
