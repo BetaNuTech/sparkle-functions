@@ -88,7 +88,10 @@ describe('Trello Upsert Token', () => {
     expect(result.body.message).to.equal('trello token request not authorized');
   });
 
-  it('should save trello member ID, username, and credentials', async function() {
+  it('should save trello member: ID, username, email, fullName, and credentials', async function() {
+    const expectedEmail = 'test@gmail.com';
+    const expectedFullName = 'Test User';
+
     // Stub Requests
     nock('https://api.trello.com')
       .get(`/1/tokens/${TRELLO_AUTH_TOKEN}?key=${TRELLO_API_KEY}`)
@@ -100,7 +103,11 @@ describe('Trello Upsert Token', () => {
       )
       .reply(
         200,
-        Object.assign({}, GET_TRELLO_MEMBER_PAYLOAD, { id: TRELLO_MEMBER_ID })
+        Object.assign({}, GET_TRELLO_MEMBER_PAYLOAD, {
+          id: TRELLO_MEMBER_ID,
+          email: expectedEmail,
+          fullName: expectedFullName,
+        })
       );
 
     // Setup database
@@ -143,6 +150,16 @@ describe('Trello Upsert Token', () => {
         name: 'trelloUsername',
         expected: TRELLO_USERNAME,
         actual: credentials.trelloUsername,
+      },
+      {
+        name: 'trelloFullName',
+        expected: expectedFullName,
+        actual: credentials.trelloFullName,
+      },
+      {
+        name: 'trelloEmail',
+        expected: expectedEmail,
+        actual: credentials.trelloEmail,
       },
     ].forEach(({ name, expected, actual }) => {
       expect(actual).to.equal(

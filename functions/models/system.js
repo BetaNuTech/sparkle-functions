@@ -62,7 +62,15 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   upsertPropertyTrelloCredentials(db, settings) {
-    const { member, authToken, apikey, user, trelloUsername } = settings;
+    const {
+      member,
+      authToken,
+      apikey,
+      user,
+      trelloUsername,
+      trelloEmail,
+      trelloFullName,
+    } = settings;
 
     assert(
       member && typeof member === 'string',
@@ -81,6 +89,14 @@ module.exports = modelSetup({
       trelloUsername && typeof trelloUsername === 'string',
       `${PREFIX} has Trello username`
     );
+    assert(
+      trelloEmail && typeof trelloEmail === 'string',
+      `${PREFIX} has Trello email`
+    );
+    assert(
+      trelloFullName && typeof trelloFullName === 'string',
+      `${PREFIX} has Trello full name`
+    );
 
     // Update system credentials /wo overwriting
     // any other date under property's cendentials
@@ -90,6 +106,8 @@ module.exports = modelSetup({
       apikey,
       user,
       trelloUsername,
+      trelloEmail,
+      trelloFullName,
     });
   },
 

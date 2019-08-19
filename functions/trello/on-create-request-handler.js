@@ -81,7 +81,9 @@ module.exports = function createOnUpsertTrelloTokenHandler(db, auth) {
     }
 
     // Recover Trello username
-    let trelloUsername;
+    let trelloUsername = '';
+    let trelloEmail = '';
+    let trelloFullName = '';
     try {
       const response = await got(
         `https://api.trello.com/1/members/${memberID}?key=${apikey}&token=${authToken}`
@@ -89,8 +91,10 @@ module.exports = function createOnUpsertTrelloTokenHandler(db, auth) {
       const responseBody = JSON.parse(response.body);
 
       // Lookup username
-      if (responseBody && responseBody.username) {
+      if (responseBody && responseBody.username && responseBody.email) {
         trelloUsername = responseBody.username;
+        trelloEmail = responseBody.email;
+        trelloFullName = responseBody.fullName || 'N/A'; // optional
       } else {
         throw Error('Trello username was not recovered');
       }
@@ -109,6 +113,8 @@ module.exports = function createOnUpsertTrelloTokenHandler(db, auth) {
         apikey,
         user: user.id,
         trelloUsername,
+        trelloEmail,
+        trelloFullName,
       });
     } catch (err) {
       log.error(`${PREFIX} Error saving trello credentials: ${err}`);
