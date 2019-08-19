@@ -1,4 +1,5 @@
 module.exports = {
+  dbPath: '/propertyInspectionDeficientItems',
   requiredActionStates: ['requires-action', 'go-back', 'overdue'],
   followUpActionStates: ['completed', 'incomplete'],
   overdueEligibleStates: ['pending', 'requires-progress-update'],

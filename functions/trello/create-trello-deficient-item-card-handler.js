@@ -174,6 +174,7 @@ module.exports = function createOnTrelloDeficientItemCardHandler(db, auth) {
         property: propertyId,
         trelloCard: trelloPayload.id,
         deficientItem: deficientItemId,
+        trelloCardURL: trelloPayload.shortUrl,
       });
     } catch (err) {
       log.error(`${PREFIX} Error persisting trello reference: ${err}`);
