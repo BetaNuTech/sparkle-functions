@@ -29,7 +29,7 @@ module.exports = function createOnTrelloDeficientItemCardHandler(db, auth) {
    * @param  {Object} res Express res
    * @return {Promise}
    */
-  const createTrelloDeficientItemCardHandler = async (req, res) => {
+  const handler = async (req, res) => {
     const { params, user } = req;
     const { propertyId, deficientItemId } = params;
 
@@ -194,7 +194,7 @@ module.exports = function createOnTrelloDeficientItemCardHandler(db, auth) {
   app.post(
     '/properties/:propertyId/deficient-items/:deficientItemId/trello/card',
     authUser(db, auth, true),
-    createTrelloDeficientItemCardHandler
+    handler
   );
   return app;
 };
