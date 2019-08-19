@@ -167,8 +167,14 @@ module.exports = function createOnInspectionWriteHandler(db) {
             .pop()}`
         );
       }
-    } catch (e) {
-      log.error(`${PREFIX} ${e}`);
+    } catch (err) {
+      if (err.code === 'ERR_TRELLO_CARD_DELETED') {
+        log.info(
+          `${PREFIX} Trello API card not found, removed card refrences from DB`
+        );
+      }
+
+      log.error(`${PREFIX} ${err}`);
     }
 
     return updates;

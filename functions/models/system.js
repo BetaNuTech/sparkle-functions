@@ -1,13 +1,13 @@
 const assert = require('assert');
 const got = require('got');
 const modelSetup = require('./utils/model-setup');
-const { firebase: firebaseConfig } = require('../config');
+const config = require('../config');
 const integrationsModel = require('./integrations');
-const log = require('../utils/logger');
 
 const PREFIX = 'models: system:';
 const SERVICE_ACCOUNT_CLIENT_ID =
-  firebaseConfig.databaseAuthVariableOverride.uid;
+  config.firebase.databaseAuthVariableOverride.uid;
+const DI_DATABASE_PATH = config.deficientItems.dbPath;
 const TRELLO_ORG_PATH = `/system/integrations/${SERVICE_ACCOUNT_CLIENT_ID}/trello/organization`;
 const TRELLO_PROPERTIES_PATH = `/system/integrations/${SERVICE_ACCOUNT_CLIENT_ID}/trello/properties`;
 const SLACK_ORG_PATH = `/system/integrations/${SERVICE_ACCOUNT_CLIENT_ID}/slack/organization`;
@@ -58,11 +58,19 @@ module.exports = modelSetup({
   /**
    * Create or update organization's Trello credentials
    * @param  {firebaseAdmin.database} db firbase database
-   * @param  {Object} config
+   * @param  {Object} settings
    * @return {Promise}
    */
-  upsertPropertyTrelloCredentials(db, config) {
-    const { member, authToken, apikey, user, trelloUsername } = config;
+  upsertPropertyTrelloCredentials(db, settings) {
+    const {
+      member,
+      authToken,
+      apikey,
+      user,
+      trelloUsername,
+      trelloEmail,
+      trelloFullName,
+    } = settings;
 
     assert(
       member && typeof member === 'string',
@@ -81,6 +89,14 @@ module.exports = modelSetup({
       trelloUsername && typeof trelloUsername === 'string',
       `${PREFIX} has Trello username`
     );
+    assert(
+      trelloEmail && typeof trelloEmail === 'string',
+      `${PREFIX} has Trello email`
+    );
+    assert(
+      trelloFullName && typeof trelloFullName === 'string',
+      `${PREFIX} has Trello full name`
+    );
 
     // Update system credentials /wo overwriting
     // any other date under property's cendentials
@@ -90,6 +106,8 @@ module.exports = modelSetup({
       apikey,
       user,
       trelloUsername,
+      trelloEmail,
+      trelloFullName,
     });
   },
 
@@ -100,10 +118,11 @@ module.exports = modelSetup({
    * @param  {String} propertyId
    * @param  {String} trelloCard
    * @param  {String} deficientItem
+   * @param  {String} trelloCardURL
    * @return {Promise} - resolves {undefined}
    */
   async createPropertyTrelloCard(db, settings) {
-    const { property, trelloCard, deficientItem } = settings;
+    const { property, trelloCard, deficientItem, trelloCardURL } = settings;
 
     assert(
       property && typeof property === 'string',
@@ -116,6 +135,10 @@ module.exports = modelSetup({
     assert(
       deficientItem && typeof deficientItem === 'string',
       `${PREFIX} has deficient item id`
+    );
+    assert(
+      trelloCardURL && typeof trelloCardURL === 'string',
+      `${PREFIX} has trello card URL`
     );
 
     const cardsSnap = await db
@@ -134,9 +157,10 @@ module.exports = modelSetup({
       }
     }
 
-    return db
-      .ref(`${TRELLO_PROPERTIES_PATH}/${property}/cards/${trelloCard}`)
-      .set(deficientItem);
+    return db.ref().update({
+      [`${TRELLO_PROPERTIES_PATH}/${property}/cards/${trelloCard}`]: deficientItem,
+      [`${DI_DATABASE_PATH}/${property}/${deficientItem}/trelloCardURL`]: trelloCardURL,
+    });
   },
 
   /**
@@ -198,9 +222,13 @@ module.exports = modelSetup({
     );
     assert(typeof archiving === 'boolean', `${PREFIX} has archiving boolean`);
 
-    let cardId;
+    let trelloCardId = '';
     try {
-      cardId = await this._findTrelloCardId(db, propertyId, deficientItemId);
+      trelloCardId = await this._findTrelloCardId(
+        db,
+        propertyId,
+        deficientItemId
+      );
     } catch (err) {
       throw Error(
         `${PREFIX}: archiveTrelloCard: trello card lookup failed: ${err}`
@@ -208,7 +236,7 @@ module.exports = modelSetup({
     }
 
     // DI has no Trello card to archive
-    if (!cardId) {
+    if (!trelloCardId) {
       return null;
     }
 
@@ -223,35 +251,37 @@ module.exports = modelSetup({
       throw Error(`${PREFIX} failed to recover trello credentials: ${err}`);
     }
 
-    let response;
+    let response = null;
     try {
       response = await archiveTrelloCardRequest(
-        cardId,
+        trelloCardId,
         trelloCredentials.apikey,
         trelloCredentials.authToken,
         'PUT',
         archiving
       );
     } catch (err) {
+      const resultErr = Error(
+        `${PREFIX} archive PUT card ${trelloCardId} to trello API failed: ${err}`
+      );
+
+      // Handle Deleted Trello card
       if (err.statusCode === 404) {
-        log.info(
-          `${PREFIX} card not found, removing card from trello integration object`
-        );
+        resultErr.code = 'ERR_TRELLO_CARD_DELETED';
 
         try {
-          await db
-            .ref(`${TRELLO_PROPERTIES_PATH}/${propertyId}/cards/${cardId}`)
-            .remove();
-        } catch (error) {
-          log.error(
-            `${PREFIX} error when removing card from trello integration path`
+          await this._cleanupDeletedTrelloCard(
+            db,
+            propertyId,
+            deficientItemId,
+            trelloCardId
           );
+        } catch (cleanUpErr) {
+          resultErr.message += `${cleanUpErr}`; // append to primary error
         }
       }
 
-      throw Error(
-        `${PREFIX} archive PUT card ${cardId} to trello API failed: ${err}`
-      );
+      throw resultErr;
     }
 
     return response;
@@ -328,6 +358,58 @@ module.exports = modelSetup({
         json: true,
       }
     );
+  },
+
+  /**
+   * Used to cleanup Trello card references
+   * when the card has been manually removed
+   * from the Trello admin and returns 404's
+   * to any API requests
+   * @param  {firebaseadmin.database} db
+   * @param  {String}  propertyId
+   * @param  {String}  deficientItemId
+   * @param  {String}  trelloCardId
+   * @return {Promise}
+   */
+  async _cleanupDeletedTrelloCard(
+    db,
+    propertyId,
+    deficientItemId,
+    trelloCardId
+  ) {
+    assert(
+      propertyId && typeof propertyId === 'string',
+      `${PREFIX} has property id`
+    );
+    assert(
+      deficientItemId && typeof deficientItemId === 'string',
+      `${PREFIX} has deficient item ID`
+    );
+    assert(
+      trelloCardId && typeof trelloCardId === 'string',
+      `${PREFIX} has Trello card ID`
+    );
+
+    // Remove the Trello card reference from property integration
+    try {
+      await db
+        .ref(`${TRELLO_PROPERTIES_PATH}/${propertyId}/cards/${trelloCardId}`)
+        .remove();
+    } catch (err) {
+      throw Error(
+        `${PREFIX} error removing card from trello integration path | ${err}`
+      );
+    }
+
+    // Remove any Trello card URL's on DI's
+    try {
+      await db.ref().update({
+        [`${DI_DATABASE_PATH}/${propertyId}/${deficientItemId}/trelloCardURL`]: null,
+        [`archive${DI_DATABASE_PATH}/${propertyId}/${deficientItemId}/trelloCardURL`]: null,
+      });
+    } catch (err) {
+      throw Error(`${PREFIX} error removing Trello card URL from DI | ${err}`);
+    }
   },
 });
 

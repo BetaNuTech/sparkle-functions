@@ -42,6 +42,12 @@ module.exports = function createOnDiToggleArchiveUpdateHandler(db) {
     try {
       archiveUpdates = await model.toggleArchive(db, diSnap, isArchiving);
     } catch (err) {
+      if (err.code === 'ERR_TRELLO_CARD_DELETED') {
+        log.info(
+          `${PREFIX} Trello API card not found, removed card refrences from DB`
+        );
+      }
+
       log.error(`${PREFIX} toggling DI to ${archiveType} failed`);
       throw err;
     }
