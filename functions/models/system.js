@@ -1,13 +1,14 @@
 const assert = require('assert');
 const got = require('got');
 const modelSetup = require('./utils/model-setup');
-const { firebase: firebaseConfig } = require('../config');
+const config = require('../config');
 const integrationsModel = require('./integrations');
 const log = require('../utils/logger');
 
 const PREFIX = 'models: system:';
 const SERVICE_ACCOUNT_CLIENT_ID =
-  firebaseConfig.databaseAuthVariableOverride.uid;
+  config.firebase.databaseAuthVariableOverride.uid;
+const DI_DATABASE_PATH = config.deficientItems.dbPath;
 const TRELLO_ORG_PATH = `/system/integrations/${SERVICE_ACCOUNT_CLIENT_ID}/trello/organization`;
 const TRELLO_PROPERTIES_PATH = `/system/integrations/${SERVICE_ACCOUNT_CLIENT_ID}/trello/properties`;
 const SLACK_ORG_PATH = `/system/integrations/${SERVICE_ACCOUNT_CLIENT_ID}/slack/organization`;
@@ -58,11 +59,11 @@ module.exports = modelSetup({
   /**
    * Create or update organization's Trello credentials
    * @param  {firebaseAdmin.database} db firbase database
-   * @param  {Object} config
+   * @param  {Object} settings
    * @return {Promise}
    */
-  upsertPropertyTrelloCredentials(db, config) {
-    const { member, authToken, apikey, user, trelloUsername } = config;
+  upsertPropertyTrelloCredentials(db, settings) {
+    const { member, authToken, apikey, user, trelloUsername } = settings;
 
     assert(
       member && typeof member === 'string',
@@ -100,10 +101,11 @@ module.exports = modelSetup({
    * @param  {String} propertyId
    * @param  {String} trelloCard
    * @param  {String} deficientItem
+   * @param  {String} trelloCardURL
    * @return {Promise} - resolves {undefined}
    */
   async createPropertyTrelloCard(db, settings) {
-    const { property, trelloCard, deficientItem } = settings;
+    const { property, trelloCard, deficientItem, trelloCardURL } = settings;
 
     assert(
       property && typeof property === 'string',
@@ -116,6 +118,10 @@ module.exports = modelSetup({
     assert(
       deficientItem && typeof deficientItem === 'string',
       `${PREFIX} has deficient item id`
+    );
+    assert(
+      trelloCardURL && typeof trelloCardURL === 'string',
+      `${PREFIX} has trello card URL`
     );
 
     const cardsSnap = await db
@@ -134,9 +140,10 @@ module.exports = modelSetup({
       }
     }
 
-    return db
-      .ref(`${TRELLO_PROPERTIES_PATH}/${property}/cards/${trelloCard}`)
-      .set(deficientItem);
+    return db.ref().update({
+      [`${TRELLO_PROPERTIES_PATH}/${property}/cards/${trelloCard}`]: deficientItem,
+      [`${DI_DATABASE_PATH}/${property}/${deficientItem}/trelloCardURL`]: trelloCardURL,
+    });
   },
 
   /**

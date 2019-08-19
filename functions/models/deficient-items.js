@@ -2,8 +2,9 @@ const assert = require('assert');
 const modelSetup = require('./utils/model-setup');
 const createStateHistory = require('../deficient-items/utils/create-state-history');
 const systemModel = require('./system');
+const config = require('../config');
 
-const API_PATH = '/propertyInspectionDeficientItems';
+const DATABASE_PATH = config.deficientItems.dbPath;
 const PREFIX = 'models: deficient-items:';
 
 module.exports = modelSetup({
@@ -42,7 +43,9 @@ module.exports = modelSetup({
     );
 
     const result = [];
-    const deficientItemsByPropertySnap = await db.ref(API_PATH).once('value');
+    const deficientItemsByPropertySnap = await db
+      .ref(DATABASE_PATH)
+      .once('value');
 
     // Add each DI belonging to an inspection to result
     deficientItemsByPropertySnap.forEach(propertyDeficientItemsSnap => {
@@ -66,7 +69,7 @@ module.exports = modelSetup({
    */
   findAllByProperty(db, propertyId) {
     assert(propertyId && typeof propertyId === 'string', 'has property id');
-    const path = `${API_PATH}/${propertyId}`;
+    const path = `${DATABASE_PATH}/${propertyId}`;
     return db.ref(path).once('value');
   },
 
@@ -94,10 +97,10 @@ module.exports = modelSetup({
     let ref;
     if (archived) {
       // Re-use previously created DI identifier
-      ref = db.ref(`${API_PATH}/${propertyId}/${archivedSnap.key}`);
+      ref = db.ref(`${DATABASE_PATH}/${propertyId}/${archivedSnap.key}`);
     } else {
       // Create brand new DI identifier
-      ref = db.ref(`${API_PATH}/${propertyId}`).push();
+      ref = db.ref(`${DATABASE_PATH}/${propertyId}`).push();
     }
 
     // Merge archived and created into active path
@@ -222,7 +225,7 @@ module.exports = modelSetup({
     assert(itemId && typeof itemId === 'string', 'has item reference');
 
     let result = null;
-    const archPropertyDiRef = db.ref(`archive${API_PATH}/${propertyId}`);
+    const archPropertyDiRef = db.ref(`archive${DATABASE_PATH}/${propertyId}`);
     const deficientItemSnaps = await archPropertyDiRef
       .orderByChild('item')
       .equalTo(itemId)
