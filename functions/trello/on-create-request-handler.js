@@ -91,10 +91,10 @@ module.exports = function createOnUpsertTrelloTokenHandler(db, auth) {
       const responseBody = JSON.parse(response.body);
 
       // Lookup username
-      if (responseBody && responseBody.username && responseBody.email) {
+      if (responseBody && responseBody.username) {
         trelloUsername = responseBody.username;
-        trelloEmail = responseBody.email;
-        trelloFullName = responseBody.fullName || 'N/A'; // optional
+        trelloEmail = responseBody.email || ''; // optional
+        trelloFullName = responseBody.fullName || ''; // optional
       } else {
         throw Error('Trello username was not recovered');
       }
