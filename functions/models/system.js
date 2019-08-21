@@ -56,12 +56,12 @@ module.exports = modelSetup({
   },
 
   /**
-   * Create or update organization's Trello credentials
+   * Create or replace organization's Trello credentials
    * @param  {firebaseAdmin.database} db firbase database
    * @param  {Object} settings
    * @return {Promise}
    */
-  upsertPropertyTrelloCredentials(db, settings) {
+  createTrelloCredentials(db, settings) {
     const {
       member,
       authToken,
@@ -116,7 +116,7 @@ module.exports = modelSetup({
 
     // Update system credentials /wo overwriting
     // any other date under property's cendentials
-    return db.ref(TRELLO_ORG_PATH).update(result);
+    return db.ref(TRELLO_ORG_PATH).set(result);
   },
 
   /**
