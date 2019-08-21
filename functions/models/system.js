@@ -90,25 +90,33 @@ module.exports = modelSetup({
       `${PREFIX} has Trello username`
     );
     assert(
-      trelloEmail && typeof trelloEmail === 'string',
+      trelloEmail ? typeof trelloEmail === 'string' : true,
       `${PREFIX} has Trello email`
     );
     assert(
-      trelloFullName && typeof trelloFullName === 'string',
+      trelloFullName ? typeof trelloFullName === 'string' : true,
       `${PREFIX} has Trello full name`
     );
 
-    // Update system credentials /wo overwriting
-    // any other date under property's cendentials
-    return db.ref(TRELLO_ORG_PATH).update({
+    const result = {
       member,
       authToken,
       apikey,
       user,
       trelloUsername,
-      trelloEmail,
-      trelloFullName,
-    });
+    };
+
+    if (trelloEmail) {
+      result.trelloEmail = trelloEmail;
+    }
+
+    if (trelloFullName) {
+      result.trelloFullName = trelloFullName;
+    }
+
+    // Update system credentials /wo overwriting
+    // any other date under property's cendentials
+    return db.ref(TRELLO_ORG_PATH).update(result);
   },
 
   /**
