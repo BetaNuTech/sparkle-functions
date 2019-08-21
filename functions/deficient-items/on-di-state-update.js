@@ -42,10 +42,12 @@ module.exports = function createOnDiStateUpdateHandler(db) {
       !stillFollowUpAction &&
       beforeState !== afterState
     ) {
-      await processPropertyMeta(db, propertyId);
-      log.info(
-        `${PREFIX} updated property: ${propertyId} deficient items associated metadata`
-      );
+      try {
+        await processPropertyMeta(db, propertyId);
+        log.info(`${PREFIX} updated property's deficient item metadata`);
+      } catch (err) {
+        log.error(`${PREFIX} property metadata update failed | ${err}`);
+      }
     }
 
     // Close any Trello card for DI
