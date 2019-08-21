@@ -107,7 +107,7 @@ module.exports = function createOnUpsertTrelloTokenHandler(db, auth) {
 
     try {
       // Persist Trello credentials to system DB
-      await systemModel.upsertPropertyTrelloCredentials(db, {
+      await systemModel.createTrelloCredentials(db, {
         member: memberID,
         authToken,
         apikey,
