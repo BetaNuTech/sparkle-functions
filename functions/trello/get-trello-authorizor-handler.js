@@ -66,15 +66,17 @@ module.exports = function createOnGetAllTrelloBoardsHandler(db, auth) {
       type: 'user',
       id: trelloCredentials.user,
       attributes: {
-        fullName: trelloCredentials.trelloFullName,
         trelloUsername: trelloCredentials.trelloUsername,
         trelloMember: trelloCredentials.member,
       },
     });
 
-    // Append optional email attribute
+    // Append optional attributes
     if (trelloCredentials.trelloEmail) {
       payload.data.attributes.email = trelloCredentials.trelloEmail;
+    }
+    if (trelloCredentials.trelloFullName) {
+      payload.data.attributes.fullName = trelloCredentials.trelloFullName;
     }
 
     res.status(200).send(payload);
