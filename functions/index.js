@@ -449,3 +449,15 @@ exports.notificationsStaging = slack.cron.publishSlackNotificationHandler(
   functions.pubsub,
   dbStaging
 );
+
+exports.trelloCommentsForDefItemStateUpdates = trello.createCommentForDiStateSubscriber(
+  'deficient-item-status-update',
+  functions.pubsub,
+  db
+);
+
+exports.trelloCommentsForDefItemStateUpdatesStaging = trello.createCommentForDiStateSubscriber(
+  'staging-deficient-item-status-update',
+  functions.pubsub,
+  db
+);
