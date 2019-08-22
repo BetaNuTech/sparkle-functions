@@ -1,5 +1,7 @@
 const log = require('../utils/logger');
 const systemModel = require('../models/system');
+const defItemModel = require('../models/deficient-item');
+const findPreviousDIHistory = require('../deficient-items/utils/find-history');
 
 const PREFIX = 'trello: create-comment-for-deficient-item-state-subscriber:';
 
@@ -16,8 +18,6 @@ module.exports = function createCommentForDiStateSubscriber(
   db
 ) {
   return pubsub.topic(topic).onPublish(async message => {
-    log.info(`${PREFIX} received ${parseInt(Date.now() / 1000, 10)}`);
-
     let propertyId = '';
     let deficientItemId = '';
     let deficientItemState = '';
@@ -38,5 +38,54 @@ module.exports = function createCommentForDiStateSubscriber(
       log.error(msgErr);
       throw Error(msgErr);
     }
+
+    log.info(
+      `${PREFIX} received ${parseInt(
+        Date.now() / 1000,
+        10
+      )} for DI: ${propertyId}/${deficientItemId} | state: ${deficientItemState}`
+    );
+
+    // Find created Trello Card reference
+    let trelloCardId = '';
+    try {
+      trelloCardId = await systemModel.findTrelloCardId(
+        db,
+        propertyId,
+        deficientItemId
+      );
+    } catch (err) {
+      log.error(`${PREFIX} ${err}`);
+      throw err;
+    }
+
+    if (!trelloCardId) {
+      log.info(`${PREFIX} Deficient Item has no Trello Card, existing`);
+      return; // eslint-disable-line no-useless-return
+    }
+
+    // Lookup Deficient Item
+    let deficientItem = null;
+    try {
+      const deficientItemSnap = await defItemModel.find(
+        db,
+        propertyId,
+        deficientItemId
+      );
+      deficientItem = deficientItemSnap.val();
+    } catch (err) {
+      log.error(`${PREFIX} | ${err}`);
+    }
+
+    if (!deficientItem) {
+      log.error(`${PREFIX} bad deficient item reference`);
+      return; // eslint-disable-line no-useless-return
+    }
+
+    // Lookup previous DI histories
+    const findHistory = findPreviousDIHistory(deficientItem);
+    const previousDiState = findHistory('stateHistory').previous;
+
+
   });
 };

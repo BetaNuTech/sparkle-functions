@@ -179,7 +179,7 @@ module.exports = modelSetup({
    * @param  {String} deficientItemId
    * @return {Promise} - resolves {String} Trello card ID
    */
-  async _findTrelloCardId(db, propertyId, deficientItemId) {
+  async findTrelloCardId(db, propertyId, deficientItemId) {
     assert(
       propertyId && typeof propertyId === 'string',
       `${PREFIX} has property id`
@@ -198,7 +198,7 @@ module.exports = modelSetup({
       propertyTrelloCards = propertyTrelloCardsSnap.val() || {};
     } catch (err) {
       throw Error(
-        `${PREFIX}: _findTrelloCardId: failed to fetch trello cards for property: "${propertyId}" | ${err}`
+        `${PREFIX}: findTrelloCardId: failed to fetch trello cards for property: "${propertyId}" | ${err}`
       );
     }
 
@@ -232,7 +232,7 @@ module.exports = modelSetup({
 
     let trelloCardId = '';
     try {
-      trelloCardId = await this._findTrelloCardId(
+      trelloCardId = await this.findTrelloCardId(
         db,
         propertyId,
         deficientItemId
@@ -315,7 +315,7 @@ module.exports = modelSetup({
     // Lookup any Trello card for DI
     let cardId = '';
     try {
-      cardId = await this._findTrelloCardId(db, propertyId, deficientItemId);
+      cardId = await this.findTrelloCardId(db, propertyId, deficientItemId);
       if (!cardId) return null;
     } catch (err) {
       throw Error(
