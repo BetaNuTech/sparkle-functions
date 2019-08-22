@@ -7,6 +7,7 @@ const { cleanDb } = require('../../test-helpers/firebase');
 const {
   db,
   test,
+  pubsub,
   cloudFunctions,
   uid: SERVICE_ACCOUNT_ID,
 } = require('./setup');
@@ -408,5 +409,64 @@ describe('Deficient Items Property Meta Sync', () => {
     // Assertion
     // Throws error if request not performed
     return cardUpdate.done();
+  });
+
+  it('should publish a deficient item state update event to subscribers', async () => {
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const deficientItemId = uuid();
+    const itemId = uuid();
+
+    let actual = '';
+    const expected = `${propertyId}/${deficientItemId}`;
+    const unsubscribe = pubsub.subscribe(
+      'deficient-item-status-update',
+      data => {
+        actual = Buffer.from(data, 'base64').toString();
+      }
+    );
+
+    const beforeData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: propertyId,
+
+      template: {
+        trackDeficientItems: true,
+        items: {
+          // Create single deficient item on inspection
+          [itemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true
+          ),
+        },
+      },
+    });
+
+    // Setup database
+    await db.ref(`/properties/${propertyId}`).set({ name: 'test' });
+    await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
+    const diPath = `/propertyInspectionDeficientItems/${propertyId}/${deficientItemId}`;
+    const diRef = db.ref(diPath);
+    await diRef.set({
+      state: REQUIRED_ACTIONS_VALUES[0], // requires action
+      inspection: inspectionId,
+      item: itemId,
+    });
+    const beforeSnap = await db.ref(`${diPath}/state`).once('value'); // Create before
+    await diRef.update({ state: FOLLOW_UP_ACTION_VALUES[0] }); // NOT requiring action
+    const afterSnap = await db.ref(`${diPath}/state`).once('value'); // Create after
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.deficientItemsPropertyMetaSync);
+    await wrapped(changeSnap, {
+      params: { propertyId, itemId: deficientItemId },
+    });
+
+    expect(actual).to.equal(expected);
+
+    // Cleanup
+    unsubscribe();
   });
 });

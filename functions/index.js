@@ -227,10 +227,22 @@ exports.deficientItemsWriteStaging = functionsStagingDatabase
 
 exports.deficientItemsPropertyMetaSync = functions.database
   .ref('/propertyInspectionDeficientItems/{propertyId}/{itemId}/state')
-  .onUpdate(deficientItems.createOnDiStateUpdate(db));
+  .onUpdate(
+    deficientItems.createOnDiStateUpdate(
+      db,
+      pubsubClient,
+      'deficient-item-status-update'
+    )
+  );
 exports.deficientItemsPropertyMetaSyncStaging = functionsStagingDatabase
   .ref('/propertyInspectionDeficientItems/{propertyId}/{itemId}/state')
-  .onUpdate(deficientItems.createOnDiStateUpdate(dbStaging));
+  .onUpdate(
+    deficientItems.createOnDiStateUpdate(
+      dbStaging,
+      pubsubClient,
+      'staging-deficient-item-status-update'
+    )
+  );
 
 exports.deficientItemsArchiving = functions.database
   .ref(
