@@ -416,9 +416,10 @@ describe('Deficient Items Property Meta Sync', () => {
     const inspectionId = uuid();
     const deficientItemId = uuid();
     const itemId = uuid();
+    const newState = FOLLOW_UP_ACTION_VALUES[0];
 
     let actual = '';
-    const expected = `${propertyId}/${deficientItemId}`;
+    const expected = `${propertyId}/${deficientItemId}/state/${newState}`;
     const unsubscribe = pubsub.subscribe(
       'deficient-item-status-update',
       data => {
@@ -454,7 +455,7 @@ describe('Deficient Items Property Meta Sync', () => {
       item: itemId,
     });
     const beforeSnap = await db.ref(`${diPath}/state`).once('value'); // Create before
-    await diRef.update({ state: FOLLOW_UP_ACTION_VALUES[0] }); // NOT requiring action
+    await diRef.update({ state: newState });
     const afterSnap = await db.ref(`${diPath}/state`).once('value'); // Create after
 
     // Execute

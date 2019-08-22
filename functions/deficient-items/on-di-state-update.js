@@ -69,7 +69,7 @@ module.exports = function createOnDiStateUpdateHandler(
     if (beforeState !== afterState) {
       try {
         await diStatusUpdatePublisher.publish(
-          Buffer.from(`${propertyId}/${deficientItemId}`)
+          Buffer.from(`${propertyId}/${deficientItemId}/state/${afterState}`)
         );
       } catch (err) {
         log.error(
