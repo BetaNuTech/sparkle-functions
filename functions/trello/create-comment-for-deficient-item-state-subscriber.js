@@ -1,9 +1,15 @@
 const log = require('../utils/logger');
+const config = require('../config');
 const systemModel = require('../models/system');
-const defItemModel = require('../models/deficient-item');
+const defItemModel = require('../models/deficient-items');
+const usersModel = require('../models/users');
 const findPreviousDIHistory = require('../deficient-items/utils/find-history');
+const findAllTrelloCommentTemplates = require('../deficient-items/utils/find-all-trello-comment-templates')(
+  config.deficientItems.trelloCommentTemplates
+);
 
 const PREFIX = 'trello: create-comment-for-deficient-item-state-subscriber:';
+const INITIAL_DI_STATE = config.deficientItems.initialState;
 
 /**
  * Append DI state updates as comments to previously created Trello cards
@@ -82,10 +88,65 @@ module.exports = function createCommentForDiStateSubscriber(
       return; // eslint-disable-line no-useless-return
     }
 
-    // Lookup previous DI histories
+    // Lookup DI current & historical states
     const findHistory = findPreviousDIHistory(deficientItem);
-    const previousDiState = findHistory('stateHistory').previous;
+    const diStateHistory = findHistory('stateHistory');
+    // const diDueDateHistory = findHistory('dueDates');
+    const currentDiStateHistory = diStateHistory.current;
+    const previousDiStateHistory = diStateHistory.previous;
+    const previousDiState = previousDiStateHistory
+      ? previousDiStateHistory.state
+      : INITIAL_DI_STATE;
+    // const currentDiDueDate = diDueDateHistory.current;
+    // const previousDiDueDate = diDueDateHistory.previous;
 
+    // Require one valid state history entry
+    if (!isValidStateHistoryEntry(currentDiStateHistory)) {
+      log.error(
+        `${PREFIX} badly formed deficient item "stateHistory" entry | ${
+          currentDiStateHistory
+            ? JSON.stringify(currentDiStateHistory)
+            : 'not found'
+        }`
+      );
+      return; // eslint-disable-line no-useless-return
+    }
 
+    // Lookup 1st applicable comment templates
+    // based on any previous state & current state
+    const [commentTemplate] = findAllTrelloCommentTemplates(
+      previousDiState,
+      currentDiStateHistory.state
+    );
+
+    // Lookup user that created new DI State
+    let stateAuthorsUser = null;
+    const stateAuthorsUserId = currentDiStateHistory.user;
+    try {
+      const userSnap = await usersModel.getUser(db, stateAuthorsUserId);
+      stateAuthorsUser = userSnap.val();
+      if (!stateAuthorsUser) throw Error('user does not exist');
+    } catch (err) {
+      // Log and continue
+      log.error(
+        `${PREFIX} failed to find user: ${stateAuthorsUserId} | ${err}`
+      );
+    }
   });
 };
+
+/**
+ * Is State History entry valid
+ * @param  {Object}  stateHistoryEntry
+ * @return {Boolean}
+ */
+function isValidStateHistoryEntry(stateHistoryEntry) {
+  return (
+    stateHistoryEntry &&
+    typeof stateHistoryEntry === 'object' &&
+    stateHistoryEntry.user &&
+    typeof stateHistoryEntry.user === 'string' &&
+    stateHistoryEntry.state &&
+    typeof stateHistoryEntry.state === 'string'
+  );
+}

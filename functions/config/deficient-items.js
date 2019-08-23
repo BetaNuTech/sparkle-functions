@@ -33,6 +33,7 @@ const defaultCommentTempl = `{{firstName}} {{lastName}} ({{email}}) has changed 
 
 module.exports = {
   dbPath: '/propertyInspectionDeficientItems',
+  initialState: 'requires-action',
   requiredActionStates: ['requires-action', 'go-back', 'overdue'],
   followUpActionStates: ['completed', 'incomplete'],
   overdueEligibleStates: ['pending', 'requires-progress-update'],
@@ -131,6 +132,6 @@ module.exports = {
      * Generic fallback templates for all comments
      * @type {String}
      */
-    defaultTemplate: defaultCommentTempl,
+    default: defaultCommentTempl,
   },
 };
