@@ -1,4 +1,6 @@
+const moment = require('moment');
 const log = require('../utils/logger');
+const templateParser = require('../utils/interpolate-template');
 const config = require('../config');
 const systemModel = require('../models/system');
 const defItemModel = require('../models/deficient-items');
@@ -10,6 +12,8 @@ const findAllTrelloCommentTemplates = require('../deficient-items/utils/find-all
 
 const PREFIX = 'trello: create-comment-for-deficient-item-state-subscriber:';
 const INITIAL_DI_STATE = config.deficientItems.initialState;
+const RESPONSIBILITY_GROUPS = config.deficientItems.responsibilityGroups;
+const UTC_TZ_OFFSET = '-05:00'; // EST
 
 /**
  * Append DI state updates as comments to previously created Trello cards
@@ -91,14 +95,27 @@ module.exports = function createCommentForDiStateSubscriber(
     // Lookup DI current & historical states
     const findHistory = findPreviousDIHistory(deficientItem);
     const diStateHistory = findHistory('stateHistory');
-    // const diDueDateHistory = findHistory('dueDates');
+    const diDueDateHistory = findHistory('dueDates');
+    const diDeferDateHistory = findHistory('deferredDates');
+    const diProgNoteHistory = findHistory('progressNotes');
     const currentDiStateHistory = diStateHistory.current;
     const previousDiStateHistory = diStateHistory.previous;
     const previousDiState = previousDiStateHistory
       ? previousDiStateHistory.state
       : INITIAL_DI_STATE;
-    // const currentDiDueDate = diDueDateHistory.current;
-    // const previousDiDueDate = diDueDateHistory.previous;
+    const currentResponsibilityGroup =
+      RESPONSIBILITY_GROUPS[deficientItem.currentResponsibilityGroup] || '';
+    const currentProgNote = diProgNoteHistory.current
+      ? diProgNoteHistory.current.progressNote
+      : '';
+    let prevDiDueDate = diDueDateHistory.previous;
+    let currDiDeferDate = diDeferDateHistory.current;
+
+    // Format UNIX values as date strings
+    if (prevDiDueDate) prevDiDueDate = unixToDateString(prevDiDueDate.dueDate);
+    if (currDiDeferDate) {
+      currDiDeferDate = unixToDateString(currDiDeferDate.deferredDate);
+    }
 
     // Require one valid state history entry
     if (!isValidStateHistoryEntry(currentDiStateHistory)) {
@@ -132,6 +149,30 @@ module.exports = function createCommentForDiStateSubscriber(
         `${PREFIX} failed to find user: ${stateAuthorsUserId} | ${err}`
       );
     }
+
+    const createCommentText = templateParser(commentTemplate);
+    const commentData = cleanupFalsyHashAttrs({
+      previousState: previousDiState,
+      currentState: currentDiStateHistory.state,
+      firstName: stateAuthorsUser.firstName,
+      lastName: stateAuthorsUser.lastName,
+      email: stateAuthorsUser.email,
+      currentDueDateDay: deficientItem.currentDueDateDay,
+      previousDueDateDay: prevDiDueDate,
+      currentDeferredDateDay: currDiDeferDate,
+      currentResponsibilityGroup,
+      currentPlanToFix: deficientItem.currentPlanToFix,
+      currentProgressNote: currentProgNote,
+      currentReasonIncomplete: deficientItem.currentReasonIncomplete,
+    });
+
+    try {
+      const commentText = createCommentText(commentData);
+      // TODO:
+      await systemModel.postTrelloCardComment(db, trelloCardId, commentText);
+    } catch (err) {
+      log.error(`${PREFIX} failed to Publish Trello comment | ${err}`);
+    }
   });
 };
 
@@ -149,4 +190,36 @@ function isValidStateHistoryEntry(stateHistoryEntry) {
     stateHistoryEntry.state &&
     typeof stateHistoryEntry.state === 'string'
   );
+}
+
+/**
+ * Convert a UNIX UTC timestamp to
+ * a "MM-DD-YYYY z" date string
+ * @param  {Number|String} timestampSec
+ * @param  {String?} - utc offset
+ * @return {String}
+ */
+function unixToDateString(timestampSec, utcOffset = UTC_TZ_OFFSET) {
+  return moment
+    .unix(parseInt(timestampSec || 0, 10))
+    .utcOffset(utcOffset)
+    .format('MM-DD-YYYY z');
+}
+
+/**
+ * Remove top falsey attributes from
+ * an object
+ * @param  {Object} hash
+ * @return {Object}
+ */
+function cleanupFalsyHashAttrs(hash) {
+  const result = JSON.parse(JSON.stringify(hash));
+
+  Object.keys(result).forEach(attr => {
+    if (!result[attr]) {
+      delete result[attr];
+    }
+  });
+
+  return result;
 }

@@ -419,6 +419,39 @@ module.exports = modelSetup({
       throw Error(`${PREFIX} error removing Trello card URL from DI | ${err}`);
     }
   },
+
+  /**
+   * POST a Trello card comment
+   * @param  {firebaseadmin.database} db
+   * @param  {String}  trelloCardId
+   * @param  {String}  text
+   * @return {Promise} - resolves {Object} Trello API response
+   */
+  async postTrelloCardComment(db, trelloCardId, text) {
+    assert(
+      trelloCardId && typeof trelloCardId === 'string',
+      `${PREFIX} has Trello Card id`
+    );
+    assert(text && typeof text === 'string', `${PREFIX} has comment text`);
+
+    // Lookup Trello credentials
+    let apikey = '';
+    let authToken = '';
+    try {
+      const trelloCredentialsSnap = await this.findTrelloCredentials(db);
+      const trelloCredentials = trelloCredentialsSnap.val() || {};
+      apikey = trelloCredentials.apikey;
+      authToken = trelloCredentials.authToken;
+      if (!apikey || !authToken) return null;
+    } catch (err) {
+      throw Error(
+        `${PREFIX} closeDeficientItemsTrelloCard: failed to recover trello credentials: ${err}`
+      );
+    }
+
+    // TODO perform Trello request
+    // TODO cleanup on 404
+  },
 });
 
 /**

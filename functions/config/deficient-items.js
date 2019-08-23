@@ -5,7 +5,7 @@ RESPONSIBILITY GROUP: {{currentResponsibilityGroup}}
 PLAN TO FIX: {{currentPlanToFix}}`;
 const manyToDeferredTransTempl = `{{firstName}} {{lastName}} ({{email}}) has moved the deficient item to DEFERRED state, from NEW/PENDING/GOBACK state.
 
-DEFERRED DATE: {{currentDeferredDate}}
+DEFERRED DATE: {{currentDeferredDateDay}}
 [PREVIOUS DUE DATE: {{previousDueDateDay}}]`;
 const pendingToReqProgUpTransTempl = `ACTION REQUIRED: Sparkle requests a progress update, since Deficient Item is more than halfway to Due Date now.  Please add a progress note to Deficient Item in Sparkle.`;
 const pendingToOverdueTransTempl = `ACTION REQUIRED: Sparkle requests a reason incomplete, since Deficient Item is now past the specified Due Date.  Please add a reason incomplete to the Deficient Item in Sparkle.`;
@@ -50,6 +50,17 @@ module.exports = {
     itemMainInputSelection: 'mainInputSelection',
     itemPhotosData: 'photosData',
     sectionSubtitle: 'textInputValue',
+  },
+
+  /**
+   * Responsibilty Group Index
+   * @type {Object}
+   */
+  responsibilityGroups: {
+    'site_level_in-house': 'Site Level, In-House',
+    site_level_manages_vendor: 'Site Level, Managing Vendor',
+    corporate: 'Corporate',
+    corporate_manages_vendor: 'Corporate, Managing Vendor',
   },
 
   /**
