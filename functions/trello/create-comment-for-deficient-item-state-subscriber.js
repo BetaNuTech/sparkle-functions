@@ -166,12 +166,22 @@ module.exports = function createCommentForDiStateSubscriber(
       currentReasonIncomplete: deficientItem.currentReasonIncomplete,
     });
 
+    // POST comment to Trello Card
     try {
       const commentText = createCommentText(commentData);
-      await systemModel.postTrelloCardComment(db, trelloCardId, commentText);
+      await systemModel.postTrelloCardComment(
+        db,
+        propertyId,
+        deficientItemId,
+        trelloCardId,
+        commentText
+      );
     } catch (err) {
-      log.error(`${PREFIX} failed to Publish Trello comment | ${err}`);
+      log.error(`${PREFIX} failed to Publish Trello comment`);
+      throw err;
     }
+
+    log.info(`${PREFIX} successfully appended Trello card status comment`);
   });
 };
 
