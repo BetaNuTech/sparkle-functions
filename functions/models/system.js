@@ -423,11 +423,27 @@ module.exports = modelSetup({
   /**
    * POST a Trello card comment
    * @param  {firebaseadmin.database} db
+   * @param  {String}  propertyId
+   * @param  {String}  deficientItemId
    * @param  {String}  trelloCardId
    * @param  {String}  text
    * @return {Promise} - resolves {Object} Trello API response
    */
-  async postTrelloCardComment(db, trelloCardId, text) {
+  async postTrelloCardComment(
+    db,
+    propertyId,
+    deficientItemId,
+    trelloCardId,
+    text
+  ) {
+    assert(
+      propertyId && typeof propertyId === 'string',
+      `${PREFIX} has property id`
+    );
+    assert(
+      deficientItemId && typeof deficientItemId === 'string',
+      `${PREFIX} has deficient item ID`
+    );
     assert(
       trelloCardId && typeof trelloCardId === 'string',
       `${PREFIX} has Trello Card id`
@@ -449,8 +465,43 @@ module.exports = modelSetup({
       );
     }
 
-    // TODO perform Trello request
-    // TODO cleanup on 404
+    // POST card comment to Trello
+    let response = null;
+    try {
+      response = await got(
+        `https://api.trello.com/1/cards/${trelloCardId}/actions/comments?key=${apikey}&token=${authToken}&text=${encodeURIComponent(
+          text
+        )}`,
+        {
+          responseType: 'json',
+          method: 'POST',
+        }
+      );
+    } catch (err) {
+      const resultErr = Error(
+        `${PREFIX} POST card: ${trelloCardId} comment to trello API failed: ${err}`
+      );
+
+      // Handle Deleted Trello card
+      if (err.statusCode === 404) {
+        resultErr.code = 'ERR_TRELLO_CARD_DELETED';
+
+        try {
+          await this._cleanupDeletedTrelloCard(
+            db,
+            propertyId,
+            deficientItemId,
+            trelloCardId
+          );
+        } catch (cleanUpErr) {
+          resultErr.message += `${cleanUpErr}`; // append to primary error
+        }
+      }
+
+      throw resultErr;
+    }
+
+    return response;
   },
 });
 
