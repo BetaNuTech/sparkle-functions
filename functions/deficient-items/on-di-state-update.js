@@ -11,10 +11,25 @@ const FOLLOW_UP_ACTION_VALUES = config.deficientItems.followUpActionStates;
 /**
  * Factory for Deficient Items sync on DI state updates
  * @param  {firebaseAdmin.database} - Firebase Admin DB instance
+ * @param  {functions.pubsub} pubsubClient
+ * @param  {String} statusUpdateTopic
  * @return {Function} - property onWrite handler
  */
-module.exports = function createOnDiStateUpdateHandler(db) {
+module.exports = function createOnDiStateUpdateHandler(
+  db,
+  pubsubClient,
+  statusUpdateTopic
+) {
   assert(Boolean(db), 'has firebase admin database reference');
+  assert(Boolean(pubsubClient), 'has pubsub client');
+  assert(
+    statusUpdateTopic && typeof statusUpdateTopic === 'string',
+    'has status update topic'
+  );
+
+  const diStatusUpdatePublisher = pubsubClient
+    .topic(statusUpdateTopic)
+    .publisher();
 
   return async (change, event) => {
     const updates = Object.create(null);
@@ -42,10 +57,25 @@ module.exports = function createOnDiStateUpdateHandler(db) {
       !stillFollowUpAction &&
       beforeState !== afterState
     ) {
-      await processPropertyMeta(db, propertyId);
-      log.info(
-        `${PREFIX} updated property: ${propertyId} deficient items associated metadata`
-      );
+      try {
+        await processPropertyMeta(db, propertyId);
+        log.info(`${PREFIX} updated property's deficient item metadata`);
+      } catch (err) {
+        log.error(`${PREFIX} property metadata update failed | ${err}`);
+      }
+    }
+
+    // Publish DI status update event
+    if (beforeState !== afterState) {
+      try {
+        await diStatusUpdatePublisher.publish(
+          Buffer.from(`${propertyId}/${deficientItemId}/state/${afterState}`)
+        );
+      } catch (err) {
+        log.error(
+          `${PREFIX} publishing DI status update event failed | ${err}`
+        );
+      }
     }
 
     // Close any Trello card for DI
