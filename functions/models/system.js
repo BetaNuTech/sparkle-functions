@@ -461,7 +461,7 @@ module.exports = modelSetup({
       if (!apikey || !authToken) return null;
     } catch (err) {
       throw Error(
-        `${PREFIX} closeDeficientItemsTrelloCard: failed to recover trello credentials: ${err}`
+        `${PREFIX} postTrelloCardComment: failed to recover trello credentials: ${err}`
       );
     }
 
@@ -480,6 +480,93 @@ module.exports = modelSetup({
     } catch (err) {
       const resultErr = Error(
         `${PREFIX} POST card: ${trelloCardId} comment to trello API failed: ${err}`
+      );
+
+      // Handle Deleted Trello card
+      if (err.statusCode === 404) {
+        resultErr.code = 'ERR_TRELLO_CARD_DELETED';
+
+        try {
+          await this._cleanupDeletedTrelloCard(
+            db,
+            propertyId,
+            deficientItemId,
+            trelloCardId
+          );
+        } catch (cleanUpErr) {
+          resultErr.message += `${cleanUpErr}`; // append to primary error
+        }
+      }
+
+      throw resultErr;
+    }
+
+    return response;
+  },
+
+  /**
+   * PUT a Trello card's due date
+   * @param  {firebaseadmin.database} db
+   * @param  {String}  propertyId
+   * @param  {String}  deficientItemId
+   * @param  {String}  trelloCardId
+   * @param  {String}  currentDueDateDay
+   * @return {Promise} - resolves {Object} Trello API response
+   */
+  async putTrelloCardDueDate(
+    db,
+    propertyId,
+    deficientItemId,
+    trelloCardId,
+    currentDueDateDay
+  ) {
+    assert(
+      propertyId && typeof propertyId === 'string',
+      `${PREFIX} has property id`
+    );
+    assert(
+      deficientItemId && typeof deficientItemId === 'string',
+      `${PREFIX} has deficient item ID`
+    );
+    assert(
+      trelloCardId && typeof trelloCardId === 'string',
+      `${PREFIX} has Trello Card id`
+    );
+    assert(
+      currentDueDateDay && typeof currentDueDateDay === 'string',
+      `${PREFIX} has updated due date day`
+    );
+
+    // Lookup Trello credentials
+    let apikey = '';
+    let authToken = '';
+    try {
+      const trelloCredentialsSnap = await this.findTrelloCredentials(db);
+      const trelloCredentials = trelloCredentialsSnap.val() || {};
+      apikey = trelloCredentials.apikey;
+      authToken = trelloCredentials.authToken;
+      if (!apikey || !authToken) return null;
+    } catch (err) {
+      throw Error(
+        `${PREFIX} putTrelloCardDueDate: failed to recover trello credentials: ${err}`
+      );
+    }
+
+    // POST card comment to Trello
+    let response = null;
+    try {
+      response = await got(
+        `https://api.trello.com/1/cards/${trelloCardId}?key=${apikey}&token=${authToken}&due=${encodeURIComponent(
+          currentDueDateDay
+        )}`,
+        {
+          responseType: 'json',
+          method: 'PUT',
+        }
+      );
+    } catch (err) {
+      const resultErr = Error(
+        `${PREFIX} PUT card: ${trelloCardId} due date to trello API failed: ${err}`
       );
 
       // Handle Deleted Trello card
