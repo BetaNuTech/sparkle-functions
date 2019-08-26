@@ -20,7 +20,7 @@ module.exports = function createTemplate(template) {
 
     Object.keys(data).forEach(name => {
       const value = `${data[name]}`;
-      result = result.replace(new RegExp(`{{${name}}}`, 'g'), value);
+      result = result.replace(new RegExp(`{{${name}}}`, 'gm'), value);
     });
 
     // Replace uninterpolated
