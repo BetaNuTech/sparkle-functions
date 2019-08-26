@@ -23,6 +23,8 @@ module.exports = function createTemplate(template) {
       result = result.replace(new RegExp(`{{${name}}}`, 'g'), value);
     });
 
-    return result;
+    // Replace uninterpolated
+    // variables with an empty string
+    return result.replace(/\{\{[\d\w\s-]+\}\}/gm, '');
   };
 };

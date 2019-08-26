@@ -168,7 +168,6 @@ module.exports = function createCommentForDiStateSubscriber(
 
     try {
       const commentText = createCommentText(commentData);
-      // TODO:
       await systemModel.postTrelloCardComment(db, trelloCardId, commentText);
     } catch (err) {
       log.error(`${PREFIX} failed to Publish Trello comment | ${err}`);
