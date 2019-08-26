@@ -108,6 +108,7 @@ module.exports = function createCommentForDiStateSubscriber(
     const currentProgNote = diProgNoteHistory.current
       ? diProgNoteHistory.current.progressNote
       : '';
+    const currDiDueDate = diDueDateHistory.current;
     let prevDiDueDate = diDueDateHistory.previous;
     let currDiDeferDate = diDeferDateHistory.current;
 
@@ -176,12 +177,30 @@ module.exports = function createCommentForDiStateSubscriber(
         trelloCardId,
         commentText
       );
+
+      log.info(`${PREFIX} successfully appended Trello card status comment`);
     } catch (err) {
       log.error(`${PREFIX} failed to Publish Trello comment`);
       throw err;
     }
 
-    log.info(`${PREFIX} successfully appended Trello card status comment`);
+    // PUT Trello Due Date
+    if (currDiDueDate && deficientItem.updatedAt === currDiDueDate.createdAt) {
+      try {
+        await systemModel.putTrelloCardDueDate(
+          db,
+          propertyId,
+          deficientItemId,
+          trelloCardId,
+          deficientItem.currentDueDateDay
+        );
+
+        log.info(`${PREFIX} successfully updated Trello card due date`);
+      } catch (err) {
+        log.error(`${PREFIX} failed to update Trello card due date`);
+        throw err;
+      }
+    }
   });
 };
 
