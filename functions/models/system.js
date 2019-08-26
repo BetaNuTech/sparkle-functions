@@ -356,16 +356,43 @@ module.exports = modelSetup({
     }
 
     // Move Trello card to close list
-    return got(
-      `https://api.trello.com/1/cards/${cardId}?key=${apikey}&token=${authToken}&idList=${closeList}`,
-      {
-        headers: { 'content-type': 'application/json' },
-        body: {},
-        responseType: 'json',
-        method: 'PUT',
-        json: true,
+    let response = null;
+    try {
+      response = await got(
+        `https://api.trello.com/1/cards/${cardId}?key=${apikey}&token=${authToken}&idList=${closeList}`,
+        {
+          headers: { 'content-type': 'application/json' },
+          body: {},
+          responseType: 'json',
+          method: 'PUT',
+          json: true,
+        }
+      );
+    } catch (err) {
+      const resultErr = Error(
+        `${PREFIX} PUT card: ${cardId} to close list via trello API failed: ${err}`
+      );
+
+      // Handle Deleted Trello card
+      if (err.statusCode === 404) {
+        resultErr.code = 'ERR_TRELLO_CARD_DELETED';
+
+        try {
+          await this._cleanupDeletedTrelloCard(
+            db,
+            propertyId,
+            deficientItemId,
+            cardId
+          );
+        } catch (cleanUpErr) {
+          resultErr.message += `${cleanUpErr}`; // append to primary error
+        }
       }
-    );
+
+      throw resultErr;
+    }
+
+    return response;
   },
 
   /**

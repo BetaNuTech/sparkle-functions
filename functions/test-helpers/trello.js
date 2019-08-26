@@ -5,7 +5,7 @@ module.exports = {
    * Has removed all references to a
    * Deficient Item's Trello card
    * @param  {firebaseadmin.database} db
-   * @param  {String}  propertyTrelloCardsPath - ie /system/integrations/<uid>/trello/properties/<property-id>/cards
+   * @param  {String}  propertyTrelloCardsPath - ie /system/integrations/<uid>/trello/properties/<property-id>/cards/<card-id>
    * @param  {String}  deficientItemPath       - ie /propertyInspectionDeficientItems/<property-id>/<def-item-id>
    * @return {Promise}
    */
