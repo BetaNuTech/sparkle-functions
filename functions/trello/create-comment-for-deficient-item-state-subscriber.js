@@ -5,6 +5,7 @@ const config = require('../config');
 const systemModel = require('../models/system');
 const defItemModel = require('../models/deficient-items');
 const usersModel = require('../models/users');
+const toISO8601 = require('./utils/date-to-iso-8601');
 const findPreviousDIHistory = require('../deficient-items/utils/find-history');
 const findAllTrelloCommentTemplates = require('../deficient-items/utils/find-all-trello-comment-templates')(
   config.deficientItems.trelloCommentTemplates
@@ -70,7 +71,7 @@ module.exports = function createCommentForDiStateSubscriber(
     }
 
     if (!trelloCardId) {
-      log.info(`${PREFIX} Deficient Item has no Trello Card, existing`);
+      log.info(`${PREFIX} Deficient Item has no Trello Card, exiting`);
       return; // eslint-disable-line no-useless-return
     }
 
@@ -192,7 +193,7 @@ module.exports = function createCommentForDiStateSubscriber(
           propertyId,
           deficientItemId,
           trelloCardId,
-          deficientItem.currentDueDateDay
+          toISO8601(deficientItem.currentDueDateDay)
         );
 
         log.info(`${PREFIX} successfully updated Trello card due date`);
