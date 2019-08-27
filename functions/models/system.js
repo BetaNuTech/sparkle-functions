@@ -324,7 +324,7 @@ module.exports = modelSetup({
     }
 
     // Lookup any close list for property
-    let closeList = '';
+    let closedList = '';
     try {
       const trelloIntegrationSnap = await integrationsModel.findByTrelloProperty(
         db,
@@ -332,8 +332,8 @@ module.exports = modelSetup({
       );
 
       const trelloIntegration = trelloIntegrationSnap.val() || {};
-      closeList = trelloIntegration.closeList;
-      if (!closeList) return null;
+      closedList = trelloIntegration.closedList;
+      if (!closedList) return null;
     } catch (err) {
       throw Error(
         `${PREFIX}: closeDeficientItemsTrelloCard: property trello integration lookup failed: ${err}`
@@ -359,7 +359,7 @@ module.exports = modelSetup({
     let response = null;
     try {
       response = await got(
-        `https://api.trello.com/1/cards/${cardId}?key=${apikey}&token=${authToken}&idList=${closeList}`,
+        `https://api.trello.com/1/cards/${cardId}?key=${apikey}&token=${authToken}&idList=${closedList}`,
         {
           headers: { 'content-type': 'application/json' },
           body: {},
