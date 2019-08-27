@@ -190,7 +190,7 @@ module.exports = modelSetup({
     );
 
     // Lookup system credentials
-    let propertyTrelloCards;
+    let propertyTrelloCards = null;
     try {
       const propertyTrelloCardsSnap = await db
         .ref(`${TRELLO_PROPERTIES_PATH}/${propertyId}/cards`)
@@ -537,7 +537,7 @@ module.exports = modelSetup({
    * @param  {String}  propertyId
    * @param  {String}  deficientItemId
    * @param  {String}  trelloCardId
-   * @param  {String}  currentDueDateDay
+   * @param  {String}  dueDate
    * @return {Promise} - resolves {Object} Trello API response
    */
   async putTrelloCardDueDate(
@@ -545,7 +545,7 @@ module.exports = modelSetup({
     propertyId,
     deficientItemId,
     trelloCardId,
-    currentDueDateDay
+    dueDate
   ) {
     assert(
       propertyId && typeof propertyId === 'string',
@@ -560,7 +560,7 @@ module.exports = modelSetup({
       `${PREFIX} has Trello Card id`
     );
     assert(
-      currentDueDateDay && typeof currentDueDateDay === 'string',
+      dueDate && typeof dueDate === 'string',
       `${PREFIX} has updated due date day`
     );
 
@@ -584,7 +584,7 @@ module.exports = modelSetup({
     try {
       response = await got(
         `https://api.trello.com/1/cards/${trelloCardId}?key=${apikey}&token=${authToken}&due=${encodeURIComponent(
-          currentDueDateDay
+          dueDate
         )}`,
         {
           responseType: 'json',
