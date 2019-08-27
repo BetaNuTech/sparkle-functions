@@ -4,6 +4,7 @@ const cors = require('cors');
 const got = require('got');
 const log = require('../utils/logger');
 const authUser = require('../utils/auth-firebase-user');
+const toISO8601 = require('./utils/date-to-iso-8601');
 const systemModel = require('../models/system');
 const deficientItemsModel = require('../models/deficient-items');
 const inspectionsModel = require('../models/inspections');
@@ -148,7 +149,7 @@ module.exports = function createOnTrelloDeficientItemCardHandler(db, auth) {
 
       // Append current due date as date string
       if (deficientItem.currentDueDateDay) {
-        trelloCardPayload.due = deficientItem.currentDueDateDay;
+        trelloCardPayload.due = toISO8601(deficientItem.currentDueDateDay);
       }
 
       const trelloResponse = await got(

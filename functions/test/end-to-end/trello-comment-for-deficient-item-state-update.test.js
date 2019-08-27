@@ -214,7 +214,8 @@ describe('Trello Comment for Deficient Item State Updates', () => {
   });
 
   it("should update a trello cards due date when a deficient item's due date changes", async () => {
-    const expected = '08/08/2030';
+    const expected = '2030-08-08T05:00:00.000Z';
+    const expectedDate = '08/08/2030';
     const pubSubMessage = {
       data: Buffer.from(
         `${PROPERTY_ID}/${DEFICIENT_ITEM_ID}/state/${OVERDUE_DI_STATES[0]}` // pending
@@ -222,7 +223,7 @@ describe('Trello Comment for Deficient Item State Updates', () => {
     };
     const timestamp = Date.now() / 1000;
     const deficientItemData = Object.assign({}, DEFICIENT_ITEM_DATA, {
-      currentDueDateDay: expected,
+      currentDueDateDay: expectedDate,
     });
     deficientItemData.updatedAt = timestamp;
     deficientItemData.dueDates['-current'].createdAt = timestamp;
