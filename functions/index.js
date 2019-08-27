@@ -459,5 +459,5 @@ exports.trelloCommentsForDefItemStateUpdates = trello.createCommentForDiStateSub
 exports.trelloCommentsForDefItemStateUpdatesStaging = trello.createCommentForDiStateSubscriber(
   'staging-deficient-item-status-update',
   functions.pubsub,
-  db
+  dbStaging
 );
