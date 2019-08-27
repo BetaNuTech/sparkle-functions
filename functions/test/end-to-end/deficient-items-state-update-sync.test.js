@@ -31,8 +31,8 @@ const TRELLO_SYSTEM_INTEGRATION_DATA = {
 const TRELLO_PROPERTY_INTEGRATION_DATA = {
   openBoard: uuid(),
   openBoardName: 'Board',
-  closeList: TRELLO_CLOSE_LIST_ID,
-  closeListName: 'Done',
+  closedList: TRELLO_CLOSE_LIST_ID,
+  closedListName: 'Done',
 };
 
 describe('Deficient Items Property Meta Sync', () => {
