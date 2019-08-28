@@ -3,10 +3,13 @@ const reqActionToPendingTransTempl = `{{firstName}} {{lastName}} ({{email}}) has
 DUE DATE: {{currentDueDateDay}}
 RESPONSIBILITY GROUP: {{currentResponsibilityGroup}}
 PLAN TO FIX: {{currentPlanToFix}}`;
-const manyToDeferredTransTempl = `{{firstName}} {{lastName}} ({{email}}) has moved the deficient item to DEFERRED state, from NEW/PENDING/GOBACK state.
+const manyToDeferredTransTempl = `{{firstName}} {{lastName}} ({{email}}) has moved the deficient item to DEFERRED state, from {{previousState}} state.
 
 DEFERRED DATE: {{currentDeferredDateDay}}
 [PREVIOUS DUE DATE: {{previousDueDateDay}}]`;
+const reqActionToDeferredTransTempl = `{{firstName}} {{lastName}} ({{email}}) has moved the deficient item to DEFERRED state, from {{previousState}} state.
+
+DEFERRED DATE: {{currentDeferredDateDay}}`;
 const pendingToReqProgUpTransTempl = `ACTION REQUIRED: Sparkle requests a progress update, since Deficient Item is more than halfway to Due Date now.  Please add a progress note to Deficient Item in Sparkle.`;
 const pendingToOverdueTransTempl = `ACTION REQUIRED: Sparkle requests a reason incomplete, since Deficient Item is now past the specified Due Date.  Please add a reason incomplete to the Deficient Item in Sparkle.`;
 const reqProgUpToPendingTransTempl = `{{firstName}} {{lastName}} ({{email}}) has added a progress note, moving the Deficient Item back to PENDING state.
@@ -75,7 +78,12 @@ module.exports = {
         value: reqActionToPendingTransTempl,
       },
       {
-        previous: ['requires-action', 'pending', 'go-back'],
+        previous: ['requires-action'],
+        current: ['deferred'],
+        value: reqActionToDeferredTransTempl,
+      },
+      {
+        previous: ['pending', 'go-back'],
         current: ['deferred'],
         value: manyToDeferredTransTempl,
       },
