@@ -23,8 +23,8 @@ const overdueToIncompleteTransTempl = `ACTION REQUIRED: Deficient Item is now in
 {{currentReasonIncomplete}}`;
 const incompleteToGoBackTransTempl = `ACTION REQUIRED: Deficient Item requires new DUE DATE, PLAN TO FIX, and RESPONSIBILITY GROUP.
 
-{{firstName}} {{lastName}} ({{email}}) has extended the Deficient Item by moving it back into GOBACK state, from INCOMPLETE state.`;
-const incompleteToClosedTransTempl = `{{firstName}} {{lastName}} ({{email}}) has CLOSED the Deficient Item, from an INCOMPLETE state.`;
+{{firstName}} {{lastName}} ({{email}}) has extended the Deficient Item by moving it back into GOBACK state, from the INCOMPLETE state.`;
+const incompleteToClosedTransTempl = `{{firstName}} {{lastName}} ({{email}}) has CLOSED the Deficient Item, from the INCOMPLETE state.`;
 const pendingToCompletedTransTempl = `ACTION REQUIRED: Deficient Item has been COMPLETED, but requires corporate review to be CLOSED or moved to GOBACK state. Completed photo(s) added as well.  (See Sparkle app to review, and take required action)
 
 {{firstName}} {{lastName}} ({{email}}) has COMPLETED the Deficient Item.`;
