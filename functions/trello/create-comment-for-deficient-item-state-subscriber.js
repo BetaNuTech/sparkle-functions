@@ -154,8 +154,8 @@ module.exports = function createCommentForDiStateSubscriber(
 
     const createCommentText = templateParser(commentTemplate);
     const commentData = cleanupFalsyHashAttrs({
-      previousState: previousDiState,
-      currentState: currentDiStateHistory.state,
+      previousState: previousDiState.toUpperCase(),
+      currentState: currentDiStateHistory.state.toUpperCase(),
       firstName: stateAuthorsUser.firstName,
       lastName: stateAuthorsUser.lastName,
       email: stateAuthorsUser.email,
