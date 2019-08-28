@@ -1,4 +1,4 @@
-const moment = require('moment');
+const moment = require('moment-timezone');
 const log = require('../utils/logger');
 const templateParser = require('../utils/interpolate-template');
 const config = require('../config');
@@ -14,7 +14,7 @@ const findAllTrelloCommentTemplates = require('../deficient-items/utils/find-all
 const PREFIX = 'trello: create-comment-for-deficient-item-state-subscriber:';
 const INITIAL_DI_STATE = config.deficientItems.initialState;
 const RESPONSIBILITY_GROUPS = config.deficientItems.responsibilityGroups;
-const UTC_TZ_OFFSET = '-05:00'; // EST
+const DEFAULT_TIMEZONE = config.deficientItems.defaultTimezone;
 
 /**
  * Append DI state updates as comments to previously created Trello cards
@@ -154,8 +154,8 @@ module.exports = function createCommentForDiStateSubscriber(
 
     const createCommentText = templateParser(commentTemplate);
     const commentData = cleanupFalsyHashAttrs({
-      previousState: previousDiState,
-      currentState: currentDiStateHistory.state,
+      previousState: previousDiState.toUpperCase(),
+      currentState: currentDiStateHistory.state.toUpperCase(),
       firstName: stateAuthorsUser.firstName,
       lastName: stateAuthorsUser.lastName,
       email: stateAuthorsUser.email,
@@ -225,13 +225,12 @@ function isValidStateHistoryEntry(stateHistoryEntry) {
  * Convert a UNIX UTC timestamp to
  * a "MM-DD-YYYY z" date string
  * @param  {Number|String} timestampSec
- * @param  {String?} - utc offset
+ * @param  {String?} timezone - default timezone name
  * @return {String}
  */
-function unixToDateString(timestampSec, utcOffset = UTC_TZ_OFFSET) {
-  return moment
-    .unix(parseInt(timestampSec || 0, 10))
-    .utcOffset(utcOffset)
+function unixToDateString(timestampSec, timezone = DEFAULT_TIMEZONE) {
+  return moment(parseInt(timestampSec || 0, 10) * 1000)
+    .tz(timezone)
     .format('MM-DD-YYYY z');
 }
 

@@ -3,10 +3,13 @@ const reqActionToPendingTransTempl = `{{firstName}} {{lastName}} ({{email}}) has
 DUE DATE: {{currentDueDateDay}}
 RESPONSIBILITY GROUP: {{currentResponsibilityGroup}}
 PLAN TO FIX: {{currentPlanToFix}}`;
-const manyToDeferredTransTempl = `{{firstName}} {{lastName}} ({{email}}) has moved the deficient item to DEFERRED state, from NEW/PENDING/GOBACK state.
+const manyToDeferredTransTempl = `{{firstName}} {{lastName}} ({{email}}) has moved the deficient item to DEFERRED state, from {{previousState}} state.
 
 DEFERRED DATE: {{currentDeferredDateDay}}
 [PREVIOUS DUE DATE: {{previousDueDateDay}}]`;
+const reqActionToDeferredTransTempl = `{{firstName}} {{lastName}} ({{email}}) has moved the deficient item to DEFERRED state, from {{previousState}} state.
+
+DEFERRED DATE: {{currentDeferredDateDay}}`;
 const pendingToReqProgUpTransTempl = `ACTION REQUIRED: Sparkle requests a progress update, since Deficient Item is more than halfway to Due Date now.  Please add a progress note to Deficient Item in Sparkle.`;
 const pendingToOverdueTransTempl = `ACTION REQUIRED: Sparkle requests a reason incomplete, since Deficient Item is now past the specified Due Date.  Please add a reason incomplete to the Deficient Item in Sparkle.`;
 const reqProgUpToPendingTransTempl = `{{firstName}} {{lastName}} ({{email}}) has added a progress note, moving the Deficient Item back to PENDING state.
@@ -20,8 +23,8 @@ const overdueToIncompleteTransTempl = `ACTION REQUIRED: Deficient Item is now in
 {{currentReasonIncomplete}}`;
 const incompleteToGoBackTransTempl = `ACTION REQUIRED: Deficient Item requires new DUE DATE, PLAN TO FIX, and RESPONSIBILITY GROUP.
 
-{{firstName}} {{lastName}} ({{email}}) has extended the Deficient Item by moving it back into GOBACK state, from INCOMPLETE state.`;
-const incompleteToClosedTransTempl = `{{firstName}} {{lastName}} ({{email}}) has CLOSED the Deficient Item, from an INCOMPLETE state.`;
+{{firstName}} {{lastName}} ({{email}}) has extended the Deficient Item by moving it back into GOBACK state, from the INCOMPLETE state.`;
+const incompleteToClosedTransTempl = `{{firstName}} {{lastName}} ({{email}}) has CLOSED the Deficient Item, from the INCOMPLETE state.`;
 const pendingToCompletedTransTempl = `ACTION REQUIRED: Deficient Item has been COMPLETED, but requires corporate review to be CLOSED or moved to GOBACK state. Completed photo(s) added as well.  (See Sparkle app to review, and take required action)
 
 {{firstName}} {{lastName}} ({{email}}) has COMPLETED the Deficient Item.`;
@@ -34,6 +37,7 @@ const defaultCommentTempl = `{{firstName}} {{lastName}} ({{email}}) has changed 
 module.exports = {
   dbPath: '/propertyInspectionDeficientItems',
   initialState: 'requires-action',
+  defaultTimezone: 'America/New_York',
   requiredActionStates: ['requires-action', 'go-back', 'overdue'],
   followUpActionStates: ['completed', 'incomplete'],
   overdueEligibleStates: ['pending', 'requires-progress-update'],
@@ -75,7 +79,12 @@ module.exports = {
         value: reqActionToPendingTransTempl,
       },
       {
-        previous: ['requires-action', 'pending', 'go-back'],
+        previous: ['requires-action'],
+        current: ['deferred'],
+        value: reqActionToDeferredTransTempl,
+      },
+      {
+        previous: ['pending', 'go-back'],
         current: ['deferred'],
         value: manyToDeferredTransTempl,
       },
