@@ -1,5 +1,6 @@
 const nock = require('nock');
 const { expect } = require('chai');
+const moment = require('moment-timezone');
 const uuid = require('../../test-helpers/uuid');
 const appConfig = require('../../config');
 const { cleanDb } = require('../../test-helpers/firebase');
@@ -10,6 +11,10 @@ const {
   cloudFunctions,
   uid: SERVICE_ACCOUNT_ID,
 } = require('./setup');
+
+const DEFAULT_TZ_OFFSET = moment()
+  .tz(appConfig.deficientItems.defaultTimezone)
+  .utcOffset();
 
 const USER_ID = uuid();
 const PROPERTY_ID = uuid();
@@ -214,7 +219,9 @@ describe('Trello Comment for Deficient Item State Updates', () => {
   });
 
   it("should update a trello cards due date when a deficient item's due date changes", async () => {
-    const expected = '2030-08-08T05:00:00.000Z';
+    const expected = moment([2030, 7, 8, 0, 0, 0])
+      .utcOffset(DEFAULT_TZ_OFFSET, true)
+      .toISOString();
     const expectedDate = '08/08/2030';
     const pubSubMessage = {
       data: Buffer.from(

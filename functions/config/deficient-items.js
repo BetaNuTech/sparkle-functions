@@ -37,6 +37,7 @@ const defaultCommentTempl = `{{firstName}} {{lastName}} ({{email}}) has changed 
 module.exports = {
   dbPath: '/propertyInspectionDeficientItems',
   initialState: 'requires-action',
+  defaultTimezone: 'America/New_York',
   requiredActionStates: ['requires-action', 'go-back', 'overdue'],
   followUpActionStates: ['completed', 'incomplete'],
   overdueEligibleStates: ['pending', 'requires-progress-update'],
