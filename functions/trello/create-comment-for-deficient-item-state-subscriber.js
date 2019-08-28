@@ -1,6 +1,6 @@
 const moment = require('moment-timezone');
+const hbs = require('handlebars');
 const log = require('../utils/logger');
-const templateParser = require('../utils/interpolate-template');
 const config = require('../config');
 const systemModel = require('../models/system');
 const defItemModel = require('../models/deficient-items');
@@ -152,7 +152,7 @@ module.exports = function createCommentForDiStateSubscriber(
       );
     }
 
-    const createCommentText = templateParser(commentTemplate);
+    const createCommentText = hbs.compile(commentTemplate);
     const commentData = cleanupFalsyHashAttrs({
       previousState: previousDiState.toUpperCase(),
       currentState: currentDiStateHistory.state.toUpperCase(),
