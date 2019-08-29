@@ -29,11 +29,7 @@ DEFICIENT_ITEM_DATA.dueDates['-previous'].user = USER_ID;
 DEFICIENT_ITEM_DATA.deferredDates['-current'].user = USER_ID;
 const TRELLO_CARD_DATA = { [TRELLO_CARD_ID]: DEFICIENT_ITEM_ID };
 const TRELLO_SYSTEM_INTEGRATION_DATA = {
-  member: uuid(),
   user: uuid(),
-  trelloUsername: 'username',
-  trelloEmail: 'test@gmail.com',
-  trelloFullName: 'full name',
   apikey: TRELLO_API_KEY,
   authToken: TRELLO_AUTH_TOKEN,
 };
