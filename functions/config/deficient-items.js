@@ -34,6 +34,9 @@ const goBackToPendingTransTempl = `{{firstName}} {{lastName}} ({{email}}) has mo
 DUE DATE: {{currentDueDateDay}}
 RESPONSIBILITY GROUP: {{currentResponsibilityGroup}}
 PLAN TO FIX: {{currentPlanToFix}}`;
+const deferredToGoBackTransTempl = `ACTION REQUIRED: Deficient Item requires new DUE DATE, PLAN TO FIX, and RESPONSIBILITY GROUP.
+
+{{firstName}} {{lastName}} ({{email}}) has moved the deficient item to GO-BACK state, from DEFERRED state.`;
 const defaultCommentTempl = `{{firstName}} {{lastName}} ({{email}}) has changed the state of the Deficient Item from {{previousState}} to {{currentState}}`;
 
 module.exports = {
@@ -134,6 +137,11 @@ module.exports = {
         previous: ['completed'],
         current: ['go-back'],
         value: completedToGoBackTransTempl,
+      },
+      {
+        previous: ['deferred'],
+        current: ['go-back'],
+        value: deferredToGoBackTransTempl,
       },
       {
         previous: ['go-back'],
