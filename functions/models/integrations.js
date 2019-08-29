@@ -3,7 +3,7 @@ const modelSetup = require('./utils/model-setup');
 
 const PREFIX = 'models: integrations:';
 const TRELLO_PROPERTIES_PATH = '/integrations/trello/properties';
-// const TRELLO_ORG_PATH = '/integrations/trello/organization';
+const TRELLO_ORG_PATH = '/integrations/trello/organization';
 
 module.exports = modelSetup({
   /**
@@ -96,14 +96,15 @@ module.exports = modelSetup({
 
   /**
    * Add trello integration details
-   * for the organizatoin
+   * for the organization
+   * @param {firebaseAdmin.database} db firbase database
    * @param {String} member
    * @param {String} trelloUsername
    * @param {String} trelloEmail
    * @param {String} trelloFullName
    * @return {Promise}
    */
-  setTrelloOrganization(settings = {}) {
+  setTrelloOrganization(db, settings = {}) {
     const { member, trelloUsername, trelloEmail, trelloFullName } = settings;
 
     assert(
@@ -123,7 +124,14 @@ module.exports = modelSetup({
       `${PREFIX} has Trello full name`
     );
 
-    const result = { member, trelloUsername };
+    const unixNow = Math.round(Date.now() / 1000);
+
+    const result = {
+      createdAt: unixNow,
+      updatedAt: unixNow,
+      member,
+      trelloUsername,
+    };
 
     if (trelloEmail) {
       result.trelloEmail = trelloEmail;
@@ -133,7 +141,6 @@ module.exports = modelSetup({
       result.trelloFullName = trelloFullName;
     }
 
-    // TODO
-    return Promise.resolve();
+    return db.ref(TRELLO_ORG_PATH).set(result);
   },
 });

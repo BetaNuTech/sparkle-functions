@@ -114,8 +114,8 @@ module.exports = function createOnUpsertTrelloTokenHandler(db, auth) {
         user: user.id,
       });
 
-      // Persist Trello integration details
-      await integrationsModel.setTrelloOrganization({
+      // Persist Trello integration details for clients
+      await integrationsModel.setTrelloOrganization(db, {
         member: memberID,
         trelloUsername,
         trelloEmail,
