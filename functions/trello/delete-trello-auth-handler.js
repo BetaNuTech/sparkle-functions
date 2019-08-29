@@ -31,6 +31,7 @@ module.exports = function createDeleteTrelloAuthHandler(db, auth) {
 
     log.info(`${PREFIX} requested by user: ${user.id}`);
 
+    // Destroy system's private auth token
     try {
       await systemModel.destroyTrelloCredentials(db);
     } catch (err) {
@@ -38,6 +39,15 @@ module.exports = function createDeleteTrelloAuthHandler(db, auth) {
       return res.status(500).send({ message: 'system failure' });
     }
 
+    // Delete public facing Trello orgnaization
+    try {
+      await integrationsModel.destroyTrelloOrganization(db);
+    } catch (err) {
+      log.error(`${PREFIX} destroy trello organization failed | ${err}`);
+      return res.status(500).send({ message: 'system failure' });
+    }
+
+    // Move all properties Trello configurations to /archive
     try {
       const result = await integrationsModel.archiveAllPropertyTrelloConfigs(
         db

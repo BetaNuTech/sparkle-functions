@@ -143,4 +143,14 @@ module.exports = modelSetup({
 
     return db.ref(TRELLO_ORG_PATH).set(result);
   },
+
+  /**
+   * Remove trello integration details
+   * for the organization
+   * @param {firebaseAdmin.database} db firbase database
+   * @return {Promise}
+   */
+  destroyTrelloOrganization(db) {
+    return db.ref(TRELLO_ORG_PATH).remove();
+  },
 });
