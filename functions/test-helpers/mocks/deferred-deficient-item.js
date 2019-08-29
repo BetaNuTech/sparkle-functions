@@ -29,7 +29,7 @@ module.exports = {
       createdAt: 1565660496.888,
     },
     '-previous': {
-      startDate: 1565660497.888,
+      startDate: 1565660496.888,
       dueDate: 1567141200,
       user: '-123',
       createdAt: 1565540496.888,
