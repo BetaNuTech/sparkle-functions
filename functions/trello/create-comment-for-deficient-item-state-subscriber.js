@@ -5,7 +5,6 @@ const config = require('../config');
 const systemModel = require('../models/system');
 const defItemModel = require('../models/deficient-items');
 const usersModel = require('../models/users');
-const toISO8601 = require('./utils/date-to-iso-8601');
 const findPreviousDIHistory = require('../deficient-items/utils/find-history');
 const findAllTrelloCommentTemplates = require('../deficient-items/utils/find-all-trello-comment-templates')(
   config.deficientItems.trelloCommentTemplates
@@ -109,7 +108,6 @@ module.exports = function createCommentForDiStateSubscriber(
     const currentProgNote = diProgNoteHistory.current
       ? diProgNoteHistory.current.progressNote
       : '';
-    const currDiDueDate = diDueDateHistory.current;
     let prevDiDueDate = diDueDateHistory.previous;
     let currDiDeferDate = diDeferDateHistory.current;
 
@@ -183,24 +181,6 @@ module.exports = function createCommentForDiStateSubscriber(
     } catch (err) {
       log.error(`${PREFIX} failed to Publish Trello comment`);
       throw err;
-    }
-
-    // PUT Trello Due Date
-    if (currDiDueDate && deficientItem.updatedAt === currDiDueDate.createdAt) {
-      try {
-        await systemModel.putTrelloCardDueDate(
-          db,
-          propertyId,
-          deficientItemId,
-          trelloCardId,
-          toISO8601(deficientItem.currentDueDateDay)
-        );
-
-        log.info(`${PREFIX} successfully updated Trello card due date`);
-      } catch (err) {
-        log.error(`${PREFIX} failed to update Trello card due date`);
-        throw err;
-      }
     }
   });
 };

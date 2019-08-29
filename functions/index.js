@@ -461,3 +461,15 @@ exports.trelloCommentsForDefItemStateUpdatesStaging = trello.createCommentForDiS
   functions.pubsub,
   dbStaging
 );
+
+exports.trelloCardDueDateUpdates = trello.createUpdateDueDateSubscriber(
+  'deficient-item-status-update',
+  functions.pubsub,
+  db
+);
+
+exports.trelloCardDueDateUpdatesStaging = trello.createUpdateDueDateSubscriber(
+  'staging-deficient-item-status-update',
+  functions.pubsub,
+  dbStaging
+);

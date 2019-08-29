@@ -5,6 +5,7 @@ const createOnTrelloDeficientItemCardHandler = require('./create-trello-deficien
 const createGetTrelloAuthorizorHandler = require('./get-trello-authorizor-handler');
 const createDeleteTrelloAuthHandler = require('./delete-trello-auth-handler');
 const createCommentForDiStateSubscriber = require('./create-comment-for-deficient-item-state-subscriber');
+const createUpdateDueDateSubscriber = require('./update-card-due-date-subscriber');
 
 module.exports = {
   createOnUpsertTrelloTokenHandler,
@@ -14,4 +15,5 @@ module.exports = {
   createGetTrelloAuthorizorHandler,
   createDeleteTrelloAuthHandler,
   createCommentForDiStateSubscriber,
+  createUpdateDueDateSubscriber,
 };
