@@ -6,6 +6,7 @@ const got = require('got');
 const log = require('../utils/logger');
 const authUser = require('../utils/auth-firebase-user');
 const systemModel = require('../models/system');
+const integrationsModel = require('../models/integrations');
 
 const PREFIX = 'trello: upsert token:';
 
@@ -99,7 +100,7 @@ module.exports = function createOnUpsertTrelloTokenHandler(db, auth) {
         throw Error('Trello username was not recovered');
       }
     } catch (err) {
-      log.error(`${PREFIX} Error retrieving trello member: ${err}`);
+      log.error(`${PREFIX} Error retrieving trello member | ${err}`);
       return res
         .status(401)
         .send({ message: 'trello member request not authorized' });
@@ -108,16 +109,20 @@ module.exports = function createOnUpsertTrelloTokenHandler(db, auth) {
     try {
       // Persist Trello credentials to system DB
       await systemModel.createTrelloCredentials(db, {
-        member: memberID,
         authToken,
         apikey,
         user: user.id,
+      });
+
+      // Persist Trello integration details
+      await integrationsModel.setTrelloOrganization({
+        member: memberID,
         trelloUsername,
         trelloEmail,
         trelloFullName,
       });
     } catch (err) {
-      log.error(`${PREFIX} Error saving trello credentials: ${err}`);
+      log.error(`${PREFIX} Error saving trello credentials | ${err}`);
       return res
         .status(500)
         .send({ message: 'Error saving trello credentials' });

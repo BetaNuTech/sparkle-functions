@@ -88,7 +88,7 @@ describe('Trello Upsert Token', () => {
     expect(result.body.message).to.equal('trello token request not authorized');
   });
 
-  it('should save trello member: ID, username, email, fullName, and credentials', async function() {
+  it('should save trello credentials in the private database path', async function() {
     const expectedEmail = 'test@gmail.com';
     const expectedFullName = 'Test User';
 
@@ -135,17 +135,71 @@ describe('Trello Upsert Token', () => {
     // Assertions
     [
       {
-        name: 'member',
-        expected: TRELLO_MEMBER_ID,
-        actual: credentials.member,
-      },
-      {
         name: 'authToken',
         expected: TRELLO_AUTH_TOKEN,
         actual: credentials.authToken,
       },
       { name: 'apikey', expected: TRELLO_API_KEY, actual: credentials.apikey },
       { name: 'user', expected: USER_ID, actual: credentials.user },
+    ].forEach(({ name, expected, actual }) => {
+      expect(actual).to.equal(
+        expected,
+        `system credential "${name}" persisted correctly`
+      );
+    });
+  });
+
+  it('should save trello user details to the trello integration organization', async function() {
+    const expectedEmail = 'test@gmail.com';
+    const expectedFullName = 'Test User';
+
+    // Stub Requests
+    nock('https://api.trello.com')
+      .get(`/1/tokens/${TRELLO_AUTH_TOKEN}?key=${TRELLO_API_KEY}`)
+      .reply(200, Object.assign({}, GET_TRELLO_TOKEN_PAYLOAD));
+
+    nock('https://api.trello.com')
+      .get(
+        `/1/members/${TRELLO_MEMBER_ID}?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}`
+      )
+      .reply(
+        200,
+        Object.assign({}, GET_TRELLO_MEMBER_PAYLOAD, {
+          id: TRELLO_MEMBER_ID,
+          email: expectedEmail,
+          fullName: expectedFullName,
+        })
+      );
+
+    // Setup database
+    await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
+
+    // Execute & Get Result
+    const app = trelloTokenAppEndpoint(db, stubFirbaseAuth(USER_ID));
+    await request(app)
+      .post('/integrations/trello/authorization')
+      .send({
+        apikey: TRELLO_API_KEY,
+        authToken: TRELLO_AUTH_TOKEN,
+      })
+      .set('Accept', 'application/json')
+      .set('Authorization', 'fb-jwt stubbed-by-auth')
+      .expect('Content-Type', /json/)
+      .expect(201);
+
+    // actuals
+    const credentialsSnap = await db
+      .ref(`/integrations/trello/organization`)
+      .once('value');
+    const credentials = credentialsSnap.val();
+
+    // Assertions
+    [
+      {
+        name: 'member',
+        expected: TRELLO_MEMBER_ID,
+        actual: credentials.member,
+      },
       {
         name: 'trelloUsername',
         expected: TRELLO_USERNAME,
@@ -164,7 +218,7 @@ describe('Trello Upsert Token', () => {
     ].forEach(({ name, expected, actual }) => {
       expect(actual).to.equal(
         expected,
-        `system credential "${name}" persisted correctly`
+        `integration detail "${name}" persisted correctly`
       );
     });
   });

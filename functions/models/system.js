@@ -62,20 +62,8 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   createTrelloCredentials(db, settings) {
-    const {
-      member,
-      authToken,
-      apikey,
-      user,
-      trelloUsername,
-      trelloEmail,
-      trelloFullName,
-    } = settings;
+    const { authToken, apikey, user } = settings;
 
-    assert(
-      member && typeof member === 'string',
-      `${PREFIX} has Trello member id`
-    );
     assert(
       authToken && typeof authToken === 'string',
       `${PREFIX} has Trello auth token`
@@ -85,34 +73,12 @@ module.exports = modelSetup({
       `${PREFIX} has Trello API key`
     );
     assert(user && typeof user === 'string', `${PREFIX} has Firebase user id`);
-    assert(
-      trelloUsername && typeof trelloUsername === 'string',
-      `${PREFIX} has Trello username`
-    );
-    assert(
-      trelloEmail ? typeof trelloEmail === 'string' : true,
-      `${PREFIX} has Trello email`
-    );
-    assert(
-      trelloFullName ? typeof trelloFullName === 'string' : true,
-      `${PREFIX} has Trello full name`
-    );
 
     const result = {
-      member,
       authToken,
       apikey,
       user,
-      trelloUsername,
     };
-
-    if (trelloEmail) {
-      result.trelloEmail = trelloEmail;
-    }
-
-    if (trelloFullName) {
-      result.trelloFullName = trelloFullName;
-    }
 
     // Update system credentials /wo overwriting
     // any other date under property's cendentials
