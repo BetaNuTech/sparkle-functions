@@ -14,10 +14,8 @@ const INSPECTION_ID = uuid();
 const ITEM_ID = uuid();
 const USER_ID = uuid();
 const USER = { admin: true, corporate: true };
-const TRELLO_MEMBER_ID = '57c864cb46ef602b2be03a80';
-const TRELLO_API_KEY = 'f4a04dd872b7a2e33bfc33aac9516965';
-const TRELLO_AUTH_TOKEN =
-  'fab424b6f18b2845b3d60eac800e42e5f3ab2fdb25d21c90264032a0ecf16ceb';
+const TRELLO_API_KEY = '3aac9516965';
+const TRELLO_AUTH_TOKEN = '2a0ecf16ceb';
 const TRELLO_BOARD_ID = '5d0ab7754066f880369a4d97';
 const TRELLO_LIST_ID = '5d0ab7754066f880369a4d99';
 const API_PATH = `/properties/${PROPERTY_ID}/deficient-items/${DEFICIENT_ITEM_ID}/trello/card`;
@@ -33,7 +31,6 @@ const DEFICIENT_ITEM_DATA = {
   item: ITEM_ID,
 };
 const TRELLO_SYSTEM_INTEGRATION_DATA = {
-  member: TRELLO_MEMBER_ID,
   user: USER_ID,
   apikey: TRELLO_API_KEY,
   authToken: TRELLO_AUTH_TOKEN,
