@@ -43,6 +43,8 @@ module.exports = function createCommentForDiStateSubscriber(
       }
 
       [propertyId, deficientItemId, , deficientItemState] = path.split('/');
+      if (!propertyId || !deficientItemId || !deficientItemState)
+        throw Error('Badly formed message');
     } catch (err) {
       const msgErr = `${PREFIX} message error: ${err}`;
       log.error(msgErr);
