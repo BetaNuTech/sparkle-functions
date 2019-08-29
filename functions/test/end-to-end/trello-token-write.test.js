@@ -221,6 +221,13 @@ describe('Trello Upsert Token', () => {
         `integration detail "${name}" persisted correctly`
       );
     });
+
+    expect(credentials.createdAt).to.be.a('number', 'has createdAt timestamp');
+    expect(credentials.updatedAt).to.be.a('number', 'has updatedAt timestamp');
+    expect(credentials.updatedAt).to.equal(
+      credentials.createdAt,
+      'updatedAt equal createdAt'
+    );
   });
 
   it('rejects reading and writing to unauthorized private system database', async () => {
