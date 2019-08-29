@@ -29,6 +29,11 @@ const completedToClosedTransTempl = `{{firstName}} {{lastName}} ({{email}}) has 
 const completedToGoBackTransTempl = `ACTION REQUIRED: Deficient Item requires new DUE DATE, PLAN TO FIX, and RESPONSIBILITY GROUP.
 
 {{firstName}} {{lastName}} ({{email}}) has rejected the Deficient Item, moving it from COMPLETED to GOBACK state.`;
+const goBackToPendingTransTempl = `{{firstName}} {{lastName}} ({{email}}) has moved the deficient item to PENDING state, from GO-BACK state.
+
+DUE DATE: {{currentDueDateDay}}
+RESPONSIBILITY GROUP: {{currentResponsibilityGroup}}
+PLAN TO FIX: {{currentPlanToFix}}`;
 const defaultCommentTempl = `{{firstName}} {{lastName}} ({{email}}) has changed the state of the Deficient Item from {{previousState}} to {{currentState}}`;
 
 module.exports = {
@@ -129,6 +134,11 @@ module.exports = {
         previous: ['completed'],
         current: ['go-back'],
         value: completedToGoBackTransTempl,
+      },
+      {
+        previous: ['go-back'],
+        current: ['pending'],
+        value: goBackToPendingTransTempl,
       },
     ],
 
