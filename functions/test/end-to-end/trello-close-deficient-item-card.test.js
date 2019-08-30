@@ -59,7 +59,7 @@ describe('Trello Comment for Deficient Item State Updates', () => {
     // Stub Requests
     const cardUpdate = nock('https://api.trello.com')
       .put(
-        `/1/cards/${TRELLO_CARD_ID}?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&idList=${TRELLO_CLOSE_LIST_ID}`
+        `/1/cards/${TRELLO_CARD_ID}?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&dueComplete=true&idList=${TRELLO_CLOSE_LIST_ID}`
       )
       .reply(200, TRELLO_PUT_CARD_RESPONSE);
 
@@ -91,7 +91,7 @@ describe('Trello Comment for Deficient Item State Updates', () => {
     // Stub Requests
     nock('https://api.trello.com')
       .put(
-        `/1/cards/${TRELLO_CARD_ID}?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&idList=${TRELLO_CLOSE_LIST_ID}`
+        `/1/cards/${TRELLO_CARD_ID}?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&dueComplete=true&idList=${TRELLO_CLOSE_LIST_ID}`
       )
       .reply(404);
 

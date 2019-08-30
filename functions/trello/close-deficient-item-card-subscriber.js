@@ -1,5 +1,6 @@
 const log = require('../utils/logger');
 const systemModel = require('../models/system');
+const integrationsModel = require('../models/integrations');
 const parseDiStateEventMsg = require('./utils/parse-di-state-event-msg');
 
 const PREFIX = 'trello: close-deficient-item-card-subscriber:';
@@ -60,23 +61,48 @@ module.exports = function closeDiCardSubscriber(topic = '', pubsub, db) {
       return; // eslint-disable-line no-useless-return
     }
 
-    // Close any Trello card for DI
-    let trelloCardResponse = null;
+    // Closeout any due date on card
+    const requestUpdates = { dueComplete: true };
+
+    // Add moving card to closed list to
+    // updates if optional closed list target set
     if (deficientItemState === 'closed') {
+      let closedList = '';
       try {
-        trelloCardResponse = await systemModel.closeDeficientItemsTrelloCard(
+        const trelloIntegrationSnap = await integrationsModel.findByTrelloProperty(
           db,
-          propertyId,
-          deficientItemId
+          propertyId
         );
-        if (trelloCardResponse)
-          log.info(`${PREFIX} successfully closed Trello card`);
+
+        const trelloIntegration = trelloIntegrationSnap.val() || {};
+        closedList = trelloIntegration.closedList;
       } catch (err) {
         log.error(
-          `${PREFIX} Failed request to close DI Trello card status: "${err.status ||
-            'N/A'}" | message: "${err.body ? err.body.message : err}"`
+          `${PREFIX}: property trello integration lookup failed | ${err}`
         );
       }
+
+      if (closedList) {
+        requestUpdates.idList = closedList;
+      }
+    }
+
+    try {
+      // Perform update request
+      const trelloCardResponse = await systemModel.updateTrelloCard(
+        db,
+        propertyId,
+        deficientItemId,
+        trelloCardId,
+        requestUpdates
+      );
+      if (trelloCardResponse)
+        log.info(`${PREFIX} successfully closed Trello card`);
+    } catch (err) {
+      log.error(
+        `${PREFIX} Failed request to update DI's Trello card: "${err.status ||
+          'N/A'}" | message: "${err.body ? err.body.message : err}"`
+      );
     }
   });
 };
