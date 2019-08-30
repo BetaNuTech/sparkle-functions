@@ -19,12 +19,15 @@ const API_PATH = '/integrations/trello/authorization';
 const TRELLO_CREDENTIAL_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/organization`;
 const TRELLO_INTEGRATIONS_DB_PATH_ONE = `/integrations/trello/properties/${PROPERTY_ONE_ID}`;
 const TRELLO_INTEGRATIONS_DB_PATH_TWO = `/integrations/trello/properties/${PROPERTY_TWO_ID}`;
+const TRELLO_INTEGRATIONS_ORG_DB_PATH = `/integrations/trello/organization`;
 const TRELLO_CREDENTIALS_DATA = {
-  member: 'akdf2334fasd',
-  trelloUsername: 'jakew4',
   authToken: '1234dfasqruolfkj',
   apikey: '1234dlkfjasdlf',
   user: USER_ID,
+};
+const TRELLO_INTEGRATION_ORG_DATA = {
+  member: 'akdf2334fasd',
+  trelloUsername: 'jakew4',
 };
 const PROPERTY_INTEGRATIONS_DATA = {
   grantedBy: USER_ID,
@@ -105,6 +108,36 @@ describe('Trello Delete Authorization', () => {
 
     // Result
     const result = await db.ref(TRELLO_CREDENTIAL_DB_PATH).once('value');
+    const actual = result.exists();
+
+    // Assertions
+    expect(actual).to.equal(false);
+  });
+
+  it('should cleanup the public facing trello integration details for the organization', async () => {
+    const altAdminUserId = uuid();
+
+    // Setup database
+    await db.ref(`/users/${USER_ID}`).set(USER_DATA);
+    await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_CREDENTIALS_DATA);
+    await db
+      .ref(TRELLO_INTEGRATIONS_ORG_DB_PATH)
+      .set(TRELLO_INTEGRATION_ORG_DATA);
+    await db
+      .ref(`/users/${altAdminUserId}`)
+      .set({ admin: true, corporate: false }); // add another admin user
+
+    // Execute
+    const app = deleteTrelloAuthApp(db, stubFirbaseAuth(altAdminUserId));
+    await request(app)
+      .delete(API_PATH)
+      .set('Accept', 'application/json')
+      .set('Authorization', 'fb-jwt stubbed-by-auth')
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    // Result
+    const result = await db.ref(TRELLO_INTEGRATIONS_ORG_DB_PATH).once('value');
     const actual = result.exists();
 
     // Assertions

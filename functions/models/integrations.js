@@ -3,6 +3,7 @@ const modelSetup = require('./utils/model-setup');
 
 const PREFIX = 'models: integrations:';
 const TRELLO_PROPERTIES_PATH = '/integrations/trello/properties';
+const TRELLO_ORG_PATH = '/integrations/trello/organization';
 
 module.exports = modelSetup({
   /**
@@ -91,5 +92,65 @@ module.exports = modelSetup({
     return db
       .ref(`/notifications/slack/${channelName}/${notificationId}`)
       .remove();
+  },
+
+  /**
+   * Add trello integration details
+   * for the organization
+   * @param {firebaseAdmin.database} db firbase database
+   * @param {String} member
+   * @param {String} trelloUsername
+   * @param {String} trelloEmail
+   * @param {String} trelloFullName
+   * @return {Promise}
+   */
+  setTrelloOrganization(db, settings = {}) {
+    const { member, trelloUsername, trelloEmail, trelloFullName } = settings;
+
+    assert(
+      member && typeof member === 'string',
+      `${PREFIX} has Trello member id`
+    );
+    assert(
+      trelloUsername && typeof trelloUsername === 'string',
+      `${PREFIX} has Trello username`
+    );
+    assert(
+      trelloEmail ? typeof trelloEmail === 'string' : true,
+      `${PREFIX} has Trello email`
+    );
+    assert(
+      trelloFullName ? typeof trelloFullName === 'string' : true,
+      `${PREFIX} has Trello full name`
+    );
+
+    const unixNow = Math.round(Date.now() / 1000);
+
+    const result = {
+      createdAt: unixNow,
+      updatedAt: unixNow,
+      member,
+      trelloUsername,
+    };
+
+    if (trelloEmail) {
+      result.trelloEmail = trelloEmail;
+    }
+
+    if (trelloFullName) {
+      result.trelloFullName = trelloFullName;
+    }
+
+    return db.ref(TRELLO_ORG_PATH).set(result);
+  },
+
+  /**
+   * Remove trello integration details
+   * for the organization
+   * @param {firebaseAdmin.database} db firbase database
+   * @return {Promise}
+   */
+  destroyTrelloOrganization(db) {
+    return db.ref(TRELLO_ORG_PATH).remove();
   },
 });

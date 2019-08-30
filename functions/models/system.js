@@ -62,20 +62,8 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   createTrelloCredentials(db, settings) {
-    const {
-      member,
-      authToken,
-      apikey,
-      user,
-      trelloUsername,
-      trelloEmail,
-      trelloFullName,
-    } = settings;
+    const { authToken, apikey, user } = settings;
 
-    assert(
-      member && typeof member === 'string',
-      `${PREFIX} has Trello member id`
-    );
     assert(
       authToken && typeof authToken === 'string',
       `${PREFIX} has Trello auth token`
@@ -85,34 +73,12 @@ module.exports = modelSetup({
       `${PREFIX} has Trello API key`
     );
     assert(user && typeof user === 'string', `${PREFIX} has Firebase user id`);
-    assert(
-      trelloUsername && typeof trelloUsername === 'string',
-      `${PREFIX} has Trello username`
-    );
-    assert(
-      trelloEmail ? typeof trelloEmail === 'string' : true,
-      `${PREFIX} has Trello email`
-    );
-    assert(
-      trelloFullName ? typeof trelloFullName === 'string' : true,
-      `${PREFIX} has Trello full name`
-    );
 
     const result = {
-      member,
       authToken,
       apikey,
       user,
-      trelloUsername,
     };
-
-    if (trelloEmail) {
-      result.trelloEmail = trelloEmail;
-    }
-
-    if (trelloFullName) {
-      result.trelloFullName = trelloFullName;
-    }
 
     // Update system credentials /wo overwriting
     // any other date under property's cendentials
@@ -179,7 +145,7 @@ module.exports = modelSetup({
    * @param  {String} deficientItemId
    * @return {Promise} - resolves {String} Trello card ID
    */
-  async _findTrelloCardId(db, propertyId, deficientItemId) {
+  async findTrelloCardId(db, propertyId, deficientItemId) {
     assert(
       propertyId && typeof propertyId === 'string',
       `${PREFIX} has property id`
@@ -190,7 +156,7 @@ module.exports = modelSetup({
     );
 
     // Lookup system credentials
-    let propertyTrelloCards;
+    let propertyTrelloCards = null;
     try {
       const propertyTrelloCardsSnap = await db
         .ref(`${TRELLO_PROPERTIES_PATH}/${propertyId}/cards`)
@@ -198,7 +164,7 @@ module.exports = modelSetup({
       propertyTrelloCards = propertyTrelloCardsSnap.val() || {};
     } catch (err) {
       throw Error(
-        `${PREFIX}: _findTrelloCardId: failed to fetch trello cards for property: "${propertyId}" | ${err}`
+        `${PREFIX}: findTrelloCardId: failed to fetch trello cards for property: "${propertyId}" | ${err}`
       );
     }
 
@@ -232,7 +198,7 @@ module.exports = modelSetup({
 
     let trelloCardId = '';
     try {
-      trelloCardId = await this._findTrelloCardId(
+      trelloCardId = await this.findTrelloCardId(
         db,
         propertyId,
         deficientItemId
@@ -315,7 +281,7 @@ module.exports = modelSetup({
     // Lookup any Trello card for DI
     let cardId = '';
     try {
-      cardId = await this._findTrelloCardId(db, propertyId, deficientItemId);
+      cardId = await this.findTrelloCardId(db, propertyId, deficientItemId);
       if (!cardId) return null;
     } catch (err) {
       throw Error(
@@ -324,7 +290,7 @@ module.exports = modelSetup({
     }
 
     // Lookup any close list for property
-    let closeList = '';
+    let closedList = '';
     try {
       const trelloIntegrationSnap = await integrationsModel.findByTrelloProperty(
         db,
@@ -332,8 +298,8 @@ module.exports = modelSetup({
       );
 
       const trelloIntegration = trelloIntegrationSnap.val() || {};
-      closeList = trelloIntegration.closeList;
-      if (!closeList) return null;
+      closedList = trelloIntegration.closedList;
+      if (!closedList) return null;
     } catch (err) {
       throw Error(
         `${PREFIX}: closeDeficientItemsTrelloCard: property trello integration lookup failed: ${err}`
@@ -356,16 +322,43 @@ module.exports = modelSetup({
     }
 
     // Move Trello card to close list
-    return got(
-      `https://api.trello.com/1/cards/${cardId}?key=${apikey}&token=${authToken}&idList=${closeList}`,
-      {
-        headers: { 'content-type': 'application/json' },
-        body: {},
-        responseType: 'json',
-        method: 'PUT',
-        json: true,
+    let response = null;
+    try {
+      response = await got(
+        `https://api.trello.com/1/cards/${cardId}?key=${apikey}&token=${authToken}&idList=${closedList}`,
+        {
+          headers: { 'content-type': 'application/json' },
+          body: {},
+          responseType: 'json',
+          method: 'PUT',
+          json: true,
+        }
+      );
+    } catch (err) {
+      const resultErr = Error(
+        `${PREFIX} PUT card: ${cardId} to close list via trello API failed: ${err}`
+      );
+
+      // Handle Deleted Trello card
+      if (err.statusCode === 404) {
+        resultErr.code = 'ERR_TRELLO_CARD_DELETED';
+
+        try {
+          await this._cleanupDeletedTrelloCard(
+            db,
+            propertyId,
+            deficientItemId,
+            cardId
+          );
+        } catch (cleanUpErr) {
+          resultErr.message += `${cleanUpErr}`; // append to primary error
+        }
       }
-    );
+
+      throw resultErr;
+    }
+
+    return response;
   },
 
   /**
@@ -418,6 +411,177 @@ module.exports = modelSetup({
     } catch (err) {
       throw Error(`${PREFIX} error removing Trello card URL from DI | ${err}`);
     }
+  },
+
+  /**
+   * POST a Trello card comment
+   * @param  {firebaseadmin.database} db
+   * @param  {String}  propertyId
+   * @param  {String}  deficientItemId
+   * @param  {String}  trelloCardId
+   * @param  {String}  text
+   * @return {Promise} - resolves {Object} Trello API response
+   */
+  async postTrelloCardComment(
+    db,
+    propertyId,
+    deficientItemId,
+    trelloCardId,
+    text
+  ) {
+    assert(
+      propertyId && typeof propertyId === 'string',
+      `${PREFIX} has property id`
+    );
+    assert(
+      deficientItemId && typeof deficientItemId === 'string',
+      `${PREFIX} has deficient item ID`
+    );
+    assert(
+      trelloCardId && typeof trelloCardId === 'string',
+      `${PREFIX} has Trello Card id`
+    );
+    assert(text && typeof text === 'string', `${PREFIX} has comment text`);
+
+    // Lookup Trello credentials
+    let apikey = '';
+    let authToken = '';
+    try {
+      const trelloCredentialsSnap = await this.findTrelloCredentials(db);
+      const trelloCredentials = trelloCredentialsSnap.val() || {};
+      apikey = trelloCredentials.apikey;
+      authToken = trelloCredentials.authToken;
+      if (!apikey || !authToken) return null;
+    } catch (err) {
+      throw Error(
+        `${PREFIX} postTrelloCardComment: failed to recover trello credentials: ${err}`
+      );
+    }
+
+    // POST card comment to Trello
+    let response = null;
+    try {
+      response = await got(
+        `https://api.trello.com/1/cards/${trelloCardId}/actions/comments?key=${apikey}&token=${authToken}&text=${encodeURIComponent(
+          text
+        )}`,
+        {
+          responseType: 'json',
+          method: 'POST',
+        }
+      );
+    } catch (err) {
+      const resultErr = Error(
+        `${PREFIX} POST card: ${trelloCardId} comment to trello API failed: ${err}`
+      );
+
+      // Handle Deleted Trello card
+      if (err.statusCode === 404) {
+        resultErr.code = 'ERR_TRELLO_CARD_DELETED';
+
+        try {
+          await this._cleanupDeletedTrelloCard(
+            db,
+            propertyId,
+            deficientItemId,
+            trelloCardId
+          );
+        } catch (cleanUpErr) {
+          resultErr.message += `${cleanUpErr}`; // append to primary error
+        }
+      }
+
+      throw resultErr;
+    }
+
+    return response;
+  },
+
+  /**
+   * PUT a Trello card's due date
+   * @param  {firebaseadmin.database} db
+   * @param  {String}  propertyId
+   * @param  {String}  deficientItemId
+   * @param  {String}  trelloCardId
+   * @param  {String}  dueDate
+   * @return {Promise} - resolves {Object} Trello API response
+   */
+  async putTrelloCardDueDate(
+    db,
+    propertyId,
+    deficientItemId,
+    trelloCardId,
+    dueDate
+  ) {
+    assert(
+      propertyId && typeof propertyId === 'string',
+      `${PREFIX} has property id`
+    );
+    assert(
+      deficientItemId && typeof deficientItemId === 'string',
+      `${PREFIX} has deficient item ID`
+    );
+    assert(
+      trelloCardId && typeof trelloCardId === 'string',
+      `${PREFIX} has Trello Card id`
+    );
+    assert(
+      dueDate && typeof dueDate === 'string',
+      `${PREFIX} has updated due date day`
+    );
+
+    // Lookup Trello credentials
+    let apikey = '';
+    let authToken = '';
+    try {
+      const trelloCredentialsSnap = await this.findTrelloCredentials(db);
+      const trelloCredentials = trelloCredentialsSnap.val() || {};
+      apikey = trelloCredentials.apikey;
+      authToken = trelloCredentials.authToken;
+      if (!apikey || !authToken) return null;
+    } catch (err) {
+      throw Error(
+        `${PREFIX} putTrelloCardDueDate: failed to recover trello credentials: ${err}`
+      );
+    }
+
+    // POST card comment to Trello
+    let response = null;
+    try {
+      response = await got(
+        `https://api.trello.com/1/cards/${trelloCardId}?key=${apikey}&token=${authToken}&due=${encodeURIComponent(
+          dueDate
+        )}`,
+        {
+          responseType: 'json',
+          method: 'PUT',
+        }
+      );
+    } catch (err) {
+      const resultErr = Error(
+        `${PREFIX} PUT card: ${trelloCardId} due date to trello API failed: ${err}`
+      );
+
+      // Handle Deleted Trello card
+      if (err.statusCode === 404) {
+        resultErr.code = 'ERR_TRELLO_CARD_DELETED';
+
+        try {
+          await this._cleanupDeletedTrelloCard(
+            db,
+            propertyId,
+            deficientItemId,
+            trelloCardId
+          );
+        } catch (cleanUpErr) {
+          resultErr.message += `${cleanUpErr}`; // append to primary error
+        }
+      }
+
+      throw resultErr;
+    }
+
+    return response;
   },
 });
 

@@ -227,10 +227,22 @@ exports.deficientItemsWriteStaging = functionsStagingDatabase
 
 exports.deficientItemsPropertyMetaSync = functions.database
   .ref('/propertyInspectionDeficientItems/{propertyId}/{itemId}/state')
-  .onUpdate(deficientItems.createOnDiStateUpdate(db));
+  .onUpdate(
+    deficientItems.createOnDiStateUpdate(
+      db,
+      pubsubClient,
+      'deficient-item-status-update'
+    )
+  );
 exports.deficientItemsPropertyMetaSyncStaging = functionsStagingDatabase
   .ref('/propertyInspectionDeficientItems/{propertyId}/{itemId}/state')
-  .onUpdate(deficientItems.createOnDiStateUpdate(dbStaging));
+  .onUpdate(
+    deficientItems.createOnDiStateUpdate(
+      dbStaging,
+      pubsubClient,
+      'staging-deficient-item-status-update'
+    )
+  );
 
 exports.deficientItemsArchiving = functions.database
   .ref(
@@ -434,6 +446,30 @@ exports.notifications = slack.cron.publishSlackNotificationHandler(
 
 exports.notificationsStaging = slack.cron.publishSlackNotificationHandler(
   'staging-notifications-sync',
+  functions.pubsub,
+  dbStaging
+);
+
+exports.trelloCommentsForDefItemStateUpdates = trello.createCommentForDiStateSubscriber(
+  'deficient-item-status-update',
+  functions.pubsub,
+  db
+);
+
+exports.trelloCommentsForDefItemStateUpdatesStaging = trello.createCommentForDiStateSubscriber(
+  'staging-deficient-item-status-update',
+  functions.pubsub,
+  dbStaging
+);
+
+exports.trelloCardDueDateUpdates = trello.createUpdateDueDateSubscriber(
+  'deficient-item-status-update',
+  functions.pubsub,
+  db
+);
+
+exports.trelloCardDueDateUpdatesStaging = trello.createUpdateDueDateSubscriber(
+  'staging-deficient-item-status-update',
   functions.pubsub,
   dbStaging
 );

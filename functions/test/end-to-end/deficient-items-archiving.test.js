@@ -3,6 +3,7 @@ const nock = require('nock');
 const uuid = require('../../test-helpers/uuid');
 const mocking = require('../../test-helpers/mocking');
 const { cleanDb } = require('../../test-helpers/firebase');
+const trelloTest = require('../../test-helpers/trello');
 const TRELLO_API_CARD_PAYLOAD = require('../../test-helpers/mocks/get-trello-card.json');
 const {
   db,
@@ -295,23 +296,11 @@ describe('Deficient Items Archiving', () => {
       });
     } catch (err) {} // eslint-disable-line no-empty
 
-    const trelloCardDetailsSnap = await db
-      .ref(`${TRELLO_PROPERTY_CARDS_PATH}/${TRELLO_CARD_ID}`)
-      .once('value');
-    const actualTrelloCardDetails = trelloCardDetailsSnap.exists();
-    const trelloCardURLSnap = await db
-      .ref(`${DEFICIENT_ITEM_ARCHIVE_DB_PATH}/trelloCardURL`)
-      .once('value');
-    const actualTrelloCardUrl = trelloCardURLSnap.exists();
-
     // Assertions
-    expect(actualTrelloCardDetails).to.equal(
-      false,
-      'deleted card has been removed from trello integration'
-    );
-    expect(actualTrelloCardUrl).to.equal(
-      false,
-      'deleted Trello card URL from its deficient item'
+    return trelloTest.hasRemovedDiCardReferences(
+      db,
+      `${TRELLO_PROPERTY_CARDS_PATH}/${TRELLO_CARD_ID}`,
+      DEFICIENT_ITEM_ARCHIVE_DB_PATH
     );
   });
 });
@@ -565,24 +554,11 @@ describe('Deficient Items Unarchiving', () => {
       });
     } catch (err) {} // eslint-disable-line no-empty
 
-    // Test result
-    const trelloCardDetailsSnap = await db
-      .ref(`${TRELLO_PROPERTY_CARDS_PATH}/${TRELLO_CARD_ID}`)
-      .once('value');
-    const actualTrelloCardDetails = trelloCardDetailsSnap.exists();
-    const trelloCardURLSnap = await db
-      .ref(`${DEFICIENT_ITEM_DB_PATH}/trelloCardURL`)
-      .once('value');
-    const actualTrelloCardUrl = trelloCardURLSnap.exists();
-
     // Assertions
-    expect(actualTrelloCardDetails).to.equal(
-      false,
-      'deleted card has been removed from trello integration'
-    );
-    expect(actualTrelloCardUrl).to.equal(
-      false,
-      'deleted Trello card URL from its deficient item'
+    return trelloTest.hasRemovedDiCardReferences(
+      db,
+      `${TRELLO_PROPERTY_CARDS_PATH}/${TRELLO_CARD_ID}`,
+      DEFICIENT_ITEM_DB_PATH
     );
   });
 });
