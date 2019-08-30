@@ -95,12 +95,12 @@ module.exports = function createUpdateDueDateSubscriber(
     ) {
       // PUT deferred as Trello card Due Date
       try {
-        await systemModel.putTrelloCardDueDate(
+        await systemModel.updateTrelloCard(
           db,
           propertyId,
           deficientItemId,
           trelloCardId,
-          toISO8601(getCurrentDueDay(currDeferDate.deferredDate))
+          { due: toISO8601(getCurrentDueDay(currDeferDate.deferredDate)) }
         );
 
         log.info(
@@ -115,12 +115,12 @@ module.exports = function createUpdateDueDateSubscriber(
     } else if (currDiDueDate && updatedAt === currDiDueDate.createdAt) {
       // PUT due date as Trello card Due Date
       try {
-        await systemModel.putTrelloCardDueDate(
+        await systemModel.updateTrelloCard(
           db,
           propertyId,
           deficientItemId,
           trelloCardId,
-          toISO8601(deficientItem.currentDueDateDay)
+          { due: toISO8601(deficientItem.currentDueDateDay) }
         );
 
         log.info(`${PREFIX} successfully updated Trello card due date`);
