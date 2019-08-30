@@ -2,7 +2,6 @@ const assert = require('assert');
 const got = require('got');
 const modelSetup = require('./utils/model-setup');
 const config = require('../config');
-const integrationsModel = require('./integrations');
 
 const PREFIX = 'models: system:';
 const SERVICE_ACCOUNT_CLIENT_ID =
@@ -458,9 +457,12 @@ module.exports = modelSetup({
     let trelloUpdateUrl = `https://api.trello.com/1/cards/${trelloCardId}?key=${apikey}&token=${authToken}`;
 
     // Append updates to trello update URL
-    Object.keys(updates).forEach(param => {
-      trelloUpdateUrl += `&${param}=${encodeURIComponent(updates[param])}`;
-    });
+    // NOTE: added in alphabetical order for test suite
+    Object.keys(updates)
+      .sort()
+      .forEach(param => {
+        trelloUpdateUrl += `&${param}=${encodeURIComponent(updates[param])}`;
+      });
 
     // PUT Trello card updates
     let response = null;
