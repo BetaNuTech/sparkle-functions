@@ -2,7 +2,6 @@ const assert = require('assert');
 const log = require('../utils/logger');
 const config = require('../config');
 const processPropertyMeta = require('../properties/process-meta');
-const systemModel = require('../models/system');
 
 const PREFIX = 'deficient-items: on-di-state-update:';
 const REQUIRED_ACTIONS_VALUES = config.deficientItems.requiredActionStates;
@@ -74,25 +73,6 @@ module.exports = function createOnDiStateUpdateHandler(
       } catch (err) {
         log.error(
           `${PREFIX} publishing DI status update event failed | ${err}`
-        );
-      }
-    }
-
-    // Close any Trello card for DI
-    let trelloCardResponse = null;
-    if (afterState === 'closed') {
-      try {
-        trelloCardResponse = await systemModel.closeDeficientItemsTrelloCard(
-          db,
-          propertyId,
-          deficientItemId
-        );
-        if (trelloCardResponse)
-          log.info(`${PREFIX} successfully closed Trello card`);
-      } catch (err) {
-        log.error(
-          `${PREFIX} Failed request to close DI Trello card status: "${err.status ||
-            'N/A'}" | message: "${err.body ? err.body.message : err}"`
         );
       }
     }
