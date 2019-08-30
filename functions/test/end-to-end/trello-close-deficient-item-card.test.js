@@ -1,4 +1,5 @@
 const nock = require('nock');
+const { expect } = require('chai');
 const uuid = require('../../test-helpers/uuid');
 const { cleanDb } = require('../../test-helpers/firebase');
 const trelloTest = require('../../test-helpers/trello');
@@ -42,7 +43,67 @@ describe('Trello Comment for Deficient Item State Updates', () => {
     return db.ref(`/system/integrations/${SERVICE_ACCOUNT_ID}`).remove();
   });
 
+  it('should not update a trello card when closed list is unconfigured and no due date was provided', async () => {
+    const pubSubMessage = {
+      data: Buffer.from(`${PROPERTY_ID}/${DEFICIENT_ITEM_ID}/state/closed`),
+    };
+    const deficientItemData = JSON.parse(JSON.stringify(DEFICIENT_ITEM_DATA));
+    deficientItemData.state = 'closed';
+    delete deficientItemData.dueDates;
+    delete deficientItemData.deferredDates;
+
+    // Setup database
+    await db.ref(TRELLO_CARDS_DB_PATH).set(TRELLO_CARD_DATA);
+    await db.ref(DEFICIENT_ITEM_DB_PATH).set(deficientItemData);
+    await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
+    await db.ref(TRELLO_PROPERTY_DB_PATH).set({ openList: uuid() }); // no `closeList`
+
+    // Stub Requests
+    const cardUpdate = nock('https://api.trello.com')
+      .put(
+        `/1/cards/${TRELLO_CARD_ID}?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&dueComplete=true&idList=${TRELLO_CLOSE_LIST_ID}`
+      )
+      .reply(200, TRELLO_PUT_CARD_RESPONSE);
+
+    // Execute
+    await test.wrap(cloudFunctions.trelloDiCardClose)(pubSubMessage);
+
+    // Assertion
+    const actual = cardUpdate.isDone();
+    expect(actual).to.equal(false);
+  });
+
   it("should move a closed deficient item's trello card to the configured closed list", async () => {
+    const pubSubMessage = {
+      data: Buffer.from(`${PROPERTY_ID}/${DEFICIENT_ITEM_ID}/state/closed`),
+    };
+    const deficientItemData = JSON.parse(JSON.stringify(DEFICIENT_ITEM_DATA));
+    deficientItemData.state = 'closed';
+    delete deficientItemData.dueDates;
+    delete deficientItemData.deferredDates;
+
+    // Setup database
+    await db.ref(TRELLO_CARDS_DB_PATH).set(TRELLO_CARD_DATA);
+    await db.ref(DEFICIENT_ITEM_DB_PATH).set(deficientItemData);
+    await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
+    await db.ref(TRELLO_PROPERTY_DB_PATH).set(TRELLO_PROPERTY_INTEGRATION_DATA);
+
+    // Stub Requests
+    const cardUpdate = nock('https://api.trello.com')
+      .put(
+        `/1/cards/${TRELLO_CARD_ID}?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&idList=${TRELLO_CLOSE_LIST_ID}`
+      )
+      .reply(200, TRELLO_PUT_CARD_RESPONSE);
+
+    // Execute
+    await test.wrap(cloudFunctions.trelloDiCardClose)(pubSubMessage);
+
+    // Assertion
+    // Throws error if request not performed
+    return cardUpdate.done();
+  });
+
+  it("should move a closed trello card to its' closed list and remove its' due date", async () => {
     const pubSubMessage = {
       data: Buffer.from(`${PROPERTY_ID}/${DEFICIENT_ITEM_ID}/state/closed`),
     };
@@ -60,6 +121,35 @@ describe('Trello Comment for Deficient Item State Updates', () => {
     const cardUpdate = nock('https://api.trello.com')
       .put(
         `/1/cards/${TRELLO_CARD_ID}?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&dueComplete=true&idList=${TRELLO_CLOSE_LIST_ID}`
+      )
+      .reply(200, TRELLO_PUT_CARD_RESPONSE);
+
+    // Execute
+    await test.wrap(cloudFunctions.trelloDiCardClose)(pubSubMessage);
+
+    // Assertion
+    // Throws error if request not performed
+    return cardUpdate.done();
+  });
+
+  it("should removed a completed trello card's due date", async () => {
+    const pubSubMessage = {
+      data: Buffer.from(`${PROPERTY_ID}/${DEFICIENT_ITEM_ID}/state/completed`),
+    };
+    const deficientItemData = Object.assign({}, DEFICIENT_ITEM_DATA, {
+      state: 'completed',
+    });
+
+    // Setup database
+    await db.ref(TRELLO_CARDS_DB_PATH).set(TRELLO_CARD_DATA);
+    await db.ref(DEFICIENT_ITEM_DB_PATH).set(deficientItemData);
+    await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
+    await db.ref(TRELLO_PROPERTY_DB_PATH).set(TRELLO_PROPERTY_INTEGRATION_DATA);
+
+    // Stub Requests
+    const cardUpdate = nock('https://api.trello.com')
+      .put(
+        `/1/cards/${TRELLO_CARD_ID}?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&dueComplete=true`
       )
       .reply(200, TRELLO_PUT_CARD_RESPONSE);
 
