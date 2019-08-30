@@ -1,9 +1,7 @@
 const { expect } = require('chai');
-const nock = require('nock');
 const config = require('../../config');
 const uuid = require('../../test-helpers/uuid');
 const mocking = require('../../test-helpers/mocking');
-const trelloTest = require('../../test-helpers/trello');
 const { cleanDb } = require('../../test-helpers/firebase');
 const {
   db,
@@ -12,28 +10,10 @@ const {
   cloudFunctions,
   uid: SERVICE_ACCOUNT_ID,
 } = require('./setup');
-const TRELLO_PUT_CARD_RESPONSE = require('../../test-helpers/mocks/put-trello-card.json');
 
 const REQUIRED_ACTIONS_VALUES = config.deficientItems.requiredActionStates;
 const FOLLOW_UP_ACTION_VALUES = config.deficientItems.followUpActionStates;
-const TRELLO_CARD_ID = uuid();
-const TRELLO_CLOSE_LIST_ID = uuid();
-const TRELLO_API_KEY = 'f4a04dd872b7a2e33bfc33aac9516965';
-const TRELLO_AUTH_TOKEN =
-  'fab424b6f18b2845b3d60eac800e42e5f3ab2fdb25d21c90264032a0ecf16ceb';
 const SYSTEM_INTEGRATION_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}`;
-const TRELLO_SYSTEM_INTEGRATION_DATA = {
-  member: uuid(),
-  user: uuid(),
-  apikey: TRELLO_API_KEY,
-  authToken: TRELLO_AUTH_TOKEN,
-};
-const TRELLO_PROPERTY_INTEGRATION_DATA = {
-  openBoard: uuid(),
-  openBoardName: 'Board',
-  closedList: TRELLO_CLOSE_LIST_ID,
-  closedListName: 'Done',
-};
 
 describe('Deficient Items Property Meta Sync', () => {
   afterEach(async () => {
@@ -346,138 +326,6 @@ describe('Deficient Items Property Meta Sync', () => {
 
     // Assertions
     expect(actual).to.equal(0);
-  });
-
-  // TODO move to trello-closed-di-subscriber.test.js
-  it("should move a closed deficient item's trello card to the configured closed list", async () => {
-    const propertyId = uuid();
-    const inspectionId = uuid();
-    const itemId = uuid();
-    const beforeData = mocking.createInspection({
-      deficienciesExist: true,
-      inspectionCompleted: true,
-      property: propertyId,
-
-      template: {
-        trackDeficientItems: true,
-        items: {
-          // Create single deficient item on inspection
-          [itemId]: mocking.createCompletedMainInputItem(
-            'twoactions_checkmarkx',
-            true
-          ),
-        },
-      },
-    });
-
-    // Stub Requests
-    const cardUpdate = nock('https://api.trello.com')
-      .put(
-        `/1/cards/${TRELLO_CARD_ID}?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&idList=${TRELLO_CLOSE_LIST_ID}`
-      )
-      .reply(200, TRELLO_PUT_CARD_RESPONSE);
-
-    // Setup database
-    await db.ref(`/properties/${propertyId}`).set({ name: 'test' });
-    await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
-    const diRef = db
-      .ref(`/propertyInspectionDeficientItems/${propertyId}`)
-      .push();
-    const diPath = diRef.path.toString();
-    const diID = diPath.split('/').pop();
-    await diRef.set({
-      state: REQUIRED_ACTIONS_VALUES[0], // requires action
-      inspection: inspectionId,
-      item: itemId,
-    });
-    await db
-      .ref(`${SYSTEM_INTEGRATION_PATH}/trello/organization`)
-      .set(TRELLO_SYSTEM_INTEGRATION_DATA); // Trello credentials
-    await db
-      .ref(`${SYSTEM_INTEGRATION_PATH}/trello/properties/${propertyId}/cards`)
-      .set({ [TRELLO_CARD_ID]: diID }); // Trello card reference
-    await db
-      .ref(`/integrations/trello/properties/${propertyId}`)
-      .set(TRELLO_PROPERTY_INTEGRATION_DATA); // Trello closed list configuration
-    const beforeSnap = await db.ref(`${diPath}/state`).once('value'); // Create before
-    await diRef.update({ state: 'closed' });
-    const afterSnap = await db.ref(`${diPath}/state`).once('value'); // Create after
-
-    // Execute
-    const changeSnap = test.makeChange(beforeSnap, afterSnap);
-    const wrapped = test.wrap(cloudFunctions.deficientItemsPropertyMetaSync);
-    await wrapped(changeSnap, { params: { propertyId, itemId: diID } });
-
-    // Assertion
-    // Throws error if request not performed
-    return cardUpdate.done();
-  });
-
-  it('should remove old Trello card references when it detects the card has been deleted', async () => {
-    const propertyId = uuid();
-    const inspectionId = uuid();
-    const itemId = uuid();
-    const beforeData = mocking.createInspection({
-      deficienciesExist: true,
-      inspectionCompleted: true,
-      property: propertyId,
-
-      template: {
-        trackDeficientItems: true,
-        items: {
-          // Create single deficient item on inspection
-          [itemId]: mocking.createCompletedMainInputItem(
-            'twoactions_checkmarkx',
-            true
-          ),
-        },
-      },
-    });
-
-    // Stub Requests
-    nock('https://api.trello.com')
-      .put(
-        `/1/cards/${TRELLO_CARD_ID}?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&idList=${TRELLO_CLOSE_LIST_ID}`
-      )
-      .reply(404);
-
-    // Setup database
-    await db.ref(`/properties/${propertyId}`).set({ name: 'test' });
-    await db.ref(`/inspections/${inspectionId}`).set(beforeData); // Add inspection
-    const diRef = db
-      .ref(`/propertyInspectionDeficientItems/${propertyId}`)
-      .push();
-    const diPath = diRef.path.toString();
-    const diID = diPath.split('/').pop();
-    await diRef.set({
-      state: REQUIRED_ACTIONS_VALUES[0], // requires action
-      inspection: inspectionId,
-      item: itemId,
-    });
-    await db
-      .ref(`${SYSTEM_INTEGRATION_PATH}/trello/organization`)
-      .set(TRELLO_SYSTEM_INTEGRATION_DATA); // Trello credentials
-    await db
-      .ref(`${SYSTEM_INTEGRATION_PATH}/trello/properties/${propertyId}/cards`)
-      .set({ [TRELLO_CARD_ID]: diID }); // Trello card reference
-    await db
-      .ref(`/integrations/trello/properties/${propertyId}`)
-      .set(TRELLO_PROPERTY_INTEGRATION_DATA); // Trello closed list configuration
-    const beforeSnap = await db.ref(`${diPath}/state`).once('value'); // Create before
-    await diRef.update({ state: 'closed' });
-    const afterSnap = await db.ref(`${diPath}/state`).once('value'); // Create after
-
-    // Execute
-    const changeSnap = test.makeChange(beforeSnap, afterSnap);
-    const wrapped = test.wrap(cloudFunctions.deficientItemsPropertyMetaSync);
-    await wrapped(changeSnap, { params: { propertyId, itemId: diID } });
-
-    // Assertions
-    return trelloTest.hasRemovedDiCardReferences(
-      db,
-      `${SYSTEM_INTEGRATION_PATH}/trello/properties/${propertyId}/cards/${TRELLO_CARD_ID}`,
-      `/propertyInspectionDeficientItems/${propertyId}/${diID}`
-    );
   });
 
   it('should publish a deficient item state update event to subscribers', async () => {
