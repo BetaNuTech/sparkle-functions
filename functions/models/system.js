@@ -215,24 +215,34 @@ module.exports = modelSetup({
     }
 
     // Lookup Trello credentials
-    let trelloCredentials = null;
+    let apikey = '';
+    let authToken = '';
     try {
       const trelloCredentialsSnap = await this.findTrelloCredentials(db);
 
       if (!trelloCredentialsSnap.exists()) throw Error();
-      trelloCredentials = trelloCredentialsSnap.val();
+      const trelloCredentials = trelloCredentialsSnap.val() || {};
+      apikey = trelloCredentials.apikey;
+      authToken = trelloCredentials.authToken;
     } catch (err) {
       throw Error(`${PREFIX} failed to recover trello credentials: ${err}`);
     }
 
+    if (!apikey || !authToken) {
+      return null;
+    }
+
     let response = null;
     try {
-      response = await archiveTrelloCardRequest(
-        trelloCardId,
-        trelloCredentials.apikey,
-        trelloCredentials.authToken,
-        'PUT',
-        archiving
+      response = await got(
+        `https://api.trello.com/1/cards/${trelloCardId}?key=${apikey}&token=${authToken}`,
+        {
+          headers: { 'content-type': 'application/json' },
+          body: { closed: archiving },
+          responseType: 'json',
+          method: 'PUT',
+          json: true,
+        }
       );
     } catch (err) {
       const resultErr = Error(
@@ -574,41 +584,3 @@ module.exports = modelSetup({
     return response;
   },
 });
-
-/**
- * for interacting with trello cards
- * @param  {string} cardId id of card which needs interaction
- * @param  {string} apikey api key for trello
- * @param  {string} authToken authToken for trello
- * @param  {string} method - http method
- * @param  {boolean?} archive - archive/unarchive trello card
- * @return {promise} - resolves {object} trello card json
- */
-function archiveTrelloCardRequest(
-  cardId,
-  apikey,
-  authToken,
-  method,
-  archive = true
-) {
-  assert(cardId && typeof cardId === 'string', `${PREFIX} has card id`);
-  assert(apikey && typeof apikey === 'string', `${PREFIX} has api key`);
-  assert(
-    authToken && typeof authToken === 'string',
-    `${PREFIX} has authentication token`
-  );
-  assert(method && typeof method === 'string', `${PREFIX} has http method`);
-
-  return got(
-    `https://api.trello.com/1/cards/${cardId}?key=${apikey}&token=${authToken}`,
-    {
-      headers: {
-        'content-type': 'application/json',
-      },
-      body: method !== 'GET' ? { closed: archive } : null,
-      responseType: 'json',
-      method,
-      json: true,
-    }
-  );
-}
