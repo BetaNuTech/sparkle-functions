@@ -473,3 +473,15 @@ exports.trelloCardDueDateUpdatesStaging = trello.createUpdateDueDateSubscriber(
   functions.pubsub,
   dbStaging
 );
+
+exports.trelloDiCardClose = trello.createCloseDiCardSubscriber(
+  'deficient-item-status-update',
+  functions.pubsub,
+  db
+);
+
+exports.trelloDiCardCloseStaging = trello.createCloseDiCardSubscriber(
+  'staging-deficient-item-status-update',
+  functions.pubsub,
+  dbStaging
+);

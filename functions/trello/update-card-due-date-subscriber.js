@@ -3,6 +3,7 @@ const log = require('../utils/logger');
 const systemModel = require('../models/system');
 const defItemModel = require('../models/deficient-items');
 const toISO8601 = require('./utils/date-to-iso-8601');
+const parseDiStateEventMsg = require('./utils/parse-di-state-event-msg');
 const findPreviousDIHistory = require('../deficient-items/utils/find-history');
 
 const PREFIX = 'trello: update-update-card-due-date-subscriber:';
@@ -26,20 +27,13 @@ module.exports = function createUpdateDueDateSubscriber(
 
     // Parse event message
     try {
-      const path = message.data
-        ? Buffer.from(message.data, 'base64').toString()
-        : '';
-
-      if (!path) {
-        throw new Error(`topic: ${topic} received invalid message`);
-      }
-
-      [propertyId, deficientItemId, , deficientItemState] = path.split('/');
-      if (!propertyId || !deficientItemId || !deficientItemState)
-        throw Error('Badly formed message');
+      [propertyId, deficientItemId, deficientItemState] = parseDiStateEventMsg(
+        message
+      );
     } catch (err) {
-      log.error(`${PREFIX} failed parsing ${topic} message`);
-      throw err;
+      const msgErr = `${PREFIX} ${topic} message error: ${err}`;
+      log.error(msgErr);
+      throw Error(msgErr);
     }
 
     log.info(
@@ -101,12 +95,12 @@ module.exports = function createUpdateDueDateSubscriber(
     ) {
       // PUT deferred as Trello card Due Date
       try {
-        await systemModel.putTrelloCardDueDate(
+        await systemModel.updateTrelloCard(
           db,
           propertyId,
           deficientItemId,
           trelloCardId,
-          toISO8601(getCurrentDueDay(currDeferDate.deferredDate))
+          { due: toISO8601(getCurrentDueDay(currDeferDate.deferredDate)) }
         );
 
         log.info(
@@ -121,12 +115,12 @@ module.exports = function createUpdateDueDateSubscriber(
     } else if (currDiDueDate && updatedAt === currDiDueDate.createdAt) {
       // PUT due date as Trello card Due Date
       try {
-        await systemModel.putTrelloCardDueDate(
+        await systemModel.updateTrelloCard(
           db,
           propertyId,
           deficientItemId,
           trelloCardId,
-          toISO8601(deficientItem.currentDueDateDay)
+          { due: toISO8601(deficientItem.currentDueDateDay) }
         );
 
         log.info(`${PREFIX} successfully updated Trello card due date`);
