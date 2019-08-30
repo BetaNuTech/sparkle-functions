@@ -262,106 +262,6 @@ module.exports = modelSetup({
   },
 
   /**
-   * Close any Trello card previously created
-   * for a Deficient Item
-   * @param  {firebaseadmin.database} db
-   * @param  {String} deficientItemId
-   * @return {Promise} - resolves {Object} `null` or Trello API response
-   */
-  async closeDeficientItemsTrelloCard(db, propertyId, deficientItemId) {
-    assert(
-      propertyId && typeof propertyId === 'string',
-      `${PREFIX} has property id`
-    );
-    assert(
-      deficientItemId && typeof deficientItemId === 'string',
-      `${PREFIX} has deficient item ID`
-    );
-
-    // Lookup any Trello card for DI
-    let cardId = '';
-    try {
-      cardId = await this.findTrelloCardId(db, propertyId, deficientItemId);
-      if (!cardId) return null;
-    } catch (err) {
-      throw Error(
-        `${PREFIX}: closeDeficientItemsTrelloCard: trello card lookup failed: ${err}`
-      );
-    }
-
-    // Lookup any close list for property
-    let closedList = '';
-    try {
-      const trelloIntegrationSnap = await integrationsModel.findByTrelloProperty(
-        db,
-        propertyId
-      );
-
-      const trelloIntegration = trelloIntegrationSnap.val() || {};
-      closedList = trelloIntegration.closedList;
-      if (!closedList) return null;
-    } catch (err) {
-      throw Error(
-        `${PREFIX}: closeDeficientItemsTrelloCard: property trello integration lookup failed: ${err}`
-      );
-    }
-
-    // Lookup Trello credentials
-    let apikey = '';
-    let authToken = '';
-    try {
-      const trelloCredentialsSnap = await this.findTrelloCredentials(db);
-      const trelloCredentials = trelloCredentialsSnap.val() || {};
-      apikey = trelloCredentials.apikey;
-      authToken = trelloCredentials.authToken;
-      if (!apikey || !authToken) return null;
-    } catch (err) {
-      throw Error(
-        `${PREFIX} closeDeficientItemsTrelloCard: failed to recover trello credentials: ${err}`
-      );
-    }
-
-    // Move Trello card to close list
-    let response = null;
-    try {
-      response = await got(
-        `https://api.trello.com/1/cards/${cardId}?key=${apikey}&token=${authToken}&idList=${closedList}`,
-        {
-          headers: { 'content-type': 'application/json' },
-          body: {},
-          responseType: 'json',
-          method: 'PUT',
-          json: true,
-        }
-      );
-    } catch (err) {
-      const resultErr = Error(
-        `${PREFIX} PUT card: ${cardId} to close list via trello API failed: ${err}`
-      );
-
-      // Handle Deleted Trello card
-      if (err.statusCode === 404) {
-        resultErr.code = 'ERR_TRELLO_CARD_DELETED';
-
-        try {
-          await this._cleanupDeletedTrelloCard(
-            db,
-            propertyId,
-            deficientItemId,
-            cardId
-          );
-        } catch (cleanUpErr) {
-          resultErr.message += `${cleanUpErr}`; // append to primary error
-        }
-      }
-
-      throw resultErr;
-    }
-
-    return response;
-  },
-
-  /**
    * Used to cleanup Trello card references
    * when the card has been manually removed
    * from the Trello admin and returns 404's
@@ -560,6 +460,96 @@ module.exports = modelSetup({
     } catch (err) {
       const resultErr = Error(
         `${PREFIX} PUT card: ${trelloCardId} due date to trello API failed: ${err}`
+      );
+
+      // Handle Deleted Trello card
+      if (err.statusCode === 404) {
+        resultErr.code = 'ERR_TRELLO_CARD_DELETED';
+
+        try {
+          await this._cleanupDeletedTrelloCard(
+            db,
+            propertyId,
+            deficientItemId,
+            trelloCardId
+          );
+        } catch (cleanUpErr) {
+          resultErr.message += `${cleanUpErr}`; // append to primary error
+        }
+      }
+
+      throw resultErr;
+    }
+
+    return response;
+  },
+
+  /**
+   * PUT request to trello API
+   * @param  {firebaseadmin.database} db
+   * @param  {String} propertyId
+   * @param  {String} deficientItemId
+   * @param  {String} trelloCardId
+   * @param  {Object} updates
+   * @return {Promise}
+   */
+  async updateTrelloCard(
+    db,
+    propertyId,
+    deficientItemId,
+    trelloCardId,
+    updates = {}
+  ) {
+    assert(
+      propertyId && typeof propertyId === 'string',
+      `${PREFIX} has property id`
+    );
+    assert(
+      deficientItemId && typeof deficientItemId === 'string',
+      `${PREFIX} has deficient item ID`
+    );
+    assert(
+      trelloCardId && typeof trelloCardId === 'string',
+      `${PREFIX} has Trello Card id`
+    );
+    assert(
+      typeof updates === 'object' && Object.keys(updates).length,
+      `${PREFIX} has updates hash`
+    );
+
+    // Lookup Trello credentials
+    let apikey = '';
+    let authToken = '';
+    try {
+      const trelloCredentialsSnap = await this.findTrelloCredentials(db);
+      const trelloCredentials = trelloCredentialsSnap.val() || {};
+      apikey = trelloCredentials.apikey;
+      authToken = trelloCredentials.authToken;
+      if (!apikey || !authToken) return null;
+    } catch (err) {
+      throw Error(
+        `${PREFIX} updateTrelloCard: failed to recover trello credentials: ${err}`
+      );
+    }
+
+    let trelloUpdateUrl = `https://api.trello.com/1/cards/${trelloCardId}?key=${apikey}&token=${authToken}`;
+
+    // Append updates to trello update URL
+    Object.keys(updates).forEach(param => {
+      trelloUpdateUrl += `&${param}=${encodeURIComponent(updates[param])}`;
+    });
+
+    // PUT Trello card updates
+    let response = null;
+    try {
+      response = await got(trelloUpdateUrl, {
+        responseType: 'json',
+        method: 'PUT',
+        json: true,
+      });
+    } catch (err) {
+      const resultErr = Error(
+        `${PREFIX} updateTrelloCard: PUT card: ${trelloCardId} via trello API failed: ${err}`
       );
 
       // Handle Deleted Trello card
