@@ -4,7 +4,6 @@ const { cleanDb } = require('../../test-helpers/firebase');
 const trelloTest = require('../../test-helpers/trello');
 const deferredDiData = require('../../test-helpers/mocks/deferred-deficient-item');
 const TRELLO_PUT_CARD_RESPONSE = require('../../test-helpers/mocks/put-trello-card.json');
-
 const {
   db,
   test,

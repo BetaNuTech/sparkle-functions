@@ -1,5 +1,6 @@
 const log = require('../utils/logger');
 const systemModel = require('../models/system');
+const parseDiStateEventMsg = require('./utils/parse-di-state-event-msg');
 
 const PREFIX = 'trello: close-deficient-item-card-subscriber:';
 const PROCESS_DI_STATES = ['closed', 'completed'];
@@ -20,19 +21,11 @@ module.exports = function closeDiCardSubscriber(topic = '', pubsub, db) {
 
     // Parse event message
     try {
-      const path = message.data
-        ? Buffer.from(message.data, 'base64').toString()
-        : '';
-
-      if (!path) {
-        throw new Error(`topic: ${topic} received invalid message`);
-      }
-
-      [propertyId, deficientItemId, , deficientItemState] = path.split('/');
-      if (!propertyId || !deficientItemId || !deficientItemState)
-        throw Error('Badly formed message');
+      [propertyId, deficientItemId, deficientItemState] = parseDiStateEventMsg(
+        message
+      );
     } catch (err) {
-      const msgErr = `${PREFIX} message error: ${err}`;
+      const msgErr = `${PREFIX} ${topic} message error: ${err}`;
       log.error(msgErr);
       throw Error(msgErr);
     }
