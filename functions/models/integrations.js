@@ -4,6 +4,7 @@ const modelSetup = require('./utils/model-setup');
 const PREFIX = 'models: integrations:';
 const TRELLO_PROPERTIES_PATH = '/integrations/trello/properties';
 const TRELLO_ORG_PATH = '/integrations/trello/organization';
+const SLACK_ORG_PATH = '/integrations/slack/organization';
 
 module.exports = modelSetup({
   /**
@@ -142,6 +143,39 @@ module.exports = modelSetup({
     }
 
     return db.ref(TRELLO_ORG_PATH).set(result);
+  },
+
+  /**
+   * Set the public facing Slack organization's
+   * integration details
+   * @param  {firebaseAdmin.database} db - firbase database
+   * @param  {Object} settings
+   * @return {Promise}
+   */
+  setSlackOrganization(db, settings = {}) {
+    const { createdAt, grantedBy, team, teamName } = Object.assign(
+      { createdAt: Math.round(Date.now() / 1000) },
+      settings
+    );
+    assert(
+      grantedBy && typeof grantedBy === 'string',
+      `${PREFIX} setSlackOrganization: has grantedBy user`
+    );
+    assert(
+      team && typeof team === 'string',
+      `${PREFIX} setSlackOrganization: has team reference`
+    );
+    assert(
+      teamName && typeof teamName === 'string',
+      `${PREFIX} setSlackOrganization: has team name`
+    );
+
+    return db.ref(SLACK_ORG_PATH).set({
+      createdAt,
+      grantedBy,
+      team,
+      teamName,
+    });
   },
 
   /**
