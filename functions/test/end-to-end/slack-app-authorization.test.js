@@ -15,9 +15,11 @@ const SLACK_REDIRECT_URI = 'http://sleepy-cliffs-61733.herokuapp.com';
 const SLACK_APP_CLIENT_ID = slackApp.clientId;
 const SLACK_APP_CLIENT_SECRET = slackApp.clientSecret;
 const SLACK_CREDENTIAL_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/slack/organization`;
+const SLACK_INTEGRATION_DB_PATH = '/integrations/slack/organization';
 
 describe('Slack App Authorization', () => {
   afterEach(async () => {
+    nock.cleanAll();
     await cleanDb(db);
     await db.ref(`/system/integrations/${SERVICE_ACCOUNT_ID}`).remove();
   });
@@ -155,5 +157,64 @@ describe('Slack App Authorization', () => {
       expected.accessToken,
       'persisted access token'
     );
+  });
+
+  it("should store slack apps public details in the organization's integrations path", async () => {
+    const expected = {
+      grantedBy: USER_ID,
+      team: uuid(),
+      teamName: 'test-team-name',
+    };
+
+    // Stub Slack OAuth
+    nock('https://slack.com')
+      .persist()
+      .post(
+        `/api/oauth.access?client_id=${SLACK_APP_CLIENT_ID}&client_secret=${SLACK_APP_CLIENT_SECRET}&code=${SLACK_CODE}&redirect_uri=${SLACK_REDIRECT_URI}`
+      )
+      .reply(200, {
+        ok: true,
+        access_token: 'aldkldajf',
+        scope: 'identify,incoming-webhook',
+        user_id: 'U0FAKEID',
+        team_name: expected.teamName,
+        team_id: expected.team,
+        incoming_webhook: {
+          channel: '#channel_name',
+          channel_id: 'C0HANNELID',
+          configuration_url: 'https://orgname.slack.com/services/SERVICEID',
+          url: 'https://hooks.slack.com/services/SERVICEID/FAKEID123/NOTHING',
+        },
+      });
+
+    // Setup database
+    await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
+
+    // Execute & Get Result
+    const app = slackAppAuthEndpoint(db, stubFirbaseAuth(USER_ID));
+    await request(app)
+      .post(`/integrations/slack/authorization`)
+      .send({
+        slackCode: SLACK_CODE,
+        redirectUri: SLACK_REDIRECT_URI,
+      })
+      .set('Accept', 'application/json')
+      .set('Authorization', 'fb-jwt stubbed-by-auth')
+      .expect('Content-Type', /json/)
+      .expect(201);
+
+    // actuals
+    const snap = await db.ref(SLACK_INTEGRATION_DB_PATH).once('value');
+    const actual = snap.val() || {};
+
+    // Assertions
+    Object.keys(expected).forEach(name => {
+      expect(actual[name]).to.equal(
+        expected[name],
+        `Found "${name}" in Slack Integration details`
+      );
+    });
+
+    expect(actual.createdAt).to.be.a('number', 'set "createdAt" timestamp');
   });
 });

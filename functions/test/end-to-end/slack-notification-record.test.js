@@ -121,7 +121,7 @@ describe('Slack Notification Records', () => {
 
     // Assertions
     expect(result.body.message).to.equal(
-      'no Slack channel associated with this property'
+      'No Slack channel associated with this property'
     );
   });
 
@@ -152,7 +152,7 @@ describe('Slack Notification Records', () => {
     expect(result.body.message).to.equal('Admin channel has not been setup');
   });
 
-  it('should successfully save property notifications under their configured channel name', async function() {
+  it("should successfully save property notifications under the property's channel name", async function() {
     const propertyData = {
       name: 'Mt. Bedrock',
       slackChannel: '#bedrock',
@@ -200,12 +200,12 @@ describe('Slack Notification Records', () => {
     );
   });
 
-  it('should successfully save admin notifications under their configured channel name', async function() {
+  it('should successfully save admin notifications under the admin channel name', async function() {
     const slackChannel = 'AdminArea';
     // Setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
     await db
-      .ref('/integrations/slack/organization/channelName')
+      .ref('/integrations/slack/organization/defaultChannelName')
       .set(slackChannel); // Add admin channel name
 
     const requestPayload = {

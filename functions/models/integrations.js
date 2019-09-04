@@ -1,9 +1,11 @@
+const got = require('got');
 const assert = require('assert');
 const modelSetup = require('./utils/model-setup');
 
 const PREFIX = 'models: integrations:';
 const TRELLO_PROPERTIES_PATH = '/integrations/trello/properties';
 const TRELLO_ORG_PATH = '/integrations/trello/organization';
+const SLACK_ORG_PATH = '/integrations/slack/organization';
 
 module.exports = modelSetup({
   /**
@@ -145,6 +147,49 @@ module.exports = modelSetup({
   },
 
   /**
+   * Set the public facing Slack organization's
+   * integration details
+   * @param  {firebaseAdmin.database} db - firbase database
+   * @param  {Object} settings
+   * @return {Promise}
+   */
+  setSlackOrganization(db, settings = {}) {
+    const { createdAt, grantedBy, team, teamName } = Object.assign(
+      { createdAt: Math.round(Date.now() / 1000) },
+      settings
+    );
+    assert(
+      grantedBy && typeof grantedBy === 'string',
+      `${PREFIX} setSlackOrganization: has grantedBy user`
+    );
+    assert(
+      team && typeof team === 'string',
+      `${PREFIX} setSlackOrganization: has team reference`
+    );
+    assert(
+      teamName && typeof teamName === 'string',
+      `${PREFIX} setSlackOrganization: has team name`
+    );
+
+    return db.ref(SLACK_ORG_PATH).set({
+      createdAt,
+      grantedBy,
+      team,
+      teamName,
+    });
+  },
+
+  /**
+   * Get the public facing Slack organization details
+   * @param  {firebaseAdmin.database} db - firbase database
+   * @param  {Object} settings
+   * @return {Promise}
+   */
+  getSlackOrganization(db) {
+    return db.ref(SLACK_ORG_PATH).once('value');
+  },
+
+  /**
    * Remove trello integration details
    * for the organization
    * @param {firebaseAdmin.database} db firbase database
@@ -152,5 +197,62 @@ module.exports = modelSetup({
    */
   destroyTrelloOrganization(db) {
     return db.ref(TRELLO_ORG_PATH).remove();
+  },
+
+  /**
+   * Join specified Slack channel and
+   * record success in integrations history
+   * @param   {firebaseAdmin.database} db firbase database
+   * @param   {String} accessToken
+   * @param   {String} channelName
+   * @returns {Promise} - Resolves {Object} Slack API's response body
+   */
+  async joinSlackChannel(db, accessToken, channelName) {
+    let result = null;
+    let alreadyInChannel = false;
+
+    try {
+      const queryParams = `?token=${accessToken}&name=${channelName}&validate=true`;
+      const response = await got(
+        `https://slack.com/api/channels.join${queryParams}`,
+        {
+          headers: {
+            'content-type': 'application/x-www-form-urlencoded',
+          },
+          responseType: 'json',
+          method: 'POST',
+          json: true,
+        }
+      );
+
+      if (!response || !response.body || !response.body.ok) {
+        const respErrMsg = response && response.body && response.body.error;
+        throw Error(
+          `failed to join slack channel: ${respErrMsg || 'Unknown Error'}`
+        ); // wrap error
+      }
+
+      result = response.body;
+
+      if (result.already_in_channel) alreadyInChannel = true;
+    } catch (err) {
+      throw Error(`${PREFIX} joinSlackChannel: ${err}`);
+    }
+
+    // Set joined Slack channel history
+    if (!alreadyInChannel) {
+      try {
+        const now = Math.round(Date.now() / 1000);
+        await db
+          .ref(`${SLACK_ORG_PATH}/joinedChannelNames/${channelName}`)
+          .set(now);
+      } catch (err) {
+        throw Error(
+          `${PREFIX} joinSlackChannel: failed to set join record ${err}`
+        );
+      }
+    }
+
+    return result;
   },
 });
