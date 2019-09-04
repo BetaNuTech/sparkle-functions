@@ -1,5 +1,4 @@
 const log = require('../../utils/logger');
-const joinSlackChannel = require('./utils/join-slack-channel');
 const systemModel = require('../../models/system');
 const integrationModel = require('../../models/integrations');
 const sendSlackChannelMessage = require('./utils/send-slack-channel-message');
@@ -60,7 +59,11 @@ module.exports = function publishSlackNotificationHandler(
       const channelName = allChannels[i];
 
       try {
-        const responseBody = await joinSlackChannel(accessToken, channelName);
+        const responseBody = await integrationModel.joinSlackChannel(
+          db,
+          accessToken,
+          channelName
+        );
 
         if (responseBody && !responseBody.already_in_channel) {
           // Log newly joined channel
@@ -68,7 +71,7 @@ module.exports = function publishSlackNotificationHandler(
         }
       } catch (err) {
         log.error(
-          `${PREFIX} error joining channel ${channelName} error: ${err}`
+          `${PREFIX} error joining channel ${channelName} error | ${err}`
         );
       }
     }
