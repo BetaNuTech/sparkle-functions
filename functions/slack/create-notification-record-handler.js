@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const log = require('../utils/logger');
 const authUser = require('../utils/auth-firebase-user');
 const propertiesModel = require('../models/properties');
+const integrationsModel = require('../models/integrations');
 
 const PREFIX = 'slack: create notification record:';
 
@@ -102,25 +103,22 @@ module.exports = function createOnSlackNotificationHandler(
 
     // Admin notification
     if (!propertyId) {
-      let slackAdminChannelNameSnap = null;
       try {
-        slackAdminChannelNameSnap = await db
-          .ref('/integrations/slack/organization/channelName')
-          .once('value');
+        const slackOrgSnap = await integrationsModel.getSlackOrganization(db);
+        const adminChannelName = (slackOrgSnap.val() || {}).defaultChannelName;
+        if (adminChannelName) channelName = adminChannelName;
       } catch (err) {
         log.error(
-          `${PREFIX} organization slack channel integration lookup failed: ${err}`
+          `${PREFIX} organization slack channel integration lookup failed | ${err}`
         );
         return res.status(500).send({ message: 'Internal Error' });
       }
 
-      if (!slackAdminChannelNameSnap.exists()) {
+      if (!channelName) {
         return res
           .status(409)
           .send({ message: 'Admin channel has not been setup' });
       }
-
-      channelName = slackAdminChannelNameSnap.val();
     }
 
     // Ensure channel `#` removed
