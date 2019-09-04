@@ -6,6 +6,7 @@ const log = require('../utils/logger');
 const authUser = require('../utils/auth-firebase-user');
 const propertiesModel = require('../models/properties');
 const integrationsModel = require('../models/integrations');
+const notificationsModel = require('../models/notifications');
 
 const PREFIX = 'slack: create notification record:';
 
@@ -123,10 +124,11 @@ module.exports = function createOnSlackNotificationHandler(
     // Create notification record
     // and queue notification sync task
     try {
-      const notificationRef = db
-        .ref(`/notifications/slack/${channelName}`)
-        .push();
-      await notificationRef.set({ title, message: userMessage });
+      const notificationRef = await notificationsModel.pushToSlackChannel(
+        db,
+        channelName,
+        { title, message: userMessage }
+      );
       await publisher.publish(Buffer.from(channelName));
 
       log.info(
