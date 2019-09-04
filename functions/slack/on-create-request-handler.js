@@ -4,6 +4,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const got = require('got');
 const systemModel = require('../models/system');
+const integrationsModel = require('../models/integrations');
 const log = require('../utils/logger');
 const authUser = require('../utils/auth-firebase-user');
 const { slackApp } = require('../config');
@@ -27,7 +28,7 @@ module.exports = function createOnSlackAppAuthHandler(db, auth) {
    * @param  {Object} res Express res
    * @return {Promise}
    */
-  const createSlackAuthHandler = async (req, res) => {
+  const handler = async (req, res) => {
     const { user, body } = req;
     const { slackCode, redirectUri } = body;
 
@@ -95,11 +96,19 @@ module.exports = function createOnSlackAppAuthHandler(db, auth) {
     );
 
     try {
+      // Set private credentials
       await systemModel.upsertSlackAppCredentials(
         db,
         slackResponse.access_token,
         slackResponse.scope
       );
+
+      // Set public details
+      await integrationsModel.setSlackOrganization(db, {
+        grantedBy: user.id,
+        team: slackResponse.team_id,
+        teamName: slackResponse.team_name,
+      });
     } catch (err) {
       log.error(`${PREFIX} Error attempting to save slack integration: ${err}`);
       return res.status(err.statusCode || 500).send({
@@ -118,7 +127,7 @@ module.exports = function createOnSlackAppAuthHandler(db, auth) {
   app.post(
     '/integrations/slack/authorization',
     authUser(db, auth, true),
-    createSlackAuthHandler
+    handler
   );
   return app;
 };
