@@ -92,12 +92,6 @@ module.exports = function createOnSlackNotificationHandler(
         return res.status(409).send({ message });
       }
 
-      if (!property.slackChannel) {
-        return res.status(409).send({
-          message: 'no Slack channel associated with this property',
-        });
-      }
-
       channelName = property.slackChannel;
     }
 
@@ -113,12 +107,14 @@ module.exports = function createOnSlackNotificationHandler(
         );
         return res.status(500).send({ message: 'Internal Error' });
       }
+    }
 
-      if (!channelName) {
-        return res
-          .status(409)
-          .send({ message: 'Admin channel has not been setup' });
-      }
+    // Abandon when channel undiscovered
+    if (!channelName) {
+      const message = propertyId
+        ? 'No Slack channel associated with this property'
+        : 'Admin channel has not been setup';
+      return res.status(409).send({ message });
     }
 
     // Ensure channel `#` removed

@@ -121,7 +121,7 @@ describe('Slack Notification Records', () => {
 
     // Assertions
     expect(result.body.message).to.equal(
-      'no Slack channel associated with this property'
+      'No Slack channel associated with this property'
     );
   });
 
