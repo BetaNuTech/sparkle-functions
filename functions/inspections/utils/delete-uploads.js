@@ -1,6 +1,6 @@
-const log = require('../utils/logger');
+const log = require('../../utils/logger');
 
-const LOG_PREFIX = 'inspections: delete-uploads:';
+const LOG_PREFIX = 'inspections: utils: delete-uploads:';
 const INSP_BUCKET_NAME = `inspectionItemImages${
   process.env.NODE_ENV === 'test' ? 'Test' : ''
 }`;
