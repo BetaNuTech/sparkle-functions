@@ -28,7 +28,7 @@ function createInspection(inspection = {}, items = {}, sections = {}) {
   );
 }
 
-describe('Inspections | Utils | Create Deficient Items', () => {
+describe('Deficient Items | Utils | Create Deficient Items', () => {
   it('should return an deficent items configuration object', () => {
     const actual = createDeficientItems(createInspection());
     expect(actual).to.be.an('object');
@@ -87,7 +87,9 @@ describe('Inspections | Utils | Create Deficient Items', () => {
       },
     ].forEach(({ data, expected, message }) => {
       const items = {};
-      data.forEach(item => (items[uuid()] = createItem(...item)));
+      data.forEach(function(item) {
+        items[uuid()] = createItem(...item);
+      });
       const result = createDeficientItems(createInspection({}, items));
       const actual = Object.keys(result).map(
         itemId => result[itemId].itemMainInputType

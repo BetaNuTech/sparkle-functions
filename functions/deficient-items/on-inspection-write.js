@@ -3,8 +3,8 @@ const log = require('../utils/logger');
 const config = require('../config');
 const { getDiffs } = require('../utils/object-differ');
 const model = require('../models/deficient-items');
-const createDeficientItems = require('../inspections/utils/create-deficient-items');
-const getLatestItemAdminEditTimestamp = require('../inspections/utils/get-latest-admin-edit-timestamp');
+const createDeficientItems = require('./utils/create-deficient-items');
+const getLatestItemAdminEditTimestamp = require('./utils/get-latest-admin-edit-timestamp');
 
 const PREFIX = 'deficient-items: on-inspection-write:';
 const DEFICIENT_ITEM_PROXY_ATTRS = Object.keys(

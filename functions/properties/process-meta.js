@@ -2,7 +2,7 @@ const pipe = require('lodash/fp/flow');
 const log = require('../utils/logger');
 const defItemsModel = require('../models/deficient-items');
 const { deficientItems } = require('../config');
-const { createDeficientItems } = require('../inspections/utils');
+const createDeficientItems = require('../deficient-items/utils/create-deficient-items');
 
 const LOG_PREFIX = 'properties: process-meta:';
 const REQUIRED_ACTIONS_VALUES = deficientItems.requiredActionStates;
