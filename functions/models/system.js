@@ -87,6 +87,7 @@ module.exports = modelSetup({
   /**
    * Appends a Trello card reference to system's
    * integration record for a specified property
+   * NOTE: Check for Trello Card existence before calling
    * @param  {firebaseAdmin.database} db firbase database
    * @param  {String} propertyId
    * @param  {String} trelloCard
@@ -94,7 +95,7 @@ module.exports = modelSetup({
    * @param  {String} trelloCardURL
    * @return {Promise} - resolves {undefined}
    */
-  async createPropertyTrelloCard(db, settings) {
+  createPropertyTrelloCard(db, settings) {
     const { property, trelloCard, deficientItem, trelloCardURL } = settings;
 
     assert(
@@ -113,22 +114,6 @@ module.exports = modelSetup({
       trelloCardURL && typeof trelloCardURL === 'string',
       `${PREFIX} has trello card URL`
     );
-
-    const cardsSnap = await db
-      .ref(`${TRELLO_PROPERTIES_PATH}/${property}/cards`)
-      .once('value');
-
-    // checking if there already exists a trello card for this inspection item, if so will throw error
-    if (cardsSnap.exists()) {
-      const cards = cardsSnap.val();
-      const trelloCardExists = Object.values(cards).includes(deficientItem);
-
-      if (trelloCardExists) {
-        throw Error(
-          `${PREFIX} Trello card for this inspection item already exists`
-        );
-      }
-    }
 
     return db.ref().update({
       [`${TRELLO_PROPERTIES_PATH}/${property}/cards/${trelloCard}`]: deficientItem,
@@ -163,7 +148,7 @@ module.exports = modelSetup({
       propertyTrelloCards = propertyTrelloCardsSnap.val() || {};
     } catch (err) {
       throw Error(
-        `${PREFIX}: findTrelloCardId: failed to fetch trello cards for property: "${propertyId}" | ${err}`
+        `${PREFIX}: find-trello-card-id: failed to fetch trello cards for property: "${propertyId}" | ${err}`
       );
     }
 
@@ -172,6 +157,19 @@ module.exports = modelSetup({
       Object.keys(propertyTrelloCards).filter(
         id => propertyTrelloCards[id] === deficientItemId
       )[0] || ''
+    );
+  },
+
+  /**
+   * Boolean wrapper around `findTrelloCardId`
+   * @param  {firebaseadmin.database} db
+   * @param  {String} propertyId
+   * @param  {String} deficientItemId
+   * @return {Promise} - resolves {Boolean} Trello card existence in Firebase
+   */
+  isDeficientItemTrelloCardCreated(db, propertyId, deficientItemId) {
+    return this.findTrelloCardId(db, propertyId, deficientItemId).then(result =>
+      Boolean(result)
     );
   },
 
