@@ -1,7 +1,7 @@
 const log = require('../../utils/logger');
 const config = require('../../config');
 const model = require('../../models/deficient-items');
-const processPropertyMeta = require('../../properties/process-meta');
+const processPropertyMeta = require('../../properties/utils/process-meta');
 const { forEachChild } = require('../../utils/firebase-admin');
 
 const LOG_PREFIX = 'deficient-items: cron: sync-overdue:';
@@ -61,7 +61,8 @@ module.exports = function createSyncOverdueDeficientItemshandler(
                   secondsUntilDue <= 0
                 ) {
                   // Progress state
-                  state = diItem.state = 'overdue';
+                  state = 'overdue';
+                  diItem.state = 'overdue';
                   const stateUpdates = await model.updateState(
                     db,
                     diItemSnap,
@@ -81,7 +82,8 @@ module.exports = function createSyncOverdueDeficientItemshandler(
                   secondsUntilDue < secondsUntilHalfDue
                 ) {
                   // Progress state
-                  state = diItem.state = 'requires-progress-update';
+                  state = 'requires-progress-update';
+                  diItem.state = 'requires-progress-update';
                   const stateUpdates = await model.updateState(
                     db,
                     diItemSnap,
