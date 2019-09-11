@@ -1,23 +1,21 @@
 const log = require('../utils/logger');
 const propertyTemplates = require('../property-templates');
-const templatesList = require('./list');
+const templatesList = require('./utils/list');
 
-const LOG_PREFIX = 'templates: on-write-handler:';
+const PREFIX = 'templates: on-write:';
 
 /**
  * Factory for template on write handler
  * @param  {firebaseAdmin.database} - Firebase Admin DB instance
  * @return {Function} - property onWrite handler
  */
-module.exports = function createOnWriteHandler(db) {
+module.exports = function createOnWriteWatcher(db) {
   return async (change, event) => {
     const updates = Object.create(null);
     const { templateId } = event.params;
 
     if (!templateId) {
-      log.warn(
-        `${LOG_PREFIX} incorrectly defined event parameter "templateId"`
-      );
+      log.warn(`${PREFIX} incorrectly defined event parameter "templateId"`);
       return;
     }
 
@@ -27,13 +25,13 @@ module.exports = function createOnWriteHandler(db) {
     try {
       await templatesList.write(db, templateId, beforeData, afterData);
     } catch (e) {
-      log.error(`${LOG_PREFIX} ${e}`);
+      log.error(`${PREFIX} ${e}`);
     }
 
     // Delete template proxies
     if (beforeData && !afterData) {
       const proTmplUpdates = await propertyTemplates.remove(db, templateId);
-      log.info(`${LOG_PREFIX} template ${templateId} removed`);
+      log.info(`${PREFIX} template ${templateId} removed`);
       Object.assign(updates, proTmplUpdates);
     }
 
@@ -45,9 +43,7 @@ module.exports = function createOnWriteHandler(db) {
         afterData
       );
       log.info(
-        `${LOG_PREFIX} template ${templateId} ${
-          beforeData ? 'updated' : 'added'
-        }`
+        `${PREFIX} template ${templateId} ${beforeData ? 'updated' : 'added'}`
       );
       Object.assign(updates, proTmplUpdates);
     }

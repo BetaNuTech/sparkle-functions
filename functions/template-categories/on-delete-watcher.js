@@ -1,6 +1,6 @@
 const assert = require('assert');
 const log = require('../utils/logger');
-const templatesList = require('../templates/list');
+const templatesList = require('../templates/utils/list');
 const propertyTemplates = require('../property-templates');
 
 const PREFIX = 'template-categories: on-delete:';

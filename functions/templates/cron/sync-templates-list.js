@@ -1,8 +1,8 @@
-const list = require('../list');
 const log = require('../../utils/logger');
 const adminUtils = require('../../utils/firebase-admin');
+const list = require('../utils/list');
 
-const LOG_PREFIX = 'templates: cron: sync-templates-list:';
+const PREFIX = 'templates: cron: sync-templates-list:';
 
 /**
  * Sync templates with propertyTemplatesList and log
@@ -12,14 +12,14 @@ const LOG_PREFIX = 'templates: cron: sync-templates-list:';
  * @param  {firebaseAdmin.database} db
  * @return {functions.CloudFunction}
  */
-module.exports = function createSyncTemplatesListHandler(
+module.exports = function createSyncTemplatesListSubscriber(
   topic = '',
   pubSub,
   db
 ) {
   return pubSub.topic(topic).onPublish(async () => {
     const updates = {};
-    log.info(`${LOG_PREFIX} received ${Date.now()}`);
+    log.info(`${PREFIX} received ${Date.now()}`);
 
     try {
       // Collect all template ID's
@@ -28,7 +28,7 @@ module.exports = function createSyncTemplatesListHandler(
       // Cleanup templatesList items without a source template
       await list.removeOrphans(db, templateIds);
     } catch (e) {
-      log.error(`${LOG_PREFIX} ${e}`);
+      log.error(`${PREFIX} ${e}`);
     }
 
     // Add missing/outdated templatesList records
@@ -40,7 +40,7 @@ module.exports = function createSyncTemplatesListHandler(
           const result = await list.write(db, templateId, template, template);
           updates[templateId] = result ? 'upserted' : 'removed';
         } catch (e) {
-          log.error(`${LOG_PREFIX} ${e}`);
+          log.error(`${PREFIX} ${e}`);
         }
       }
     );
