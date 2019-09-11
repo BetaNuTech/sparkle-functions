@@ -1,5 +1,5 @@
 const { expect } = require('chai');
-const { createDatabaseStub } = require('../test-helpers/firebase');
+const { createDatabaseStub } = require('../../test-helpers/firebase');
 const { write, removeCategory, removeOrphans } = require('./list');
 
 describe('Templates List', () => {

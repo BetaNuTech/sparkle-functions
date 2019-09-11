@@ -1,5 +1,5 @@
-const createOnDeleteHandler = require('./on-delete-watcher');
+const createOnDeleteWatcher = require('./on-delete-watcher');
 
 module.exports = {
-  createOnDeleteHandler,
+  createOnDeleteWatcher,
 };
