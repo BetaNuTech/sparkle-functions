@@ -115,10 +115,20 @@ module.exports = function createOnTrelloDeficientItemCard(db, auth) {
       if (!inspectionItemSnap.exists()) throw Error();
       inspectionItem = inspectionItemSnap.val();
     } catch (err) {
-      log.error(`${PREFIX} inspection item lookup failed ${err}`);
+      log.error(`${PREFIX} inspection item lookup failed | ${err}`);
       return res
         .status(409)
         .send({ message: 'Inspection of Deficient Item does not exist' });
+    }
+
+    let trelloOrganization = null;
+    try {
+      const trelloOrgSnap = await integrationsModel.getTrelloOrganization(db);
+      trelloOrganization = trelloOrgSnap.val() || {};
+    } catch (err) {
+      log.error(
+        `${PREFIX} Trello Organization integration lookup failed | ${err}`
+      );
     }
 
     // Lookup and sort for item's largest score value
@@ -148,8 +158,12 @@ module.exports = function createOnTrelloDeficientItemCard(db, auth) {
         ]
           .filter(Boolean)
           .join('\n'),
-        idMembers: trelloCredentials.member,
       };
+
+      // Set members to authorized Trello account
+      if (trelloOrganization.member) {
+        trelloCardPayload.idMembers = trelloOrganization.member;
+      }
 
       // Append current due date as date string
       if (deficientItem.currentDueDateDay) {
