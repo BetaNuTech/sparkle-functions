@@ -1,6 +1,6 @@
 const { expect } = require('chai');
 const uuid = require('../test-helpers/uuid');
-const onDeleteHandler = require('./on-delete-handler');
+const onDeleteHandler = require('./on-delete-watcher');
 
 describe('Template Categories', () => {
   describe('On delete handler', () => {
