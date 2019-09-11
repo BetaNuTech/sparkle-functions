@@ -1,11 +1,11 @@
-const createOnInspectionWrite = require('./on-inspection-write-watcher');
-const createOnDiStateUpdate = require('./on-di-state-update-watcher');
-const createOnDiToggleArchiveUpdate = require('./on-di-toggle-archive-update-watcher');
+const createOnWriteInspection = require('./on-write-inspection-watcher');
+const createOnUpdateState = require('./on-update-state-watcher');
+const createOnUpdateArchive = require('./on-update-archive-watcher');
 const cron = require('./cron');
 
 module.exports = {
-  createOnInspectionWrite,
-  createOnDiStateUpdate,
-  createOnDiToggleArchiveUpdate,
+  createOnWriteInspection,
+  createOnUpdateState,
+  createOnUpdateArchive,
   cron,
 };

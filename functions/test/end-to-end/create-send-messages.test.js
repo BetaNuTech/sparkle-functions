@@ -1,7 +1,7 @@
 const { expect } = require('chai');
 const request = require('supertest');
 const uuid = require('../../test-helpers/uuid');
-const createApp = require('../../push-messages/on-create-request-watcher');
+const createApp = require('../../push-messages/on-create-request-handler');
 const { cleanDb, stubFirbaseAuth } = require('../../test-helpers/firebase');
 const { db, auth } = require('./setup');
 

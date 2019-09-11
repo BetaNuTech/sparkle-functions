@@ -1,11 +1,11 @@
 const cron = require('./cron');
+const createOnDeleteWatcher = require('./on-delete-watcher');
+const createOnWriteUserTeamWatcher = require('./on-write-user-teams-watcher');
 const removeForProperty = require('./utils/remove-for-property');
-const createOnUserTeamWriteHandler = require('./user-teams-write-watcher');
-const teamDeleteHandler = require('./team-delete-watcher');
 
 module.exports = {
   cron,
   removeForProperty,
-  teamDeleteHandler,
-  createOnUserTeamWriteHandler,
+  createOnDeleteWatcher,
+  createOnWriteUserTeamWatcher,
 };

@@ -1,6 +1,6 @@
 const { expect } = require('chai');
 const { createDatabaseStub } = require('../test-helpers/firebase');
-const createOnTeamsWriteHandler = require('./on-team-write-watcher');
+const createOnTeamsWriteHandler = require('./on-write-team-watcher');
 
 describe('Properties', function() {
   describe('On Team Write Handler', function() {
