@@ -1,7 +1,7 @@
 const log = require('../utils/logger');
 const processWrite = require('./process-write');
 
-const LOG_PREFIX = 'inspections: on-attribute-write:';
+const PREFIX = 'inspections: on-attribute-write:';
 
 /**
  * Factory for general inspection updated onWrite handler
@@ -14,9 +14,7 @@ module.exports = function createOnAttributeWriteHandler(db) {
     const { inspectionId } = event.params;
 
     if (!inspectionId) {
-      log.warn(
-        `${LOG_PREFIX} incorrectly defined event parameter "inspectionId"`
-      );
+      log.warn(`${PREFIX} incorrectly defined event parameter "inspectionId"`);
       return;
     }
 
@@ -29,12 +27,12 @@ module.exports = function createOnAttributeWriteHandler(db) {
       const inspectionSnapshot = await change.after.ref.parent.once('value');
 
       if (!inspectionSnapshot.exists()) {
-        log.info(`${LOG_PREFIX} ${inspectionId} no inspection record found`);
+        log.info(`${PREFIX} ${inspectionId} no inspection record found`);
         return updates;
       }
 
       log.info(
-        `${LOG_PREFIX} ${inspectionId} updated, migrating proxy inspections`
+        `${PREFIX} ${inspectionId} updated, migrating proxy inspections`
       );
       const processWriteUpdates = await processWrite(
         db,
@@ -45,7 +43,7 @@ module.exports = function createOnAttributeWriteHandler(db) {
     } catch (e) {
       // Handle any errors
       log.error(
-        `${LOG_PREFIX} ${inspectionId} failed to migrate updated inspection ${e}`
+        `${PREFIX} ${inspectionId} failed to migrate updated inspection ${e}`
       );
       return updates;
     }
