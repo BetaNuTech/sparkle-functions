@@ -57,6 +57,7 @@ const DEFICIENT_ITEM_DB_PATH = `${appConfig.deficientItems.dbPath}/${PROPERTY_ID
 
 describe('Trello Create Deficient Item Cards', () => {
   afterEach(async () => {
+    nock.cleanAll();
     await cleanDb(db);
     return db.ref(`/system/integrations/${SERVICE_ACCOUNT_ID}`).remove();
   });
@@ -147,13 +148,19 @@ describe('Trello Create Deficient Item Cards', () => {
   });
 
   it('should return an error when attempting to create duplicate cards', async () => {
+    // Stub Requests
+    nock('https://api.trello.com')
+      .post(
+        `/1/cards?idList=${TRELLO_LIST_ID}&keyFromSource=all&key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}`
+      )
+      .reply(200, trelloCardPayload);
+
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
-    await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(
-      Object.assign({}, TRELLO_SYSTEM_INTEGRATION_DATA, {
-        cards: { 'trello-card-id': DEFICIENT_ITEM_ID },
-      })
-    );
+    await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
+    await db
+      .ref(TRELLO_CARDS_DB_PATH)
+      .set({ 'trello-card-id': DEFICIENT_ITEM_ID });
     await db
       .ref(
         `/propertyInspectionDeficientItems/${PROPERTY_ID}/${DEFICIENT_ITEM_ID}`
