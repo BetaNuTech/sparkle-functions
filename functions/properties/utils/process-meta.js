@@ -1,13 +1,14 @@
 const pipe = require('lodash/fp/flow');
-const log = require('../utils/logger');
-const defItemsModel = require('../models/deficient-items');
-const { deficientItems } = require('../config');
-const createDeficientItems = require('../deficient-items/utils/create-deficient-items');
+const log = require('../../utils/logger');
+const defItemsModel = require('../../models/deficient-items');
+const { deficientItems } = require('../../config');
+const createDeficientItems = require('../../deficient-items/utils/create-deficient-items');
 
 const LOG_PREFIX = 'properties: process-meta:';
 const REQUIRED_ACTIONS_VALUES = deficientItems.requiredActionStates;
 const FOLLOW_UP_ACTION_VALUES = deficientItems.followUpActionStates;
-const EXCLUDED_DI_COUNTER_VALUES = deficientItems.excludedPropertyNumOfDeficientItemsStates;
+const EXCLUDED_DI_COUNTER_VALUES =
+  deficientItems.excludedPropertyNumOfDeficientItemsStates;
 
 // Pipeline of steps to update metadata
 const propertyMetaUpdates = pipe([
