@@ -1,6 +1,6 @@
 const { expect } = require('chai');
 const { createDatabaseStub } = require('../test-helpers/firebase');
-const createOnAttributeWriteHandler = require('./on-attribute-write-handler');
+const createOnAttributeWriteHandler = require('./on-attribute-write-watcher');
 
 describe('Inspections', function() {
   describe('On Attribute Write Handler', function() {

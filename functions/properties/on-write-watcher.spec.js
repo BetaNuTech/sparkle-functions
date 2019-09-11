@@ -1,13 +1,13 @@
 const { expect } = require('chai');
-const templatesOnWriteHandler = require('./on-templates-write-handler');
 const { createDatabaseStub } = require('../test-helpers/firebase');
+const createOnWriteHandler = require('./on-write-watcher');
 
 describe('Properties', function() {
-  describe('On Templates Write Handler', function() {
+  describe('On Write Handler', function() {
     it('should create a handler that returns a promise resolving updates hash', () => {
-      const actual = templatesOnWriteHandler(createDatabaseStub().value())(
+      const actual = createOnWriteHandler(createDatabaseStub().value())(
         {
-          before: { exists: () => true },
+          before: { exists: () => true, val: () => ({ templates: null }) },
           after: { exists: () => false },
         },
         { params: { propertyId: '1' } }
