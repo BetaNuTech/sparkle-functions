@@ -1,7 +1,7 @@
 const { expect } = require('chai');
 const request = require('supertest');
 const uuid = require('../../test-helpers/uuid');
-const createApp = require('../../push-messages/on-create-request-handler');
+const createApp = require('../../push-messages/on-create-request-watcher');
 const { cleanDb, stubFirbaseAuth } = require('../../test-helpers/firebase');
 const { db, auth } = require('./setup');
 
@@ -110,7 +110,9 @@ describe('Create Send Messages', () => {
     // Assertions
     const adminIds = [admin1Id, admin2Id];
     Object.keys(results).forEach(messageId => {
-      const { title, message, recipientId, createdAt } = results[messageId];
+      const { title, message, /* recipientId, */ createdAt } = results[
+        messageId
+      ];
       expect(adminIds).to.include(admin1Id, 'wrote only messages to admins');
       expect(title).to.equal(expected.title, 'has expected title');
       expect(message).to.equal(expected.message, 'has expected message');
