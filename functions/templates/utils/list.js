@@ -1,8 +1,8 @@
 const assert = require('assert');
-const log = require('../utils/logger');
-const adminUtils = require('../utils/firebase-admin');
+const log = require('../../utils/logger');
+const adminUtils = require('../../utils/firebase-admin');
 
-const LOG_PREFIX = 'templates: list:';
+const PREFIX = 'templates: utils: list:';
 
 module.exports = {
   /**
@@ -21,14 +21,14 @@ module.exports = {
 
     // Template removed
     if (!after) {
-      log.info(`${LOG_PREFIX} removing ${target}`);
+      log.info(`${PREFIX} write: removing ${target}`);
 
       return db
         .ref(target)
         .remove()
         .catch(e =>
           Promise.reject(
-            new Error(`${LOG_PREFIX} failed to remove at ${target} ${e}`) // wrap error
+            Error(`${PREFIX} write: failed to remove at ${target} ${e}`) // wrap error
           )
         )
         .then(() => null);
@@ -36,7 +36,7 @@ module.exports = {
 
     if (!after.name) {
       return Promise.reject(
-        new Error(`${LOG_PREFIX} required template name missing`)
+        Error(`${PREFIX} write: required template name missing`)
       );
     }
 
@@ -55,8 +55,8 @@ module.exports = {
       .update(upsertData)
       .catch(e =>
         Promise.reject(
-          new Error(
-            `${LOG_PREFIX} failed to ${
+          Error(
+            `${PREFIX} write: failed to ${
               before ? 'update' : 'add'
             } record at ${target} ${e}`
           ) // wrap error
@@ -93,7 +93,7 @@ module.exports = {
       Object.keys(templatesListItemsInCategory.val()).forEach(id => {
         const target = `/templatesList/${id}/category`;
         updates[target] = null;
-        log.info(`${LOG_PREFIX} removing ${target}`);
+        log.info(`${PREFIX} remove-category: ${target}`);
       });
 
       // Update database
@@ -103,7 +103,7 @@ module.exports = {
     } catch (err) {
       // wrap error
       throw Error(
-        `${LOG_PREFIX} removeCategory: ${categoryId} from /templatesList failed | ${err}`
+        `${PREFIX} remove-category: ${categoryId} from /templatesList failed | ${err}`
       );
     }
 
@@ -143,7 +143,7 @@ module.exports = {
       }
     } catch (err) {
       // wrap error
-      throw Error(`${LOG_PREFIX} removeOrphans: ${err}`);
+      throw Error(`${PREFIX} remove-orphans: failed | ${err}`);
     }
 
     return updates;

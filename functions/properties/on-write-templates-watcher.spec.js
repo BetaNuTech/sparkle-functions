@@ -1,5 +1,5 @@
 const { expect } = require('chai');
-const templatesOnWriteHandler = require('./on-templates-write-handler');
+const templatesOnWriteHandler = require('./on-write-templates-watcher');
 const { createDatabaseStub } = require('../test-helpers/firebase');
 
 describe('Properties', function() {

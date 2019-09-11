@@ -1,11 +1,11 @@
-const { removeForProperty } = require('./remove-for-property');
 const cron = require('./cron');
-const createOnUserTeamWriteHandler = require('./handlers/user-teams-write-handler');
-const teamDeleteHandler = require('./handlers/team-delete-handler');
+const createOnDeleteWatcher = require('./on-delete-watcher');
+const createOnWriteUserTeamWatcher = require('./on-write-user-teams-watcher');
+const removeForProperty = require('./utils/remove-for-property');
 
 module.exports = {
-  removeForProperty,
   cron,
-  createOnUserTeamWriteHandler,
-  teamDeleteHandler,
+  removeForProperty,
+  createOnDeleteWatcher,
+  createOnWriteUserTeamWatcher,
 };

@@ -1,7 +1,7 @@
 const assert = require('assert');
 const log = require('../utils/logger');
 const config = require('../config');
-const processPropertyMeta = require('../properties/process-meta');
+const processPropertyMeta = require('../properties/utils/process-meta');
 
 const PREFIX = 'deficient-items: on-di-state-update:';
 const REQUIRED_ACTIONS_VALUES = config.deficientItems.requiredActionStates;

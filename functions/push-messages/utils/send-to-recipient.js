@@ -1,6 +1,6 @@
-const log = require('../utils/logger');
+const log = require('../../utils/logger');
 
-const LOG_PREFIX = 'push-messages: sendToRecipient: ';
+const PREFIX = 'push-messages: utils: send-to-recipient:';
 
 /**
  * Send a given push notifcation message to a recipient ID
@@ -62,11 +62,9 @@ module.exports = async function sendToRecipient(
       payload,
       {}
     );
-    log.info(
-      `${LOG_PREFIX} successfully sent message: ${response.multicastId}`
-    );
+    log.info(`${PREFIX} successfully sent message: ${response.multicastId}`);
   } catch (err) {
-    const errMsg = Error(`${LOG_PREFIX} Error sending message: ${err}`);
+    const errMsg = Error(`${PREFIX} Error sending message: ${err}`);
     log.error(errMsg.toString());
     throw errMsg;
   }

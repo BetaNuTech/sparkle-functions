@@ -1,10 +1,10 @@
 const assert = require('assert');
 const sendToRecipient = require('./send-to-recipient');
-const createSendMessage = require('./create-send-message');
-const { getRecepients } = require('../utils/firebase-messaging');
+const modelPushMsgs = require('../../models/push-messages');
+const { getRecepients } = require('../../utils/firebase-messaging');
 
 const { assign, keys } = Object;
-const LOG_PREFIX = 'push-messages: send-to-users:';
+const PREFIX = 'push-messages: utils: send-to-users:';
 
 /**
  * Create sendMessage firebase records for all users
@@ -28,22 +28,16 @@ module.exports = async function sendToUsers({
   allowCorp = false,
   property,
 }) {
-  assert(Boolean(db), `${LOG_PREFIX} has Firebase Admin database instance`);
-  assert(
-    Boolean(messaging),
-    `${LOG_PREFIX} has Firebase Admin messaging instance`
-  );
+  assert(Boolean(db), `has Firebase Admin database instance`);
+  assert(Boolean(messaging), 'has Firebase Admin messaging instance');
   assert(
     message && typeof message === 'string',
-    `${LOG_PREFIX} is given a valid message string`
+    'is given a valid message string'
   );
-  assert(
-    title && typeof title === 'string',
-    `${LOG_PREFIX} is given a valid title string`
-  );
+  assert(title && typeof title === 'string', 'is given a valid title string');
   assert(
     Array.isArray(excludes) && excludes.every(e => typeof e === 'string'),
-    `${LOG_PREFIX} has array of excluded strings`
+    'has array of excluded strings'
   );
 
   // Request and flatten response hash to array
@@ -64,7 +58,7 @@ module.exports = async function sendToUsers({
     // Create `/sendMessages/<recipient-id>` database records for recipients
     messages = await Promise.all(
       recipients.map(recipientId =>
-        createSendMessage(db, {
+        modelPushMsgs.createSendMessage(db, {
           title,
           message,
           recipientId,
@@ -73,7 +67,7 @@ module.exports = async function sendToUsers({
       )
     );
   } catch (err) {
-    throw Error(`${LOG_PREFIX} create-send-messages: ${err}`); // wrap error
+    throw Error(`${PREFIX} | ${err}`); // wrap error
   }
 
   let results = [];
@@ -90,7 +84,7 @@ module.exports = async function sendToUsers({
       )
     );
   } catch (err) {
-    throw Error(`${LOG_PREFIX} send-to-recipient: ${err}`); // wrap error
+    throw Error(`${PREFIX} | ${err}`); // wrap error
   }
 
   try {
@@ -104,7 +98,7 @@ module.exports = async function sendToUsers({
       )
     );
   } catch (err) {
-    throw Error(`${LOG_PREFIX} remove-send-messages: ${err}`); // wrap error
+    throw Error(`${PREFIX} remove-send-messages: ${err}`); // wrap error
   }
 
   return messages;

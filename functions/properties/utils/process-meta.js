@@ -1,13 +1,14 @@
 const pipe = require('lodash/fp/flow');
-const log = require('../utils/logger');
-const defItemsModel = require('../models/deficient-items');
-const { deficientItems } = require('../config');
-const { createDeficientItems } = require('../inspections/utils');
+const log = require('../../utils/logger');
+const defItemsModel = require('../../models/deficient-items');
+const { deficientItems } = require('../../config');
+const createDeficientItems = require('../../deficient-items/utils/create-deficient-items');
 
-const LOG_PREFIX = 'properties: process-meta:';
+const PREFIX = 'properties: utils: process-meta:';
 const REQUIRED_ACTIONS_VALUES = deficientItems.requiredActionStates;
 const FOLLOW_UP_ACTION_VALUES = deficientItems.followUpActionStates;
-const EXCLUDED_DI_COUNTER_VALUES = deficientItems.excludedPropertyNumOfDeficientItemsStates;
+const EXCLUDED_DI_COUNTER_VALUES =
+  deficientItems.excludedPropertyNumOfDeficientItemsStates;
 
 // Pipeline of steps to update metadata
 const propertyMetaUpdates = pipe([
@@ -17,8 +18,8 @@ const propertyMetaUpdates = pipe([
 ]);
 
 /**
- * Process changes to a property's metadata when it's
- * completed inspections' chanages
+ * Process changes to a property's
+ * metadata if it's inspections chanage
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
  * @param  {String} propertyId
  * @return {Promise} - resolves {Object} updates
@@ -78,14 +79,10 @@ module.exports = async function processMeta(db, propertyId) {
       await db.ref(path).set(updates[path]);
     }
 
-    log.info(
-      `${LOG_PREFIX} successfully updated property ${propertyId} metadata`
-    );
+    log.info(`${PREFIX} successfully updated property: ${propertyId} metadata`);
     return updates;
-  } catch (e) {
-    log.error(
-      `${LOG_PREFIX} failed updating property ${propertyId} metadata ${e}`
-    );
+  } catch (err) {
+    log.error(`${PREFIX} failed updating property metadata | ${err}`);
     return null;
   }
 };
@@ -166,6 +163,7 @@ function updateDeficientItemsAttrs(
       .filter(
         ({ inspectionCompleted, template }) =>
           inspectionCompleted &&
+          Boolean(template) &&
           Boolean(template.trackDeficientItems) &&
           Boolean(template.items)
       ) // only completed, DI enabled, /w items

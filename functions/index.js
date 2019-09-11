@@ -43,10 +43,10 @@ exports.latestCompleteInspectionStaging = functions.https.onRequest(
 // Default Database Functions
 exports.sendPushMessage = functions.database
   .ref('/sendMessages/{messageId}')
-  .onWrite(pushMessages.createOnWriteHandler(db, admin.messaging()));
+  .onWrite(pushMessages.createOnWriteWatcher(db, admin.messaging()));
 exports.sendPushMessageStaging = functionsStagingDatabase
   .ref('/sendMessages/{messageId}')
-  .onWrite(pushMessages.createOnWriteHandler(dbStaging, admin.messaging()));
+  .onWrite(pushMessages.createOnWriteWatcher(dbStaging, admin.messaging()));
 
 // POST /sendMessages
 exports.createSendMessages = functions.https.onRequest(
@@ -134,32 +134,32 @@ exports.createSlackNotificationsStaging = functions.https.onRequest(
 // This allow the updatedLastDate to stay as-is (make sure client doesn't update it though)
 exports.inspectionMigrationDateWrite = functions.database
   .ref('/inspections/{inspectionId}/migrationDate')
-  .onWrite(inspections.createOnAttributeWriteHandler(db));
+  .onWrite(inspections.createOnWriteAttributeWatcher(db));
 exports.inspectionMigrationDateWriteStaging = functionsStagingDatabase
   .ref('/inspections/{inspectionId}/migrationDate')
-  .onWrite(inspections.createOnAttributeWriteHandler(dbStaging));
+  .onWrite(inspections.createOnWriteAttributeWatcher(dbStaging));
 
 // Property templates onWrite
 exports.propertyTemplatesWrite = functions.database
   .ref('/properties/{propertyId}/templates')
-  .onWrite(properties.createOnTemplatesWriteHandler(db));
+  .onWrite(properties.createOnWriteTemplatesWatcher(db));
 exports.propertyTemplatesWriteStaging = functionsStagingDatabase
   .ref('/properties/{propertyId}/templates')
-  .onWrite(properties.createOnTemplatesWriteHandler(dbStaging));
+  .onWrite(properties.createOnWriteTemplatesWatcher(dbStaging));
 
 // Property onWrite
 exports.propertyWrite = functions.database
   .ref('/properties/{propertyId}')
-  .onWrite(properties.createOnWriteHandler(db));
+  .onWrite(properties.createOnWriteWatcher(db));
 exports.propertyWriteStaging = functionsStagingDatabase
   .ref('/properties/{propertyId}')
-  .onWrite(properties.createOnWriteHandler(dbStaging));
+  .onWrite(properties.createOnWriteWatcher(dbStaging));
 
 // Property onDelete
 exports.propertyDelete = functions.database
   .ref('/properties/{propertyId}')
   .onDelete(
-    properties.createOnDeleteHandler(
+    properties.createOnDeleteWatcher(
       db,
       storage,
       pubsubClient,
@@ -169,7 +169,7 @@ exports.propertyDelete = functions.database
 exports.propertyDeleteStaging = functionsStagingDatabase
   .ref('/properties/{propertyId}')
   .onDelete(
-    properties.createOnDeleteHandler(
+    properties.createOnDeleteWatcher(
       dbStaging,
       storage,
       pubsubClient,
@@ -181,12 +181,12 @@ exports.propertyDeleteStaging = functionsStagingDatabase
 exports.propertyTeamWrite = functions.database
   .ref('/properties/{propertyId}/team')
   .onWrite(
-    properties.createOnTeamsWriteHandler(db, pubsubClient, 'user-teams-sync')
+    properties.createOnWriteTeamsWatcher(db, pubsubClient, 'user-teams-sync')
   );
 exports.propertyTeamWriteStaging = functionsStagingDatabase
   .ref('/properties/{propertyId}/team')
   .onWrite(
-    properties.createOnTeamsWriteHandler(
+    properties.createOnWriteTeamsWatcher(
       dbStaging,
       pubsubClient,
       'staging-user-teams-sync'
@@ -197,12 +197,12 @@ exports.propertyTeamWriteStaging = functionsStagingDatabase
 exports.userTeamWrite = functions.database
   .ref('/users/{userId}/teams/{teamId}')
   .onWrite(
-    teams.createOnUserTeamWriteHandler(db, pubsubClient, 'user-teams-sync')
+    teams.createOnWriteUserTeamWatcher(db, pubsubClient, 'user-teams-sync')
   );
 exports.userTeamWriteStaging = functionsStagingDatabase
   .ref('/users/{userId}/teams/{teamId}')
   .onWrite(
-    teams.createOnUserTeamWriteHandler(
+    teams.createOnWriteUserTeamWatcher(
       dbStaging,
       pubsubClient,
       'staging-user-teams-sync'
@@ -212,23 +212,23 @@ exports.userTeamWriteStaging = functionsStagingDatabase
 // teams onDelete
 exports.teamDelete = functions.database
   .ref('/teams/{teamId}')
-  .onDelete(teams.teamDeleteHandler(db));
+  .onDelete(teams.createOnDeleteWatcher(db));
 exports.teamDeleteStaging = functionsStagingDatabase
   .ref('/teams/{teamId}')
-  .onDelete(teams.teamDeleteHandler(dbStaging));
+  .onDelete(teams.createOnDeleteWatcher(dbStaging));
 
 // Deficient Items
 exports.deficientItemsWrite = functions.database
   .ref('/inspections/{inspectionId}/updatedLastDate')
-  .onWrite(deficientItems.createOnInspectionWrite(db));
+  .onWrite(deficientItems.createOnWriteInspection(db));
 exports.deficientItemsWriteStaging = functionsStagingDatabase
   .ref('/inspections/{inspectionId}/updatedLastDate')
-  .onWrite(deficientItems.createOnInspectionWrite(dbStaging));
+  .onWrite(deficientItems.createOnWriteInspection(dbStaging));
 
 exports.deficientItemsPropertyMetaSync = functions.database
   .ref('/propertyInspectionDeficientItems/{propertyId}/{itemId}/state')
   .onUpdate(
-    deficientItems.createOnDiStateUpdate(
+    deficientItems.createOnUpdateState(
       db,
       pubsubClient,
       'deficient-item-status-update'
@@ -237,7 +237,7 @@ exports.deficientItemsPropertyMetaSync = functions.database
 exports.deficientItemsPropertyMetaSyncStaging = functionsStagingDatabase
   .ref('/propertyInspectionDeficientItems/{propertyId}/{itemId}/state')
   .onUpdate(
-    deficientItems.createOnDiStateUpdate(
+    deficientItems.createOnUpdateState(
       dbStaging,
       pubsubClient,
       'staging-deficient-item-status-update'
@@ -248,63 +248,63 @@ exports.deficientItemsArchiving = functions.database
   .ref(
     '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/archive'
   )
-  .onUpdate(deficientItems.createOnDiToggleArchiveUpdate(db));
+  .onUpdate(deficientItems.createOnUpdateArchive(db));
 exports.deficientItemsArchivingStaging = functionsStagingDatabase
   .ref(
     '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/archive'
   )
-  .onUpdate(deficientItems.createOnDiToggleArchiveUpdate(dbStaging));
+  .onUpdate(deficientItems.createOnUpdateArchive(dbStaging));
 
 exports.deficientItemsUnarchiving = functions.database
   .ref(
     '/archive/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/archive'
   )
-  .onUpdate(deficientItems.createOnDiToggleArchiveUpdate(db));
+  .onUpdate(deficientItems.createOnUpdateArchive(db));
 exports.deficientItemsUnarchivingStaging = functionsStagingDatabase
   .ref(
     '/archive/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/archive'
   )
-  .onUpdate(deficientItems.createOnDiToggleArchiveUpdate(dbStaging));
+  .onUpdate(deficientItems.createOnUpdateArchive(dbStaging));
 
 // Template onWrite
 exports.templateWrite = functions.database
   .ref('/templates/{templateId}')
-  .onWrite(templates.createOnWriteHandler(db));
+  .onWrite(templates.createOnWriteWatcher(db));
 exports.templateWriteStaging = functionsStagingDatabase
   .ref('/templates/{templateId}')
-  .onWrite(templates.createOnWriteHandler(dbStaging));
+  .onWrite(templates.createOnWriteWatcher(dbStaging));
 
 // Inspection updatedLastDate onWrite
 exports.inspectionUpdatedLastDateWrite = functions.database
   .ref('/inspections/{inspectionId}/updatedLastDate')
-  .onWrite(inspections.createOnAttributeWriteHandler(db));
+  .onWrite(inspections.createOnWriteAttributeWatcher(db));
 exports.inspectionUpdatedLastDateWriteStaging = functionsStagingDatabase
   .ref('/inspections/{inspectionId}/updatedLastDate')
-  .onWrite(inspections.createOnAttributeWriteHandler(dbStaging));
+  .onWrite(inspections.createOnWriteAttributeWatcher(dbStaging));
 
 // Inspection onWrite
 exports.inspectionWrite = functions.database
   .ref('/inspections/{inspectionId}')
-  .onWrite(inspections.createOnWriteHandler(db));
+  .onWrite(inspections.createOnWriteWatcher(db));
 exports.inspectionWriteStaging = functionsStagingDatabase
   .ref('/inspections/{inspectionId}')
-  .onWrite(inspections.createOnWriteHandler(dbStaging));
+  .onWrite(inspections.createOnWriteWatcher(dbStaging));
 
 // Inspection onDelete
 exports.inspectionDelete = functions.database
   .ref('/inspections/{inspectionId}')
-  .onDelete(inspections.createOnDeleteHandler(db, storage));
+  .onDelete(inspections.createOnDeleteWatcher(db, storage));
 exports.inspectionDeleteStaging = functionsStagingDatabase
   .ref('/inspections/{inspectionId}')
-  .onDelete(inspections.createOnDeleteHandler(dbStaging, storage));
+  .onDelete(inspections.createOnDeleteWatcher(dbStaging, storage));
 
 // Template Category Delete
 exports.templateCategoryDelete = functions.database
   .ref('/templateCategories/{categoryId}')
-  .onDelete(templateCategories.createOnDeleteHandler(db));
+  .onDelete(templateCategories.createOnDeleteWatcher(db));
 exports.templateCategoryDeleteStaging = functionsStagingDatabase
   .ref('/templateCategories/{categoryId}')
-  .onDelete(templateCategories.createOnDeleteHandler(dbStaging));
+  .onDelete(templateCategories.createOnDeleteWatcher(dbStaging));
 
 // GET Inspection PDF Report
 exports.inspectionPdfReport = functions.https.onRequest(

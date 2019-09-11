@@ -1,4 +1,4 @@
-const sendToRecipient = require('./send-to-recipient');
+const sendToRecipient = require('./utils/send-to-recipient');
 
 /**
  * Factory for push message on write handler

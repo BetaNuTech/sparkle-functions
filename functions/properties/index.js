@@ -1,13 +1,13 @@
 const cron = require('./cron');
-const createOnWriteHandler = require('./on-write-handler');
-const createOnDeleteHandler = require('./on-delete-handler');
-const createOnTemplatesWriteHandler = require('./on-templates-write-handler');
-const createOnTeamsWriteHandler = require('./on-team-write-handler');
+const createOnWriteWatcher = require('./on-write-watcher');
+const createOnDeleteWatcher = require('./on-delete-watcher');
+const createOnWriteTemplatesWatcher = require('./on-write-templates-watcher');
+const createOnWriteTeamsWatcher = require('./on-write-team-watcher');
 
 module.exports = {
   cron,
-  createOnDeleteHandler,
-  createOnWriteHandler,
-  createOnTemplatesWriteHandler,
-  createOnTeamsWriteHandler,
+  createOnDeleteWatcher,
+  createOnWriteWatcher,
+  createOnWriteTemplatesWatcher,
+  createOnWriteTeamsWatcher,
 };

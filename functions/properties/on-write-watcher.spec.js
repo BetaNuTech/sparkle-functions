@@ -1,20 +1,16 @@
 const { expect } = require('chai');
 const { createDatabaseStub } = require('../test-helpers/firebase');
-const createOnWriteHandler = require('./on-write-handler');
+const createOnWriteHandler = require('./on-write-watcher');
 
-describe('Templates', function() {
+describe('Properties', function() {
   describe('On Write Handler', function() {
     it('should create a handler that returns a promise resolving updates hash', () => {
-      const db = createDatabaseStub(
-        {},
-        { exists: () => true, val: () => ({}) }
-      ).value();
-      const actual = createOnWriteHandler(db)(
+      const actual = createOnWriteHandler(createDatabaseStub().value())(
         {
-          before: { exists: () => true, val: () => null },
-          after: { exists: () => false, val: () => null },
+          before: { exists: () => true, val: () => ({ templates: null }) },
+          after: { exists: () => false },
         },
-        { params: { templateId: '1' } }
+        { params: { propertyId: '1' } }
       );
       expect(actual).to.be.an.instanceof(Promise, 'returned a promise');
       return actual.then(result =>
