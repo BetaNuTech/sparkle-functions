@@ -1,9 +1,9 @@
 const { expect } = require('chai');
 const { createDatabaseStub } = require('../test-helpers/firebase');
-const createOnWriteHandler = require('./on-write-handler');
+const createOnWriteHandler = require('./on-write-watcher');
 
 describe('Templates', function() {
-  describe('On Write Handler', function() {
+  describe('On Write', function() {
     it('should create a handler that returns a promise resolving updates hash', () => {
       const db = createDatabaseStub(
         {},
