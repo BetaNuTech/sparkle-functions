@@ -3,7 +3,7 @@ const log = require('../utils/logger');
 const templatesList = require('../templates/list');
 const propertyTemplates = require('../property-templates');
 
-const LOG_PREFIX = 'template-categories: onDelete:';
+const PREFIX = 'template-categories: on-delete:';
 
 /**
  * Factory for the template category
@@ -30,13 +30,11 @@ module.exports = function createOnDeleteHandler(db) {
     const { categoryId } = context.params;
 
     if (!categoryId) {
-      log.warn(
-        `${LOG_PREFIX} incorrectly defined event parameter "categoryId"`
-      );
+      log.warn(`${PREFIX} incorrectly defined event parameter "categoryId"`);
       return;
     }
 
-    log.info(`${LOG_PREFIX} category ID: ${categoryId}`);
+    log.info(`${PREFIX} category ID: ${categoryId}`);
 
     // Lookup associated templates
     const templatesInCategory = await db
@@ -47,7 +45,7 @@ module.exports = function createOnDeleteHandler(db) {
 
     // Category has no associated templates
     if (!templatesInCategory.exists()) {
-      log.info(`${LOG_PREFIX} has no associated templates, exiting`);
+      log.info(`${PREFIX} has no associated templates, exiting`);
       return;
     }
 
@@ -56,7 +54,7 @@ module.exports = function createOnDeleteHandler(db) {
     const templateIds = Object.keys(templatesInCategory.val());
     templateIds.forEach(tempId => {
       updates[`/templates/${tempId}/category`] = null;
-      log.info(`${LOG_PREFIX} disassociating template: ${tempId}`);
+      log.info(`${PREFIX} disassociating template: ${tempId}`);
     });
 
     try {
@@ -73,7 +71,7 @@ module.exports = function createOnDeleteHandler(db) {
       }
     } catch (e) {
       log.error(
-        `${LOG_PREFIX} Failed to disassociate template relationship ${e}`
+        `${PREFIX} Failed to disassociate template relationship | ${e}`
       );
     }
 
