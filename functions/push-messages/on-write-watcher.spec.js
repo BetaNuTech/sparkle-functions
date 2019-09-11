@@ -1,5 +1,5 @@
 const { expect } = require('chai');
-const createOnWriteHandler = require('./on-write-handler');
+const createOnWriteHandler = require('./on-write-watcher');
 const {
   createDatabaseStub,
   createMessagingStub,
