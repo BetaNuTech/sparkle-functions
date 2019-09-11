@@ -1,5 +1,6 @@
-const log = require('../../utils/logger');
-const LOG_PREFIX = 'user-teams: user-teams-sync:';
+const log = require('../utils/logger');
+
+const PREFIX = 'user-teams: user-teams-write:';
 
 /**
  * Factory for /users/{userId}/teams/{teamId} on write handler
@@ -18,7 +19,7 @@ module.exports = function createOnUserTeamWriteHandler(
   return async (propertySnap, event) => {
     const { userId } = event.params;
 
-    log.info(`${LOG_PREFIX} user sync triggered for ${userId}`);
+    log.info(`${PREFIX} user sync triggered for ${userId}`);
 
     // publishing the sync request after 10 seconds
     setTimeout(() => {

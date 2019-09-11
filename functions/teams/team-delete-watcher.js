@@ -1,8 +1,8 @@
-const log = require('../../utils/logger');
-const usersModel = require('../../models/users');
-const teamsModel = require('../../models/teams');
+const log = require('../utils/logger');
+const usersModel = require('../models/users');
+const teamsModel = require('../models/teams');
 
-const LOG_PREFIX = 'teams: team-delete:';
+const PREFIX = 'teams: team-delete:';
 
 /**
  * Factory for /teams/{teamId} on delete handler
@@ -15,11 +15,11 @@ module.exports = function teamDeleteHandler(db) {
     const { teamId } = context.params;
 
     if (!teamId) {
-      log.warn(`${LOG_PREFIX} incorrectly defined event parameter "teamId"`);
+      log.warn(`${PREFIX} incorrectly defined event parameter "teamId"`);
       return;
     }
 
-    log.info(`${LOG_PREFIX} team deleted: ${teamId}`);
+    log.info(`${PREFIX} team deleted: ${teamId}`);
 
     const allPropertiesAffectedSnap = await teamsModel.getPropertiesByTeamId(
       db,
@@ -42,7 +42,7 @@ module.exports = function teamDeleteHandler(db) {
         );
       } catch (err) {
         log.error(
-          `${LOG_PREFIX} error when trying to remove properties' team ${err}`
+          `${PREFIX} error when trying to remove properties' team ${err}`
         );
       }
     }
@@ -59,9 +59,7 @@ module.exports = function teamDeleteHandler(db) {
           })
         );
       } catch (err) {
-        log.error(
-          `${LOG_PREFIX} error when trying to remove users' teams ${err}`
-        );
+        log.error(`${PREFIX} error when trying to remove users' teams ${err}`);
         throw err;
       }
     }
