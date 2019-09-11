@@ -13,6 +13,7 @@ const DEFICIENT_ITEM_ID = uuid();
 const INSPECTION_ID = uuid();
 const ITEM_ID = uuid();
 const USER_ID = uuid();
+const TRELLO_MEMBER_ID = uuid();
 const USER = { admin: true, corporate: true };
 const TRELLO_API_KEY = '3aac9516965';
 const TRELLO_AUTH_TOKEN = '2a0ecf16ceb';
@@ -35,6 +36,12 @@ const TRELLO_SYSTEM_INTEGRATION_DATA = {
   apikey: TRELLO_API_KEY,
   authToken: TRELLO_AUTH_TOKEN,
 };
+const TRELLO_INTEGRATION_DATA = {
+  createdAt: Date.now() / 1000,
+  updatedAt: Date.now() / 1000,
+  member: TRELLO_MEMBER_ID,
+  trelloUsername: 'test-user',
+};
 const INSPECTION_ITEM_DATA = {
   mainInputFourValue: 0,
   mainInputOneValue: 2,
@@ -53,6 +60,7 @@ const INTEGRATIONS_DATA = {
 const TRELLO_CREDENTIAL_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/organization`;
 const TRELLO_CARDS_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/properties/${PROPERTY_ID}/cards`;
 const TRELLO_INTEGRATIONS_DB_PATH = `/integrations/trello/properties/${PROPERTY_ID}`;
+const TRELLO_ORG_INTEGRATION_DB_PATH = '/integrations/trello/organization';
 const DEFICIENT_ITEM_DB_PATH = `${appConfig.deficientItems.dbPath}/${PROPERTY_ID}/${DEFICIENT_ITEM_ID}`;
 
 describe('Trello Create Deficient Item Cards', () => {
@@ -210,6 +218,7 @@ describe('Trello Create Deficient Item Cards', () => {
       .ref(`/inspections/${INSPECTION_ID}/template/items/${ITEM_ID}`)
       .set(INSPECTION_ITEM_DATA);
     await db.ref(TRELLO_INTEGRATIONS_DB_PATH).set(INTEGRATIONS_DATA);
+    await db.ref(TRELLO_ORG_INTEGRATION_DB_PATH).set(TRELLO_INTEGRATION_DATA);
 
     // Execute & Get Result
     const app = createTrelloDeficientItemCardHandler(
@@ -239,6 +248,47 @@ describe('Trello Create Deficient Item Cards', () => {
     expect(result.body.message).to.equal('successfully created trello card');
   });
 
+  it('should set the authorized trello member as the creator of the card', async () => {
+    // Stub Requests
+    nock('https://api.trello.com')
+      .post(
+        `/1/cards?idList=${TRELLO_LIST_ID}&keyFromSource=all&key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}`,
+        body => {
+          const { idMembers: actual } = body;
+          expect(actual).to.have.string(TRELLO_MEMBER_ID);
+          return body;
+        }
+      )
+      .reply(200, trelloCardPayload);
+
+    // setup database
+    await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
+    await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
+    await db
+      .ref(
+        `/propertyInspectionDeficientItems/${PROPERTY_ID}/${DEFICIENT_ITEM_ID}`
+      )
+      .set(DEFICIENT_ITEM_DATA);
+    await db
+      .ref(`/inspections/${INSPECTION_ID}/template/items/${ITEM_ID}`)
+      .set(INSPECTION_ITEM_DATA);
+    await db.ref(TRELLO_INTEGRATIONS_DB_PATH).set(INTEGRATIONS_DATA);
+    await db.ref(TRELLO_ORG_INTEGRATION_DB_PATH).set(TRELLO_INTEGRATION_DATA);
+
+    // Execute & Get Result
+    const app = createTrelloDeficientItemCardHandler(
+      db,
+      stubFirbaseAuth(USER_ID)
+    );
+    await request(app)
+      .post(API_PATH)
+      .send()
+      .set('Accept', 'application/json')
+      .set('Authorization', 'fb-jwt stubbed-by-auth')
+      .expect('Content-Type', /json/)
+      .expect(201);
+  });
+
   it("should add the trello card's short URL to its' associated deficient item", async () => {
     const expected = 'trello.com/c/short-url';
 
@@ -261,6 +311,7 @@ describe('Trello Create Deficient Item Cards', () => {
       .ref(`/inspections/${INSPECTION_ID}/template/items/${ITEM_ID}`)
       .set(INSPECTION_ITEM_DATA);
     await db.ref(TRELLO_INTEGRATIONS_DB_PATH).set(INTEGRATIONS_DATA);
+    await db.ref(TRELLO_ORG_INTEGRATION_DB_PATH).set(TRELLO_INTEGRATION_DATA);
 
     // Execute
     const app = createTrelloDeficientItemCardHandler(

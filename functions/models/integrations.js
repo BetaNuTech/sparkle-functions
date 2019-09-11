@@ -183,10 +183,20 @@ module.exports = modelSetup({
    * Get the public facing Slack organization details
    * @param  {firebaseAdmin.database} db - firbase database
    * @param  {Object} settings
-   * @return {Promise}
+   * @return {Promise} - resolves {DataSnapshot}
    */
   getSlackOrganization(db) {
     return db.ref(SLACK_ORG_PATH).once('value');
+  },
+
+  /**
+   * Get the public facing Trello organization details
+   * @param  {firebaseAdmin.database} db - firbase database
+   * @param  {Object} settings
+   * @return {Promise} - resolves {DataSnapshot}
+   */
+  getTrelloOrganization(db) {
+    return db.ref(TRELLO_ORG_PATH).once('value');
   },
 
   /**
