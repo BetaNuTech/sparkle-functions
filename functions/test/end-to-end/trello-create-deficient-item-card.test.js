@@ -30,6 +30,8 @@ const DEFICIENT_ITEM_DATA = {
   currentPlanToFix: 'replace pipe completely',
   inspection: INSPECTION_ID,
   item: ITEM_ID,
+  sectionTitle: 'Title',
+  sectionSubtitle: 'Sub Title',
 };
 const TRELLO_SYSTEM_INTEGRATION_DATA = {
   user: USER_ID,
@@ -73,11 +75,7 @@ describe('Trello Create Deficient Item Cards', () => {
   it('should send forbidden error when property has no trello auth credentials', async () => {
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
-    await db
-      .ref(
-        `/propertyInspectionDeficientItems/${PROPERTY_ID}/${DEFICIENT_ITEM_ID}`
-      )
-      .set(DEFICIENT_ITEM_DATA);
+    await db.ref(DEFICIENT_ITEM_DB_PATH).set(DEFICIENT_ITEM_DATA);
 
     // Execute & Get Result
     const app = createTrelloDeficientItemCardHandler(
@@ -127,11 +125,7 @@ describe('Trello Create Deficient Item Cards', () => {
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
     await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
-    await db
-      .ref(
-        `/propertyInspectionDeficientItems/${PROPERTY_ID}/${DEFICIENT_ITEM_ID}`
-      )
-      .set(DEFICIENT_ITEM_DATA);
+    await db.ref(DEFICIENT_ITEM_DB_PATH).set(DEFICIENT_ITEM_DATA);
     await db
       .ref(`/inspections/${INSPECTION_ID}/template/items/${ITEM_ID}`)
       .set(INSPECTION_ITEM_DATA);
@@ -169,11 +163,7 @@ describe('Trello Create Deficient Item Cards', () => {
     await db
       .ref(TRELLO_CARDS_DB_PATH)
       .set({ 'trello-card-id': DEFICIENT_ITEM_ID });
-    await db
-      .ref(
-        `/propertyInspectionDeficientItems/${PROPERTY_ID}/${DEFICIENT_ITEM_ID}`
-      )
-      .set(DEFICIENT_ITEM_DATA);
+    await db.ref(DEFICIENT_ITEM_DB_PATH).set(DEFICIENT_ITEM_DATA);
     await db
       .ref(`/inspections/${INSPECTION_ID}/template/items/${ITEM_ID}`)
       .set(INSPECTION_ITEM_DATA);
@@ -202,15 +192,17 @@ describe('Trello Create Deficient Item Cards', () => {
     const expected = `DEFICIENT ITEM (Thu, 12 Sep 2019)
 Score: 4 of 3
 Inspector Notes: a lot of rust around pipe
-Plan to fix: replace pipe completely`;
+Plan to fix: replace pipe completely
+Section: Title
+Subtitle: Sub Title`;
+    let actual = '';
 
     // Stub Requests
     nock('https://api.trello.com')
       .post(
         `/1/cards?idList=${TRELLO_LIST_ID}&keyFromSource=all&key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}`,
         body => {
-          const { desc: actual } = body;
-          expect(actual).to.equal(expected, 'compiled expected description');
+          actual = body.desc;
           return body;
         }
       )
@@ -219,11 +211,7 @@ Plan to fix: replace pipe completely`;
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
     await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
-    await db
-      .ref(
-        `/propertyInspectionDeficientItems/${PROPERTY_ID}/${DEFICIENT_ITEM_ID}`
-      )
-      .set(DEFICIENT_ITEM_DATA);
+    await db.ref(DEFICIENT_ITEM_DB_PATH).set(DEFICIENT_ITEM_DATA);
     await db
       .ref(`/inspections/${INSPECTION_ID}/template/items/${ITEM_ID}`)
       .set(INSPECTION_ITEM_DATA);
@@ -256,6 +244,7 @@ Plan to fix: replace pipe completely`;
     });
 
     expect(result.body.message).to.equal('successfully created trello card');
+    expect(actual).to.equal(expected, 'compiled correct card description');
   });
 
   it('should set the authorized trello member as the creator of the card', async () => {
@@ -274,11 +263,7 @@ Plan to fix: replace pipe completely`;
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
     await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
-    await db
-      .ref(
-        `/propertyInspectionDeficientItems/${PROPERTY_ID}/${DEFICIENT_ITEM_ID}`
-      )
-      .set(DEFICIENT_ITEM_DATA);
+    await db.ref(DEFICIENT_ITEM_DB_PATH).set(DEFICIENT_ITEM_DATA);
     await db
       .ref(`/inspections/${INSPECTION_ID}/template/items/${ITEM_ID}`)
       .set(INSPECTION_ITEM_DATA);
@@ -316,16 +301,12 @@ Plan to fix: replace pipe completely`;
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
     await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
-    await db
-      .ref(
-        `/propertyInspectionDeficientItems/${PROPERTY_ID}/${DEFICIENT_ITEM_ID}`
-      )
-      .set(
-        Object.assign({}, DEFICIENT_ITEM_DATA, {
-          currentPlanToFix: `I'll test`,
-          itemInspectorNotes: `<i>I</i>`,
-        })
-      );
+    await db.ref(DEFICIENT_ITEM_DB_PATH).set(
+      Object.assign({}, DEFICIENT_ITEM_DATA, {
+        currentPlanToFix: `I'll test`,
+        itemInspectorNotes: `<i>I</i>`,
+      })
+    );
     await db
       .ref(`/inspections/${INSPECTION_ID}/template/items/${ITEM_ID}`)
       .set(INSPECTION_ITEM_DATA);
@@ -359,11 +340,7 @@ Plan to fix: replace pipe completely`;
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
     await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
-    await db
-      .ref(
-        `/propertyInspectionDeficientItems/${PROPERTY_ID}/${DEFICIENT_ITEM_ID}`
-      )
-      .set(DEFICIENT_ITEM_DATA);
+    await db.ref(DEFICIENT_ITEM_DB_PATH).set(DEFICIENT_ITEM_DATA);
     await db
       .ref(`/inspections/${INSPECTION_ID}/template/items/${ITEM_ID}`)
       .set(INSPECTION_ITEM_DATA);
