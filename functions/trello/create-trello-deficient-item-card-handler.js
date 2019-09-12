@@ -157,6 +157,8 @@ module.exports = function createOnTrelloDeficientItemCard(db, auth) {
           highestItemScore,
           itemInspectorNotes: deficientItem.itemInspectorNotes || '',
           currentPlanToFix: deficientItem.currentPlanToFix || '',
+          sectionTitle: deficientItem.sectionTitle || '',
+          sectionSubtitle: deficientItem.sectionSubtitle || '',
         }),
       };
 
