@@ -12,6 +12,7 @@ module.exports = {
   itemTitle: 'Blah',
   sectionTitle: 'Test',
   sectionType: 'single',
+  sectionSubtitle: 'Sub Title',
   state: 'deferred', // transitioned from requires-action to deferred
   trelloCardURL: 'https://trello.com/c/dzRVzG5n',
   stateHistory: {

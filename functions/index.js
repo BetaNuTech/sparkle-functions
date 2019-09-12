@@ -11,21 +11,22 @@ const teams = require('./teams');
 const trello = require('./trello');
 const slack = require('./slack');
 const regTokens = require('./reg-tokens');
-const { firebase: config } = require('./config');
+const config = require('./config');
 
-const defaultApp = admin.initializeApp(config);
+const { firebase: firebaseConfig } = config;
+const defaultApp = admin.initializeApp(firebaseConfig);
 const db = defaultApp.database();
 const auth = admin.auth();
 const storage = admin.storage();
 const pubsubClient = new PubSub({
-  projectId: config ? config.projectId : '',
+  projectId: firebaseConfig ? firebaseConfig.projectId : '',
 });
 
 // Staging
 const functionsStagingDatabase = functions.database.instance(
-  config.stagingDatabaseName
+  firebaseConfig.stagingDatabaseName
 );
-const dbStaging = defaultApp.database(config.stagingDatabaseURL);
+const dbStaging = defaultApp.database(firebaseConfig.stagingDatabaseURL);
 
 // Send API version
 exports.latestVersion = functions.https.onRequest((request, response) =>
@@ -90,10 +91,18 @@ exports.getAllTrelloBoardListsStaging = functions.https.onRequest(
 
 // POST /properties/:propertyId/deficient-items/:deficientItemId/trello/card
 exports.createTrelloDeficientItemCard = functions.https.onRequest(
-  trello.createOnTrelloDeficientItemCardHandler(db, auth)
+  trello.createOnTrelloDeficientItemCardHandler(
+    db,
+    auth,
+    config.clientApps.web.productionDeficientItemURL
+  )
 );
 exports.createTrelloDeficientItemCardStaging = functions.https.onRequest(
-  trello.createOnTrelloDeficientItemCardHandler(dbStaging, auth)
+  trello.createOnTrelloDeficientItemCardHandler(
+    dbStaging,
+    auth,
+    config.clientApps.web.stagingDeficientItemURL
+  )
 );
 
 // GET /integrations/trello
