@@ -2,6 +2,7 @@ const assert = require('assert');
 const express = require('express');
 const cors = require('cors');
 const got = require('got');
+const hbs = require('handlebars');
 const log = require('../utils/logger');
 const authUser = require('../utils/auth-firebase-user');
 const toISO8601 = require('./utils/date-to-iso-8601');
@@ -23,6 +24,12 @@ const ITEM_VALUE_NAMES = config.inspectionItems.valueNames;
 module.exports = function createOnTrelloDeficientItemCard(db, auth) {
   assert(Boolean(db), 'has firebase database instance');
   assert(Boolean(auth), 'has firebase auth instance');
+
+  // Template all Card
+  // descriptions come from
+  const descriptionTemplate = hbs.compile(
+    config.deficientItems.trelloCardDescriptionTemplate
+  );
 
   /**
    * create trello card for requested deficient item
@@ -140,24 +147,17 @@ module.exports = function createOnTrelloDeficientItemCard(db, auth) {
     try {
       const trelloCardPayload = {
         name: deficientItem.itemTitle, // source inspection item name
-        desc: [
-          `DEFICIENT ITEM (${new Date(deficientItem.createdAt * 1000)
+        desc: descriptionTemplate({
+          createdAt: new Date(deficientItem.createdAt * 1000)
             .toGMTString()
             .split(' ')
             .slice(0, 4)
-            .join(' ')})`,
-          `Score: ${deficientItem.itemScore || 0} ${
-            highestItemScore > 0 ? 'of' : ''
-          } ${highestItemScore || ''}`.trim(),
-          deficientItem.itemInspectorNotes
-            ? `Inspector Notes: ${deficientItem.itemInspectorNotes}`
-            : '',
-          deficientItem.currentPlanToFix
-            ? `Plan to fix: ${deficientItem.currentPlanToFix}`
-            : '',
-        ]
-          .filter(Boolean)
-          .join('\n'),
+            .join(' '),
+          itemScore: deficientItem.itemScore || 0,
+          highestItemScore,
+          itemInspectorNotes: deficientItem.itemInspectorNotes || '',
+          currentPlanToFix: deficientItem.currentPlanToFix || '',
+        }),
       };
 
       // Set members to authorized Trello account
