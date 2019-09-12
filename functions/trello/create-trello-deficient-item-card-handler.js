@@ -19,17 +19,27 @@ const ITEM_VALUE_NAMES = config.inspectionItems.valueNames;
  * Factory for creating trello cards for deficient items
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
  * @param  {firebaseAdmin.auth} auth - Firebase Admin auth instance
+ * @param  {String} deficientItemUri - Source template for all DI URI's
  * @return {Function} - onRequest handler
  */
-module.exports = function createOnTrelloDeficientItemCard(db, auth) {
+module.exports = function createOnTrelloDeficientItemCard(
+  db,
+  auth,
+  deficientItemUri
+) {
   assert(Boolean(db), 'has firebase database instance');
   assert(Boolean(auth), 'has firebase auth instance');
+  assert(
+    deficientItemUri && typeof deficientItemUri === 'string',
+    'has deficient item URI template'
+  );
 
   // Template all Card
   // descriptions come from
   const descriptionTemplate = hbs.compile(
     config.deficientItems.trelloCardDescriptionTemplate
   );
+  const deficientItemUriTemplate = hbs.compile(deficientItemUri);
 
   /**
    * create trello card for requested deficient item
@@ -159,6 +169,7 @@ module.exports = function createOnTrelloDeficientItemCard(db, auth) {
           currentPlanToFix: deficientItem.currentPlanToFix || '',
           sectionTitle: deficientItem.sectionTitle || '',
           sectionSubtitle: deficientItem.sectionSubtitle || '',
+          url: deficientItemUriTemplate({ propertyId, deficientItemId }),
         }),
       };
 

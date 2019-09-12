@@ -3,7 +3,9 @@ Score: {{{itemScore}}}{{#if highestItemScore}} of {{{highestItemScore}}}{{/if}}
 {{#if itemInspectorNotes}}Inspector Notes: {{{itemInspectorNotes}}}{{/if}}
 {{#if currentPlanToFix}}Plan to fix: {{{currentPlanToFix}}}{{/if}}
 {{#if sectionTitle}}Section: {{{sectionTitle}}}{{/if}}
-{{#if sectionSubtitle}}Subtitle: {{{sectionSubtitle}}}{{/if}}`;
+{{#if sectionSubtitle}}Subtitle: {{{sectionSubtitle}}}{{/if}}{{#if url}}
+
+{{url}}{{/if}}`;
 const reqActionToPendingTransTempl = `{{{firstName}}} {{{lastName}}} ({{{email}}}) has moved the deficient item to PENDING state.
 
 DUE DATE: {{{currentDueDateDay}}}
