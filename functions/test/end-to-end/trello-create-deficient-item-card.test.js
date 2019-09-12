@@ -199,10 +199,20 @@ describe('Trello Create Deficient Item Cards', () => {
   });
 
   it('should succesfully create a trello card for the deficient item with expected details', async () => {
+    const expected = `DEFICIENT ITEM (Thu, 12 Sep 2019)
+Score: 4 of 3
+Inspector Notes: a lot of rust around pipe
+Plan to fix: replace pipe completely`;
+
     // Stub Requests
     nock('https://api.trello.com')
       .post(
-        `/1/cards?idList=${TRELLO_LIST_ID}&keyFromSource=all&key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}`
+        `/1/cards?idList=${TRELLO_LIST_ID}&keyFromSource=all&key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}`,
+        body => {
+          const { desc: actual } = body;
+          expect(actual).to.equal(expected, 'compiled expected description');
+          return body;
+        }
       )
       .reply(200, trelloCardPayload);
 
@@ -269,6 +279,53 @@ describe('Trello Create Deficient Item Cards', () => {
         `/propertyInspectionDeficientItems/${PROPERTY_ID}/${DEFICIENT_ITEM_ID}`
       )
       .set(DEFICIENT_ITEM_DATA);
+    await db
+      .ref(`/inspections/${INSPECTION_ID}/template/items/${ITEM_ID}`)
+      .set(INSPECTION_ITEM_DATA);
+    await db.ref(TRELLO_INTEGRATIONS_DB_PATH).set(INTEGRATIONS_DATA);
+    await db.ref(TRELLO_ORG_INTEGRATION_DB_PATH).set(TRELLO_INTEGRATION_DATA);
+
+    // Execute & Get Result
+    const app = createTrelloDeficientItemCardHandler(
+      db,
+      stubFirbaseAuth(USER_ID)
+    );
+    await request(app)
+      .post(API_PATH)
+      .send()
+      .set('Accept', 'application/json')
+      .set('Authorization', 'fb-jwt stubbed-by-auth')
+      .expect('Content-Type', /json/)
+      .expect(201);
+  });
+
+  it('should not escape the description of the card', async () => {
+    // Stub Requests
+    nock('https://api.trello.com')
+      .post(
+        `/1/cards?idList=${TRELLO_LIST_ID}&keyFromSource=all&key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}`,
+        body => {
+          const { desc: result } = body;
+          const actual = result.search(/&[#a-z0-9]+;/g);
+          expect(actual).to.equal(-1);
+          return body;
+        }
+      )
+      .reply(200, trelloCardPayload);
+
+    // setup database
+    await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
+    await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
+    await db
+      .ref(
+        `/propertyInspectionDeficientItems/${PROPERTY_ID}/${DEFICIENT_ITEM_ID}`
+      )
+      .set(
+        Object.assign({}, DEFICIENT_ITEM_DATA, {
+          currentPlanToFix: `I'll test`,
+          itemInspectorNotes: `<i>I</i>`,
+        })
+      );
     await db
       .ref(`/inspections/${INSPECTION_ID}/template/items/${ITEM_ID}`)
       .set(INSPECTION_ITEM_DATA);
