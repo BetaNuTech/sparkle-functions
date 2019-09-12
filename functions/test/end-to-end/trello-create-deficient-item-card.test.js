@@ -20,6 +20,7 @@ const TRELLO_AUTH_TOKEN = '2a0ecf16ceb';
 const TRELLO_BOARD_ID = '5d0ab7754066f880369a4d97';
 const TRELLO_LIST_ID = '5d0ab7754066f880369a4d99';
 const API_PATH = `/properties/${PROPERTY_ID}/deficient-items/${DEFICIENT_ITEM_ID}/trello/card`;
+const CLIENT_APP_URI_TEMPL = appConfig.clientApps.web.productionDeficientItemURL;
 const DEFICIENT_ITEM_DATA = {
   createdAt: Date.now() / 1000,
   currentDueDate: Date.now() / 1000,
@@ -80,7 +81,8 @@ describe('Trello Create Deficient Item Cards', () => {
     // Execute & Get Result
     const app = createTrelloDeficientItemCardHandler(
       db,
-      stubFirbaseAuth(USER_ID)
+      stubFirbaseAuth(USER_ID),
+      CLIENT_APP_URI_TEMPL
     );
     const result = await request(app)
       .post(API_PATH)
@@ -105,7 +107,8 @@ describe('Trello Create Deficient Item Cards', () => {
     // Execute & Get Result
     const app = createTrelloDeficientItemCardHandler(
       db,
-      stubFirbaseAuth(USER_ID)
+      stubFirbaseAuth(USER_ID),
+      CLIENT_APP_URI_TEMPL
     );
     const result = await request(app)
       .post(API_PATH)
@@ -133,7 +136,8 @@ describe('Trello Create Deficient Item Cards', () => {
     // Execute & Get Result
     const app = createTrelloDeficientItemCardHandler(
       db,
-      stubFirbaseAuth(USER_ID)
+      stubFirbaseAuth(USER_ID),
+      CLIENT_APP_URI_TEMPL
     );
     const result = await request(app)
       .post(API_PATH)
@@ -172,7 +176,8 @@ describe('Trello Create Deficient Item Cards', () => {
     // Execute & Get Result
     const app = createTrelloDeficientItemCardHandler(
       db,
-      stubFirbaseAuth(USER_ID)
+      stubFirbaseAuth(USER_ID),
+      CLIENT_APP_URI_TEMPL
     );
     const result = await request(app)
       .post(API_PATH)
@@ -194,7 +199,9 @@ Score: 4 of 3
 Inspector Notes: a lot of rust around pipe
 Plan to fix: replace pipe completely
 Section: Title
-Subtitle: Sub Title`;
+Subtitle: Sub Title
+
+https://sparkle-production.herokuapp.com/properties/${PROPERTY_ID}/deficient-items/${DEFICIENT_ITEM_ID}`;
     let actual = '';
 
     // Stub Requests
@@ -221,7 +228,8 @@ Subtitle: Sub Title`;
     // Execute & Get Result
     const app = createTrelloDeficientItemCardHandler(
       db,
-      stubFirbaseAuth(USER_ID)
+      stubFirbaseAuth(USER_ID),
+      CLIENT_APP_URI_TEMPL
     );
     const result = await request(app)
       .post(API_PATH)
@@ -273,7 +281,8 @@ Subtitle: Sub Title`;
     // Execute & Get Result
     const app = createTrelloDeficientItemCardHandler(
       db,
-      stubFirbaseAuth(USER_ID)
+      stubFirbaseAuth(USER_ID),
+      CLIENT_APP_URI_TEMPL
     );
     await request(app)
       .post(API_PATH)
@@ -316,7 +325,8 @@ Subtitle: Sub Title`;
     // Execute & Get Result
     const app = createTrelloDeficientItemCardHandler(
       db,
-      stubFirbaseAuth(USER_ID)
+      stubFirbaseAuth(USER_ID),
+      CLIENT_APP_URI_TEMPL
     );
     await request(app)
       .post(API_PATH)
@@ -350,7 +360,8 @@ Subtitle: Sub Title`;
     // Execute
     const app = createTrelloDeficientItemCardHandler(
       db,
-      stubFirbaseAuth(USER_ID)
+      stubFirbaseAuth(USER_ID),
+      CLIENT_APP_URI_TEMPL
     );
     await request(app)
       .post(API_PATH)
