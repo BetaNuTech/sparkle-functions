@@ -10,7 +10,7 @@ const {
 } = require('../utils/firebase-messaging');
 const log = require('../utils/logger');
 
-const LOG_PREFIX = 'push-messages: create:';
+const PREFIX = 'push-messages: create:';
 
 /**
  * Factory for send message creation endpoint
@@ -36,10 +36,10 @@ module.exports = function createOnCreatePushNotificationHandler(db, auth) {
       return res.status(401).send({ message: 'request not authorized' });
     }
 
-    log.info(`${LOG_PREFIX} requested by user: ${user.id}`);
+    log.info(`${PREFIX} requested by user: ${user.id}`);
 
     if (!user.admin) {
-      log.error(`${LOG_PREFIX} requested by non-admin user: ${user.id}`);
+      log.error(`${PREFIX} requested by non-admin user: ${user.id}`);
       return res.status(403).send({ message: 'requester not admin' });
     }
 
@@ -49,18 +49,18 @@ module.exports = function createOnCreatePushNotificationHandler(db, auth) {
 
       if (!notification) {
         message = 'invalid request';
-        log.error(`${LOG_PREFIX} request badly formed`);
+        log.error(`${PREFIX} request badly formed`);
       } else {
         message += 'notification requires:';
 
         if (!notification.title) {
           message += ' title';
-          log.error(`${LOG_PREFIX} request body missing notification title`);
+          log.error(`${PREFIX} request body missing notification title`);
         }
 
         if (!notification.message) {
           message += ' message';
-          log.error(`${LOG_PREFIX} request body missing notification message`);
+          log.error(`${PREFIX} request body missing notification message`);
         }
       }
 
@@ -90,10 +90,10 @@ module.exports = function createOnCreatePushNotificationHandler(db, auth) {
           recipientId: userId,
         });
         log.info(
-          `${LOG_PREFIX} created send message record: ${messageId} for user: ${userId}`
+          `${PREFIX} created send message record: ${messageId} for user: ${userId}`
         );
       } catch (e) {
-        log.error(`${LOG_PREFIX} ${e}`);
+        log.error(`${PREFIX} | ${e}`);
       }
     }
 

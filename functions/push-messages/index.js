@@ -1,9 +1,9 @@
 const onCreateRequestHandler = require('./on-create-request-handler');
-const createOnWriteHandler = require('./on-write-handler');
+const createOnWriteWatcher = require('./on-write-watcher');
 const createCRONHandler = require('./cron-handler');
 
 module.exports = {
   createCRONHandler,
-  createOnWriteHandler,
+  createOnWriteWatcher,
   onCreateRequestHandler,
 };

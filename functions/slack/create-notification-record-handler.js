@@ -4,6 +4,9 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const log = require('../utils/logger');
 const authUser = require('../utils/auth-firebase-user');
+const propertiesModel = require('../models/properties');
+const integrationsModel = require('../models/integrations');
+const notificationsModel = require('../models/notifications');
 
 const PREFIX = 'slack: create notification record:';
 
@@ -37,7 +40,7 @@ module.exports = function createOnSlackNotificationHandler(
    * @param  {Object} res Express res
    * @return {Promise}
    */
-  const createSlackNotificationHandler = async (req, res) => {
+  const handler = async (req, res) => {
     const { user, body } = req;
     const { title, message: userMessage, property: propertyId } = body;
 
@@ -76,24 +79,18 @@ module.exports = function createOnSlackNotificationHandler(
 
     // Property notification
     if (propertyId) {
-      let propertySnap = null;
+      let property = null;
       try {
-        propertySnap = await db.ref(`/properties/${propertyId}`).once('value');
+        const propertySnap = await propertiesModel.findRecord(db, propertyId);
+        property = propertySnap.val();
       } catch (err) {
         log.error(`${PREFIX} property lookup failed: ${err}`);
         return res.status(500).send({ message: 'Internal Error' });
       }
 
-      if (!propertySnap.exists()) {
+      if (!property) {
         const message = 'property cannot be found';
         return res.status(409).send({ message });
-      }
-
-      const property = propertySnap.val();
-      if (!property.slackChannel) {
-        return res.status(409).send({
-          message: 'no Slack channel associated with this property',
-        });
       }
 
       channelName = property.slackChannel;
@@ -101,25 +98,24 @@ module.exports = function createOnSlackNotificationHandler(
 
     // Admin notification
     if (!propertyId) {
-      let slackAdminChannelNameSnap = null;
       try {
-        slackAdminChannelNameSnap = await db
-          .ref('/integrations/slack/organization/channelName')
-          .once('value');
+        const slackOrgSnap = await integrationsModel.getSlackOrganization(db);
+        const adminChannelName = (slackOrgSnap.val() || {}).defaultChannelName;
+        if (adminChannelName) channelName = adminChannelName;
       } catch (err) {
         log.error(
-          `${PREFIX} organization slack channel integration lookup failed: ${err}`
+          `${PREFIX} organization slack channel integration lookup failed | ${err}`
         );
         return res.status(500).send({ message: 'Internal Error' });
       }
+    }
 
-      if (!slackAdminChannelNameSnap.exists()) {
-        return res
-          .status(409)
-          .send({ message: 'Admin channel has not been setup' });
-      }
-
-      channelName = slackAdminChannelNameSnap.val();
+    // Abandon when channel undiscovered
+    if (!channelName) {
+      const message = propertyId
+        ? 'No Slack channel associated with this property'
+        : 'Admin channel has not been setup';
+      return res.status(409).send({ message });
     }
 
     // Ensure channel `#` removed
@@ -128,10 +124,11 @@ module.exports = function createOnSlackNotificationHandler(
     // Create notification record
     // and queue notification sync task
     try {
-      const notificationRef = db
-        .ref(`/notifications/slack/${channelName}`)
-        .push();
-      await notificationRef.set({ title, message: userMessage });
+      const notificationRef = await notificationsModel.pushToSlackChannel(
+        db,
+        channelName,
+        { title, message: userMessage }
+      );
       await publisher.publish(Buffer.from(channelName));
 
       log.info(
@@ -152,10 +149,6 @@ module.exports = function createOnSlackNotificationHandler(
   // Create express app with single POST endpoint
   const app = express();
   app.use(cors(), bodyParser.json());
-  app.post(
-    '/notifications',
-    authUser(db, auth, true),
-    createSlackNotificationHandler
-  );
+  app.post('/notifications', authUser(db, auth, true), handler);
   return app;
 };

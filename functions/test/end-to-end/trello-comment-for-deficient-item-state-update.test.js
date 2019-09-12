@@ -132,6 +132,45 @@ describe('Trello Comment for Deficient Item State Updates', () => {
     expect(actual).to.equal(true);
   });
 
+  it("should not escape any characters of a new state transition comment for a deficient items' Trello card", async () => {
+    const pubSubMessage = {
+      data: Buffer.from(
+        `${PROPERTY_ID}/${DEFICIENT_ITEM_ID}/state/${DEFICIENT_ITEM_DATA.state}`
+      ),
+    };
+
+    // Stub Requests
+    nock('https://api.trello.com')
+      .post(uri => {
+        const actual = decodeURIComponent(uri).search(/&[#a-z0-9]+;/g);
+        expect(actual).to.equal(-1, 'found HTML symbol in payload');
+        return uri;
+      })
+      .reply(201, {});
+
+    // Setup database
+    const backToPendingDI = Object.assign({}, DEFICIENT_ITEM_DATA, {
+      state: 'pending',
+      currentPlanToFix: `I'll test`,
+    });
+    backToPendingDI.stateHistory['-current'].state = 'pending';
+    const older = backToPendingDI.stateHistory['-current'].createdAt - 1000;
+    backToPendingDI.stateHistory['-previous'] = {
+      state: 'go-back',
+      user: '-1',
+      createdAt: older,
+    };
+    await db.ref(DEFICIENT_ITEM_DB_PATH).set(backToPendingDI);
+    await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
+    await db.ref(TRELLO_CARDS_DB_PATH).set(TRELLO_CARD_DATA);
+    await db.ref(`/users/${USER_ID}`).set(USER_DATA);
+
+    // Execute
+    await test.wrap(cloudFunctions.trelloCommentsForDefItemStateUpdates)(
+      pubSubMessage
+    );
+  });
+
   it('should cleanup Trello card references when Trello API cannot find card for comment', async () => {
     const pubSubMessage = {
       data: Buffer.from(

@@ -15,6 +15,51 @@ const INTEGRATION_PAYLOAD = {
   accessToken: 'xoxp-3817900792-3817900802',
   scope: 'identify,incoming-webhook,chat:write,chat:write:bot',
 };
+const SLACK_API_JOIN_CHAN_RESPONSE = {
+  ok: true,
+  channel: {
+    id: 'CG9A762TT',
+    name: 'development',
+    is_channel: true,
+    created: 1550501929,
+    is_archived: false,
+    is_general: false,
+    unlinked: 0,
+    creator: 'U03Q1SGPL',
+    name_normalized: 'development',
+    is_shared: false,
+    is_org_shared: false,
+    is_member: true,
+    is_private: false,
+    is_mpim: false,
+    members: ['U03Q1SGPL', 'UJYB0DZK8'],
+    topic: {
+      value: '',
+      creator: '',
+      last_set: 0,
+    },
+    purpose: {
+      value: 'Talk about development',
+      creator: 'U03Q1SGPL',
+      last_set: 1550501929,
+    },
+    previous_names: [],
+  },
+  already_in_channel: false,
+};
+const SLACK_API_PUB_MSG_RESP = {
+  ok: true,
+  channel: 'CG9A762TT',
+  ts: '1562925218.001200',
+  message: {
+    type: 'message',
+    subtype: 'bot_message',
+    text: '    *THIS IS TITLE*\n\n   this is body',
+    ts: '1562925218.001200',
+    username: 'JWC Sparkle Inspections',
+    bot_id: 'BLC0KDFLG',
+  },
+};
 
 describe('Slack publish notification', () => {
   afterEach(async () => {
@@ -32,56 +77,13 @@ describe('Slack publish notification', () => {
         name: SLACK_CHANNEL,
         validate: true,
       })
-      .reply(200, {
-        ok: true,
-        channel: {
-          id: 'CG9A762TT',
-          name: 'development',
-          is_channel: true,
-          created: 1550501929,
-          is_archived: false,
-          is_general: false,
-          unlinked: 0,
-          creator: 'U03Q1SGPL',
-          name_normalized: 'development',
-          is_shared: false,
-          is_org_shared: false,
-          is_member: true,
-          is_private: false,
-          is_mpim: false,
-          members: ['U03Q1SGPL', 'UJYB0DZK8'],
-          topic: {
-            value: '',
-            creator: '',
-            last_set: 0,
-          },
-          purpose: {
-            value: 'Talk about development',
-            creator: 'U03Q1SGPL',
-            last_set: 1550501929,
-          },
-          previous_names: [],
-        },
-        already_in_channel: false,
-      });
+      .reply(200, SLACK_API_JOIN_CHAN_RESPONSE);
 
     nock('https://slack.com')
       .persist()
       .post('/api/chat.postMessage')
       .query(true)
-      .reply(200, {
-        ok: true,
-        channel: 'CG9A762TT',
-        ts: '1562925218.001200',
-        message: {
-          type: 'message',
-          subtype: 'bot_message',
-          text: '    *THIS IS TITLE*\n\n   this is body',
-          ts: '1562925218.001200',
-          username: 'JWC Sparkle Inspections',
-          bot_id: 'BLC0KDFLG',
-        },
-      });
+      .reply(200, SLACK_API_PUB_MSG_RESP);
 
     const notificationId = uuid();
     const notificationId2 = uuid();
@@ -124,5 +126,50 @@ describe('Slack publish notification', () => {
       false,
       `synced /notifications/slack/${SLACK_CHANNEL}/${notificationId2} by removing once message has sent`
     );
+  });
+
+  it('should record a successfully joined channel in integrations', async () => {
+    // Stub request
+    nock('https://slack.com')
+      .persist()
+      .post('/api/channels.join')
+      .query({
+        token: INTEGRATION_PAYLOAD.accessToken,
+        name: SLACK_CHANNEL,
+        validate: true,
+      })
+      .reply(200, SLACK_API_JOIN_CHAN_RESPONSE);
+
+    nock('https://slack.com')
+      .persist()
+      .post('/api/chat.postMessage')
+      .query(true)
+      .reply(200, SLACK_API_PUB_MSG_RESP);
+
+    const notificationId = uuid();
+
+    // Setup database
+    await db.ref(SLACK_CREDENTIAL_DB_PATH).set(INTEGRATION_PAYLOAD); // adding slack integration configuration
+
+    await db
+      .ref(`/notifications/slack/${SLACK_CHANNEL}/${notificationId}`)
+      .set({
+        title: 'testing notification',
+        message: 'we need to resolve this issue.',
+      }); // adding one notification that can be processed
+
+    // Execute
+    await test.wrap(cloudFunctions.notifications)();
+
+    // Test result
+    const snap = await db
+      .ref(
+        `/integrations/slack/organization/joinedChannelNames/${SLACK_CHANNEL}`
+      )
+      .once('value');
+    const actual = snap.val();
+
+    // Assertions
+    expect(actual).to.be.a('number');
   });
 });

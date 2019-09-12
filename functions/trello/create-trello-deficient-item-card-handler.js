@@ -2,6 +2,7 @@ const assert = require('assert');
 const express = require('express');
 const cors = require('cors');
 const got = require('got');
+const hbs = require('handlebars');
 const log = require('../utils/logger');
 const authUser = require('../utils/auth-firebase-user');
 const toISO8601 = require('./utils/date-to-iso-8601');
@@ -18,11 +19,27 @@ const ITEM_VALUE_NAMES = config.inspectionItems.valueNames;
  * Factory for creating trello cards for deficient items
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
  * @param  {firebaseAdmin.auth} auth - Firebase Admin auth instance
+ * @param  {String} deficientItemUri - Source template for all DI URI's
  * @return {Function} - onRequest handler
  */
-module.exports = function createOnTrelloDeficientItemCardHandler(db, auth) {
-  assert(Boolean(db), `${PREFIX} has firebase database instance`);
-  assert(Boolean(auth), `${PREFIX} has firebase auth instance`);
+module.exports = function createOnTrelloDeficientItemCard(
+  db,
+  auth,
+  deficientItemUri
+) {
+  assert(Boolean(db), 'has firebase database instance');
+  assert(Boolean(auth), 'has firebase auth instance');
+  assert(
+    deficientItemUri && typeof deficientItemUri === 'string',
+    'has deficient item URI template'
+  );
+
+  // Template all Card
+  // descriptions come from
+  const descriptionTemplate = hbs.compile(
+    config.deficientItems.trelloCardDescriptionTemplate
+  );
+  const deficientItemUriTemplate = hbs.compile(deficientItemUri);
 
   /**
    * create trello card for requested deficient item
@@ -72,12 +89,16 @@ module.exports = function createOnTrelloDeficientItemCardHandler(db, auth) {
       return res.status(403).send({ message: 'Error accessing trello token' });
     }
 
-    // Reject request to create Trello Card
-    // when already successfully created
-    const defItemsIdsWithTrelloCards = Object.values(
-      trelloCredentials.cards || {}
-    );
-    if (defItemsIdsWithTrelloCards.includes(deficientItemId)) {
+    // Reject request to re-create previously
+    // published Trello Card
+    try {
+      const trelloCardExists = await systemModel.isDeficientItemTrelloCardCreated(
+        db,
+        propertyId,
+        deficientItemId
+      );
+      if (trelloCardExists) throw Error();
+    } catch (err) {
       return res
         .status(409)
         .send({ message: 'Deficient Item already has published Trello Card' });
@@ -111,10 +132,20 @@ module.exports = function createOnTrelloDeficientItemCardHandler(db, auth) {
       if (!inspectionItemSnap.exists()) throw Error();
       inspectionItem = inspectionItemSnap.val();
     } catch (err) {
-      log.error(`${PREFIX} inspection item lookup failed ${err}`);
+      log.error(`${PREFIX} inspection item lookup failed | ${err}`);
       return res
         .status(409)
         .send({ message: 'Inspection of Deficient Item does not exist' });
+    }
+
+    let trelloOrganization = null;
+    try {
+      const trelloOrgSnap = await integrationsModel.getTrelloOrganization(db);
+      trelloOrganization = trelloOrgSnap.val() || {};
+    } catch (err) {
+      log.error(
+        `${PREFIX} Trello Organization integration lookup failed | ${err}`
+      );
     }
 
     // Lookup and sort for item's largest score value
@@ -126,26 +157,26 @@ module.exports = function createOnTrelloDeficientItemCardHandler(db, auth) {
     try {
       const trelloCardPayload = {
         name: deficientItem.itemTitle, // source inspection item name
-        desc: [
-          `DEFICIENT ITEM (${new Date(deficientItem.createdAt * 1000)
+        desc: descriptionTemplate({
+          createdAt: new Date(deficientItem.createdAt * 1000)
             .toGMTString()
             .split(' ')
             .slice(0, 4)
-            .join(' ')})`,
-          `Score: ${deficientItem.itemScore || 0} ${
-            highestItemScore > 0 ? 'of' : ''
-          } ${highestItemScore || ''}`.trim(),
-          deficientItem.itemInspectorNotes
-            ? `Inspector Notes: ${deficientItem.itemInspectorNotes}`
-            : '',
-          deficientItem.currentPlanToFix
-            ? `Plan to fix: ${deficientItem.currentPlanToFix}`
-            : '',
-        ]
-          .filter(Boolean)
-          .join('\n'),
-        idMembers: trelloCredentials.member,
+            .join(' '),
+          itemScore: deficientItem.itemScore || 0,
+          highestItemScore,
+          itemInspectorNotes: deficientItem.itemInspectorNotes || '',
+          currentPlanToFix: deficientItem.currentPlanToFix || '',
+          sectionTitle: deficientItem.sectionTitle || '',
+          sectionSubtitle: deficientItem.sectionSubtitle || '',
+          url: deficientItemUriTemplate({ propertyId, deficientItemId }),
+        }),
       };
+
+      // Set members to authorized Trello account
+      if (trelloOrganization.member) {
+        trelloCardPayload.idMembers = trelloOrganization.member;
+      }
 
       // Append current due date as date string
       if (deficientItem.currentDueDateDay) {

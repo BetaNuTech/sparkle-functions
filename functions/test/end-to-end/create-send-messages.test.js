@@ -110,7 +110,9 @@ describe('Create Send Messages', () => {
     // Assertions
     const adminIds = [admin1Id, admin2Id];
     Object.keys(results).forEach(messageId => {
-      const { title, message, recipientId, createdAt } = results[messageId];
+      const { title, message, /* recipientId, */ createdAt } = results[
+        messageId
+      ];
       expect(adminIds).to.include(admin1Id, 'wrote only messages to admins');
       expect(title).to.equal(expected.title, 'has expected title');
       expect(message).to.equal(expected.message, 'has expected message');
