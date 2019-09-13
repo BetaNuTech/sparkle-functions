@@ -1,7 +1,7 @@
 const log = require('../../utils/logger');
 const { fetchRecordIds, forEachChild } = require('../../utils/firebase-admin');
 
-const PREFIX = 'inspections: cron: cleanup-proxy-orphans:';
+const PREFIX = 'inspections: pubsub: cleanup-proxy-orphans:';
 
 /**
  * Cleanup all outdated inspecton proxies
@@ -19,7 +19,6 @@ module.exports = function createCleanupProxyOrphansHandler(
     .topic(topic)
     .onPublish(async function syncCleanupProxyOrphansHandler() {
       const updates = {};
-      log.info(`${PREFIX} received ${Date.now()}`);
 
       // Collect all property ID's
       const activePropertyIds = await fetchRecordIds(db, '/properties');
@@ -39,10 +38,12 @@ module.exports = function createCleanupProxyOrphansHandler(
             await db.ref(`/propertyInspectionsList/${propertyId}`).remove();
             updates[`/propertyInspectionsList/${propertyId}`] = 'removed';
             log.info(
-              `${PREFIX} removed archived property ${propertyId} proxies at /propertyInspectionsList`
+              `${PREFIX} ${topic}: removed archived property ${propertyId} proxies at /propertyInspectionsList`
             );
-          } catch (e) {
-            log.error(`${PREFIX} /propertyInspectionsList/${propertyId}: ${e}`);
+          } catch (err) {
+            log.error(
+              `${PREFIX} ${topic}: /propertyInspectionsList/${propertyId} | ${err}`
+            );
           }
         }
       );
@@ -72,11 +73,11 @@ module.exports = function createCleanupProxyOrphansHandler(
                 `/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`
               ] = 'removed';
               log.info(
-                `${PREFIX} removed archived inspection: ${inspectionId} proxy at /propertyInspectionsList/${propertyId}/inspections`
+                `${PREFIX} ${topic} removed archived inspection "${inspectionId}" property proxy`
               );
-            } catch (e) {
+            } catch (err) {
               log.error(
-                `${PREFIX} /propertyInspectionsList/${propertyId}/inspections/${inspectionId}: ${e}`
+                `${PREFIX} ${topic} unexpected cleanup error for inspection "${inspectionId}" | ${err}`
               );
             }
           }
@@ -98,11 +99,11 @@ module.exports = function createCleanupProxyOrphansHandler(
             await db.ref(`/completedInspectionsList/${inspectionId}`).remove();
             updates[`/completedInspectionsList/${inspectionId}`] = 'removed';
             log.info(
-              `${PREFIX} removed archived inspection ${inspectionId} proxies at /completedInspectionsList`
+              `${PREFIX} ${topic}: removed archived inspection "${inspectionId}" proxies`
             );
-          } catch (e) {
+          } catch (err) {
             log.error(
-              `${PREFIX} /completedInspectionsList/${inspectionId}: ${e}`
+              `${PREFIX} ${topic}: error removing completed inspection proxy for inspection "${inspectionId}" | ${err}`
             );
           }
         }

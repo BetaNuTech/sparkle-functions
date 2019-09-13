@@ -1,12 +1,12 @@
 const moment = require('moment');
-const log = require('../utils/logger');
-const systemModel = require('../models/system');
-const defItemModel = require('../models/deficient-items');
-const toISO8601 = require('./utils/date-to-iso-8601');
-const parseDiStateEventMsg = require('./utils/parse-di-state-event-msg');
-const findPreviousDIHistory = require('../deficient-items/utils/find-history');
+const log = require('../../utils/logger');
+const systemModel = require('../../models/system');
+const defItemModel = require('../../models/deficient-items');
+const toISO8601 = require('../utils/date-to-iso-8601');
+const parseDiStateEventMsg = require('../utils/parse-di-state-event-msg');
+const findPreviousDIHistory = require('../../deficient-items/utils/find-history');
 
-const PREFIX = 'trello: update-update-card-due-date-subscriber:';
+const PREFIX = 'trello: pubsub: update-update-card-due-date:';
 
 /**
  * Update due dates of previously created Trello cards
@@ -15,11 +15,7 @@ const PREFIX = 'trello: update-update-card-due-date-subscriber:';
  * @param  {firebaseadmin.database} db
  * @return {functions.cloudfunction}
  */
-module.exports = function createUpdateDueDateSubscriber(
-  topic = '',
-  pubsub,
-  db
-) {
+module.exports = function createUpdateDueDate(topic = '', pubsub, db) {
   return pubsub.topic(topic).onPublish(async message => {
     let propertyId = '';
     let deficientItemId = '';
@@ -31,16 +27,12 @@ module.exports = function createUpdateDueDateSubscriber(
         message
       );
     } catch (err) {
-      const msgErr = `${PREFIX} ${topic} message error: ${err}`;
-      log.error(msgErr);
-      throw Error(msgErr);
+      // Wrap error
+      throw Error(`${PREFIX} ${topic} | ${err}`);
     }
 
     log.info(
-      `${PREFIX} received ${parseInt(
-        Date.now() / 1000,
-        10
-      )} for DI: ${propertyId}/${deficientItemId} | state: ${deficientItemState}`
+      `${PREFIX} ${topic}: for DI "${propertyId}/${deficientItemId}" and state "${deficientItemState}"`
     );
 
     // Find created Trello Card reference
@@ -52,12 +44,14 @@ module.exports = function createUpdateDueDateSubscriber(
         deficientItemId
       );
     } catch (err) {
-      log.error(`${PREFIX} ${err}`);
-      throw err;
+      // Wrap error
+      throw Error(`${PREFIX} ${topic} | ${err}`);
     }
 
     if (!trelloCardId) {
-      log.info(`${PREFIX} Deficient Item has no Trello Card, exiting`);
+      log.info(
+        `${PREFIX} ${topic}: Deficient Item has no Trello Card, exiting`
+      );
       return; // eslint-disable-line no-useless-return
     }
 
@@ -71,11 +65,11 @@ module.exports = function createUpdateDueDateSubscriber(
       );
       deficientItem = deficientItemSnap.val();
     } catch (err) {
-      log.error(`${PREFIX} | ${err}`);
+      log.error(`${PREFIX} ${topic} | ${err}`);
     }
 
     if (!deficientItem) {
-      log.error(`${PREFIX} bad deficient item reference`);
+      log.error(`${PREFIX} ${topic}: bad deficient item reference`);
       return; // eslint-disable-line no-useless-return
     }
 
@@ -84,8 +78,10 @@ module.exports = function createUpdateDueDateSubscriber(
     const findHistory = findPreviousDIHistory(deficientItem);
     const diDueDateHistory = findHistory('dueDates');
     const diDeferDateHistory = findHistory('deferredDates');
+    const diStateHistory = findHistory('stateHistory');
     const currDiDueDate = diDueDateHistory.current;
     const currDeferDate = diDeferDateHistory.current;
+    const currStateHist = diStateHistory.current;
 
     if (
       deficientItemState === 'deferred' &&
@@ -100,17 +96,20 @@ module.exports = function createUpdateDueDateSubscriber(
           propertyId,
           deficientItemId,
           trelloCardId,
-          { due: toISO8601(getCurrentDueDay(currDeferDate.deferredDate)) }
+          {
+            due: toISO8601(getCurrentDueDay(currDeferDate.deferredDate)),
+            dueComplete: false,
+          }
         );
 
         log.info(
-          `${PREFIX} successfully updated Trello card due date to deferred date`
+          `${PREFIX} ${topic}: successfully updated Trello card due date to deferred date`
         );
       } catch (err) {
-        log.error(
-          `${PREFIX} failed to update Trello card due date to deferred date`
+        // Wrap error
+        throw Error(
+          `${PREFIX} ${topic}: failed to update Trello card due date to deferred date | ${err}`
         );
-        throw err;
       }
     } else if (currDiDueDate && updatedAt === currDiDueDate.createdAt) {
       // PUT due date as Trello card Due Date
@@ -120,13 +119,43 @@ module.exports = function createUpdateDueDateSubscriber(
           propertyId,
           deficientItemId,
           trelloCardId,
-          { due: toISO8601(deficientItem.currentDueDateDay) }
+          {
+            due: toISO8601(deficientItem.currentDueDateDay),
+            dueComplete: false,
+          }
         );
 
-        log.info(`${PREFIX} successfully updated Trello card due date`);
+        log.info(
+          `${PREFIX} ${topic}: successfully updated Trello card due date`
+        );
       } catch (err) {
-        log.error(`${PREFIX} failed to update Trello card due date`);
-        throw err;
+        // Wrap error
+        throw Error(
+          `${PREFIX} ${topic}: failed to update Trello card due date | ${err}`
+        );
+      }
+    } else if (
+      currStateHist.state === 'go-back' &&
+      updatedAt === currStateHist.createdAt
+    ) {
+      // PUT remove any due date and completed label
+      try {
+        await systemModel.updateTrelloCard(
+          db,
+          propertyId,
+          deficientItemId,
+          trelloCardId,
+          { due: null, dueComplete: false }
+        );
+
+        log.info(
+          `${PREFIX} ${topic}: successfully removed Trello card due date/completion label`
+        );
+      } catch (err) {
+        // Wrap error
+        throw Error(
+          `${PREFIX} ${topic}: failed to update Trello card due date/completion label | ${err}`
+        );
       }
     }
   });

@@ -72,18 +72,11 @@ describe('Trello Card Due Date Updates', () => {
     await db.ref(DEFICIENT_ITEM_DB_PATH).set(deficientItemData);
 
     // Stub Requests
-    nock('https://api.trello.com')
-      .filteringPath(/text=[^&]*/g, 'text=test')
-      .post(
-        `/1/cards/${TRELLO_CARD_ID}/actions/comments?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&text=test`
-      )
-      .reply(201, {});
-
     const updatedDueDate = nock('https://api.trello.com')
       .put(
         `/1/cards/${TRELLO_CARD_ID}?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&due=${encodeURIComponent(
           expected
-        )}`
+        )}&dueComplete=false`
       )
       .reply(200, {});
 
@@ -120,18 +113,47 @@ describe('Trello Card Due Date Updates', () => {
     await db.ref(DEFICIENT_ITEM_DB_PATH).set(deficientItemData);
 
     // Stub Requests
-    nock('https://api.trello.com')
-      .filteringPath(/text=[^&]*/g, 'text=test')
-      .post(
-        `/1/cards/${TRELLO_CARD_ID}/actions/comments?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&text=test`
-      )
-      .reply(201, {});
-
     const updatedDueDate = nock('https://api.trello.com')
       .put(
         `/1/cards/${TRELLO_CARD_ID}?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&due=${encodeURIComponent(
           expected
-        )}`
+        )}&dueComplete=false`
+      )
+      .reply(200, {});
+
+    // Execute
+    await test.wrap(cloudFunctions.trelloCardDueDateUpdates)(pubSubMessage);
+
+    const actual = updatedDueDate.isDone();
+    expect(actual).to.equal(true);
+  });
+
+  it("should remove a trello card's due date and completion label when its' deficient item moves into go-back state", async () => {
+    const updatedState = 'go-back';
+    const pubSubMessage = {
+      data: Buffer.from(
+        `${PROPERTY_ID}/${DEFICIENT_ITEM_ID}/state/${updatedState}`
+      ),
+    };
+    const timestamp = Date.now() / 1000;
+    const deficientItemData = Object.assign({}, DEFICIENT_ITEM_DATA, {
+      state: updatedState,
+    });
+    delete deficientItemData.currentDueDateDay;
+    deficientItemData.updatedAt = timestamp;
+    deficientItemData.stateHistory['-current'].state = updatedState;
+    deficientItemData.stateHistory['-current'].createdAt = timestamp;
+
+    // Setup database
+    await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
+    await db.ref(TRELLO_CARDS_DB_PATH).set(TRELLO_CARD_DATA);
+    await db.ref(`/users/${USER_ID}`).set(USER_DATA);
+    await db.ref(DEFICIENT_ITEM_DB_PATH).set(deficientItemData);
+
+    // Stub Requests
+    const updatedDueDate = nock('https://api.trello.com')
+      .put(
+        `/1/cards/${TRELLO_CARD_ID}?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&due=null&dueComplete=false`
       )
       .reply(200, {});
 

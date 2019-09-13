@@ -4,9 +4,9 @@ const createOnGetAllTrelloBoardListsHandler = require('./get-all-trello-board-li
 const createOnTrelloDeficientItemCardHandler = require('./create-trello-deficient-item-card-handler');
 const createGetTrelloAuthorizorHandler = require('./get-trello-authorizor-handler');
 const createDeleteTrelloAuthHandler = require('./delete-trello-auth-handler');
-const createCommentForDiStateSubscriber = require('./create-comment-for-deficient-item-state-subscriber');
-const createUpdateDueDateSubscriber = require('./update-card-due-date-subscriber');
-const createCloseDiCardSubscriber = require('./close-deficient-item-card-subscriber');
+const createCloseDiCard = require('./pubsub/close-deficient-item-card');
+const createCommentForDiState = require('./pubsub/create-comment-for-deficient-item-state');
+const createUpdateDueDate = require('./pubsub/update-card-due-date');
 
 module.exports = {
   createOnUpsertTrelloTokenHandler,
@@ -15,7 +15,10 @@ module.exports = {
   createOnTrelloDeficientItemCardHandler,
   createGetTrelloAuthorizorHandler,
   createDeleteTrelloAuthHandler,
-  createCommentForDiStateSubscriber,
-  createUpdateDueDateSubscriber,
-  createCloseDiCardSubscriber,
+
+  pubsub: {
+    createCloseDiCard,
+    createCommentForDiState,
+    createUpdateDueDate,
+  },
 };

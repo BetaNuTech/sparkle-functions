@@ -1,9 +1,14 @@
-const cron = require('./cron');
 const list = require('./utils/list');
 const createOnWriteWatcher = require('./on-write-watcher');
+const createSyncTemplatesList = require('./pubsub/sync-templates-list');
+const createSyncPropertyTemplatesList = require('./pubsub/sync-property-templates-list');
 
 module.exports = {
   list,
-  cron,
   createOnWriteWatcher,
+
+  pubsub: {
+    createSyncTemplatesList,
+    createSyncPropertyTemplatesList,
+  },
 };

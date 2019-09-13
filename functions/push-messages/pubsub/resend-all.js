@@ -1,5 +1,7 @@
-const log = require('../utils/logger');
-const sendToRecipient = require('./utils/send-to-recipient');
+const log = require('../../utils/logger');
+const sendToRecipient = require('../utils/send-to-recipient');
+
+const PREFIX = 'push-messages: pubsub: resend-all';
 
 /**
  * Clean any lingering /push-messages from database
@@ -10,12 +12,9 @@ const sendToRecipient = require('./utils/send-to-recipient');
  * @param {firebaseAdmin.messaging} messaging
  * @return {functions.CloudFunction}
  */
-module.exports = function createCRONHandler(topic = '', pubSub, db, messaging) {
-  const logPrefix = `push-messages: onPublish: ${topic}:`;
+module.exports = function createResendAll(topic = '', pubSub, db, messaging) {
   return pubSub.topic(topic).onPublish(async () => {
     const updates = {};
-    log.info(`${logPrefix} received ${Date.now()}`);
-
     const snapShot = await db.ref('/sendMessages').once('value');
 
     // No messages in database
@@ -46,9 +45,9 @@ module.exports = function createCRONHandler(topic = '', pubSub, db, messaging) {
           messageData
         );
         await db.ref(path).remove();
-        log.info(`${logPrefix} resent message ${id} successfully`);
-      } catch (e) {
-        log.error(`${logPrefix} resend message ${id} failed`, e);
+        log.info(`${PREFIX} ${topic}: resent message "${id}" successfully`);
+      } catch (err) {
+        log.error(`${PREFIX} ${topic}: resend message "${id}" failed | ${err}`);
       }
     }
 
