@@ -78,8 +78,10 @@ module.exports = function createUpdateDueDate(topic = '', pubsub, db) {
     const findHistory = findPreviousDIHistory(deficientItem);
     const diDueDateHistory = findHistory('dueDates');
     const diDeferDateHistory = findHistory('deferredDates');
+    const diStateHistory = findHistory('stateHistory');
     const currDiDueDate = diDueDateHistory.current;
     const currDeferDate = diDeferDateHistory.current;
+    const currStateHist = diStateHistory.current;
 
     if (
       deficientItemState === 'deferred' &&
@@ -94,7 +96,10 @@ module.exports = function createUpdateDueDate(topic = '', pubsub, db) {
           propertyId,
           deficientItemId,
           trelloCardId,
-          { due: toISO8601(getCurrentDueDay(currDeferDate.deferredDate)) }
+          {
+            due: toISO8601(getCurrentDueDay(currDeferDate.deferredDate)),
+            dueComplete: false,
+          }
         );
 
         log.info(
@@ -114,7 +119,10 @@ module.exports = function createUpdateDueDate(topic = '', pubsub, db) {
           propertyId,
           deficientItemId,
           trelloCardId,
-          { due: toISO8601(deficientItem.currentDueDateDay) }
+          {
+            due: toISO8601(deficientItem.currentDueDateDay),
+            dueComplete: false,
+          }
         );
 
         log.info(
@@ -124,6 +132,29 @@ module.exports = function createUpdateDueDate(topic = '', pubsub, db) {
         // Wrap error
         throw Error(
           `${PREFIX} ${topic}: failed to update Trello card due date | ${err}`
+        );
+      }
+    } else if (
+      currStateHist.state === 'go-back' &&
+      updatedAt === currStateHist.createdAt
+    ) {
+      // PUT remove any due date and completed label
+      try {
+        await systemModel.updateTrelloCard(
+          db,
+          propertyId,
+          deficientItemId,
+          trelloCardId,
+          { due: null, dueComplete: false }
+        );
+
+        log.info(
+          `${PREFIX} ${topic}: successfully removed Trello card due date/completion label`
+        );
+      } catch (err) {
+        // Wrap error
+        throw Error(
+          `${PREFIX} ${topic}: failed to update Trello card due date/completion label | ${err}`
         );
       }
     }
