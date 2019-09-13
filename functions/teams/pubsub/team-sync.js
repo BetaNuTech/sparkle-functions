@@ -2,7 +2,7 @@ const log = require('../../utils/logger');
 const adminUtils = require('../../utils/firebase-admin');
 const teamsModel = require('../../models/teams');
 
-const LOG_PREFIX = 'teams: cron: team-sync:';
+const PREFIX = 'teams: pubsub: team-sync:';
 
 /**
  * Sync teams with all property/teams as its the
@@ -17,14 +17,14 @@ module.exports = function createSyncTeamHandler(topic = '', pubsub, db) {
     const updates = {};
     let propertyAndTeam = {};
 
-    log.info(`${LOG_PREFIX} received ${Date.now()}`);
+    log.info(`${PREFIX} received at: ${Math.round(Date.now() / 1000)}`);
 
     try {
       // load all properties team associations (source of truth)
       propertyAndTeam = await teamsModel.getPropertyRelationships(db);
     } catch (err) {
-      log.error(`${LOG_PREFIX} ${err}`);
-      throw err;
+      // Wrap error
+      throw Error(`${PREFIX} ${topic} | ${err}`);
     }
 
     try {
@@ -46,8 +46,8 @@ module.exports = function createSyncTeamHandler(topic = '', pubsub, db) {
         }
       });
     } catch (err) {
-      log.error(`${LOG_PREFIX} for each team sync failed: ${err}`);
-      throw err;
+      // Wrap error
+      throw Error(`${PREFIX} ${topic} for each team sync failed | ${err}`);
     }
 
     return updates;
