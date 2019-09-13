@@ -425,23 +425,23 @@ exports.deficientItemsOverdueSyncStaging = deficientItems.pubsub.createSyncOverd
   dbStaging
 );
 
-exports.teamsSync = teams.cron.createSyncTeamHandler(
+exports.teamsSync = teams.pubsub.createSyncTeam(
   'teams-sync',
   functions.pubsub,
   db
 );
-exports.teamsSyncStaging = teams.cron.createSyncTeamHandler(
+exports.teamsSyncStaging = teams.pubsub.createSyncTeam(
   'staging-teams-sync',
   functions.pubsub,
   dbStaging
 );
 
-exports.userTeamsSync = teams.cron.createSyncUserTeamHandler(
+exports.userTeamsSync = teams.pubsub.createSyncUserTeam(
   'user-teams-sync',
   functions.pubsub,
   db
 );
-exports.userTeamsSyncStaging = teams.cron.createSyncUserTeamHandler(
+exports.userTeamsSyncStaging = teams.pubsub.createSyncUserTeam(
   'staging-user-teams-sync',
   functions.pubsub,
   dbStaging

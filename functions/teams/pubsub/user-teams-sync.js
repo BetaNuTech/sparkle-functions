@@ -1,7 +1,7 @@
 const log = require('../../utils/logger');
 const teamsModel = require('../../models/teams');
 
-const LOG_PREFIX = 'teams: cron: user-team-sync:';
+const PREFIX = 'teams: pubsub: user-team-sync:';
 
 /**
  * Sync users with all property/teams as its the
@@ -19,7 +19,9 @@ module.exports = function createSyncUserTeamHandler(topic = '', pubsub, db) {
       let userId = null;
       let propertyAndTeam = {};
 
-      log.info(`${LOG_PREFIX} received ${Date.now()}`);
+      log.info(
+        `${PREFIX} ${topic}: received at: ${Math.round(Date.now() / 1000)}`
+      );
 
       try {
         userId = message.data
@@ -27,21 +29,21 @@ module.exports = function createSyncUserTeamHandler(topic = '', pubsub, db) {
           : '';
 
         if (!userId) {
-          throw new Error(`topic: ${topic} received invalid message`);
+          throw Error('received invalid message');
         }
       } catch (err) {
-        const msgErr = `${LOG_PREFIX} message error: ${err}`;
+        const msgErr = `${PREFIX} ${topic}: message error | ${err}`;
         log.error(msgErr);
         throw Error(msgErr);
       }
 
-      log.info(`${LOG_PREFIX} syncing user teams of: ${userId}`);
+      log.info(`${PREFIX} ${topic}: syncing user teams of: "${userId}"`);
 
       // load all properties team associations (source of truth)
       try {
         propertyAndTeam = await teamsModel.getPropertyRelationships(db);
       } catch (err) {
-        log.error(`${LOG_PREFIX} ${err}`);
+        log.error(`${PREFIX} ${topic} | ${err}`);
         throw err;
       }
 
@@ -68,11 +70,10 @@ module.exports = function createSyncUserTeamHandler(topic = '', pubsub, db) {
           await db.ref(`/users/${userId}/teams`).set(usersUpdatedTeams);
           updates[`/users/${userId}/teams`] = 'synced';
         } catch (err) {
-          const syncErr = Error(
-            `${LOG_PREFIX} error syncing user ${userId} teams: ${err}`
+          // wrap error
+          throw Error(
+            `${PREFIX} ${topic}: error syncing user "${userId}" teams | ${err}`
           );
-          log.error(`${syncErr}`);
-          throw syncErr;
         }
       }
 
