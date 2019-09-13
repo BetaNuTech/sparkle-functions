@@ -1,7 +1,7 @@
 const log = require('../../utils/logger');
 const adminUtils = require('../../utils/firebase-admin');
 
-const LOG_PREFIX = 'reg-tokens: cron: sync-outdated:';
+const PREFIX = 'reg-tokens: pubsub: sync-outdated:';
 const OUTDATED_OFFSET = 15778800; // seconds in 6 months
 
 /**
@@ -12,10 +12,10 @@ const OUTDATED_OFFSET = 15778800; // seconds in 6 months
  * @param  {firebaseAdmin.database} db
  * @return {functions.CloudFunction}
  */
-module.exports = function createSyncOudatedHandler(topic = '', pubSub, db) {
+module.exports = function createSyncOudated(topic = '', pubSub, db) {
   return pubSub.topic(topic).onPublish(async () => {
     const updates = {};
-    log.info(`${LOG_PREFIX} received ${Date.now()}`);
+    log.info(`${PREFIX} received ${Math.round(Date.now() / 1000)}`);
 
     // Collect boolean tokens to updates hash
     await adminUtils.forEachChild(
@@ -28,20 +28,20 @@ module.exports = function createSyncOudatedHandler(topic = '', pubSub, db) {
         );
 
         // Set boolean token to updates
-        booleanTokenIds.forEach(
-          tokenId => (updates[`/registrationTokens/${userId}/${tokenId}`] = now)
-        );
+        booleanTokenIds.forEach(tokenId => {
+          updates[`/registrationTokens/${userId}/${tokenId}`] = now;
+        });
       }
     );
 
     try {
       // Update boolean device tokens to timestamps
       Object.keys(updates).forEach(updatePath =>
-        log.info(`${LOG_PREFIX} set timestamp at: ${updatePath}`)
+        log.info(`${PREFIX} set timestamp at: ${updatePath}`)
       );
       await db.ref().update(updates);
     } catch (e) {
-      log.error(`${LOG_PREFIX} ${e}`);
+      log.error(`${PREFIX} ${e}`);
     }
 
     // Remove old & unused device tokens
@@ -65,10 +65,10 @@ module.exports = function createSyncOudatedHandler(topic = '', pubSub, db) {
               await db.ref(updatePath).remove();
               updates[updatePath] = 'removed';
               log.info(
-                `${LOG_PREFIX} removed outdated registration token at: ${updatePath}`
+                `${PREFIX} removed outdated registration token at: ${updatePath}`
               );
             } catch (e) {
-              log.error(`${LOG_PREFIX} ${e}`);
+              log.error(`${PREFIX} ${e}`);
             }
           }
         }
