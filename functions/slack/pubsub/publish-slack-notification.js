@@ -3,6 +3,8 @@ const systemModel = require('../../models/system');
 const integrationModel = require('../../models/integrations');
 const sendSlackChannelMessage = require('./utils/send-slack-channel-message');
 
+const PREFIX = `slack: pubsub: publish-slack-notification:`;
+
 /**
  * Clean any lingering /push-messages from database
  * when pubsub client receives a message
@@ -11,17 +13,11 @@ const sendSlackChannelMessage = require('./utils/send-slack-channel-message');
  * @param  {firebaseAdmin.database} db
  * @return {functions.CloudFunction}
  */
-module.exports = function publishSlackNotificationHandler(
-  topic = '',
-  pubSub,
-  db
-) {
-  const PREFIX = `slack: cron: ${topic}:`;
-
+module.exports = function publishSlackNotification(topic = '', pubSub, db) {
   // Subscribe to `notifications-sync`
   return pubSub.topic(topic).onPublish(async () => {
     const updates = {};
-    log.info(`${PREFIX} received ${Date.now()}`);
+    log.info(`${PREFIX} ${topic}: received ${Math.round(Date.now() / 1000)}`);
 
     let accessToken = '';
     try {
@@ -30,13 +26,17 @@ module.exports = function publishSlackNotificationHandler(
       );
 
       if (!slackIntegrationCredentialsSnap.exists()) {
-        throw Error(`${PREFIX} slack authentication credentials not found.`);
+        throw Error(
+          `${PREFIX} ${topic}: slack authentication credentials not found.`
+        );
       }
 
       const slackCredentials = slackIntegrationCredentialsSnap.val();
       accessToken = slackCredentials.accessToken;
     } catch (err) {
-      throw Error(`${PREFIX} system slack credential lookup error: ${err}`);
+      throw Error(
+        `${PREFIX} ${topic}: system slack credential lookup error | ${err}`
+      );
     }
 
     let notifications = null;
@@ -48,7 +48,9 @@ module.exports = function publishSlackNotificationHandler(
       if (!notificationsSnap.exists()) return;
       notifications = notificationsSnap.val() || {};
     } catch (err) {
-      throw Error(`${PREFIX} error retrieving notifications: ${err}`);
+      throw Error(
+        `${PREFIX} ${topic}: error retrieving notifications | ${err}`
+      );
     }
 
     const allChannels = Object.keys(notifications);
@@ -67,11 +69,13 @@ module.exports = function publishSlackNotificationHandler(
 
         if (responseBody && !responseBody.already_in_channel) {
           // Log newly joined channel
-          log.info(`${PREFIX} successfully joined new channel: ${channelName}`);
+          log.info(
+            `${PREFIX} ${topic} successfully joined new channel: "${channelName}"`
+          );
         }
       } catch (err) {
         log.error(
-          `${PREFIX} error joining channel ${channelName} error | ${err}`
+          `${PREFIX} ${topic}: error joining channel ${channelName} error | ${err}`
         );
       }
     }
