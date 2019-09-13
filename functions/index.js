@@ -348,23 +348,23 @@ exports.pushMessageSyncStaging = pushMessages.pubsub.createResendAll(
   admin.messaging()
 );
 
-exports.templatesListSync = templates.cron.syncTemplatesList(
+exports.templatesListSync = templates.pubsub.createSyncTemplatesList(
   'templates-sync',
   functions.pubsub,
   db
 );
-exports.templatesListSyncStaging = templates.cron.syncTemplatesList(
+exports.templatesListSyncStaging = templates.pubsub.createSyncTemplatesList(
   'staging-templates-sync',
   functions.pubsub,
   dbStaging
 );
 
-exports.propertyTemplatesListSync = templates.cron.syncPropertyTemplatesList(
+exports.propertyTemplatesListSync = templates.pubsub.createSyncPropertyTemplatesList(
   'templates-sync',
   functions.pubsub,
   db
 );
-exports.propertyTemplatesListSyncStaging = templates.cron.syncPropertyTemplatesList(
+exports.propertyTemplatesListSyncStaging = templates.pubsub.createSyncPropertyTemplatesList(
   'staging-templates-sync',
   functions.pubsub,
   dbStaging

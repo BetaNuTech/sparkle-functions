@@ -2,7 +2,7 @@ const log = require('../../utils/logger');
 const propertyTemplates = require('../../property-templates');
 const adminUtils = require('../../utils/firebase-admin');
 
-const PREFIX = 'templates: cron: sync-property-templates-list:';
+const PREFIX = 'templates: pubsub: sync-property-templates-list:';
 
 /**
  * Sync templates with propertyTemplatesList and log
@@ -19,7 +19,9 @@ module.exports = function createSyncPropertyTemplatesListSubscriber(
 ) {
   return pubSub.topic(topic).onPublish(async () => {
     const updates = {};
-    log.info(`${PREFIX} received ${Date.now()}`);
+    log.info(
+      `${PREFIX} ${topic} received at: ${Math.round(Date.now() / 1000)}`
+    );
 
     // Add missing/outdated templatesList records
     await adminUtils.forEachChild(
@@ -34,8 +36,8 @@ module.exports = function createSyncPropertyTemplatesListSubscriber(
             template
           );
           Object.assign(updates, upsertUpdates);
-        } catch (e) {
-          log.error(`${PREFIX} ${e}`);
+        } catch (err) {
+          log.error(`${PREFIX} ${topic} | ${err}`);
         }
       }
     );
@@ -63,8 +65,10 @@ module.exports = function createSyncPropertyTemplatesListSubscriber(
             await propertyTemplates.remove(db, templateId);
             updates[templateId] = true;
           }
-        } catch (e) {
-          log.error(`${PREFIX} property templates sync failed ${e}`);
+        } catch (err) {
+          log.error(
+            `${PREFIX} ${topic} property templates sync failed | ${err}`
+          );
         }
       }
     );
