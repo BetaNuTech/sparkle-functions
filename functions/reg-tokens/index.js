@@ -1,3 +1,5 @@
-const cron = require('./cron');
+const createSyncOutdated = require('./pubsub/sync-outdated');
 
-module.exports = { cron };
+module.exports = {
+  pubsub: { createSyncOutdated },
+};

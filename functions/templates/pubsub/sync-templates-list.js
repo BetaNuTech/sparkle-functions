@@ -2,7 +2,7 @@ const log = require('../../utils/logger');
 const adminUtils = require('../../utils/firebase-admin');
 const list = require('../utils/list');
 
-const PREFIX = 'templates: cron: sync-templates-list:';
+const PREFIX = 'templates: pubsub: sync-templates-list:';
 
 /**
  * Sync templates with propertyTemplatesList and log
@@ -19,7 +19,6 @@ module.exports = function createSyncTemplatesListSubscriber(
 ) {
   return pubSub.topic(topic).onPublish(async () => {
     const updates = {};
-    log.info(`${PREFIX} received ${Date.now()}`);
 
     try {
       // Collect all template ID's
@@ -27,8 +26,8 @@ module.exports = function createSyncTemplatesListSubscriber(
 
       // Cleanup templatesList items without a source template
       await list.removeOrphans(db, templateIds);
-    } catch (e) {
-      log.error(`${PREFIX} ${e}`);
+    } catch (err) {
+      log.error(`${PREFIX} ${topic} | ${err}`);
     }
 
     // Add missing/outdated templatesList records
@@ -39,8 +38,8 @@ module.exports = function createSyncTemplatesListSubscriber(
         try {
           const result = await list.write(db, templateId, template, template);
           updates[templateId] = result ? 'upserted' : 'removed';
-        } catch (e) {
-          log.error(`${PREFIX} ${e}`);
+        } catch (err) {
+          log.error(`${PREFIX} ${topic} | ${err}`);
         }
       }
     );

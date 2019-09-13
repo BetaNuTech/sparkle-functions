@@ -228,10 +228,10 @@ exports.teamDeleteStaging = functionsStagingDatabase
 
 // Deficient Items
 exports.deficientItemsWrite = functions.database
-  .ref('/inspections/{inspectionId}/updatedLastDate')
+  .ref('/inspections/{inspectionId}/updatedAt')
   .onWrite(deficientItems.createOnWriteInspection(db));
 exports.deficientItemsWriteStaging = functionsStagingDatabase
-  .ref('/inspections/{inspectionId}/updatedLastDate')
+  .ref('/inspections/{inspectionId}/updatedAt')
   .onWrite(deficientItems.createOnWriteInspection(dbStaging));
 
 exports.deficientItemsPropertyMetaSync = functions.database
@@ -324,172 +324,172 @@ exports.inspectionPdfReportStaging = functions.https.onRequest(
 );
 
 // Message Subscribers
-exports.propertyMetaSync = properties.cron.createSyncMeta(
+exports.propertyMetaSync = properties.pubsub.createSyncMeta(
   'properties-sync',
   functions.pubsub,
   db
 );
-exports.propertyMetaSyncStaging = properties.cron.createSyncMeta(
+exports.propertyMetaSyncStaging = properties.pubsub.createSyncMeta(
   'staging-properties-sync',
   functions.pubsub,
   dbStaging
 );
 
-exports.pushMessageSync = pushMessages.createCRONHandler(
+exports.pushMessageSync = pushMessages.pubsub.createResendAll(
   'push-messages-sync',
   functions.pubsub,
   db,
   admin.messaging()
 );
-exports.pushMessageSyncStaging = pushMessages.createCRONHandler(
+exports.pushMessageSyncStaging = pushMessages.pubsub.createResendAll(
   'staging-push-messages-sync',
   functions.pubsub,
   dbStaging,
   admin.messaging()
 );
 
-exports.templatesListSync = templates.cron.syncTemplatesList(
+exports.templatesListSync = templates.pubsub.createSyncTemplatesList(
   'templates-sync',
   functions.pubsub,
   db
 );
-exports.templatesListSyncStaging = templates.cron.syncTemplatesList(
+exports.templatesListSyncStaging = templates.pubsub.createSyncTemplatesList(
   'staging-templates-sync',
   functions.pubsub,
   dbStaging
 );
 
-exports.propertyTemplatesListSync = templates.cron.syncPropertyTemplatesList(
+exports.propertyTemplatesListSync = templates.pubsub.createSyncPropertyTemplatesList(
   'templates-sync',
   functions.pubsub,
   db
 );
-exports.propertyTemplatesListSyncStaging = templates.cron.syncPropertyTemplatesList(
+exports.propertyTemplatesListSyncStaging = templates.pubsub.createSyncPropertyTemplatesList(
   'staging-templates-sync',
   functions.pubsub,
   dbStaging
 );
 
-exports.propertyInspectionsListSync = inspections.cron.syncPropertyInspectionproxies(
+exports.propertyInspectionsListSync = inspections.pubsub.createSyncPropertyInspectionProxies(
   'inspections-sync',
   functions.pubsub,
   db
 );
-exports.propertyInspectionsListSyncStaging = inspections.cron.syncPropertyInspectionproxies(
+exports.propertyInspectionsListSyncStaging = inspections.pubsub.createSyncPropertyInspectionProxies(
   'staging-inspections-sync',
   functions.pubsub,
   dbStaging
 );
 
-exports.completedInspectionsListSync = inspections.cron.syncCompletedInspectionproxies(
+exports.completedInspectionsListSync = inspections.pubsub.createSyncCompletedInspectionProxies(
   'inspections-sync',
   functions.pubsub,
   db
 );
-exports.completedInspectionsListSyncStaging = inspections.cron.syncCompletedInspectionproxies(
+exports.completedInspectionsListSyncStaging = inspections.pubsub.createSyncCompletedInspectionProxies(
   'staging-inspections-sync',
   functions.pubsub,
   dbStaging
 );
 
-exports.cleanupInspectionProxyOrphansSync = inspections.cron.cleanupProxyOrphans(
+exports.cleanupInspectionProxyOrphansSync = inspections.pubsub.createCleanupProxyOrphans(
   'inspections-sync',
   functions.pubsub,
   db
 );
-exports.cleanupInspectionProxyOrphansSyncStaging = inspections.cron.cleanupProxyOrphans(
+exports.cleanupInspectionProxyOrphansSyncStaging = inspections.pubsub.createCleanupProxyOrphans(
   'staging-inspections-sync',
   functions.pubsub,
   dbStaging
 );
 
-exports.regTokensSync = regTokens.cron.syncOutdated(
+exports.regTokensSync = regTokens.pubsub.createSyncOutdated(
   'registration-tokens-sync',
   functions.pubsub,
   db
 );
-exports.regTokensSyncStaging = regTokens.cron.syncOutdated(
+exports.regTokensSyncStaging = regTokens.pubsub.createSyncOutdated(
   'staging-registration-tokens-sync',
   functions.pubsub,
   dbStaging
 );
 
-exports.deficientItemsOverdueSync = deficientItems.cron.createSyncOverdue(
+exports.deficientItemsOverdueSync = deficientItems.pubsub.createSyncOverdue(
   'deficient-items-sync',
   functions.pubsub,
   db
 );
-exports.deficientItemsOverdueSyncStaging = deficientItems.cron.createSyncOverdue(
+exports.deficientItemsOverdueSyncStaging = deficientItems.pubsub.createSyncOverdue(
   'staging-deficient-items-sync',
   functions.pubsub,
   dbStaging
 );
 
-exports.teamsSync = teams.cron.createSyncTeamHandler(
+exports.teamsSync = teams.pubsub.createSyncTeam(
   'teams-sync',
   functions.pubsub,
   db
 );
-exports.teamsSyncStaging = teams.cron.createSyncTeamHandler(
+exports.teamsSyncStaging = teams.pubsub.createSyncTeam(
   'staging-teams-sync',
   functions.pubsub,
   dbStaging
 );
 
-exports.userTeamsSync = teams.cron.createSyncUserTeamHandler(
+exports.userTeamsSync = teams.pubsub.createSyncUserTeam(
   'user-teams-sync',
   functions.pubsub,
   db
 );
-exports.userTeamsSyncStaging = teams.cron.createSyncUserTeamHandler(
+exports.userTeamsSyncStaging = teams.pubsub.createSyncUserTeam(
   'staging-user-teams-sync',
   functions.pubsub,
   dbStaging
 );
 
-exports.notifications = slack.cron.publishSlackNotificationHandler(
+exports.notifications = slack.pubsub.createPublishSlackNotification(
   'notifications-sync',
   functions.pubsub,
   db
 );
 
-exports.notificationsStaging = slack.cron.publishSlackNotificationHandler(
+exports.notificationsStaging = slack.pubsub.createPublishSlackNotification(
   'staging-notifications-sync',
   functions.pubsub,
   dbStaging
 );
 
-exports.trelloCommentsForDefItemStateUpdates = trello.createCommentForDiStateSubscriber(
+exports.trelloCommentsForDefItemStateUpdates = trello.pubsub.createCommentForDiState(
   'deficient-item-status-update',
   functions.pubsub,
   db
 );
 
-exports.trelloCommentsForDefItemStateUpdatesStaging = trello.createCommentForDiStateSubscriber(
+exports.trelloCommentsForDefItemStateUpdatesStaging = trello.pubsub.createCommentForDiState(
   'staging-deficient-item-status-update',
   functions.pubsub,
   dbStaging
 );
 
-exports.trelloCardDueDateUpdates = trello.createUpdateDueDateSubscriber(
+exports.trelloCardDueDateUpdates = trello.pubsub.createUpdateDueDate(
   'deficient-item-status-update',
   functions.pubsub,
   db
 );
 
-exports.trelloCardDueDateUpdatesStaging = trello.createUpdateDueDateSubscriber(
+exports.trelloCardDueDateUpdatesStaging = trello.pubsub.createUpdateDueDate(
   'staging-deficient-item-status-update',
   functions.pubsub,
   dbStaging
 );
 
-exports.trelloDiCardClose = trello.createCloseDiCardSubscriber(
+exports.trelloDiCardClose = trello.pubsub.createCloseDiCard(
   'deficient-item-status-update',
   functions.pubsub,
   db
 );
 
-exports.trelloDiCardCloseStaging = trello.createCloseDiCardSubscriber(
+exports.trelloDiCardCloseStaging = trello.pubsub.createCloseDiCard(
   'staging-deficient-item-status-update',
   functions.pubsub,
   dbStaging

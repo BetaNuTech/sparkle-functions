@@ -64,12 +64,10 @@ describe('Teams Sync', () => {
       .ref(`/properties/${property1Id}`)
       .set({ name: 'Condo', team: team1Id }); // Add property and team
 
-    await db
-      .ref(`/teams/${team1Id}`)
-      .set({
-        name: 'Team1',
-        properties: { [property1Id]: true, [property2Id]: true },
-      }); // Add team
+    await db.ref(`/teams/${team1Id}`).set({
+      name: 'Team1',
+      properties: { [property1Id]: true, [property2Id]: true },
+    }); // Add team
 
     // Execute
     await test.wrap(cloudFunctions.teamsSync)();

@@ -1,58 +1,56 @@
 const log = require('../../utils/logger');
 const adminUtils = require('../../utils/firebase-admin');
 const { isInspectionWritable } = require('../process-write/utils');
-const completedInspectionsList = require('../process-write/completed-inspections-list');
+const propertyInspectionsList = require('../process-write/property-inspections-list');
 const { isInspectionOutdated } = require('./utils');
 
-const LOG_PREFIX = 'inspections: cron: sync-completed-inspection-proxies:';
+const PREFIX = 'inspections: pubsub: sync-property-inspection-proxies:';
 
 /**
- * sync inspection completedInspectionsList
+ * sync inspection's propertyInspectionsList
  * @param  {string} topic
  * @param  {functions.pubsub} pubsub
  * @param  {firebaseadmin.database} db
  * @return {functions.cloudfunction}
  */
-module.exports = function createSyncCompletedInspectionProxieshandler(
+module.exports = function createSyncPropertyInspectionProxieshandler(
   topic = '',
   pubsub,
   db
 ) {
   return pubsub
     .topic(topic)
-    .onPublish(async function syncCompletedInspectionProxiesHandler() {
+    .onPublish(async function syncPropertyInspectionProxiesHandler() {
       const updates = {};
-      log.info(`${LOG_PREFIX} received ${Date.now()}`);
-
       await adminUtils.forEachChild(
         db,
         '/inspections',
-        async function proccessCompletedInspectionProxyWrite(
+        async function proccessPropertyInspectionProxyWrite(
           inspectionId,
           inspection
         ) {
           try {
             // Throw errors if inspection cannot write proxies
-            await isInspectionWritable(db, inspection, LOG_PREFIX);
+            await isInspectionWritable(db, inspection, PREFIX);
 
             const isProxyOutdated = await isInspectionOutdated(
               db,
               inspection,
-              `/completedInspectionsList/${inspectionId}`
+              `/propertyInspectionsList/${inspection.property}/inspections/${inspectionId}`
             );
 
             if (isProxyOutdated) {
-              // Update inspections' completedInspectionsList proxy
-              const result = await completedInspectionsList({
+              // Update inspections' propertyInspectionsList proxy
+              await propertyInspectionsList({
                 db,
                 inspectionId,
                 inspection,
               });
 
-              updates[inspectionId] = result ? 'upserted' : 'removed';
+              updates[inspectionId] = true;
             }
-          } catch (e) {
-            log.error(`${LOG_PREFIX} ${e}`);
+          } catch (err) {
+            log.error(`${PREFIX} ${topic} | ${err}`);
           }
         }
       );

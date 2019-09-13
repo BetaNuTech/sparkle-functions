@@ -1,17 +1,17 @@
 const moment = require('moment-timezone');
 const hbs = require('handlebars');
-const log = require('../utils/logger');
-const config = require('../config');
-const systemModel = require('../models/system');
-const defItemModel = require('../models/deficient-items');
-const usersModel = require('../models/users');
-const parseDiStateEventMsg = require('./utils/parse-di-state-event-msg');
-const findPreviousDIHistory = require('../deficient-items/utils/find-history');
-const findAllTrelloCommentTemplates = require('../deficient-items/utils/find-all-trello-comment-templates')(
+const log = require('../../utils/logger');
+const config = require('../../config');
+const systemModel = require('../../models/system');
+const defItemModel = require('../../models/deficient-items');
+const usersModel = require('../../models/users');
+const parseDiStateEventMsg = require('../utils/parse-di-state-event-msg');
+const findPreviousDIHistory = require('../../deficient-items/utils/find-history');
+const findAllTrelloCommentTemplates = require('../../deficient-items/utils/find-all-trello-comment-templates')(
   config.deficientItems.trelloCommentTemplates
 );
 
-const PREFIX = 'trello: create-comment-for-deficient-item-state-subscriber:';
+const PREFIX = 'trello: pubsub: create-comment-for-deficient-item-state:';
 const INITIAL_DI_STATE = config.deficientItems.initialState;
 const RESPONSIBILITY_GROUPS = config.deficientItems.responsibilityGroups;
 const DEFAULT_TIMEZONE = config.deficientItems.defaultTimezone;
@@ -23,11 +23,7 @@ const DEFAULT_TIMEZONE = config.deficientItems.defaultTimezone;
  * @param  {firebaseadmin.database} db
  * @return {functions.cloudfunction}
  */
-module.exports = function createCommentForDiStateSubscriber(
-  topic = '',
-  pubsub,
-  db
-) {
+module.exports = function createCommentForDiState(topic = '', pubsub, db) {
   return pubsub.topic(topic).onPublish(async message => {
     let propertyId = '';
     let deficientItemId = '';
@@ -39,16 +35,12 @@ module.exports = function createCommentForDiStateSubscriber(
         message
       );
     } catch (err) {
-      const msgErr = `${PREFIX} ${topic} message error: ${err}`;
-      log.error(msgErr);
-      throw Error(msgErr);
+      // Wrap error
+      throw Error(`${PREFIX} ${topic} | ${err}`);
     }
 
     log.info(
-      `${PREFIX} received ${parseInt(
-        Date.now() / 1000,
-        10
-      )} for DI: ${propertyId}/${deficientItemId} | state: ${deficientItemState}`
+      `${PREFIX} ${topic} for DI: "${propertyId}/${deficientItemId}" and state "${deficientItemState}"`
     );
 
     // Find created Trello Card reference
@@ -60,12 +52,14 @@ module.exports = function createCommentForDiStateSubscriber(
         deficientItemId
       );
     } catch (err) {
-      log.error(`${PREFIX} ${err}`);
-      throw err;
+      // Wrap error
+      throw Error(`${PREFIX} ${topic} | ${err}`);
     }
 
     if (!trelloCardId) {
-      log.info(`${PREFIX} Deficient Item has no Trello Card, exiting`);
+      log.info(
+        `${PREFIX} ${topic}: Deficient Item has no Trello Card, exiting`
+      );
       return; // eslint-disable-line no-useless-return
     }
 
@@ -79,11 +73,11 @@ module.exports = function createCommentForDiStateSubscriber(
       );
       deficientItem = deficientItemSnap.val();
     } catch (err) {
-      log.error(`${PREFIX} | ${err}`);
+      log.error(`${PREFIX} ${topic} | ${err}`);
     }
 
     if (!deficientItem) {
-      log.error(`${PREFIX} bad deficient item reference`);
+      log.error(`${PREFIX} ${topic}: bad deficient item reference`);
       return; // eslint-disable-line no-useless-return
     }
 
@@ -115,7 +109,7 @@ module.exports = function createCommentForDiStateSubscriber(
     // Require one valid state history entry
     if (!isValidStateHistoryEntry(currentDiStateHistory)) {
       log.error(
-        `${PREFIX} badly formed deficient item "stateHistory" entry | ${
+        `${PREFIX} ${topic}: badly formed deficient item "stateHistory" entry | ${
           currentDiStateHistory
             ? JSON.stringify(currentDiStateHistory)
             : 'not found'
@@ -141,7 +135,7 @@ module.exports = function createCommentForDiStateSubscriber(
     } catch (err) {
       // Log and continue
       log.error(
-        `${PREFIX} failed to find user: ${stateAuthorsUserId} | ${err}`
+        `${PREFIX} ${topic}: failed to find user "${stateAuthorsUserId}" | ${err}`
       );
     }
 
@@ -172,10 +166,14 @@ module.exports = function createCommentForDiStateSubscriber(
         commentText
       );
 
-      log.info(`${PREFIX} successfully appended Trello card status comment`);
+      log.info(
+        `${PREFIX} ${topic}: successfully appended Trello card status comment`
+      );
     } catch (err) {
-      log.error(`${PREFIX} failed to Publish Trello comment`);
-      throw err;
+      // Wrap error
+      throw Error(
+        `${PREFIX} ${topic}: failed to Publish Trello comment | ${err}`
+      );
     }
   });
 };
