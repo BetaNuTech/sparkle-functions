@@ -459,37 +459,37 @@ exports.notificationsStaging = slack.pubsub.createPublishSlackNotification(
   dbStaging
 );
 
-exports.trelloCommentsForDefItemStateUpdates = trello.createCommentForDiStateSubscriber(
+exports.trelloCommentsForDefItemStateUpdates = trello.pubsub.createCommentForDiState(
   'deficient-item-status-update',
   functions.pubsub,
   db
 );
 
-exports.trelloCommentsForDefItemStateUpdatesStaging = trello.createCommentForDiStateSubscriber(
+exports.trelloCommentsForDefItemStateUpdatesStaging = trello.pubsub.createCommentForDiState(
   'staging-deficient-item-status-update',
   functions.pubsub,
   dbStaging
 );
 
-exports.trelloCardDueDateUpdates = trello.createUpdateDueDateSubscriber(
+exports.trelloCardDueDateUpdates = trello.pubsub.createUpdateDueDate(
   'deficient-item-status-update',
   functions.pubsub,
   db
 );
 
-exports.trelloCardDueDateUpdatesStaging = trello.createUpdateDueDateSubscriber(
+exports.trelloCardDueDateUpdatesStaging = trello.pubsub.createUpdateDueDate(
   'staging-deficient-item-status-update',
   functions.pubsub,
   dbStaging
 );
 
-exports.trelloDiCardClose = trello.createCloseDiCardSubscriber(
+exports.trelloDiCardClose = trello.pubsub.createCloseDiCard(
   'deficient-item-status-update',
   functions.pubsub,
   db
 );
 
-exports.trelloDiCardCloseStaging = trello.createCloseDiCardSubscriber(
+exports.trelloDiCardCloseStaging = trello.pubsub.createCloseDiCard(
   'staging-deficient-item-status-update',
   functions.pubsub,
   dbStaging
