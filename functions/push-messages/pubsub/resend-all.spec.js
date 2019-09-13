@@ -1,12 +1,12 @@
 const { expect } = require('chai');
-const { createCRONHandler } = require('./index');
-const uuid = require('../test-helpers/uuid');
-const { createPubSubStub } = require('../test-helpers/firebase');
+const resendAll = require('./resend-all');
+const uuid = require('../../test-helpers/uuid');
+const { createPubSubStub } = require('../../test-helpers/firebase');
 
-describe('Push Messages', () => {
-  describe('On Publish', () => {
+describe('Push Messages | Pubsub', () => {
+  describe('Resend All', () => {
     it('should resolve a hash of updates', () => {
-      const actual = createCRONHandler(
+      const actual = resendAll(
         'test',
         createPubSubStub(),
         stubDb(),
@@ -22,12 +22,7 @@ describe('Push Messages', () => {
       const id1 = uuid();
       const id2 = uuid();
       const db = stubDb({ [id1]: {}, [id2]: {} });
-      const actual = createCRONHandler(
-        'test',
-        createPubSubStub(),
-        db,
-        stubMessaging()
-      );
+      const actual = resendAll('test', createPubSubStub(), db, stubMessaging());
       return actual.then(result => {
         expect(result).to.have.property(id1);
         expect(result).to.have.property(id2);
