@@ -335,13 +335,13 @@ exports.propertyMetaSyncStaging = properties.pubsub.createSyncMeta(
   dbStaging
 );
 
-exports.pushMessageSync = pushMessages.createCRONHandler(
+exports.pushMessageSync = pushMessages.pubsub.createResendAll(
   'push-messages-sync',
   functions.pubsub,
   db,
   admin.messaging()
 );
-exports.pushMessageSyncStaging = pushMessages.createCRONHandler(
+exports.pushMessageSyncStaging = pushMessages.pubsub.createResendAll(
   'staging-push-messages-sync',
   functions.pubsub,
   dbStaging,
