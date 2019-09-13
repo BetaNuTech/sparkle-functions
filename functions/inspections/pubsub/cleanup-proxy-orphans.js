@@ -1,7 +1,7 @@
 const log = require('../../utils/logger');
 const { fetchRecordIds, forEachChild } = require('../../utils/firebase-admin');
 
-const PREFIX = 'inspections: cron: cleanup-proxy-orphans:';
+const PREFIX = 'inspections: pubsub: cleanup-proxy-orphans:';
 
 /**
  * Cleanup all outdated inspecton proxies

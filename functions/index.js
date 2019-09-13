@@ -370,34 +370,34 @@ exports.propertyTemplatesListSyncStaging = templates.cron.syncPropertyTemplatesL
   dbStaging
 );
 
-exports.propertyInspectionsListSync = inspections.cron.syncPropertyInspectionproxies(
+exports.propertyInspectionsListSync = inspections.pubsub.createSyncPropertyInspectionProxies(
   'inspections-sync',
   functions.pubsub,
   db
 );
-exports.propertyInspectionsListSyncStaging = inspections.cron.syncPropertyInspectionproxies(
+exports.propertyInspectionsListSyncStaging = inspections.pubsub.createSyncPropertyInspectionProxies(
   'staging-inspections-sync',
   functions.pubsub,
   dbStaging
 );
 
-exports.completedInspectionsListSync = inspections.cron.syncCompletedInspectionproxies(
+exports.completedInspectionsListSync = inspections.pubsub.createSyncCompletedInspectionProxies(
   'inspections-sync',
   functions.pubsub,
   db
 );
-exports.completedInspectionsListSyncStaging = inspections.cron.syncCompletedInspectionproxies(
+exports.completedInspectionsListSyncStaging = inspections.pubsub.createSyncCompletedInspectionProxies(
   'staging-inspections-sync',
   functions.pubsub,
   dbStaging
 );
 
-exports.cleanupInspectionProxyOrphansSync = inspections.cron.cleanupProxyOrphans(
+exports.cleanupInspectionProxyOrphansSync = inspections.pubsub.createCleanupProxyOrphans(
   'inspections-sync',
   functions.pubsub,
   db
 );
-exports.cleanupInspectionProxyOrphansSyncStaging = inspections.cron.cleanupProxyOrphans(
+exports.cleanupInspectionProxyOrphansSyncStaging = inspections.pubsub.createCleanupProxyOrphans(
   'staging-inspections-sync',
   functions.pubsub,
   dbStaging

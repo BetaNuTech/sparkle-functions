@@ -4,7 +4,7 @@ const { isInspectionWritable } = require('../process-write/utils');
 const completedInspectionsList = require('../process-write/completed-inspections-list');
 const { isInspectionOutdated } = require('./utils');
 
-const LOG_PREFIX = 'inspections: cron: sync-completed-inspection-proxies:';
+const PREFIX = 'inspections: pubsub: sync-completed-inspection-proxies:';
 
 /**
  * sync inspection completedInspectionsList
@@ -22,7 +22,7 @@ module.exports = function createSyncCompletedInspectionProxieshandler(
     .topic(topic)
     .onPublish(async function syncCompletedInspectionProxiesHandler() {
       const updates = {};
-      log.info(`${LOG_PREFIX} received ${Date.now()}`);
+      log.info(`${PREFIX} received ${Date.now()}`);
 
       await adminUtils.forEachChild(
         db,
@@ -33,7 +33,7 @@ module.exports = function createSyncCompletedInspectionProxieshandler(
         ) {
           try {
             // Throw errors if inspection cannot write proxies
-            await isInspectionWritable(db, inspection, LOG_PREFIX);
+            await isInspectionWritable(db, inspection, PREFIX);
 
             const isProxyOutdated = await isInspectionOutdated(
               db,
@@ -51,8 +51,8 @@ module.exports = function createSyncCompletedInspectionProxieshandler(
 
               updates[inspectionId] = result ? 'upserted' : 'removed';
             }
-          } catch (e) {
-            log.error(`${LOG_PREFIX} ${e}`);
+          } catch (err) {
+            log.error(`${PREFIX} | ${err}`);
           }
         }
       );
