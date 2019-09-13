@@ -228,10 +228,10 @@ exports.teamDeleteStaging = functionsStagingDatabase
 
 // Deficient Items
 exports.deficientItemsWrite = functions.database
-  .ref('/inspections/{inspectionId}/updatedLastDate')
+  .ref('/inspections/{inspectionId}/updatedAt')
   .onWrite(deficientItems.createOnWriteInspection(db));
 exports.deficientItemsWriteStaging = functionsStagingDatabase
-  .ref('/inspections/{inspectionId}/updatedLastDate')
+  .ref('/inspections/{inspectionId}/updatedAt')
   .onWrite(deficientItems.createOnWriteInspection(dbStaging));
 
 exports.deficientItemsPropertyMetaSync = functions.database
