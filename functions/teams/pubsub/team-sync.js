@@ -1,4 +1,3 @@
-const log = require('../../utils/logger');
 const adminUtils = require('../../utils/firebase-admin');
 const teamsModel = require('../../models/teams');
 
@@ -16,8 +15,6 @@ module.exports = function createSyncTeamHandler(topic = '', pubsub, db) {
   return pubsub.topic(topic).onPublish(async function syncTeamHandler() {
     const updates = {};
     let propertyAndTeam = {};
-
-    log.info(`${PREFIX} received at: ${Math.round(Date.now() / 1000)}`);
 
     try {
       // load all properties team associations (source of truth)
@@ -47,7 +44,7 @@ module.exports = function createSyncTeamHandler(topic = '', pubsub, db) {
       });
     } catch (err) {
       // Wrap error
-      throw Error(`${PREFIX} ${topic} for each team sync failed | ${err}`);
+      throw Error(`${PREFIX} ${topic}: for each team sync failed | ${err}`);
     }
 
     return updates;

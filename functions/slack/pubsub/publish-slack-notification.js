@@ -17,7 +17,6 @@ module.exports = function publishSlackNotification(topic = '', pubSub, db) {
   // Subscribe to `notifications-sync`
   return pubSub.topic(topic).onPublish(async () => {
     const updates = {};
-    log.info(`${PREFIX} ${topic}: received ${Math.round(Date.now() / 1000)}`);
 
     let accessToken = '';
     try {
@@ -98,10 +97,10 @@ module.exports = function publishSlackNotification(topic = '', pubSub, db) {
             notification.message
           );
           log.info(
-            `${PREFIX} successfully sent notification ${notificationId} to channel: ${channelName}`
+            `${PREFIX} ${topic}: successfully sent notification "${notificationId}" to channel "${channelName}"`
           );
         } catch (err) {
-          log.error(`${PREFIX} error from Slack API: ${err}`);
+          log.error(`${PREFIX} ${topic}: error from Slack API | ${err}`);
           continue; // eslint-disable-line
         }
 
@@ -115,7 +114,9 @@ module.exports = function publishSlackNotification(topic = '', pubSub, db) {
           updates[`/notifications/slack/${channelName}/${notificationId}`] =
             'removed';
         } catch (err) {
-          log.error(`${PREFIX} delete notification record error: ${err}`);
+          log.error(
+            `${PREFIX} ${topic}: delete notification record error | ${err}`
+          );
         }
       }
     }

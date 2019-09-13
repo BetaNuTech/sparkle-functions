@@ -19,10 +19,6 @@ module.exports = function createSyncUserTeamHandler(topic = '', pubsub, db) {
       let userId = null;
       let propertyAndTeam = {};
 
-      log.info(
-        `${PREFIX} ${topic}: received at: ${Math.round(Date.now() / 1000)}`
-      );
-
       try {
         userId = message.data
           ? Buffer.from(message.data, 'base64').toString()
@@ -37,7 +33,7 @@ module.exports = function createSyncUserTeamHandler(topic = '', pubsub, db) {
         throw Error(msgErr);
       }
 
-      log.info(`${PREFIX} ${topic}: syncing user teams of: "${userId}"`);
+      log.info(`${PREFIX} ${topic}: syncing user teams of "${userId}"`);
 
       // load all properties team associations (source of truth)
       try {

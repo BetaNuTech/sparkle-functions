@@ -19,9 +19,6 @@ module.exports = function createSyncPropertyTemplatesListSubscriber(
 ) {
   return pubSub.topic(topic).onPublish(async () => {
     const updates = {};
-    log.info(
-      `${PREFIX} ${topic} received at: ${Math.round(Date.now() / 1000)}`
-    );
 
     // Add missing/outdated templatesList records
     await adminUtils.forEachChild(
@@ -67,7 +64,7 @@ module.exports = function createSyncPropertyTemplatesListSubscriber(
           }
         } catch (err) {
           log.error(
-            `${PREFIX} ${topic} property templates sync failed | ${err}`
+            `${PREFIX} ${topic}: property templates sync failed | ${err}`
           );
         }
       }

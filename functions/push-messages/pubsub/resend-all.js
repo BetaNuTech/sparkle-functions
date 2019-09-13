@@ -15,8 +15,6 @@ const PREFIX = 'push-messages: pubsub: resend-all';
 module.exports = function createResendAll(topic = '', pubSub, db, messaging) {
   return pubSub.topic(topic).onPublish(async () => {
     const updates = {};
-    log.info(`${PREFIX}: ${topic}: received ${Math.round(Date.now() / 1000)}`);
-
     const snapShot = await db.ref('/sendMessages').once('value');
 
     // No messages in database
