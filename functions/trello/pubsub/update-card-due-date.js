@@ -98,6 +98,7 @@ module.exports = function createUpdateDueDate(topic = '', pubsub, db) {
           trelloCardId,
           {
             due: toISO8601(getCurrentDueDay(currDeferDate.deferredDate)),
+            dueComplete: false,
           }
         );
 
@@ -120,6 +121,7 @@ module.exports = function createUpdateDueDate(topic = '', pubsub, db) {
           trelloCardId,
           {
             due: toISO8601(deficientItem.currentDueDateDay),
+            dueComplete: false,
           }
         );
 

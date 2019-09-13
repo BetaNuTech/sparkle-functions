@@ -76,7 +76,7 @@ describe('Trello Card Due Date Updates', () => {
       .put(
         `/1/cards/${TRELLO_CARD_ID}?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&due=${encodeURIComponent(
           expected
-        )}`
+        )}&dueComplete=false`
       )
       .reply(200, {});
 
@@ -117,7 +117,7 @@ describe('Trello Card Due Date Updates', () => {
       .put(
         `/1/cards/${TRELLO_CARD_ID}?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&due=${encodeURIComponent(
           expected
-        )}`
+        )}&dueComplete=false`
       )
       .reply(200, {});
 
@@ -129,7 +129,6 @@ describe('Trello Card Due Date Updates', () => {
   });
 
   it("should remove a trello card's due date and completion label when its' deficient item moves into go-back state", async () => {
-    const expected = { due: null, dueComplete: false };
     const updatedState = 'go-back';
     const pubSubMessage = {
       data: Buffer.from(
@@ -154,7 +153,7 @@ describe('Trello Card Due Date Updates', () => {
     // Stub Requests
     const updatedDueDate = nock('https://api.trello.com')
       .put(
-        `/1/cards/${TRELLO_CARD_ID}?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&due=${expected.due}&dueComplete=${expected.dueComplete}`
+        `/1/cards/${TRELLO_CARD_ID}?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&due=null&dueComplete=false`
       )
       .reply(200, {});
 
