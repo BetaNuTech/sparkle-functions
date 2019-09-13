@@ -324,12 +324,12 @@ exports.inspectionPdfReportStaging = functions.https.onRequest(
 );
 
 // Message Subscribers
-exports.propertyMetaSync = properties.cron.createSyncMeta(
+exports.propertyMetaSync = properties.pubsub.createSyncMeta(
   'properties-sync',
   functions.pubsub,
   db
 );
-exports.propertyMetaSyncStaging = properties.cron.createSyncMeta(
+exports.propertyMetaSyncStaging = properties.pubsub.createSyncMeta(
   'staging-properties-sync',
   functions.pubsub,
   dbStaging
