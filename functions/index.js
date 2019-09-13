@@ -403,12 +403,12 @@ exports.cleanupInspectionProxyOrphansSyncStaging = inspections.pubsub.createClea
   dbStaging
 );
 
-exports.regTokensSync = regTokens.cron.syncOutdated(
+exports.regTokensSync = regTokens.pubsub.createSyncOutdated(
   'registration-tokens-sync',
   functions.pubsub,
   db
 );
-exports.regTokensSyncStaging = regTokens.cron.syncOutdated(
+exports.regTokensSyncStaging = regTokens.pubsub.createSyncOutdated(
   'staging-registration-tokens-sync',
   functions.pubsub,
   dbStaging
