@@ -1,10 +1,10 @@
-const log = require('../utils/logger');
-const systemModel = require('../models/system');
-const integrationsModel = require('../models/integrations');
-const defItemModel = require('../models/deficient-items');
-const parseDiStateEventMsg = require('./utils/parse-di-state-event-msg');
+const log = require('../../utils/logger');
+const systemModel = require('../../models/system');
+const integrationsModel = require('../../models/integrations');
+const defItemModel = require('../../models/deficient-items');
+const parseDiStateEventMsg = require('../utils/parse-di-state-event-msg');
 
-const PREFIX = 'trello: close-deficient-item-card-subscriber:';
+const PREFIX = 'trello: pubsub: close-deficient-item-card:';
 const PROCESS_DI_STATES = ['closed', 'completed'];
 
 /**
@@ -15,7 +15,7 @@ const PROCESS_DI_STATES = ['closed', 'completed'];
  * @param  {firebaseadmin.database} db
  * @return {functions.cloudfunction}
  */
-module.exports = function closeDiCardSubscriber(topic = '', pubsub, db) {
+module.exports = function closeDiCard(topic = '', pubsub, db) {
   return pubsub.topic(topic).onPublish(async message => {
     let propertyId = '';
     let deficientItemId = '';
@@ -27,9 +27,7 @@ module.exports = function closeDiCardSubscriber(topic = '', pubsub, db) {
         message
       );
     } catch (err) {
-      const msgErr = `${PREFIX} ${topic} message error: ${err}`;
-      log.error(msgErr);
-      throw Error(msgErr);
+      throw Error(`${PREFIX} ${topic} | ${err}`);
     }
 
     // Ignore events for non-closed/uncompleted DI's
@@ -38,10 +36,7 @@ module.exports = function closeDiCardSubscriber(topic = '', pubsub, db) {
     }
 
     log.info(
-      `${PREFIX} received ${parseInt(
-        Date.now() / 1000,
-        10
-      )} for DI: ${propertyId}/${deficientItemId} | state: ${deficientItemState}`
+      `${PREFIX} ${topic}: for "${propertyId}/${deficientItemId}" and state "${deficientItemState}"`
     );
 
     // Find created Trello Card reference
@@ -53,12 +48,12 @@ module.exports = function closeDiCardSubscriber(topic = '', pubsub, db) {
         deficientItemId
       );
     } catch (err) {
-      log.error(`${PREFIX} ${err}`);
+      log.error(`${PREFIX} ${topic} | ${err}`);
       throw err;
     }
 
     if (!trelloCardId) {
-      log.info(`${PREFIX} Deficient Item has no Trello Card, exiting`);
+      log.info(`${PREFIX} ${topic} Deficient Item has no Trello Card, exiting`);
       return; // eslint-disable-line no-useless-return
     }
 
@@ -79,7 +74,7 @@ module.exports = function closeDiCardSubscriber(topic = '', pubsub, db) {
         closedList = trelloIntegration.closedList;
       } catch (err) {
         log.error(
-          `${PREFIX}: property trello integration lookup failed | ${err}`
+          `${PREFIX} ${topic}: property trello integration lookup failed | ${err}`
         );
       }
 
@@ -98,7 +93,7 @@ module.exports = function closeDiCardSubscriber(topic = '', pubsub, db) {
       );
       deficientItem = deficientItemSnap.val();
     } catch (err) {
-      log.error(`${PREFIX} deficient item lookup failed | ${err}`);
+      log.error(`${PREFIX} ${topic}: deficient item lookup failed | ${err}`);
     }
 
     // Determine if due date could have been previously set
@@ -125,10 +120,10 @@ module.exports = function closeDiCardSubscriber(topic = '', pubsub, db) {
         requestUpdates
       );
       if (trelloCardResponse)
-        log.info(`${PREFIX} successfully closed Trello card`);
+        log.info(`${PREFIX} ${topic}: successfully closed Trello card`);
     } catch (err) {
       log.error(
-        `${PREFIX} Failed request to update DI's Trello card: "${err.status ||
+        `${PREFIX} ${topic}: Failed request to update DI's Trello card: "${err.status ||
           'N/A'}" | message: "${err.body ? err.body.message : err}"`
       );
     }
