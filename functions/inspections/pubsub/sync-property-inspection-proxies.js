@@ -22,8 +22,6 @@ module.exports = function createSyncPropertyInspectionProxieshandler(
     .topic(topic)
     .onPublish(async function syncPropertyInspectionProxiesHandler() {
       const updates = {};
-      log.info(`${PREFIX} received ${Date.now()}`);
-
       await adminUtils.forEachChild(
         db,
         '/inspections',
@@ -52,7 +50,7 @@ module.exports = function createSyncPropertyInspectionProxieshandler(
               updates[inspectionId] = true;
             }
           } catch (err) {
-            log.error(`${PREFIX} | ${err}`);
+            log.error(`${PREFIX} ${topic} | ${err}`);
           }
         }
       );

@@ -69,7 +69,7 @@ module.exports = function createUpdateDueDate(topic = '', pubsub, db) {
     }
 
     if (!deficientItem) {
-      log.error(`${PREFIX} ${topic} bad deficient item reference`);
+      log.error(`${PREFIX} ${topic}: bad deficient item reference`);
       return; // eslint-disable-line no-useless-return
     }
 

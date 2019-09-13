@@ -19,9 +19,6 @@ module.exports = function createSyncTemplatesListSubscriber(
 ) {
   return pubSub.topic(topic).onPublish(async () => {
     const updates = {};
-    log.info(
-      `${PREFIX} ${topic} received at: ${Math.round(Date.now() / 1000)}`
-    );
 
     try {
       // Collect all template ID's

@@ -53,7 +53,9 @@ module.exports = function closeDiCard(topic = '', pubsub, db) {
     }
 
     if (!trelloCardId) {
-      log.info(`${PREFIX} ${topic} Deficient Item has no Trello Card, exiting`);
+      log.info(
+        `${PREFIX} ${topic}: Deficient Item has no Trello Card, exiting`
+      );
       return; // eslint-disable-line no-useless-return
     }
 

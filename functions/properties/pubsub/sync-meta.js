@@ -21,8 +21,6 @@ module.exports = function createSyncPropertiesMetahandler(
     .topic(topic)
     .onPublish(async function syncPropertiesMetaHandler() {
       const updates = {};
-      log.info(`${PREFIX} received ${Math.round(Date.now() / 1000)}`);
-
       await forEachChild(
         db,
         '/properties',
@@ -30,8 +28,8 @@ module.exports = function createSyncPropertiesMetahandler(
           try {
             const propMetaUpdate = await processPropertyMeta(db, propertyId);
             Object.assign(updates, propMetaUpdate);
-          } catch (e) {
-            log.error(`${PREFIX} ${e}`);
+          } catch (err) {
+            log.error(`${PREFIX} ${topic} | ${err}`);
           }
         }
       );

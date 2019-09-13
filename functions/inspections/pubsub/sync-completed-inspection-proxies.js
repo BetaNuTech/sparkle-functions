@@ -22,8 +22,6 @@ module.exports = function createSyncCompletedInspectionProxieshandler(
     .topic(topic)
     .onPublish(async function syncCompletedInspectionProxiesHandler() {
       const updates = {};
-      log.info(`${PREFIX} received ${Date.now()}`);
-
       await adminUtils.forEachChild(
         db,
         '/inspections',
@@ -52,7 +50,7 @@ module.exports = function createSyncCompletedInspectionProxieshandler(
               updates[inspectionId] = result ? 'upserted' : 'removed';
             }
           } catch (err) {
-            log.error(`${PREFIX} | ${err}`);
+            log.error(`${PREFIX} ${topic} | ${err}`);
           }
         }
       );

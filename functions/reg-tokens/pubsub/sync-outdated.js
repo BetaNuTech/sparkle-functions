@@ -15,7 +15,6 @@ const OUTDATED_OFFSET = 15778800; // seconds in 6 months
 module.exports = function createSyncOudated(topic = '', pubSub, db) {
   return pubSub.topic(topic).onPublish(async () => {
     const updates = {};
-    log.info(`${PREFIX} received ${Math.round(Date.now() / 1000)}`);
 
     // Collect boolean tokens to updates hash
     await adminUtils.forEachChild(
@@ -37,7 +36,7 @@ module.exports = function createSyncOudated(topic = '', pubSub, db) {
     try {
       // Update boolean device tokens to timestamps
       Object.keys(updates).forEach(updatePath =>
-        log.info(`${PREFIX} set timestamp at: ${updatePath}`)
+        log.info(`${PREFIX} ${topic}: set timestamp at: ${updatePath}`)
       );
       await db.ref().update(updates);
     } catch (e) {
@@ -65,10 +64,10 @@ module.exports = function createSyncOudated(topic = '', pubSub, db) {
               await db.ref(updatePath).remove();
               updates[updatePath] = 'removed';
               log.info(
-                `${PREFIX} removed outdated registration token at: ${updatePath}`
+                `${PREFIX} ${topic}: removed outdated registration token at: ${updatePath}`
               );
-            } catch (e) {
-              log.error(`${PREFIX} ${e}`);
+            } catch (err) {
+              log.error(`${PREFIX} ${topic} | ${err}`);
             }
           }
         }
