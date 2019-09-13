@@ -20,7 +20,8 @@ const TRELLO_AUTH_TOKEN = '2a0ecf16ceb';
 const TRELLO_BOARD_ID = '5d0ab7754066f880369a4d97';
 const TRELLO_LIST_ID = '5d0ab7754066f880369a4d99';
 const API_PATH = `/properties/${PROPERTY_ID}/deficient-items/${DEFICIENT_ITEM_ID}/trello/card`;
-const CLIENT_APP_URI_TEMPL = appConfig.clientApps.web.productionDeficientItemURL;
+const CLIENT_APP_URI_TEMPL =
+  appConfig.clientApps.web.productionDeficientItemURL;
 const DEFICIENT_ITEM_DATA = {
   createdAt: Date.now() / 1000,
   currentDueDate: Date.now() / 1000,
@@ -194,7 +195,12 @@ describe('Trello Create Deficient Item Cards', () => {
   });
 
   it('should succesfully create a trello card for the deficient item with expected details', async () => {
-    const expected = `DEFICIENT ITEM (Thu, 12 Sep 2019)
+    const createdAt = new Date(DEFICIENT_ITEM_DATA.createdAt * 1000)
+      .toGMTString()
+      .split(' ')
+      .slice(0, 4)
+      .join(' ');
+    const expected = `DEFICIENT ITEM (${createdAt})
 Score: 4 of 3
 Inspector Notes: a lot of rust around pipe
 Plan to fix: replace pipe completely
