@@ -414,12 +414,12 @@ exports.regTokensSyncStaging = regTokens.cron.syncOutdated(
   dbStaging
 );
 
-exports.deficientItemsOverdueSync = deficientItems.cron.createSyncOverdue(
+exports.deficientItemsOverdueSync = deficientItems.pubsub.createSyncOverdue(
   'deficient-items-sync',
   functions.pubsub,
   db
 );
-exports.deficientItemsOverdueSyncStaging = deficientItems.cron.createSyncOverdue(
+exports.deficientItemsOverdueSyncStaging = deficientItems.pubsub.createSyncOverdue(
   'staging-deficient-items-sync',
   functions.pubsub,
   dbStaging

@@ -4,7 +4,7 @@ const model = require('../../models/deficient-items');
 const processPropertyMeta = require('../../properties/utils/process-meta');
 const { forEachChild } = require('../../utils/firebase-admin');
 
-const LOG_PREFIX = 'deficient-items: cron: sync-overdue:';
+const PREFIX = 'deficient-items: pubsub: sync-overdue:';
 const FIVE_DAYS_IN_SEC = 432000;
 const OVERDUE_ELIGIBLE_STATES = config.deficientItems.overdueEligibleStates;
 
@@ -25,7 +25,7 @@ module.exports = function createSyncOverdueDeficientItemshandler(
     .topic(topic)
     .onPublish(async function syncOverdueDeficientItemsHandler() {
       const updates = Object.create(null);
-      log.info(`${LOG_PREFIX} received ${Date.now()}`);
+      log.info(`${PREFIX} received ${Date.now()}`);
 
       const now = Date.now() / 1000;
 
@@ -73,7 +73,7 @@ module.exports = function createSyncOverdueDeficientItemshandler(
                   // Sync DI's changes to its' property's metadata
                   const metaUpdates = await processPropertyMeta(db, propertyId);
                   log.info(
-                    `${LOG_PREFIX} property: ${propertyId} | deficient item: ${defItemId} | deficiency overdue`
+                    `${PREFIX} property: ${propertyId} | deficient item: ${defItemId} | deficiency overdue`
                   );
                   Object.assign(updates, metaUpdates); // add property meta updates to updates
                 } else if (
@@ -90,12 +90,12 @@ module.exports = function createSyncOverdueDeficientItemshandler(
                     state
                   );
                   log.info(
-                    `${LOG_PREFIX} property: ${propertyId} | deficient item: ${defItemId} | deficiency requires progress update`
+                    `${PREFIX} property: ${propertyId} | deficient item: ${defItemId} | deficiency requires progress update`
                   );
                   Object.assign(updates, stateUpdates); // add state updates to updates
                 }
               } catch (e) {
-                log.error(`${LOG_PREFIX} ${e}`);
+                log.error(`${PREFIX} ${e}`);
               }
             }
           );
