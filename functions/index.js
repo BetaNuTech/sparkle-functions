@@ -320,13 +320,18 @@ exports.templateCategoryDeleteStaging = functionsStagingDatabase
 exports.onCreateSourceSlackNotification = functions.database
   .ref('/notifications/src/{notificationID}')
   .onCreate(
-    notifications.createOnCreateSrcSlackWatcher(db, 'notifications-sync')
+    notifications.createOnCreateSrcSlackWatcher(
+      db,
+      pubsubClient,
+      'notifications-sync'
+    )
   );
 exports.onCreateSourceSlackNotificationStaging = functionsStagingDatabase
   .ref('/notifications/src/{notificationID}')
   .onCreate(
     notifications.createOnCreateSrcSlackWatcher(
       dbStaging,
+      pubsubClient,
       'staging-notifications-sync'
     )
   );
