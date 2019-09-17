@@ -468,13 +468,13 @@ exports.userTeamsSyncStaging = teams.pubsub.createSyncUserTeam(
   dbStaging
 );
 
-exports.publishSlackNotifications = notifications.pubsub.createPublishSlackNotifications(
+exports.publishSlackNotifications = notifications.pubsub.createPublishSlack(
   'notifications-sync',
   functions.pubsub,
   db
 );
 
-exports.publishSlackNotificationsStaging = notifications.pubsub.createPublishSlackNotifications(
+exports.publishSlackNotificationsStaging = notifications.pubsub.createPublishSlack(
   'staging-notifications-sync',
   functions.pubsub,
   dbStaging
