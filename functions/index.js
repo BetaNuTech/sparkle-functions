@@ -316,14 +316,16 @@ exports.templateCategoryDeleteStaging = functionsStagingDatabase
   .ref('/templateCategories/{categoryId}')
   .onDelete(templateCategories.createOnDeleteWatcher(dbStaging));
 
-// Global Notification Create
-exports.onCreateSourceNotification = functions.database
-  .ref('/notifications/src/{notificationID}')
-  .onCreate(notifications.createOnCreateSrcWatcher(db, 'notifications-sync'));
-exports.onCreateSourceNotificationStaging = functionsStagingDatabase
+// Create Slack Notifications From Source
+exports.onCreateSourceSlackNotification = functions.database
   .ref('/notifications/src/{notificationID}')
   .onCreate(
-    notifications.createOnCreateSrcWatcher(
+    notifications.createOnCreateSrcSlackWatcher(db, 'notifications-sync')
+  );
+exports.onCreateSourceSlackNotificationStaging = functionsStagingDatabase
+  .ref('/notifications/src/{notificationID}')
+  .onCreate(
+    notifications.createOnCreateSrcSlackWatcher(
       dbStaging,
       'staging-notifications-sync'
     )

@@ -1,5 +1,5 @@
-const createOnCreateSrcWatcher = require('./on-create-src-watcher');
+const createOnCreateSrcSlackWatcher = require('./on-create-src-slack-watcher');
 
 module.exports = {
-  createOnCreateSrcWatcher,
+  createOnCreateSrcSlackWatcher,
 };
