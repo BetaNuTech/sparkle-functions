@@ -1,23 +1,21 @@
 const log = require('../../utils/logger');
 const systemModel = require('../../models/system');
 const integrationModel = require('../../models/integrations');
-const sendSlackChannelMessage = require('./utils/send-slack-channel-message');
+const slack = require('../../services/slack');
 
-const PREFIX = `slack: pubsub: publish-slack-notification:`;
+const PREFIX = 'notifications: pubsub: publish-slack-notification:';
 
 /**
- * Clean any lingering /push-messages from database
- * when pubsub client receives a message
+ * Publish a slack nofication to its'
+ * Slack Channel and remove the slack notification's
+ * configuration upon success
  * @param  {String} topic
  * @param  {functions.pubsub} pubSub
  * @param  {firebaseAdmin.database} db
  * @return {functions.CloudFunction}
  */
 module.exports = function publishSlackNotification(topic = '', pubSub, db) {
-  // Subscribe to `notifications-sync`
   return pubSub.topic(topic).onPublish(async () => {
-    const updates = {};
-
     let accessToken = '';
     try {
       const slackIntegrationCredentialsSnap = await systemModel.findSlackCredentials(
@@ -90,7 +88,7 @@ module.exports = function publishSlackNotification(topic = '', pubSub, db) {
         const notification = notifications[channelName][notificationId];
 
         try {
-          await sendSlackChannelMessage(
+          await slack.sendSlackChannelMessage(
             accessToken,
             channelName,
             notification.title,
@@ -111,8 +109,6 @@ module.exports = function publishSlackNotification(topic = '', pubSub, db) {
             channelName,
             notificationId
           );
-          updates[`/notifications/slack/${channelName}/${notificationId}`] =
-            'removed';
         } catch (err) {
           log.error(
             `${PREFIX} ${topic}: delete notification record error | ${err}`
@@ -120,7 +116,5 @@ module.exports = function publishSlackNotification(topic = '', pubSub, db) {
         }
       }
     }
-
-    return updates;
   });
 };
