@@ -2,7 +2,6 @@ const log = require('../../utils/logger');
 const systemModel = require('../../models/system');
 const integrationModel = require('../../models/integrations');
 const slack = require('../../services/slack');
-// const sendSlackChannelMessage = require('./utils/send-slack-channel-message');
 
 const PREFIX = 'notifications: pubsub: publish-slack-notification:';
 
