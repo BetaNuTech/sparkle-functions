@@ -10,6 +10,7 @@ const deficientItems = require('./deficient-items');
 const teams = require('./teams');
 const trello = require('./trello');
 const slack = require('./slack');
+const notifications = require('./notifications');
 const regTokens = require('./reg-tokens');
 const config = require('./config');
 
@@ -314,6 +315,19 @@ exports.templateCategoryDelete = functions.database
 exports.templateCategoryDeleteStaging = functionsStagingDatabase
   .ref('/templateCategories/{categoryId}')
   .onDelete(templateCategories.createOnDeleteWatcher(dbStaging));
+
+// Global Notification Create
+exports.onCreateSourceNotification = functions.database
+  .ref('/notifications/src/{notificationID}')
+  .onCreate(notifications.createOnCreateSrcWatcher(db, 'notifications-sync'));
+exports.onCreateSourceNotificationStaging = functionsStagingDatabase
+  .ref('/notifications/src/{notificationID}')
+  .onCreate(
+    notifications.createOnCreateSrcWatcher(
+      dbStaging,
+      'staging-notifications-sync'
+    )
+  );
 
 // GET Inspection PDF Report
 exports.inspectionPdfReport = functions.https.onRequest(
