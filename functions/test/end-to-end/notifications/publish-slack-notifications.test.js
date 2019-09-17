@@ -1,13 +1,13 @@
 const { expect } = require('chai');
 const nock = require('nock');
-const uuid = require('../../test-helpers/uuid');
-const { cleanDb } = require('../../test-helpers/firebase');
+const uuid = require('../../../test-helpers/uuid');
+const { cleanDb } = require('../../../test-helpers/firebase');
 const {
   db,
   test,
   cloudFunctions,
   uid: SERVICE_ACCOUNT_ID,
-} = require('./setup');
+} = require('../setup');
 
 const SLACK_CHANNEL = 'development';
 const SLACK_CREDENTIAL_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/slack/organization`;
@@ -60,14 +60,65 @@ const SLACK_API_PUB_MSG_RESP = {
     bot_id: 'BLC0KDFLG',
   },
 };
+const SLACK_NOTIFICATION_DATA = { title: 'title', message: 'message' };
 
-describe('Slack publish notification', () => {
+describe('Publish Slack notification', () => {
   afterEach(async () => {
+    nock.cleanAll();
     await cleanDb(db);
     return db.ref(`/system/integrations/${SERVICE_ACCOUNT_ID}`).remove();
   });
 
-  it('should successfully send message and remove sent pending notifications', async () => {
+  it("should attempt to join all Slack notification's channels", async () => {
+    const notificationId = uuid();
+    const notificationId2 = uuid();
+    const channelOne = `channel-${uuid()}`;
+    const channelTwo = `channel-${uuid()}`;
+
+    // Stub requests
+    const channelOneReq = nock('https://slack.com')
+      .persist()
+      .post('/api/channels.join')
+      .query({
+        token: INTEGRATION_PAYLOAD.accessToken,
+        name: channelOne,
+        validate: true,
+      })
+      .reply(200, SLACK_API_JOIN_CHAN_RESPONSE);
+    const channelTwoReq = nock('https://slack.com')
+      .persist()
+      .post('/api/channels.join')
+      .query({
+        token: INTEGRATION_PAYLOAD.accessToken,
+        name: channelTwo,
+        validate: true,
+      })
+      .reply(200, SLACK_API_JOIN_CHAN_RESPONSE);
+    nock('https://slack.com')
+      .persist()
+      .post('/api/chat.postMessage')
+      .query(true)
+      .reply(200, SLACK_API_PUB_MSG_RESP);
+
+    // Setup Database
+    await db.ref(SLACK_CREDENTIAL_DB_PATH).set(INTEGRATION_PAYLOAD); // adding slack integration configuration
+    await db
+      .ref(`/notifications/slack/${channelOne}/${notificationId}`)
+      .set(SLACK_NOTIFICATION_DATA);
+
+    await db
+      .ref(`/notifications/slack/${channelTwo}/${notificationId2}`)
+      .set(SLACK_NOTIFICATION_DATA);
+
+    // Execute
+    await test.wrap(cloudFunctions.publishSlackNotifications)();
+
+    // Assertions
+    expect(channelOneReq.isDone()).to.equal(true, 'joined channel one');
+    expect(channelTwoReq.isDone()).to.equal(true, 'joined channel two');
+  });
+
+  it('should successfully publish and cleanup all Slack notifications', async () => {
     // Stub request
     nock('https://slack.com')
       .persist()
@@ -90,23 +141,16 @@ describe('Slack publish notification', () => {
 
     // Setup database
     await db.ref(SLACK_CREDENTIAL_DB_PATH).set(INTEGRATION_PAYLOAD); // adding slack integration configuration
-
     await db
       .ref(`/notifications/slack/${SLACK_CHANNEL}/${notificationId}`)
-      .set({
-        title: 'testing notification',
-        message: 'we need to resolve this issue.',
-      }); // adding one notification that can be processed
+      .set({ title: 'test', message: 'msg' }); // adding one notification that can be processed
 
     await db
       .ref(`/notifications/slack/${SLACK_CHANNEL}/${notificationId2}`)
-      .set({
-        title: 'Emergancy Checkup',
-        message: 'The tenant has reported an emergancy.',
-      }); // adding one notification that can be processed
+      .set({ title: 'test', message: 'msg' }); // adding one notification that can be processed
 
     // Execute
-    await test.wrap(cloudFunctions.notifications)();
+    await test.wrap(cloudFunctions.publishSlackNotifications)();
 
     // Test result
     const actual = await db
@@ -159,7 +203,7 @@ describe('Slack publish notification', () => {
       }); // adding one notification that can be processed
 
     // Execute
-    await test.wrap(cloudFunctions.notifications)();
+    await test.wrap(cloudFunctions.publishSlackNotifications)();
 
     // Test result
     const snap = await db

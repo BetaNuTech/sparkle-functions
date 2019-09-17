@@ -10,6 +10,7 @@ const deficientItems = require('./deficient-items');
 const teams = require('./teams');
 const trello = require('./trello');
 const slack = require('./slack');
+const notifications = require('./notifications');
 const regTokens = require('./reg-tokens');
 const config = require('./config');
 
@@ -315,6 +316,26 @@ exports.templateCategoryDeleteStaging = functionsStagingDatabase
   .ref('/templateCategories/{categoryId}')
   .onDelete(templateCategories.createOnDeleteWatcher(dbStaging));
 
+// Create Slack Notifications From Source
+exports.onCreateSourceSlackNotification = functions.database
+  .ref('/notifications/src/{notificationID}')
+  .onCreate(
+    notifications.createOnCreateSrcSlackWatcher(
+      db,
+      pubsubClient,
+      'notifications-slack-sync'
+    )
+  );
+exports.onCreateSourceSlackNotificationStaging = functionsStagingDatabase
+  .ref('/notifications/src/{notificationID}')
+  .onCreate(
+    notifications.createOnCreateSrcSlackWatcher(
+      dbStaging,
+      pubsubClient,
+      'staging-notifications-slack-sync'
+    )
+  );
+
 // GET Inspection PDF Report
 exports.inspectionPdfReport = functions.https.onRequest(
   inspections.createOnGetPDFReportHandler(db, admin.messaging(), auth)
@@ -447,16 +468,32 @@ exports.userTeamsSyncStaging = teams.pubsub.createSyncUserTeam(
   dbStaging
 );
 
-exports.notifications = slack.pubsub.createPublishSlackNotification(
-  'notifications-sync',
+exports.publishSlackNotifications = notifications.pubsub.createPublishSlack(
+  'notifications-slack-sync',
   functions.pubsub,
   db
 );
 
-exports.notificationsStaging = slack.pubsub.createPublishSlackNotification(
-  'staging-notifications-sync',
+exports.publishSlackNotificationsStaging = notifications.pubsub.createPublishSlack(
+  'staging-notifications-slack-sync',
   functions.pubsub,
   dbStaging
+);
+
+exports.cleanupNotifications = notifications.pubsub.createCleanup(
+  db,
+  functions.pubsub,
+  pubsubClient,
+  'notifications-sync',
+  'notifications-slack-sync'
+);
+
+exports.cleanupNotificationsStaging = notifications.pubsub.createCleanup(
+  dbStaging,
+  functions.pubsub,
+  pubsubClient,
+  'staging-notifications-sync',
+  'staging-notifications-slack-sync'
 );
 
 exports.trelloCommentsForDefItemStateUpdates = trello.pubsub.createCommentForDiState(
