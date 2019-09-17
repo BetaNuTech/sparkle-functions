@@ -223,8 +223,8 @@ describe('Create Slack Notification From Source', () => {
 
   it('should publish a notifications sync event for the slack channel', async () => {
     let actual = '';
-    const expected = `slack/${SLACK_ORG_INTEGRATION_DATA.defaultChannelName}`;
-    const unsubscribe = pubsub.subscribe('notifications-sync', data => {
+    const expected = SLACK_ORG_INTEGRATION_DATA.defaultChannelName;
+    const unsubscribe = pubsub.subscribe('notifications-slack-sync', data => {
       actual = Buffer.from(data, 'base64').toString();
     });
 

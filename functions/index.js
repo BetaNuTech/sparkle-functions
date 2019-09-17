@@ -323,7 +323,7 @@ exports.onCreateSourceSlackNotification = functions.database
     notifications.createOnCreateSrcSlackWatcher(
       db,
       pubsubClient,
-      'notifications-sync'
+      'notifications-slack-sync'
     )
   );
 exports.onCreateSourceSlackNotificationStaging = functionsStagingDatabase
@@ -332,7 +332,7 @@ exports.onCreateSourceSlackNotificationStaging = functionsStagingDatabase
     notifications.createOnCreateSrcSlackWatcher(
       dbStaging,
       pubsubClient,
-      'staging-notifications-sync'
+      'staging-notifications-slack-sync'
     )
   );
 
@@ -469,15 +469,31 @@ exports.userTeamsSyncStaging = teams.pubsub.createSyncUserTeam(
 );
 
 exports.publishSlackNotifications = notifications.pubsub.createPublishSlack(
-  'notifications-sync',
+  'notifications-slack-sync',
   functions.pubsub,
   db
 );
 
 exports.publishSlackNotificationsStaging = notifications.pubsub.createPublishSlack(
-  'staging-notifications-sync',
+  'staging-notifications-slack-sync',
   functions.pubsub,
   dbStaging
+);
+
+exports.cleanupNotifications = notifications.pubsub.createCleanup(
+  db,
+  functions.pubsub,
+  pubsubClient,
+  'notifications-sync',
+  'notifications-slack-sync'
+);
+
+exports.cleanupNotificationsStaging = notifications.pubsub.createCleanup(
+  dbStaging,
+  functions.pubsub,
+  pubsubClient,
+  'staging-notifications-sync',
+  'staging-notifications-slack-sync'
 );
 
 exports.trelloCommentsForDefItemStateUpdates = trello.pubsub.createCommentForDiState(

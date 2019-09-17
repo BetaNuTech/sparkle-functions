@@ -74,6 +74,7 @@ describe('Publish Slack notification', () => {
     const notificationId2 = uuid();
     const channelOne = `channel-${uuid()}`;
     const channelTwo = `channel-${uuid()}`;
+
     // Stub requests
     const channelOneReq = nock('https://slack.com')
       .persist()
@@ -93,13 +94,14 @@ describe('Publish Slack notification', () => {
         validate: true,
       })
       .reply(200, SLACK_API_JOIN_CHAN_RESPONSE);
-
     nock('https://slack.com')
       .persist()
       .post('/api/chat.postMessage')
       .query(true)
       .reply(200, SLACK_API_PUB_MSG_RESP);
 
+    // Setup Database
+    await db.ref(SLACK_CREDENTIAL_DB_PATH).set(INTEGRATION_PAYLOAD); // adding slack integration configuration
     await db
       .ref(`/notifications/slack/${channelOne}/${notificationId}`)
       .set(SLACK_NOTIFICATION_DATA);
@@ -108,11 +110,15 @@ describe('Publish Slack notification', () => {
       .ref(`/notifications/slack/${channelTwo}/${notificationId2}`)
       .set(SLACK_NOTIFICATION_DATA);
 
-    // Fails when channel requests unresolved
-    return Promise.all([channelOneReq.isDone(), channelTwoReq.isDone()]);
+    // Execute
+    await test.wrap(cloudFunctions.publishSlackNotifications)();
+
+    // Assertions
+    expect(channelOneReq.isDone()).to.equal(true, 'joined channel one');
+    expect(channelTwoReq.isDone()).to.equal(true, 'joined channel two');
   });
 
-  it('should successfully publish all Slack notifications', async () => {
+  it('should successfully publish and cleanup all Slack notifications', async () => {
     // Stub request
     nock('https://slack.com')
       .persist()
@@ -147,26 +153,24 @@ describe('Publish Slack notification', () => {
     await test.wrap(cloudFunctions.publishSlackNotifications)();
 
     // Test result
-    // const actual = await db
-    //   .ref(`/notifications/slack/${SLACK_CHANNEL}/${notificationId}`)
-    //   .once('value');
-    //
-    // const actual2 = await db
-    //   .ref(`/notifications/slack/${SLACK_CHANNEL}/${notificationId2}`)
-    //   .once('value');
+    const actual = await db
+      .ref(`/notifications/slack/${SLACK_CHANNEL}/${notificationId}`)
+      .once('value');
+
+    const actual2 = await db
+      .ref(`/notifications/slack/${SLACK_CHANNEL}/${notificationId2}`)
+      .once('value');
 
     // Assertions
-    // expect(actual.exists()).to.equal(
-    //   false,
-    //   `synced /notifications/slack/${SLACK_CHANNEL}/${notificationId} by removing once message has sent`
-    // );
-    // expect(actual2.exists()).to.equal(
-    //   false,
-    //   `synced /notifications/slack/${SLACK_CHANNEL}/${notificationId2} by removing once message has sent`
-    // );
+    expect(actual.exists()).to.equal(
+      false,
+      `synced /notifications/slack/${SLACK_CHANNEL}/${notificationId} by removing once message has sent`
+    );
+    expect(actual2.exists()).to.equal(
+      false,
+      `synced /notifications/slack/${SLACK_CHANNEL}/${notificationId2} by removing once message has sent`
+    );
   });
-
-  // it('should remove successfully published Slack notifications', async () => {});
 
   it('should record a successfully joined channel in integrations', async () => {
     // Stub request

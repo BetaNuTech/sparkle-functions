@@ -50,8 +50,8 @@ module.exports = function createOnCreateSrcSlackNotification(
       log.error(`${PREFIX} failed to mark published mediums`);
     }
 
-    // Publish notification sync
+    // Publish notification slack sync
     // event for the Slack channel
-    await publisher.publish(Buffer.from(`slack/${slackNotification.channel}`));
+    await publisher.publish(Buffer.from(slackNotification.channel));
   };
 };

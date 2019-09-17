@@ -15,7 +15,6 @@ const PREFIX = 'notifications: pubsub: publish-slack-notification:';
  * @return {functions.CloudFunction}
  */
 module.exports = function publishSlackNotification(topic = '', pubSub, db) {
-  // Subscribe to `notifications-sync`
   return pubSub.topic(topic).onPublish(async () => {
     let accessToken = '';
     try {
