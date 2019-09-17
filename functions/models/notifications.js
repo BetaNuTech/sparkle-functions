@@ -7,6 +7,29 @@ const SLACK_NOTIFICATION_PATH = '/notifications/slack';
 
 module.exports = modelSetup({
   /**
+   * Find all source notifications
+   * @param  {firebase.database} db
+   * @return {Promise} - resolves {DataSnapshot}
+   */
+  findAllSrc(db) {
+    return db.ref(SRC_NOTIFICATION_PATH).once('value');
+  },
+
+  /**
+   * Remove a source notification
+   * @param  {firebaseAdmin.database} db firbase database
+   * @param  {String} notificationId
+   * @return {Promise}
+   */
+  removeSrc(db, notificationId) {
+    assert(
+      notificationId && typeof notificationId === 'string',
+      `${PREFIX} removeSrc: has notification ID`
+    );
+    return db.ref(`${SRC_NOTIFICATION_PATH}/${notificationId}`).remove();
+  },
+
+  /**
    * Push a Slack notification to a
    * specified channel name resolving
    * DB reference to the new notification
