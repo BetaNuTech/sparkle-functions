@@ -1,7 +1,6 @@
 const { expect } = require('chai');
 // const config = require('../../../config');
 const uuid = require('../../../test-helpers/uuid');
-// const mocking = require('../../../test-helpers/mocking');
 const { cleanDb } = require('../../../test-helpers/firebase');
 const {
   db,
@@ -11,21 +10,24 @@ const {
   uid: SERVICE_ACCOUNT_ID,
 } = require('../setup');
 
+const PROPERTY_ID = uuid();
 const NOTIFICATION_ID = uuid();
 const SRC_NOTIFICATION_PATH = `/notifications/source/${NOTIFICATION_ID}`;
 const SYSTEM_INTEGRATION_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}`;
 const SLACK_SYSTEM_PATH = `${SYSTEM_INTEGRATION_PATH}/slack/organization`;
 const SLACK_ORG_INTEGRATION_PATH = '/integrations/slack/organization';
-const SLACK_ORG_INTEGRATION_DATA = {
-  defaultChannelName: 'channel',
-};
-const DEFAULT_NOTIFICATION_DATA = Object.freeze({
+const SLACK_ORG_INTEGRATION_DATA = { defaultChannelName: 'admin-channel' };
+const PROPERTY_PATH = `/properties/${PROPERTY_ID}`;
+const PROPERTY_DATA = { slackChannel: 'property-channel' };
+const SLACK_ADMIN_NOTIFICATON_PATH = `/notifications/slack/${SLACK_ORG_INTEGRATION_DATA.defaultChannelName}/${NOTIFICATION_ID}`;
+const SLACK_PROP_NOTIFICATON_PATH = `/notifications/slack/${PROPERTY_DATA.slackChannel}/${NOTIFICATION_ID}`;
+const NOTIFICATION_DATA = Object.freeze({
   title: 'notification',
   summary: 'summary',
 });
 const SLACK_SYSTEM_DATA = {
   accessToken: 'lfjkas',
-  scope: 'all'
+  scope: 'all',
 };
 
 describe('On create source notification', () => {
@@ -34,50 +36,133 @@ describe('On create source notification', () => {
     return db.ref(SYSTEM_INTEGRATION_PATH).remove();
   });
 
-  it('should not create a admin slack notification when slack is not setup', async () => {
+  it('should not create a admin slack notification when admin channel is not set', async () => {
     // Setup database
     await db
       .ref(SRC_NOTIFICATION_PATH)
-      .set(Object.assign({}, DEFAULT_NOTIFICATION_DATA));
+      .set(Object.assign({}, NOTIFICATION_DATA));
+    await db.ref(SLACK_SYSTEM_PATH).set(SLACK_SYSTEM_DATA);
     const notificationsSnap = await db.ref(SRC_NOTIFICATION_PATH).once('value');
 
-    // Execute /wo system integration
-    const wrapped = test.wrap(cloudFunctions.onCreateSourceNotification);
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.onCreateSourceSlackNotification);
     await wrapped(notificationsSnap, {
       params: { notificationId: NOTIFICATION_ID },
     });
 
     // Assertions
-    let snap = await db.ref('/notifications/slack').once('value');
-    let actual = snap.exists();
-    expect(actual).to.equal(false, 'missing system integration');
+    const snap = await db.ref(SLACK_ADMIN_NOTIFICATON_PATH).once('value');
+    const actual = snap.exists();
+    expect(actual).to.equal(false);
+  });
 
-    // Setup system's Slack credentials
-    // without configuring admin channel
+  it('should not create a property slack notification when property channel is not set', async () => {
+    // Setup database
+    await db
+      .ref(SRC_NOTIFICATION_PATH)
+      .set(Object.assign({ property: PROPERTY_ID }, NOTIFICATION_DATA));
     await db.ref(SLACK_SYSTEM_PATH).set(SLACK_SYSTEM_DATA);
+    const notificationsSnap = await db.ref(SRC_NOTIFICATION_PATH).once('value');
 
-    // Execute /wo client slack integration
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.onCreateSourceSlackNotification);
     await wrapped(notificationsSnap, {
       params: { notificationId: NOTIFICATION_ID },
     });
 
     // Assertions
-    snap = await db.ref('/notifications/slack').once('value');
-    actual = snap.exists();
-    expect(actual).to.equal(false, 'missing client integration');
+    const snap = await db.ref(SLACK_PROP_NOTIFICATON_PATH).once('value');
+    const actual = snap.exists();
+    expect(actual).to.equal(false);
+  });
+
+  it('should not create a slack notification when source notification is missing a title', async () => {
+    const invalidNotificationData = Object.assign({}, NOTIFICATION_DATA);
+    delete invalidNotificationData.title;
+
+    // Setup database
+    await db.ref(SRC_NOTIFICATION_PATH).set(invalidNotificationData);
+    await db.ref(SLACK_SYSTEM_PATH).set(SLACK_SYSTEM_DATA);
+    await db.ref(SLACK_ORG_INTEGRATION_PATH).set(SLACK_ORG_INTEGRATION_DATA);
+    const notificationsSnap = await db.ref(SRC_NOTIFICATION_PATH).once('value');
+
+    // Execute
+    try {
+      const wrapped = test.wrap(cloudFunctions.onCreateSourceSlackNotification);
+      await wrapped(notificationsSnap, {
+        params: { notificationId: NOTIFICATION_ID },
+      });
+    } catch (err) {} // eslint-disable-line no-empty
+
+    // Assertions
+    const snap = await db.ref(SLACK_ADMIN_NOTIFICATON_PATH).once('value');
+    const actual = snap.exists();
+    expect(actual).to.equal(false);
+  });
+
+  it('should not create a slack notification when source notification is missing a summary', async () => {
+    const invalidNotificationData = Object.assign({}, NOTIFICATION_DATA);
+    delete invalidNotificationData.summary;
+
+    // Setup database
+    await db.ref(SRC_NOTIFICATION_PATH).set(invalidNotificationData);
+    await db.ref(SLACK_SYSTEM_PATH).set(SLACK_SYSTEM_DATA);
+    await db.ref(SLACK_ORG_INTEGRATION_PATH).set(SLACK_ORG_INTEGRATION_DATA);
+    const notificationsSnap = await db.ref(SRC_NOTIFICATION_PATH).once('value');
+
+    // Execute
+    try {
+      const wrapped = test.wrap(cloudFunctions.onCreateSourceSlackNotification);
+      await wrapped(notificationsSnap, {
+        params: { notificationId: NOTIFICATION_ID },
+      });
+    } catch (err) {} // eslint-disable-line no-empty
+
+    // Assertions
+    const snap = await db.ref(SLACK_ADMIN_NOTIFICATON_PATH).once('value');
+    const actual = snap.exists();
+    expect(actual).to.equal(false);
   });
 
   // it('should create an admin slack notification when slack is setup', async () => {
-  //   const ref = db.ref('/notifications/source').push();
-  //   const path = ref.path.toString();
-  //   const notificationsId = path.split('/').pop();
-  //
   //   // Setup database
-  //   const notificationsSnap = await db.ref(path).once('value');
-  //   const wrapped = test.wrap(cloudFunctions.onCreateSourceNotification);
-  //   await wrapped(notificationsSnap, { params: { notificationsId } });
+  //   await db
+  //     .ref(SRC_NOTIFICATION_PATH)
+  //     .set(Object.assign({}, NOTIFICATION_DATA));
+  //   const notificationsSnap = await db.ref(SRC_NOTIFICATION_PATH).once('value');
+  //   await db.ref(SLACK_SYSTEM_PATH).set(SLACK_SYSTEM_DATA);
+  //   await db.ref(SLACK_ORG_INTEGRATION_PATH).set(SLACK_ORG_INTEGRATION_DATA);
+  //
+  //   // Execute
+  //   const wrapped = test.wrap(cloudFunctions.onCreateSourceSlackNotification);
+  //   await wrapped(notificationsSnap, {
+  //     params: { notificationId: NOTIFICATION_ID },
+  //   });
+  //
+  //   // Assertions
+  //   const snap = await db.ref(SLACK_ADMIN_NOTIFICATON_PATH).once('value');
+  //   const actual = snap.exists();
+  //   expect(actual).to.equal(true);
   // });
-
-  // it("should create a property slack notification when the organization and property have it setup", async () => {
+  //
+  // it('should create a property slack notification when slack is setup and property has a channel', async () => {
+  //   // Setup database
+  //   await db
+  //     .ref(SRC_NOTIFICATION_PATH)
+  //     .set(Object.assign({ property: PROPERTY_ID }, NOTIFICATION_DATA));
+  //   const notificationsSnap = await db.ref(SRC_NOTIFICATION_PATH).once('value');
+  //   await db.ref(SLACK_SYSTEM_PATH).set(SLACK_SYSTEM_DATA);
+  //   await db.ref(PROPERTY_PATH).set(PROPERTY_DATA);
+  //
+  //   // Execute
+  //   const wrapped = test.wrap(cloudFunctions.onCreateSourceSlackNotification);
+  //   await wrapped(notificationsSnap, {
+  //     params: { notificationId: NOTIFICATION_ID },
+  //   });
+  //
+  //   // Assertions
+  //   const snap = await db.ref(SLACK_PROP_NOTIFICATON_PATH).once('value');
+  //   const actual = snap.exists();
+  //   expect(actual).to.equal(true);
   // });
 });
