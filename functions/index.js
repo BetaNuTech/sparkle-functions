@@ -318,7 +318,7 @@ exports.templateCategoryDeleteStaging = functionsStagingDatabase
 
 // Create Slack Notifications From Source
 exports.onCreateSourceSlackNotification = functions.database
-  .ref('/notifications/src/{notificationID}')
+  .ref('/notifications/src/{notificationId}')
   .onCreate(
     notifications.createOnCreateSrcSlackWatcher(
       db,
@@ -327,7 +327,7 @@ exports.onCreateSourceSlackNotification = functions.database
     )
   );
 exports.onCreateSourceSlackNotificationStaging = functionsStagingDatabase
-  .ref('/notifications/src/{notificationID}')
+  .ref('/notifications/src/{notificationId}')
   .onCreate(
     notifications.createOnCreateSrcSlackWatcher(
       dbStaging,
