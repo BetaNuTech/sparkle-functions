@@ -106,14 +106,6 @@ exports.createTrelloDeficientItemCardStaging = functions.https.onRequest(
   )
 );
 
-// GET /integrations/trello
-exports.getTrelloAuthorizor = functions.https.onRequest(
-  trello.createGetTrelloAuthorizorHandler(db, auth)
-);
-exports.getTrelloAuthorizorStaging = functions.https.onRequest(
-  trello.createGetTrelloAuthorizorHandler(dbStaging, auth)
-);
-
 // POST /integrations/slack/authorization
 exports.createSlackAppAuth = functions.https.onRequest(
   slack.createOnSlackAppAuthHandler(db, auth)
