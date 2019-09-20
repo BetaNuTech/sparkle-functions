@@ -70,6 +70,7 @@ describe('Trello Comment for Deficient Item State Updates', () => {
       pubSubMessage
     );
 
+    // Assertions
     const actual = commentCreated.isDone();
     expect(actual).to.equal(false);
   });
