@@ -46,6 +46,9 @@ const deferredToGoBackTransTempl = `ACTION REQUIRED: Deficient Item requires new
 
 {{{firstName}}} {{{lastName}}} ({{{email}}}) has moved the deficient item to GO-BACK state, from DEFERRED state.`;
 const defaultCommentTempl = `{{{firstName}}} {{{lastName}}} ({{{email}}}) has changed the state of the Deficient Item from {{{previousState}}} to {{{currentState}}}`;
+const progressNoteTempl = `{{{firstName}}} {{{lastName}}} ({{{email}}}) has added a progress note.
+
+{{{progressNote}}}`;
 
 module.exports = {
   dbPath: '/propertyInspectionDeficientItems',
@@ -86,6 +89,12 @@ module.exports = {
    * @type {String}
    */
   trelloCardDescriptionTemplate,
+
+  /**
+   * Template for all Deficient Item Progress Notes
+   * @type {String}
+   */
+  trelloCardDIProgressNoteTemplate: progressNoteTempl,
 
   /**
    * Templates for Trello comments
