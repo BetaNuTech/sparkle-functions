@@ -44,6 +44,74 @@ describe('Trello | Create Progress Note Trello Card Comment', () => {
     return db.ref(`/system/integrations/${SERVICE_ACCOUNT_ID}`).remove();
   });
 
+  it('should not make request to Trello API when Progress Note lacks content', async () => {
+    // Stup requests
+    const commentCreated = nock('https://api.trello.com')
+      .put(
+        `/1/cards/${TRELLO_CARD_ID}/actions/comments?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&text=test`
+      )
+      .reply(200, {});
+
+    // Setup database
+    const diData = JSON.parse(JSON.stringify(DEFICIENT_ITEM_DATA));
+    delete diData.progressNotes[PROGRESS_NOTE_ID].progressNote;
+    await db.ref(DEFICIENT_ITEM_PATH).set(diData);
+    await db.ref(TRELLO_CREDENTIAL_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
+    const changeSnap = await db.ref(PROGRESS_NOTE_PATH).once('value');
+
+    // Execute
+    try {
+      const wrapped = test.wrap(
+        cloudFunctions.onCreateDeficientItemProgressNoteTrelloComment
+      );
+      await wrapped(changeSnap, {
+        params: {
+          propertyId: PROPERTY_ID,
+          deficientItemId: DEFICIENT_ITEM_ID,
+          progressNoteId: PROGRESS_NOTE_ID,
+        },
+      });
+    } catch (err) {} // eslint-disable-line no-empty
+
+    // Assertions
+    const actual = commentCreated.isDone();
+    expect(actual).to.equal(false);
+  });
+
+  it('should not make request to Trello API when Progress Note lacks user', async () => {
+    // Stup requests
+    const commentCreated = nock('https://api.trello.com')
+      .put(
+        `/1/cards/${TRELLO_CARD_ID}/actions/comments?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&text=test`
+      )
+      .reply(200, {});
+
+    // Setup database
+    const diData = JSON.parse(JSON.stringify(DEFICIENT_ITEM_DATA));
+    delete diData.progressNotes[PROGRESS_NOTE_ID].user;
+    await db.ref(DEFICIENT_ITEM_PATH).set(diData);
+    await db.ref(TRELLO_CREDENTIAL_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
+    const changeSnap = await db.ref(PROGRESS_NOTE_PATH).once('value');
+
+    // Execute
+    try {
+      const wrapped = test.wrap(
+        cloudFunctions.onCreateDeficientItemProgressNoteTrelloComment
+      );
+      await wrapped(changeSnap, {
+        params: {
+          propertyId: PROPERTY_ID,
+          deficientItemId: DEFICIENT_ITEM_ID,
+          progressNoteId: PROGRESS_NOTE_ID,
+        },
+      });
+    } catch (err) {} // eslint-disable-line no-empty
+
+    // Assertions
+    const actual = commentCreated.isDone();
+    expect(actual).to.equal(false);
+  });
+
   it('should not make request to Trello API when Deficient Item has no Trello Card', async () => {
     // Stup requests
     const commentCreated = nock('https://api.trello.com')
