@@ -15,7 +15,33 @@ module.exports = function createOnDiProgressNote(db) {
 
   return async (change, event) => {
     const { propertyId, deficientItemId } = event.params;
-    // const progressNote = change.val();
+    const progressNote = change.val();
+    assert(
+      propertyId && typeof propertyId === 'string',
+      'has property ID reference'
+    );
+    assert(
+      deficientItemId && typeof deficientItemId === 'string',
+      'has property ID reference'
+    );
+    assert(
+      progressNote && typeof progressNote === 'object',
+      'has progress note object'
+    );
+
+    if (!progressNote.progressNote) {
+      log.warn(
+        `Progress Note for "${propertyId}/${deficientItemId}" is missing progressNote attribute`
+      );
+      return;
+    }
+
+    if (!progressNote.user) {
+      log.warn(
+        `Progress Note for "${propertyId}/${deficientItemId}" is missing user attribute`
+      );
+      return;
+    }
 
     // Find created Trello Card reference
     let trelloCardId = '';
