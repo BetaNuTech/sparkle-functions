@@ -1,5 +1,6 @@
 const assert = require('assert');
 const systemModel = require('../models/system');
+const usersModel = require('../models/users');
 const log = require('../utils/logger');
 
 const PREFIX = 'trello: on-di-progress-note-create:';
@@ -29,16 +30,19 @@ module.exports = function createOnDiProgressNote(db) {
       'has progress note object'
     );
 
-    if (!progressNote.progressNote) {
+    if (
+      !progressNote.progressNote ||
+      typeof progressNote.progressNote !== 'string'
+    ) {
       log.warn(
-        `Progress Note for "${propertyId}/${deficientItemId}" is missing progressNote attribute`
+        `${PREFIX} Progress Note for "${propertyId}/${deficientItemId}" is missing progressNote attribute`
       );
       return;
     }
 
-    if (!progressNote.user) {
+    if (!progressNote.user || typeof progressNote.user !== 'string') {
       log.warn(
-        `Progress Note for "${propertyId}/${deficientItemId}" is missing user attribute`
+        `${PREFIX} Progress Note for "${propertyId}/${deficientItemId}" is missing user attribute`
       );
       return;
     }
@@ -58,6 +62,23 @@ module.exports = function createOnDiProgressNote(db) {
     if (!trelloCardId) {
       log.info(`${PREFIX} Deficient Item has no Trello Card, exiting`);
       return; // eslint-disable-line no-useless-return
+    }
+
+    // Lookup user that created Progress Note
+    let progressNoteAuthor = null;
+    try {
+      const userSnap = await usersModel.getUser(db, progressNote.user);
+      progressNoteAuthor = userSnap.val();
+      if (!progressNoteAuthor) {
+        log.warn(
+          `${PREFIX} author of progress note "${progressNote.user}" does not exist, exiting`
+        );
+        return;
+      }
+    } catch (err) {
+      throw Error(
+        `${PREFIX} failed to find user "${progressNote.user}" | ${err}`
+      ); // wrap error
     }
   };
 };
