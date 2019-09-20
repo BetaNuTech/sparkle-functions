@@ -1,12 +1,12 @@
 const { expect } = require('chai');
 const request = require('supertest');
 const nock = require('nock');
-const trelloTokenAppEndpoint = require('../../trello/on-create-request-handler');
-const uuid = require('../../test-helpers/uuid');
-const { cleanDb, stubFirbaseAuth } = require('../../test-helpers/firebase');
-const { db, uid: SERVICE_ACCOUNT_ID } = require('./setup');
-const GET_TRELLO_TOKEN_PAYLOAD = require('../../test-helpers/mocks/get-trello-token.json');
-const GET_TRELLO_MEMBER_PAYLOAD = require('../../test-helpers/mocks/get-trello-member.json');
+const trelloTokenAppEndpoint = require('../../../trello/on-create-request-handler');
+const uuid = require('../../../test-helpers/uuid');
+const { cleanDb, stubFirbaseAuth } = require('../../../test-helpers/firebase');
+const { db, uid: SERVICE_ACCOUNT_ID } = require('../setup');
+const GET_TRELLO_TOKEN_PAYLOAD = require('../../../test-helpers/mocks/get-trello-token.json');
+const GET_TRELLO_MEMBER_PAYLOAD = require('../../../test-helpers/mocks/get-trello-member.json');
 
 const USER_ID = uuid();
 const USER = { admin: true, corporate: true };

@@ -132,6 +132,14 @@ exports.createSlackNotificationsStaging = functions.https.onRequest(
   )
 );
 
+// GET Inspection PDF Report
+exports.inspectionPdfReport = functions.https.onRequest(
+  inspections.createOnGetPDFReportHandler(db, admin.messaging(), auth)
+);
+exports.inspectionPdfReportStaging = functions.https.onRequest(
+  inspections.createOnGetPDFReportHandler(dbStaging, admin.messaging(), auth)
+);
+
 // For migrating to a new architecture only, setting a newer date
 // This allow the updatedLastDate to stay as-is (make sure client doesn't update it though)
 exports.inspectionMigrationDateWrite = functions.database
@@ -328,13 +336,17 @@ exports.onCreateSourceSlackNotificationStaging = functionsStagingDatabase
     )
   );
 
-// GET Inspection PDF Report
-exports.inspectionPdfReport = functions.https.onRequest(
-  inspections.createOnGetPDFReportHandler(db, admin.messaging(), auth)
-);
-exports.inspectionPdfReportStaging = functions.https.onRequest(
-  inspections.createOnGetPDFReportHandler(dbStaging, admin.messaging(), auth)
-);
+exports.onCreateDeficientItemProgressNoteTrelloComment = functions.database
+  .ref(
+    '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/progressNotes/{progressNoteId}'
+  )
+  .onCreate(trello.createOnCreateDIProgressNote(db));
+
+exports.onCreateDeficientItemProgressNoteTrelloCommentStaging = functionsStagingDatabase
+  .ref(
+    '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/progressNotes/{progressNoteId}'
+  )
+  .onCreate(trello.createOnCreateDIProgressNote(dbStaging));
 
 // Message Subscribers
 exports.propertyMetaSync = properties.pubsub.createSyncMeta(
