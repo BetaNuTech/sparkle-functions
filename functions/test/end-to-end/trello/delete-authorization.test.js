@@ -1,9 +1,9 @@
 const { expect } = require('chai');
 const request = require('supertest');
-const deleteTrelloAuthApp = require('../../trello/delete-trello-auth-handler');
-const uuid = require('../../test-helpers/uuid');
-const { cleanDb, stubFirbaseAuth } = require('../../test-helpers/firebase');
-const { db, uid: SERVICE_ACCOUNT_ID } = require('./setup');
+const deleteTrelloAuthApp = require('../../../trello/delete-trello-auth-handler');
+const uuid = require('../../../test-helpers/uuid');
+const { cleanDb, stubFirbaseAuth } = require('../../../test-helpers/firebase');
+const { db, uid: SERVICE_ACCOUNT_ID } = require('../setup');
 
 const USER_ID = uuid();
 const PROPERTY_ONE_ID = uuid();
