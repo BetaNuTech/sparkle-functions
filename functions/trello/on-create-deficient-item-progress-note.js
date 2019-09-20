@@ -1,6 +1,10 @@
 const assert = require('assert');
+const hbs = require('handlebars');
 const systemModel = require('../models/system');
 const usersModel = require('../models/users');
+const {
+  trelloCardDIProgressNoteTemplate,
+} = require('../config/deficient-items');
 const log = require('../utils/logger');
 
 const PREFIX = 'trello: on-di-progress-note-create:';
@@ -13,6 +17,9 @@ const PREFIX = 'trello: on-di-progress-note-create:';
  */
 module.exports = function createOnDiProgressNote(db) {
   assert(Boolean(db), 'has firebase admin database reference');
+
+  // Template for all Progress Note comments
+  const progNoteTemplate = hbs.compile(trelloCardDIProgressNoteTemplate);
 
   return async (change, event) => {
     const { propertyId, deficientItemId } = event.params;
@@ -79,6 +86,32 @@ module.exports = function createOnDiProgressNote(db) {
       throw Error(
         `${PREFIX} failed to find user "${progressNote.user}" | ${err}`
       ); // wrap error
+    }
+
+    // Compile Trello comment
+    const commentText = progNoteTemplate({
+      firstName: progressNoteAuthor.firstName,
+      lastName: progressNoteAuthor.lastName,
+      email: progressNoteAuthor.email,
+      progressNote: progressNote.progressNote,
+    });
+
+    // Publish comment to Trello Card
+    try {
+      await systemModel.postTrelloCardComment(
+        db,
+        propertyId,
+        deficientItemId,
+        trelloCardId,
+        commentText
+      );
+
+      log.info(
+        `${PREFIX} successfully added progress note comment to Trello card`
+      );
+    } catch (err) {
+      // Wrap error
+      throw Error(`${PREFIX} failed to Publish Trello comment | ${err}`);
     }
   };
 };

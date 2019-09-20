@@ -1,5 +1,9 @@
 const nock = require('nock');
+const hbs = require('handlebars');
 const { expect } = require('chai');
+const {
+  trelloCardDIProgressNoteTemplate,
+} = require('../../../config/deficient-items');
 const uuid = require('../../../test-helpers/uuid');
 const { cleanDb } = require('../../../test-helpers/firebase');
 const deferredDiData = require('../../../test-helpers/mocks/deferred-deficient-item');
@@ -55,7 +59,7 @@ describe('Trello | Create Progress Note Trello Card Comment', () => {
   it('should not make request to Trello API when Progress Note lacks content', async () => {
     // Stup requests
     const commentCreated = nock('https://api.trello.com')
-      .put(
+      .post(
         `/1/cards/${TRELLO_CARD_ID}/actions/comments?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&text=test`
       )
       .reply(200, {});
@@ -91,7 +95,7 @@ describe('Trello | Create Progress Note Trello Card Comment', () => {
   it('should not make request to Trello API when Progress Note lacks user', async () => {
     // Stup requests
     const commentCreated = nock('https://api.trello.com')
-      .put(
+      .post(
         `/1/cards/${TRELLO_CARD_ID}/actions/comments?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&text=test`
       )
       .reply(200, {});
@@ -127,7 +131,7 @@ describe('Trello | Create Progress Note Trello Card Comment', () => {
   it('should not make request to Trello API when Deficient Item has no Trello Card', async () => {
     // Stup requests
     const commentCreated = nock('https://api.trello.com')
-      .put(
+      .post(
         `/1/cards/${TRELLO_CARD_ID}/actions/comments?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&text=test`
       )
       .reply(200, {});
@@ -160,7 +164,7 @@ describe('Trello | Create Progress Note Trello Card Comment', () => {
   it('should not make request to Trello API when Progress Note author does not exist', async () => {
     // Stup requests
     const commentCreated = nock('https://api.trello.com')
-      .put(
+      .post(
         `/1/cards/${TRELLO_CARD_ID}/actions/comments?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&text=test`
       )
       .reply(200, {});
@@ -188,5 +192,48 @@ describe('Trello | Create Progress Note Trello Card Comment', () => {
     // Assertions
     const actual = commentCreated.isDone();
     expect(actual).to.equal(false);
+  });
+
+  it("should publish a progress note comment to the Deficient Item's Trello Card", async () => {
+    // Stup requests
+    const comment = hbs.compile(trelloCardDIProgressNoteTemplate)({
+      firstName: USER_DATA.firstName,
+      lastName: USER_DATA.lastName,
+      email: USER_DATA.email,
+      progressNote:
+        DEFICIENT_ITEM_DATA.progressNotes[PROGRESS_NOTE_ID].progressNote,
+    });
+    const commentCreated = nock('https://api.trello.com')
+      .post(
+        `/1/cards/${TRELLO_CARD_ID}/actions/comments?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&text=${encodeURIComponent(
+          comment
+        )}`
+      )
+      .reply(200, {});
+
+    // Setup database
+    await db.ref(USER_PATH).set(USER_DATA);
+    await db.ref(TRELLO_CARDS_PATH).set(TRELLO_CARD_DATA);
+    await db.ref(DEFICIENT_ITEM_PATH).set(DEFICIENT_ITEM_DATA);
+    await db.ref(TRELLO_CREDENTIAL_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
+    const changeSnap = await db.ref(PROGRESS_NOTE_PATH).once('value');
+
+    // Execute
+    try {
+      const wrapped = test.wrap(
+        cloudFunctions.onCreateDeficientItemProgressNoteTrelloComment
+      );
+      await wrapped(changeSnap, {
+        params: {
+          propertyId: PROPERTY_ID,
+          deficientItemId: DEFICIENT_ITEM_ID,
+          progressNoteId: PROGRESS_NOTE_ID,
+        },
+      });
+    } catch (err) {} // eslint-disable-line no-empty
+
+    // Assertions
+    const actual = commentCreated.isDone();
+    expect(actual).to.equal(true);
   });
 });
