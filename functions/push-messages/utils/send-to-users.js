@@ -1,7 +1,7 @@
 const assert = require('assert');
 const sendToRecipient = require('./send-to-recipient');
 const modelPushMsgs = require('../../models/push-messages');
-const { getRecepients } = require('../../utils/firebase-messaging');
+const getRecepients = require('./get-recepients');
 
 const { assign, keys } = Object;
 const PREFIX = 'push-messages: utils: send-to-users:';
