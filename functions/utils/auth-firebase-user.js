@@ -1,7 +1,8 @@
 const assert = require('assert');
 const log = require('./logger');
+const usersModel = require('../models/users');
 
-const LOG_PREFIX = 'utils: auth-firebase-user:';
+const PREFIX = 'utils: auth-firebase-user:';
 
 /**
  * Creates a middleware instance to handle
@@ -10,14 +11,29 @@ const LOG_PREFIX = 'utils: auth-firebase-user:';
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
  * @param  {firebaseAdmin.Auth} auth - Firebase service for user auth
  * @param  {Boolean?} shouldBeAdmin
+ * @param  {Object?} permissionLevels
  * @return {Promise} verification & lookup requests
  */
-module.exports = function authFirebaseUser(db, auth, shouldBeAdmin = false) {
+module.exports = function authFirebaseUser(
+  db,
+  auth,
+  shouldBeAdmin = false,
+  permissionLevels = {}
+) {
   assert(Boolean(db), 'has firebase database instance');
   assert(Boolean(auth), 'has firebase auth instance');
 
+  // User permissions levels instead
+  // of "shouldBeAdmin"
+  if (typeof shouldBeAdmin === 'object') {
+    permissionLevels = shouldBeAdmin;
+    shouldBeAdmin = false;
+  }
+
   return async function strategy(req, res, next) {
+    const { params } = req;
     const { authorization } = req.headers;
+    const propertyId = params ? params.propertyId : '';
 
     // Is authentication requested?
     if (!authorization) {
@@ -35,15 +51,50 @@ module.exports = function authFirebaseUser(db, auth, shouldBeAdmin = false) {
 
     try {
       const decodedToken = await auth.verifyIdToken(idToken);
-      const userResult = await getUserById(db, decodedToken.uid, shouldBeAdmin);
+      const userSnap = await usersModel.getUser(db, decodedToken.uid);
+      const user = userSnap.val();
+
+      if (shouldBeAdmin && !user.admin) {
+        throw Error('Non-admin users cannot access this route');
+      }
+
+      // Permission level checks
+      const requiresPermission = Boolean(Object.keys(permissionLevels).length);
+      const allowAdminAccess = Boolean(permissionLevels.admin);
+      const allowCorpAccess = Boolean(permissionLevels.corporate);
+      const allowPropAccess = Boolean(permissionLevels.property && propertyId);
+      const allowTeamAccess = Boolean(permissionLevels.team && propertyId);
+
+      let hasPermission = false;
+      if (allowAdminAccess && user.admin) {
+        hasPermission = true; // allow admins
+      } else if (allowCorpAccess && user.corporate) {
+        hasPermission = true; // allow corporates
+      } else if (
+        allowPropAccess &&
+        user.properties &&
+        user.properties[propertyId]
+      ) {
+        hasPermission = true; // allow property level
+      } else if (
+        allowTeamAccess &&
+        hasPropertyInTeams(user.teams || {}, propertyId)
+      ) {
+        hasPermission = true; // allow team leads
+      }
+
+      if (!hasPermission && requiresPermission) {
+        throw Error('user lacks permission level to access this route');
+      }
 
       // set request user
       req.user = req.user || {};
-      Object.assign(req.user, userResult);
+      Object.assign(req.user, user);
+      req.user.id = req.user.id || decodedToken.uid; // add user ID
 
       next();
     } catch (e) {
-      log.error(`${LOG_PREFIX} ${e}`);
+      log.error(`${PREFIX} ${e}`);
       sendInvalidCred();
     }
 
@@ -55,35 +106,23 @@ module.exports = function authFirebaseUser(db, auth, shouldBeAdmin = false) {
 };
 
 /**
- * Request a user by their id
- * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
- * @param  {String} userId
- * @param  {Boolean} shouldBeAdmin
- * @return {Promise} - resolves {Object} user
+ * Search for a user's property level
+ * access from within their teams
+ * @param  {Object} teams
+ * @param  {String} propertyId
+ * @return {Boolean} - user has team level access to a property
  */
-function getUserById(db, userId, shouldBeAdmin) {
-  assert(Boolean(db), 'has firebase database instance');
-  assert(
-    userId && typeof userId === 'string',
-    `has valid user id got: ${userId}`
-  );
+function hasPropertyInTeams(teams, propertyId) {
+  assert(teams && typeof teams === 'object', 'has user teams configuration');
+  assert(propertyId && typeof propertyId === 'string', 'has property ID');
 
-  return new Promise((resolve, reject) =>
-    db
-      .ref(`/users/${userId}`)
-      .once('value')
-      .then(snapshot => {
-        const user = snapshot.val();
+  const teamIds = Object.keys(teams);
+  for (let i = 0; i < teamIds.length; i++) {
+    const teamId = teamIds[i];
+    if (teams[teamId][propertyId]) {
+      return true; // found property within team
+    }
+  }
 
-        if (!user) {
-          return reject(null);
-        }
-
-        if (shouldBeAdmin && !user.admin) {
-          reject(Error('Only admins can access this route'));
-        }
-        user.id = userId;
-        resolve(user); // Success
-      }, reject)
-  );
+  return false;
 }
