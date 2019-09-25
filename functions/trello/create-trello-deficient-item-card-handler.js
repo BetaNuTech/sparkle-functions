@@ -225,7 +225,12 @@ module.exports = function createOnTrelloDeficientItemCard(
   app.use(cors());
   app.post(
     '/properties/:propertyId/deficient-items/:deficientItemId/trello/card',
-    authUser(db, auth, true),
+    authUser(db, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
     handler
   );
   return app;
