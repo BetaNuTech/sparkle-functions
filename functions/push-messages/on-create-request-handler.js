@@ -4,10 +4,8 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const authUser = require('../utils/auth-firebase-user');
 const { forEachChild } = require('../utils/firebase-admin');
-const {
-  pushSendMessage,
-  getRecepients,
-} = require('../utils/firebase-messaging');
+const pushSendMessage = require('./utils/push-send-message');
+const getRecepients = require('./utils/get-recepients');
 const log = require('../utils/logger');
 
 const PREFIX = 'push-messages: create:';
@@ -70,9 +68,9 @@ module.exports = function createOnCreatePushNotificationHandler(db, auth) {
     const users = [];
     await forEachChild(db, '/users', async function sendMessageForUser(
       userId,
-      user
+      userConf
     ) {
-      users.push(Object.assign({ id: userId }, user));
+      users.push(Object.assign({ id: userId }, userConf));
     });
     const recipientIds = getRecepients({
       users,
