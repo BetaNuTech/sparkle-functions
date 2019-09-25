@@ -18,6 +18,10 @@ module.exports = function getRecepients({
     Array.isArray(users) && users.every(u => typeof u === 'object'),
     'has users configurations'
   );
+  assert(
+    Array.isArray(excludes) && excludes.every(id => typeof id === 'string'),
+    'has excludes user IDs'
+  );
 
   return (
     users

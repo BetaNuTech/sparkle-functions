@@ -72,9 +72,15 @@ module.exports = function createOnCreatePushNotificationHandler(db, auth) {
     ) {
       users.push(Object.assign({ id: userId }, userConf));
     });
+
+    // Collect push notification opt-out users
+    const optOutUsers = users
+      .filter(({ pushOptOut }) => Boolean(pushOptOut))
+      .map(({ id }) => id);
+    log.info(`${PREFIX} opt out users: ${optOutUsers.join(', ')}`);
     const recipientIds = getRecepients({
       users,
-      excludes: [user.id],
+      excludes: [].concat(user.id, optOutUsers),
       allowCorp: false,
     });
 
