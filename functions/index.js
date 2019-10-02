@@ -336,6 +336,26 @@ exports.onCreateSourceSlackNotificationStaging = functionsStagingDatabase
     )
   );
 
+// Create Push Notifications From Source
+exports.onCreateSourcePushNotification = functions.database
+  .ref('/notifications/src/{notificationId}')
+  .onCreate(
+    notifications.createOnCreateSrcPushWatcher(
+      db,
+      pubsubClient,
+      'push-messages-sync'
+    )
+  );
+exports.onCreateSourcePushNotificationStaging = functionsStagingDatabase
+  .ref('/notifications/src/{notificationId}')
+  .onCreate(
+    notifications.createOnCreateSrcPushWatcher(
+      dbStaging,
+      pubsubClient,
+      'staging-push-messages-sync'
+    )
+  );
+
 exports.onCreateDeficientItemProgressNoteTrelloComment = functions.database
   .ref(
     '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/progressNotes/{progressNoteId}'
