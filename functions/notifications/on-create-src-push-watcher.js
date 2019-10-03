@@ -42,10 +42,10 @@ module.exports = function createOnCreateSrcPushNotification(
       );
     }
 
-    // TODO create notification config
     // TODO get all users
     // TODO get opt outs
     // TODO get recipients
+    // TODO create notification config
     // TODO write /notifications/push for each recipient
     // TODO updateSrcPublishedMediums after push recipient writes
     // TODO do not finish cleanup push set on published mediums
