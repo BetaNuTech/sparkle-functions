@@ -13,6 +13,7 @@ module.exports = function getPushRecepients({
   users,
   excludes = [],
   allowCorp = false,
+  allowTeamLead = false,
   property,
 }) {
   assert(
@@ -29,6 +30,11 @@ module.exports = function getPushRecepients({
       .map(user => {
         const { admin, corporate } = user;
         const properties = Object.keys(user.properties || {});
+        const teamProperties = [].concat(
+          ...Object.values(user.teams || {}).map(t => {
+            return typeof t === 'object' ? Object.keys(t || {}) : [];
+          })
+        );
 
         // Add all admins
         if (admin) {
@@ -42,6 +48,10 @@ module.exports = function getPushRecepients({
 
         // Add whitelisted user-group of specified property
         if (property && properties.includes(property)) {
+          return user.id;
+        }
+
+        if (allowTeamLead && teamProperties.includes(property)) {
           return user.id;
         }
 
