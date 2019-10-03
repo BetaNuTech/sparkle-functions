@@ -4,6 +4,7 @@ const modelSetup = require('./utils/model-setup');
 const PREFIX = 'models: notifications:';
 const SRC_NOTIFICATION_PATH = '/notifications/src';
 const SLACK_NOTIFICATION_PATH = '/notifications/slack';
+const PUSH_NOTIFICATION_PATH = '/notifications/push';
 
 module.exports = modelSetup({
   /**
@@ -96,6 +97,56 @@ module.exports = modelSetup({
           Error(`${PREFIX} addToSlackChannel | ${err}`) // wrap error
         )
       );
+  },
+
+  /**
+   * Atomically write a group of push
+   * notifications to the the database
+   * while marking the source notification'
+   * published mediums for push
+   * NOTE: /notifications/push/*
+   * @param  {firebaseAdmin.database} db firbase database
+   * @param  {String} notificationId
+   * @param  {Object[]} notifications
+   * @return {Object} - result
+   */
+  createAllPush(db, notificationId, notifications) {
+    assert(
+      notificationId && typeof notificationId === 'string',
+      `${PREFIX} createAllPush: has notification ID`
+    );
+    assert(
+      Array.isArray(notifications) &&
+        notifications.every(n => typeof n === 'object'),
+      `${PREFIX} createAllPush: has notifications configs`
+    );
+
+    /**
+     * @type {CreateAllPushResult}
+     * @param {Object} publishedMediums
+     */
+    const result = { publishedMediums: { push: true } };
+    const updates = Object.create(null);
+    const parentRef = db.ref(`${PUSH_NOTIFICATION_PATH}`);
+
+    notifications.forEach(notification => {
+      const ref = parentRef.push();
+      const path = ref.path.toString();
+
+      // Append notification to updates
+      updates[path] = notification;
+    });
+
+    // Append source published mediums
+    updates[
+      `${SRC_NOTIFICATION_PATH}/${notificationId}/publishedMediums/push`
+    ] = true;
+
+    // Write all
+    return db
+      .ref()
+      .update(updates)
+      .then(() => result);
   },
 
   /**

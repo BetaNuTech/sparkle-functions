@@ -1,6 +1,8 @@
 const assert = require('assert');
-// const log = require('../utils/logger');
-// const getRecepients = require('./utils/get-push-recepients');
+const log = require('../utils/logger');
+const usersModel = require('../models/users');
+const notificationsModel = require('../models/notifications');
+const getRecepients = require('./utils/get-push-recepients');
 
 const PREFIX = 'notifications: on-create-src-push-watcher:';
 
@@ -28,11 +30,12 @@ module.exports = function createOnCreateSrcPushNotification(
     'has notification topic'
   );
 
-  // const publisher = pubsubClient.topic(pushNotificationsSyncTopic).publisher();
+  const publisher = pubsubClient.topic(pushNotificationsSyncTopic).publisher();
 
-  return async (change /* , event */) => {
-    // const { notificationId } = event.params;
+  return async (change, event) => {
+    const { notificationId } = event.params;
     const notification = change.val();
+    const creatorId = notification ? notification.creator || '' : '';
 
     if (!notification || !notification.title || !notification.summary) {
       throw Error(
@@ -42,12 +45,73 @@ module.exports = function createOnCreateSrcPushNotification(
       );
     }
 
-    // TODO get all users
-    // TODO get opt outs
-    // TODO get recipients
-    // TODO create notification config
-    // TODO write /notifications/push for each recipient
-    // TODO updateSrcPublishedMediums after push recipient writes
-    // TODO do not finish cleanup push set on published mediums
+    // Lookup all users
+    const users = [];
+    try {
+      const usersSnap = await usersModel.findAll(db);
+      const usersTree = usersSnap.val() || {};
+      Object.keys(usersTree).forEach(userId => {
+        const user = usersTree[userId];
+
+        // Collect all users that
+        // are not opting out of push
+        // and didn't create the notification
+        if (
+          user &&
+          typeof user === 'object' &&
+          !user.pushOptOut &&
+          userId !== creatorId
+        ) {
+          users.push(Object.assign({ id: userId }, user));
+        }
+      });
+    } catch (err) {
+      throw Error(`${PREFIX} failed to get users | ${err}`);
+    }
+
+    // Collect all push recipents
+    const property = notification.property || '';
+    const recipientIds = getRecepients({
+      users,
+      allowCorp: Boolean(property),
+      allowTeamLead: Boolean(property), // TODO support
+      property,
+    });
+
+    // Create all notification configurations
+    const { title, summary: message } = notification;
+    const createdAt = Math.round(Date.now() / 1000);
+    const pushNotifications = recipientIds.map(user => ({
+      title,
+      message,
+      user,
+      createdAt,
+    }));
+
+    // Atomically write all push notifications for all recipients
+    let result = null;
+    try {
+      result = await notificationsModel.createAllPush(
+        db,
+        notificationId,
+        pushNotifications
+      );
+
+      log.info(
+        `${PREFIX} successfully created push notification records for notification: "${notificationId}"`
+      );
+    } catch (err) {
+      throw Error(
+        `${PREFIX} failed to write all push notifications to database | ${err}`
+      );
+    }
+
+    if (!result.publishedMediums.push) {
+      log.error(`${PREFIX} failed to mark published mediums`);
+    }
+
+    // Publish notification push sync
+    // event for all push notifications
+    await publisher.publish(Buffer.from(''));
   };
 };

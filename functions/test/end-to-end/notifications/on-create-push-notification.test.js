@@ -4,19 +4,16 @@ const { cleanDb } = require('../../../test-helpers/firebase');
 const { db, test, pubsub, cloudFunctions } = require('../setup');
 
 const USER_ID = uuid();
+const USER_TWO_ID = uuid();
 const TEAM_ID = uuid();
-const RECIPIENT_ID = uuid();
 const PROPERTY_ID = uuid();
 const NOTIFICATION_ID = uuid();
-const REG_TOKEN_PATH = `/registrationTokens/${USER_ID}/${RECIPIENT_ID}`;
-const USER_TWO_ID = uuid();
-const RECIPIENT_TWO_ID = uuid();
-const REG_TOKEN_TWO_PATH = `/registrationTokens/${USER_TWO_ID}/${RECIPIENT_TWO_ID}`;
 const SRC_NOTIFICATION_PATH = `/notifications/src/${NOTIFICATION_ID}`;
 const PUSH_NOTIFICATION_PATH = '/notifications/push';
 const NOTIFICATION_DATA = Object.freeze({
   title: 'notification',
   summary: 'summary',
+  creator: uuid(),
 });
 
 describe('Create Push Notification From Source', () => {
@@ -29,7 +26,6 @@ describe('Create Push Notification From Source', () => {
     ];
 
     // Setup user and registration token
-    await db.ref(REG_TOKEN_PATH).set(unixNow());
     await db.ref(`/users/${USER_ID}`).set({ admin: true });
 
     for (let i = 0; i < notificationTests.length; i++) {
@@ -91,9 +87,6 @@ describe('Create Push Notification From Source', () => {
     // Setup source notification
     await db.ref(SRC_NOTIFICATION_PATH).set(NOTIFICATION_DATA);
     const srcSnap = await db.ref(SRC_NOTIFICATION_PATH).once('value');
-
-    // Setup user's registration token
-    await db.ref(REG_TOKEN_PATH).set(unixNow());
 
     for (let i = 0; i < userTests.length; i++) {
       const { expected, data } = userTests[i];
@@ -174,11 +167,8 @@ describe('Create Push Notification From Source', () => {
     // Setup source property notification
     await db
       .ref(SRC_NOTIFICATION_PATH)
-      .set(Object.assign({ property: PROPERTY_ID }, NOTIFICATION_DATA));
+      .set(Object.assign({}, NOTIFICATION_DATA, { property: PROPERTY_ID }));
     const srcSnap = await db.ref(SRC_NOTIFICATION_PATH).once('value');
-
-    // Setup user's registration token
-    await db.ref(REG_TOKEN_PATH).set(unixNow());
 
     for (let i = 0; i < userTests.length; i++) {
       const { expected, data } = userTests[i];
@@ -220,8 +210,6 @@ describe('Create Push Notification From Source', () => {
     const srcSnap = await db.ref(SRC_NOTIFICATION_PATH).once('value');
     await db.ref(`/users/${USER_ID}`).set({ admin: true });
     await db.ref(`/users/${USER_TWO_ID}`).set({ admin: true });
-    await db.ref(REG_TOKEN_PATH).set(unixNow());
-    await db.ref(REG_TOKEN_TWO_PATH).set(unixNow());
 
     // Execute
     try {
@@ -237,14 +225,15 @@ describe('Create Push Notification From Source', () => {
     expect(actual).to.equal(expected, 'has notification for each recipient');
   });
 
-  it('does not create push notifications for users that opted out', async () => {
+  it('does not create a push notifications for the creator of the notification', async () => {
     const expected = false; // Does not create any notifications
 
     // Setup database
-    await db.ref(SRC_NOTIFICATION_PATH).set(NOTIFICATION_DATA);
+    await db
+      .ref(SRC_NOTIFICATION_PATH)
+      .set(Object.assign({}, NOTIFICATION_DATA, { creator: USER_ID }));
     const srcSnap = await db.ref(SRC_NOTIFICATION_PATH).once('value');
-    await db.ref(`/users/${USER_ID}`).set({ admin: true, pushOptOut: true });
-    await db.ref(REG_TOKEN_PATH).set(unixNow());
+    await db.ref(`/users/${USER_ID}`).set({ admin: true });
 
     // Execute
     try {
@@ -260,6 +249,56 @@ describe('Create Push Notification From Source', () => {
     expect(actual).to.equal(expected, 'did not create notification');
   });
 
+  it('does not create push notifications for users that opted out', async () => {
+    const expected = false; // Does not create any notifications
+
+    // Setup database
+    await db.ref(SRC_NOTIFICATION_PATH).set(NOTIFICATION_DATA);
+    const srcSnap = await db.ref(SRC_NOTIFICATION_PATH).once('value');
+    await db.ref(`/users/${USER_ID}`).set({ admin: true, pushOptOut: true });
+
+    // Execute
+    try {
+      const wrapped = test.wrap(cloudFunctions.onCreateSourcePushNotification);
+      await wrapped(srcSnap, {
+        params: { notificationId: NOTIFICATION_ID },
+      });
+    } catch (err) {} // eslint-disable-line no-empty
+
+    // Assertions
+    const snap = await db.ref(PUSH_NOTIFICATION_PATH).once('value');
+    const actual = snap.exists();
+    expect(actual).to.equal(expected, 'did not create notification');
+  });
+
+  it('creates a push notification for intended title, message, and user', async () => {
+    const expected = {
+      title: NOTIFICATION_DATA.title,
+      message: NOTIFICATION_DATA.summary,
+      user: USER_ID,
+    };
+
+    // Setup database
+    await db.ref(SRC_NOTIFICATION_PATH).set(NOTIFICATION_DATA);
+    const srcSnap = await db.ref(SRC_NOTIFICATION_PATH).once('value');
+    await db.ref(`/users/${USER_ID}`).set({ admin: true });
+
+    // Execute
+    try {
+      const wrapped = test.wrap(cloudFunctions.onCreateSourcePushNotification);
+      await wrapped(srcSnap, {
+        params: { notificationId: NOTIFICATION_ID },
+      });
+    } catch (err) {} // eslint-disable-line no-empty
+
+    // Assertions
+    const snap = await db.ref(PUSH_NOTIFICATION_PATH).once('value');
+    const [actual] = Object.values(snap.val() || {});
+    expect(actual.createdAt).to.be.a('number', 'set createdAt timestamp');
+    delete actual.createdAt; // Don't test
+    expect(actual).to.deep.equal(expected);
+  });
+
   it('updates the source notification\'s published mediums with "push"', async () => {
     const expected = true;
 
@@ -267,7 +306,6 @@ describe('Create Push Notification From Source', () => {
     await db.ref(SRC_NOTIFICATION_PATH).set(NOTIFICATION_DATA);
     const srcSnap = await db.ref(SRC_NOTIFICATION_PATH).once('value');
     await db.ref(`/users/${USER_ID}`).set({ admin: true });
-    await db.ref(REG_TOKEN_PATH).set(unixNow());
 
     // Execute
     try {
@@ -279,7 +317,7 @@ describe('Create Push Notification From Source', () => {
 
     // Assertions
     const snap = await db.ref(SRC_NOTIFICATION_PATH).once('value');
-    const actual = ((snap.val() || {}).publishedMediums || {}).slack;
+    const actual = ((snap.val() || {}).publishedMediums || {}).push;
     expect(actual).to.equal(expected);
   });
 
@@ -294,7 +332,6 @@ describe('Create Push Notification From Source', () => {
     await db.ref(SRC_NOTIFICATION_PATH).set(NOTIFICATION_DATA);
     const srcSnap = await db.ref(SRC_NOTIFICATION_PATH).once('value');
     await db.ref(`/users/${USER_ID}`).set({ admin: true });
-    await db.ref(REG_TOKEN_PATH).set(unixNow());
 
     // Execute
     try {
@@ -311,7 +348,3 @@ describe('Create Push Notification From Source', () => {
     unsubscribe();
   });
 });
-
-function unixNow() {
-  return Math.round(Date.now() / 1000);
-}
