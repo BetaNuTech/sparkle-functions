@@ -1,7 +1,7 @@
 const assert = require('assert');
 const sendToRecipient = require('./send-to-recipient');
 const modelPushMsgs = require('../../models/push-messages');
-const getRecepients = require('./get-recepients');
+// const getRecepients = require('./get-recepients');
 
 const { assign, keys } = Object;
 const PREFIX = 'push-messages: utils: send-to-users:';
@@ -45,12 +45,13 @@ module.exports = async function sendToUsers({
   users = users.val();
   if (!users) return [];
   users = keys(users).map(id => assign({ id }, users[id]));
-  const recipients = getRecepients({
-    users,
-    property,
-    excludes,
-    allowCorp,
-  });
+  const recipients = [];
+  // const recipients = getRecepients({
+  //   users,
+  //   property,
+  //   excludes,
+  //   allowCorp,
+  // });
 
   let messages;
 

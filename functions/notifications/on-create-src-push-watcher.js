@@ -74,7 +74,7 @@ module.exports = function createOnCreateSrcPushNotification(
     const recipientIds = getRecepients({
       users,
       allowCorp: Boolean(property),
-      allowTeamLead: Boolean(property), // TODO support
+      allowTeamLead: Boolean(property),
       property,
     });
 

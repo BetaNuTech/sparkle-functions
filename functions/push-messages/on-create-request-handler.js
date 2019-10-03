@@ -5,7 +5,7 @@ const bodyParser = require('body-parser');
 const authUser = require('../utils/auth-firebase-user');
 const { forEachChild } = require('../utils/firebase-admin');
 const pushSendMessage = require('./utils/push-send-message');
-const getRecepients = require('./utils/get-recepients');
+// const getRecepients = require('./utils/get-recepients');
 const log = require('../utils/logger');
 
 const PREFIX = 'push-messages: create:';
@@ -74,14 +74,15 @@ module.exports = function createOnCreatePushNotificationHandler(db, auth) {
     });
 
     // Collect push notification opt-out users
-    const optOutUsers = users
-      .filter(({ pushOptOut }) => Boolean(pushOptOut))
-      .map(({ id }) => id);
-    const recipientIds = getRecepients({
-      users,
-      excludes: [].concat(user.id, optOutUsers),
-      allowCorp: false,
-    });
+    // const optOutUsers = users
+    //   .filter(({ pushOptOut }) => Boolean(pushOptOut))
+    //   .map(({ id }) => id);
+    const recipientIds = [];
+    // const recipientIds = getRecepients({
+    //   users,
+    //   excludes: [].concat(user.id, optOutUsers),
+    //   allowCorp: false,
+    // });
 
     // Send message for each user
     for (let i = 0; i < recipientIds.length; i++) {
