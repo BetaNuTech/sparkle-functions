@@ -494,6 +494,7 @@ exports.cleanupNotifications = notifications.pubsub.createCleanup(
   functions.pubsub,
   pubsubClient,
   'notifications-sync',
+  'push-messages-sync',
   'notifications-slack-sync'
 );
 
@@ -502,6 +503,7 @@ exports.cleanupNotificationsStaging = notifications.pubsub.createCleanup(
   functions.pubsub,
   pubsubClient,
   'staging-notifications-sync',
+  'staging-push-messages-sync',
   'staging-notifications-slack-sync'
 );
 
