@@ -96,7 +96,18 @@ module.exports = async (db, notificationId, notification) => {
     const message = propertyId
       ? 'No Slack channel associated with this property'
       : 'Admin channel has not been setup';
-    throw Error(`${PREFIX} ${message}`);
+
+    // Slack configuration missing
+    // so mark slack medium as finished
+    try {
+      await notificationsModel.updateSrcPublishedMediums(db, notificationId, {
+        slack: true,
+      });
+      result.publishedMediums.slack = true;
+    } catch (err) {
+      throw Error(`${PREFIX} ${message}`);
+    }
+    return result;
   }
 
   // Ensure channel `#` removed
