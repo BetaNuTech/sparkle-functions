@@ -36,4 +36,13 @@ module.exports = modelSetup({
     assert(userId && typeof userId === 'string', `${PREFIX} has user id`);
     return db.ref(`/users/${userId}`).once('value');
   },
+
+  /**
+   * Resolve all users
+   * @param  {firebaseAdmin.database} db
+   * @return {Promise} - resolves {DataSnapshot}
+   */
+  findAll(db) {
+    return db.ref('/users').once('value');
+  },
 });

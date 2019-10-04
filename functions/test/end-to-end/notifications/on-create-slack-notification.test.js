@@ -221,6 +221,52 @@ describe('Create Slack Notification From Source', () => {
     expect(actual).to.equal(true);
   });
 
+  it("marks source notification's published mediums with slack when admin channel is not configured", async () => {
+    const expected = true; // has slack published medium
+
+    // Setup database
+    await db
+      .ref(SRC_NOTIFICATION_PATH)
+      .set(Object.assign({}, NOTIFICATION_DATA));
+    const notificationsSnap = await db.ref(SRC_NOTIFICATION_PATH).once('value');
+
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.onCreateSourceSlackNotification);
+    await wrapped(notificationsSnap, {
+      params: { notificationId: NOTIFICATION_ID },
+    });
+
+    // Assertions
+    const snap = await db
+      .ref(`${SRC_NOTIFICATION_PATH}/publishedMediums/slack`)
+      .once('value');
+    const actual = snap.val();
+    expect(actual).to.equal(expected);
+  });
+
+  it("marks source notification's published mediums with slack when property channel is not configured", async () => {
+    const expected = true; // has slack published medium
+
+    // Setup database
+    await db
+      .ref(SRC_NOTIFICATION_PATH)
+      .set(Object.assign({}, NOTIFICATION_DATA, { property: PROPERTY_ID }));
+    const notificationsSnap = await db.ref(SRC_NOTIFICATION_PATH).once('value');
+
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.onCreateSourceSlackNotification);
+    await wrapped(notificationsSnap, {
+      params: { notificationId: NOTIFICATION_ID },
+    });
+
+    // Assertions
+    const snap = await db
+      .ref(`${SRC_NOTIFICATION_PATH}/publishedMediums/slack`)
+      .once('value');
+    const actual = snap.val();
+    expect(actual).to.equal(expected);
+  });
+
   it('should publish a notifications sync event for the slack channel', async () => {
     let actual = '';
     const expected = SLACK_ORG_INTEGRATION_DATA.defaultChannelName;

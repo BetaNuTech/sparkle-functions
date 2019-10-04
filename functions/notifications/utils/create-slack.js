@@ -70,12 +70,10 @@ module.exports = async (db, notificationId, notification) => {
     try {
       const propertySnap = await propertiesModel.findRecord(db, propertyId);
       property = propertySnap.val();
-      if (!property) throw Error('property does not exist');
+      if (property) channel = property.slackChannel; // Set channel from property
     } catch (err) {
       throw Error(`${PREFIX} property lookup failed | ${err}`); // wrap error
     }
-
-    channel = property.slackChannel;
   }
 
   // Admin notification
@@ -96,7 +94,18 @@ module.exports = async (db, notificationId, notification) => {
     const message = propertyId
       ? 'No Slack channel associated with this property'
       : 'Admin channel has not been setup';
-    throw Error(`${PREFIX} ${message}`);
+
+    // Slack configuration missing
+    // so mark slack medium as finished
+    try {
+      await notificationsModel.updateSrcPublishedMediums(db, notificationId, {
+        slack: true,
+      });
+      result.publishedMediums.slack = true;
+    } catch (err) {
+      throw Error(`${PREFIX} ${message}`);
+    }
+    return result;
   }
 
   // Ensure channel `#` removed

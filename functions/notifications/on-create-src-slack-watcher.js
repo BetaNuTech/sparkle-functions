@@ -39,9 +39,11 @@ module.exports = function createOnCreateSrcSlackNotification(
         change.val()
       );
 
-      log.info(
-        `${PREFIX} created slack notification: ${slackNotification.path}`
-      );
+      if (slackNotification.path) {
+        log.info(
+          `${PREFIX} created slack notification: ${slackNotification.path}`
+        );
+      }
     } catch (err) {
       throw Error(`${PREFIX} failed to create Slack notification | ${err}`);
     }

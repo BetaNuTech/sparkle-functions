@@ -2,7 +2,6 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const PubSub = require('@google-cloud/pubsub');
 const templateCategories = require('./template-categories');
-const pushMessages = require('./push-messages');
 const templates = require('./templates');
 const inspections = require('./inspections');
 const properties = require('./properties');
@@ -19,6 +18,7 @@ const defaultApp = admin.initializeApp(firebaseConfig);
 const db = defaultApp.database();
 const auth = admin.auth();
 const storage = admin.storage();
+const messaging = admin.messaging();
 const pubsubClient = new PubSub({
   projectId: firebaseConfig ? firebaseConfig.projectId : '',
 });
@@ -40,22 +40,6 @@ exports.latestCompleteInspection = functions.https.onRequest(
 );
 exports.latestCompleteInspectionStaging = functions.https.onRequest(
   inspections.getLatestCompleted(dbStaging)
-);
-
-// Default Database Functions
-exports.sendPushMessage = functions.database
-  .ref('/sendMessages/{messageId}')
-  .onWrite(pushMessages.createOnWriteWatcher(db, admin.messaging()));
-exports.sendPushMessageStaging = functionsStagingDatabase
-  .ref('/sendMessages/{messageId}')
-  .onWrite(pushMessages.createOnWriteWatcher(dbStaging, admin.messaging()));
-
-// POST /sendMessages
-exports.createSendMessages = functions.https.onRequest(
-  pushMessages.onCreateRequestHandler(db, auth)
-);
-exports.createSendMessagesStaging = functions.https.onRequest(
-  pushMessages.onCreateRequestHandler(dbStaging, auth)
 );
 
 // POST /integrations/trello/authorization
@@ -134,10 +118,10 @@ exports.createSlackNotificationsStaging = functions.https.onRequest(
 
 // GET Inspection PDF Report
 exports.inspectionPdfReport = functions.https.onRequest(
-  inspections.createOnGetPDFReportHandler(db, admin.messaging(), auth)
+  inspections.createOnGetPDFReportHandler(db, messaging, auth)
 );
 exports.inspectionPdfReportStaging = functions.https.onRequest(
-  inspections.createOnGetPDFReportHandler(dbStaging, admin.messaging(), auth)
+  inspections.createOnGetPDFReportHandler(dbStaging, messaging, auth)
 );
 
 // For migrating to a new architecture only, setting a newer date
@@ -336,6 +320,26 @@ exports.onCreateSourceSlackNotificationStaging = functionsStagingDatabase
     )
   );
 
+// Create Push Notifications From Source
+exports.onCreateSourcePushNotification = functions.database
+  .ref('/notifications/src/{notificationId}')
+  .onCreate(
+    notifications.createOnCreateSrcPushWatcher(
+      db,
+      pubsubClient,
+      'push-messages-sync'
+    )
+  );
+exports.onCreateSourcePushNotificationStaging = functionsStagingDatabase
+  .ref('/notifications/src/{notificationId}')
+  .onCreate(
+    notifications.createOnCreateSrcPushWatcher(
+      dbStaging,
+      pubsubClient,
+      'staging-push-messages-sync'
+    )
+  );
+
 exports.onCreateDeficientItemProgressNoteTrelloComment = functions.database
   .ref(
     '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/progressNotes/{progressNoteId}'
@@ -358,19 +362,6 @@ exports.propertyMetaSyncStaging = properties.pubsub.createSyncMeta(
   'staging-properties-sync',
   functions.pubsub,
   dbStaging
-);
-
-exports.pushMessageSync = pushMessages.pubsub.createResendAll(
-  'push-messages-sync',
-  functions.pubsub,
-  db,
-  admin.messaging()
-);
-exports.pushMessageSyncStaging = pushMessages.pubsub.createResendAll(
-  'staging-push-messages-sync',
-  functions.pubsub,
-  dbStaging,
-  admin.messaging()
 );
 
 exports.templatesListSync = templates.pubsub.createSyncTemplatesList(
@@ -484,11 +475,26 @@ exports.publishSlackNotificationsStaging = notifications.pubsub.createPublishSla
   dbStaging
 );
 
+exports.publishPushNotifications = notifications.pubsub.createPublishPush(
+  'push-messages-sync',
+  functions.pubsub,
+  db,
+  messaging
+);
+
+exports.publishPushNotificationsStaging = notifications.pubsub.createPublishPush(
+  'staging-push-messages-sync',
+  functions.pubsub,
+  dbStaging,
+  messaging
+);
+
 exports.cleanupNotifications = notifications.pubsub.createCleanup(
   db,
   functions.pubsub,
   pubsubClient,
   'notifications-sync',
+  'push-messages-sync',
   'notifications-slack-sync'
 );
 
@@ -497,6 +503,7 @@ exports.cleanupNotificationsStaging = notifications.pubsub.createCleanup(
   functions.pubsub,
   pubsubClient,
   'staging-notifications-sync',
+  'staging-push-messages-sync',
   'staging-notifications-slack-sync'
 );
 
