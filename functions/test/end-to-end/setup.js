@@ -27,6 +27,7 @@ admin.initializeApp(testConfig);
 const db = admin.database();
 const auth = admin.auth();
 const storage = admin.storage();
+const messaging = admin.messaging();
 
 // Stub admin.initializeApp & `database()` to avoid live data access
 sinon.stub(admin, 'initializeApp').returns({ database: () => db });
@@ -34,6 +35,10 @@ Object.defineProperty(admin, 'database', { writable: true, value: () => db });
 Object.defineProperty(admin, 'storage', {
   writable: true,
   value: () => storage,
+});
+Object.defineProperty(admin, 'messaging', {
+  writable: true,
+  value: () => messaging,
 });
 
 // Stub out pubsub publisher prototype
@@ -61,6 +66,7 @@ module.exports = {
   auth,
   test,
   storage,
+  messaging,
   uid: testConfig.databaseAuthVariableOverride.uid,
   cloudFunctions: require('../../index'), // eslint-disable-line
 

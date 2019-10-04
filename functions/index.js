@@ -19,6 +19,7 @@ const defaultApp = admin.initializeApp(firebaseConfig);
 const db = defaultApp.database();
 const auth = admin.auth();
 const storage = admin.storage();
+const messaging = admin.messaging();
 const pubsubClient = new PubSub({
   projectId: firebaseConfig ? firebaseConfig.projectId : '',
 });
@@ -45,10 +46,10 @@ exports.latestCompleteInspectionStaging = functions.https.onRequest(
 // Default Database Functions
 exports.sendPushMessage = functions.database
   .ref('/sendMessages/{messageId}')
-  .onWrite(pushMessages.createOnWriteWatcher(db, admin.messaging()));
+  .onWrite(pushMessages.createOnWriteWatcher(db, messaging));
 exports.sendPushMessageStaging = functionsStagingDatabase
   .ref('/sendMessages/{messageId}')
-  .onWrite(pushMessages.createOnWriteWatcher(dbStaging, admin.messaging()));
+  .onWrite(pushMessages.createOnWriteWatcher(dbStaging, messaging));
 
 // POST /sendMessages
 exports.createSendMessages = functions.https.onRequest(
@@ -134,10 +135,10 @@ exports.createSlackNotificationsStaging = functions.https.onRequest(
 
 // GET Inspection PDF Report
 exports.inspectionPdfReport = functions.https.onRequest(
-  inspections.createOnGetPDFReportHandler(db, admin.messaging(), auth)
+  inspections.createOnGetPDFReportHandler(db, messaging, auth)
 );
 exports.inspectionPdfReportStaging = functions.https.onRequest(
-  inspections.createOnGetPDFReportHandler(dbStaging, admin.messaging(), auth)
+  inspections.createOnGetPDFReportHandler(dbStaging, messaging, auth)
 );
 
 // For migrating to a new architecture only, setting a newer date
@@ -384,13 +385,13 @@ exports.pushMessageSync = pushMessages.pubsub.createResendAll(
   'push-messages-sync',
   functions.pubsub,
   db,
-  admin.messaging()
+  messaging
 );
 exports.pushMessageSyncStaging = pushMessages.pubsub.createResendAll(
   'staging-push-messages-sync',
   functions.pubsub,
   dbStaging,
-  admin.messaging()
+  messaging
 );
 
 exports.templatesListSync = templates.pubsub.createSyncTemplatesList(
@@ -502,6 +503,20 @@ exports.publishSlackNotificationsStaging = notifications.pubsub.createPublishSla
   'staging-notifications-slack-sync',
   functions.pubsub,
   dbStaging
+);
+
+exports.publishPushNotifications = notifications.pubsub.createPublishPush(
+  'push-messages-sync',
+  functions.pubsub,
+  db,
+  messaging
+);
+
+exports.publishPushNotificationsStaging = notifications.pubsub.createPublishPush(
+  'staging-push-messages-sync',
+  functions.pubsub,
+  dbStaging,
+  messaging
 );
 
 exports.cleanupNotifications = notifications.pubsub.createCleanup(
