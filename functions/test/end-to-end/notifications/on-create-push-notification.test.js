@@ -271,6 +271,31 @@ describe('Create Push Notification From Source', () => {
     expect(actual).to.equal(expected, 'did not create notification');
   });
 
+  it('does not create push notifications when source notification marks them as published', async () => {
+    const expected = false; // Does not create any notifications
+
+    // Setup database
+    const src = Object.assign({}, NOTIFICATION_DATA, {
+      publishedMediums: { push: true },
+    });
+    await db.ref(SRC_NOTIFICATION_PATH).set(src);
+    const srcSnap = await db.ref(SRC_NOTIFICATION_PATH).once('value');
+    await db.ref(`/users/${USER_ID}`).set({ admin: true });
+
+    // Execute
+    try {
+      const wrapped = test.wrap(cloudFunctions.onCreateSourcePushNotification);
+      await wrapped(srcSnap, {
+        params: { notificationId: NOTIFICATION_ID },
+      });
+    } catch (err) {} // eslint-disable-line no-empty
+
+    // Assertions
+    const snap = await db.ref(PUSH_NOTIFICATION_PATH).once('value');
+    const actual = snap.exists();
+    expect(actual).to.equal(expected, 'did not create notification');
+  });
+
   it('creates a push notification for intended title, message, and user', async () => {
     const expected = {
       title: NOTIFICATION_DATA.title,

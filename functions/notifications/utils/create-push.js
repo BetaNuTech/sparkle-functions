@@ -13,11 +13,17 @@ const PREFIX = 'notifications: utils: create-push:';
  */
 module.exports = async (db, notificationId, notification) => {
   const creatorId = notification ? notification.creator || '' : '';
+  const publishedMediums = notification ? notification.publishedMediums : null;
 
   if (!notification || !notification.title || !notification.summary) {
     throw Error(
       `${PREFIX} invalid source notification: "${JSON.stringify(notification)}"`
     );
+  }
+
+  // Push notifications previously configured
+  if (publishedMediums && publishedMediums.push) {
+    return { publishedMediums };
   }
 
   // Lookup all users
