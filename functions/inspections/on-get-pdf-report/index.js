@@ -5,7 +5,7 @@ const express = require('express');
 const cors = require('cors');
 const base64ItemImage = require('./base-64-item-image');
 const createAndUploadInspection = require('./create-and-upload-inspection-pdf');
-const sendToUsers = require('../../push-messages/utils/send-to-users');
+const notificationsModel = require('../../models/notifications');
 const authUser = require('../../utils/auth-firebase-user');
 const propertiesModel = require('../../models/properties');
 const inspectionsModel = require('../../models/inspections');
@@ -18,13 +18,11 @@ const PREFIX = 'inspections: pdf-reports:';
 /**
  * Factory for inspection PDF generator endpoint
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
- * @param  {firebaseAdmin.messaging} messaging - Firebase Admin messaging service instance
  * @param  {firebaseAdmin.auth?} auth - Firebase Admin auth service instance (optional for testing)
  * @return {Function} - onRequest handler
  */
-module.exports = function createOnGetPDFReportHandler(db, messaging, auth) {
+module.exports = function createOnGetPDFReportHandler(db, auth) {
   assert(Boolean(db), 'has firebase database instance');
-  assert(Boolean(messaging), 'has firebase messaging instance');
   if (process.env.NODE_ENV !== 'test')
     assert(Boolean(auth), 'has firebase auth instance');
 
@@ -191,18 +189,15 @@ module.exports = function createOnGetPDFReportHandler(db, messaging, auth) {
       const actionType = adminEditor ? 'updated' : 'created';
 
       try {
-        // Notify recipients of new inspection report
-        await sendToUsers({
-          db,
-          messaging,
+        // Notify of new inspection report
+        await notificationsModel.createSrc(db, {
           title: property.name,
-          message: `${creationDate} Sparkle Report ${actionType} by ${author}`,
-          excludes: req.user ? [req.user.id] : [],
-          allowCorp: true,
+          summary: `${creationDate} Sparkle Report ${actionType} by ${author}`,
+          creator: req.user ? req.user.id || '' : '',
           property: property.id,
         });
       } catch (err) {
-        log.error(`${PREFIX} send-to-users: ${err}`); // proceed with error
+        log.error(`${PREFIX} failed to create source notification | ${err}`); // proceed with error
       }
     }
 

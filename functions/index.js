@@ -2,7 +2,6 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const PubSub = require('@google-cloud/pubsub');
 const templateCategories = require('./template-categories');
-const pushMessages = require('./push-messages');
 const templates = require('./templates');
 const inspections = require('./inspections');
 const properties = require('./properties');
@@ -41,22 +40,6 @@ exports.latestCompleteInspection = functions.https.onRequest(
 );
 exports.latestCompleteInspectionStaging = functions.https.onRequest(
   inspections.getLatestCompleted(dbStaging)
-);
-
-// Default Database Functions
-exports.sendPushMessage = functions.database
-  .ref('/sendMessages/{messageId}')
-  .onWrite(pushMessages.createOnWriteWatcher(db, messaging));
-exports.sendPushMessageStaging = functionsStagingDatabase
-  .ref('/sendMessages/{messageId}')
-  .onWrite(pushMessages.createOnWriteWatcher(dbStaging, messaging));
-
-// POST /sendMessages
-exports.createSendMessages = functions.https.onRequest(
-  pushMessages.onCreateRequestHandler(db, auth)
-);
-exports.createSendMessagesStaging = functions.https.onRequest(
-  pushMessages.onCreateRequestHandler(dbStaging, auth)
 );
 
 // POST /integrations/trello/authorization
@@ -379,19 +362,6 @@ exports.propertyMetaSyncStaging = properties.pubsub.createSyncMeta(
   'staging-properties-sync',
   functions.pubsub,
   dbStaging
-);
-
-exports.pushMessageSync = pushMessages.pubsub.createResendAll(
-  'push-messages-sync',
-  functions.pubsub,
-  db,
-  messaging
-);
-exports.pushMessageSyncStaging = pushMessages.pubsub.createResendAll(
-  'staging-push-messages-sync',
-  functions.pubsub,
-  dbStaging,
-  messaging
 );
 
 exports.templatesListSync = templates.pubsub.createSyncTemplatesList(
