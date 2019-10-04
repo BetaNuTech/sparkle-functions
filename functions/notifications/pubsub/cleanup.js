@@ -72,7 +72,7 @@ module.exports = function cleanupNotifications(
           );
 
           // Publish push notification sync event
-          await pushPublisher.publish(Buffer.from(''));
+          await pushPublisher.publish(Buffer.from(notificationId));
         } catch (err) {
           throw Error(
             `${PREFIX} failed to republish push notifications | ${err}`

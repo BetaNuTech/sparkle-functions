@@ -51,6 +51,6 @@ module.exports = function createOnCreateSrcPushNotification(
 
     // Publish notification push sync
     // event for all push notifications
-    await publisher.publish(Buffer.from(''));
+    await publisher.publish(Buffer.from(notificationId));
   };
 };
