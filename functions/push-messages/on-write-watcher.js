@@ -1,4 +1,4 @@
-const sendToRecipient = require('./utils/send-to-recipient');
+// const sendToRecipient = require('./utils/send-to-recipient');
 
 /**
  * Factory for push message on write handler
@@ -14,10 +14,10 @@ module.exports = function createPushMessagesOnWriteHandler(db, messaging) {
     }
 
     const pushMessage = change.after.val();
-    const { recipientId } = pushMessage;
+    // const { recipientId } = pushMessage;
     const { messageId } = event.params;
 
-    await sendToRecipient(db, messaging, recipientId, pushMessage);
+    // await sendToRecipient(db, messaging, recipientId, pushMessage);
 
     return db.ref(`/sendMessages/${messageId}`).remove();
   };

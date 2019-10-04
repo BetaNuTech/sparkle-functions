@@ -1,3 +1,4 @@
+const assert = require('assert');
 const log = require('../../utils/logger');
 const systemModel = require('../../models/system');
 const integrationModel = require('../../models/integrations');
@@ -15,6 +16,9 @@ const PREFIX = 'notifications: pubsub: publish-slack-notification:';
  * @return {functions.CloudFunction}
  */
 module.exports = function publishSlackNotification(topic = '', pubSub, db) {
+  assert(topic && typeof topic === 'string', 'has pubsub topic');
+  assert(Boolean(pubSub), 'has pubsub firebase instance');
+  assert(Boolean(db), 'has firebase admin database instance');
   return pubSub.topic(topic).onPublish(async () => {
     let accessToken = '';
     try {

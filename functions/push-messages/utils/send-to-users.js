@@ -1,5 +1,5 @@
 const assert = require('assert');
-const sendToRecipient = require('./send-to-recipient');
+// const sendToRecipient = require('./send-to-recipient');
 const modelPushMsgs = require('../../models/push-messages');
 // const getRecepients = require('./get-recepients');
 
@@ -77,11 +77,11 @@ module.exports = async function sendToUsers({
     // Collect results of sending push notifications
     results = await Promise.all(
       recipients.map(
-        recipientId =>
-          sendToRecipient(db, messaging, recipientId, {
-            title,
-            message,
-          }).then(r => !(r instanceof Error)) // failed : succeeded
+        recipientId => {}
+        // sendToRecipient(db, messaging, recipientId, {
+        //   title,
+        //   message,
+        // }).then(r => !(r instanceof Error)) // failed : succeeded
       )
     );
   } catch (err) {

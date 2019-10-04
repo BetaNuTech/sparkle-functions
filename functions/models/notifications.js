@@ -127,7 +127,7 @@ module.exports = modelSetup({
      */
     const result = { publishedMediums: { push: true } };
     const updates = Object.create(null);
-    const parentRef = db.ref(`${PUSH_NOTIFICATION_PATH}`);
+    const parentRef = db.ref(PUSH_NOTIFICATION_PATH);
 
     notifications.forEach(notification => {
       const ref = parentRef.push();
@@ -174,5 +174,42 @@ module.exports = modelSetup({
           Error(`${PREFIX} updateSrcPublishedMediums | ${err}`) // wrap error
         )
       );
+  },
+
+  /**
+   * Return all push notification records
+   * @param  {firebaseAdmin.database} db firbase database
+   * @return {Promise} - resolves {DataSnapshot}
+   */
+  findAllPush(db) {
+    return db.ref(PUSH_NOTIFICATION_PATH).once('value');
+  },
+
+  /**
+   * Remove a push notification record
+   * @param  {firebaseAdmin.database} db firbase database
+   * @param  {String} pushNotificationId
+   * @return {Promise}
+   */
+  removePush(db, pushNotificationId) {
+    assert(
+      pushNotificationId && typeof pushNotificationId === 'string',
+      `${PREFIX} removePush: has push notification ID`
+    );
+    return db.ref(`${PUSH_NOTIFICATION_PATH}/${pushNotificationId}`).remove();
+  },
+
+  /**
+   * Find a user's registration tokens
+   * @param  {firebaseAdmin.database} db firbase database
+   * @param  {String} notificationId
+   * @return {Promise} - resolves {DataSnapshot}
+   */
+  findUserRegistrationTokens(db, userId) {
+    assert(
+      userId && typeof userId === 'string',
+      `${PREFIX} findUserRegistrationTokens: has user ID`
+    );
+    return db.ref(`/registrationTokens/${userId}`).once('value');
   },
 });

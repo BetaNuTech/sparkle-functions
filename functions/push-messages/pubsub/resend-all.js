@@ -1,5 +1,5 @@
 const log = require('../../utils/logger');
-const sendToRecipient = require('../utils/send-to-recipient');
+// const sendToRecipient = require('../utils/send-to-recipient');
 
 const PREFIX = 'push-messages: pubsub: resend-all';
 
@@ -38,12 +38,12 @@ module.exports = function createResendAll(topic = '', pubSub, db, messaging) {
         const path = `/sendMessages/${id}`;
         const message = await db.ref(path).once('value');
         const messageData = message.val();
-        await sendToRecipient(
-          db,
-          messaging,
-          messageData.recipientId,
-          messageData
-        );
+        // await sendToRecipient(
+        //   db,
+        //   messaging,
+        //   messageData.recipientId,
+        //   messageData
+        // );
         await db.ref(path).remove();
         log.info(`${PREFIX} ${topic}: resent message "${id}" successfully`);
       } catch (err) {
