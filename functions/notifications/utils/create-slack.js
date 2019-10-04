@@ -70,12 +70,10 @@ module.exports = async (db, notificationId, notification) => {
     try {
       const propertySnap = await propertiesModel.findRecord(db, propertyId);
       property = propertySnap.val();
-      if (!property) throw Error('property does not exist');
+      if (property) channel = property.slackChannel; // Set channel from property
     } catch (err) {
       throw Error(`${PREFIX} property lookup failed | ${err}`); // wrap error
     }
-
-    channel = property.slackChannel;
   }
 
   // Admin notification
