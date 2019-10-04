@@ -31,6 +31,27 @@ module.exports = modelSetup({
   },
 
   /**
+   * Create a new source notification
+   * @param  {firebaseAdmin.database} db firbase database
+   * @param  {Object} notification
+   * @return {Promise}
+   */
+  createSrc(db, notification) {
+    assert(
+      notification && typeof notification === 'object',
+      'has notification configuration'
+    );
+
+    const { title, summary, creator } = notification;
+    assert(title && typeof title === 'string', 'has notification title');
+    assert(summary && typeof summary === 'string', 'has notification summary');
+    assert(creator && typeof creator === 'string', 'has notification creator');
+
+    const ref = db.ref(SRC_NOTIFICATION_PATH).push();
+    return ref.set(notification);
+  },
+
+  /**
    * Push a Slack notification to a
    * specified channel name resolving
    * DB reference to the new notification
