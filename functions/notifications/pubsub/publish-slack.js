@@ -35,9 +35,7 @@ module.exports = function publishSlackNotification(topic = '', pubSub, db) {
       const slackCredentials = slackIntegrationCredentialsSnap.val();
       accessToken = slackCredentials.accessToken;
     } catch (err) {
-      throw Error(
-        `${PREFIX} ${topic}: system slack credential lookup error | ${err}`
-      );
+      throw Error(`${PREFIX} ${topic} | ${err}`);
     }
 
     let notifications = null;
