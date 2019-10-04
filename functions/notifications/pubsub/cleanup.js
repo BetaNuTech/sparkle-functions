@@ -47,6 +47,7 @@ module.exports = function cleanupNotifications(
 
       if (
         notification.publishedMediums &&
+        notification.publishedMediums.push &&
         notification.publishedMediums.slack
       ) {
         // Remove published notification

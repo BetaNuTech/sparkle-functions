@@ -21,7 +21,10 @@ describe('Cleanup Notifications', () => {
     await db
       .ref(SRC_NOTIFICATION_PATH)
       .set(
-        Object.assign({ publishedMediums: { slack: true } }, NOTIFICATION_DATA)
+        Object.assign(
+          { publishedMediums: { slack: true, push: true } },
+          NOTIFICATION_DATA
+        )
       );
 
     // Execute
