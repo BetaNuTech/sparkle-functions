@@ -118,10 +118,10 @@ exports.createSlackNotificationsStaging = functions.https.onRequest(
 
 // GET Inspection PDF Report
 exports.inspectionPdfReport = functions.https.onRequest(
-  inspections.createOnGetPDFReportHandler(db, messaging, auth)
+  inspections.createOnGetPDFReportHandler(db, auth)
 );
 exports.inspectionPdfReportStaging = functions.https.onRequest(
-  inspections.createOnGetPDFReportHandler(dbStaging, messaging, auth)
+  inspections.createOnGetPDFReportHandler(dbStaging, auth)
 );
 
 // For migrating to a new architecture only, setting a newer date
