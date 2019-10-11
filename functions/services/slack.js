@@ -20,9 +20,9 @@ module.exports = {
     assert(message && typeof message === 'string', 'has notification message');
 
     const slackMessage = createSlackMessage(title, message);
-    const queryParams = encodeURIComponent(
-      `?token=${accessToken}&channel=${channelName}&text=${slackMessage}`
-    );
+    const queryParams = `?token=${accessToken}&channel=${channelName}&text=${encodeURIComponent(
+      slackMessage
+    )}`;
 
     let result = null;
 
