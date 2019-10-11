@@ -201,6 +201,40 @@ describe('Create Slack Notification From Source', () => {
     expect(actual).to.equal(expected);
   });
 
+  it('should successfully create slack notification from unescaped markdown content', async () => {
+    /* eslint-disable */
+    const expected = `\`\`\`
+Name: PROPERTY NAME
+Team: Team NAME
+Cobalt Property Code: 7
+Slack Channel: #test-channel
+Templates: MS - Product Inspection, Pre- Move Out (21-30 Days)
+\`\`\`
+Edited by: Test User (testor@gmail.com)`;
+    /* eslint-enable */
+    const markdownNotification = Object.assign({}, NOTIFICATION_DATA, {
+      markdownBody: expected,
+    });
+
+    // Setup database
+    await db.ref(SRC_NOTIFICATION_PATH).set(markdownNotification);
+    await db.ref(SLACK_ORG_INTEGRATION_PATH).set(SLACK_ORG_INTEGRATION_DATA);
+    const notificationsSnap = await db.ref(SRC_NOTIFICATION_PATH).once('value');
+
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.onCreateSourceSlackNotification);
+    await wrapped(notificationsSnap, {
+      params: { notificationId: NOTIFICATION_ID },
+    });
+
+    // Assertions
+    const snap = await db
+      .ref(`${SLACK_ADMIN_NOTIFICATON_PATH}/message`)
+      .once('value');
+    const actual = snap.val();
+    expect(actual).to.equal(expected);
+  });
+
   it('should mark the source notifications published mediums to include slack', async () => {
     // Setup database
     await db.ref(SRC_NOTIFICATION_PATH).set(NOTIFICATION_DATA);
