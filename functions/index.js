@@ -31,7 +31,7 @@ const dbStaging = defaultApp.database(firebaseConfig.stagingDatabaseURL);
 
 // Send API version
 exports.latestVersion = functions.https.onRequest((request, response) =>
-  response.status(200).send({ ios: '1.4.5' })
+  response.status(200).send({ ios: '1.5.0' })
 );
 
 // Latest Completed Inspections
