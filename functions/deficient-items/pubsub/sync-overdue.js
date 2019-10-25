@@ -1,31 +1,48 @@
+const assert = require('assert');
+const moment = require('moment');
 const log = require('../../utils/logger');
 const config = require('../../config');
 const model = require('../../models/deficient-items');
+const notificationsModel = require('../../models/notifications');
 const processPropertyMeta = require('../../properties/utils/process-meta');
+const propertiesModel = require('../../models/properties');
 const { forEachChild } = require('../../utils/firebase-admin');
+const notifyTemplate = require('../../utils/src-notification-templates');
+const findHistory = require('../utils/find-history');
 
 const PREFIX = 'deficient-items: pubsub: sync-overdue:';
 const FIVE_DAYS_IN_SEC = 432000;
 const OVERDUE_ELIGIBLE_STATES = config.deficientItems.overdueEligibleStates;
+const RESPONSIBILITY_GROUPS = config.deficientItems.responsibilityGroups;
 
 /**
  * Sync Deficient items from "pending" to "overdue"
  * and update associated property metadata
- * @param  {string} topic
+ * @param  {String} topic
  * @param  {functions.pubsub} pubsub
  * @param  {firebaseadmin.database} db
+ * @param  {String} deficientItemUrl
  * @return {functions.cloudfunction}
  */
 module.exports = function createSyncOverdueDeficientItems(
   topic = '',
   pubsub,
-  db
+  db,
+  deficientItemUrl
 ) {
+  assert(topic && typeof topic === 'string', 'has pubsub topic');
+  assert(Boolean(pubsub), 'has pubsub instance');
+  assert(Boolean(db), 'has database instance');
+  assert(
+    deficientItemUrl && typeof deficientItemUrl === 'string',
+    'has DI URL template'
+  );
+
   return pubsub
     .topic(topic)
     .onPublish(async function syncOverdueDeficientItemsHandler() {
       const updates = Object.create(null);
-      const now = Date.now() / 1000;
+      const now = Math.round(Date.now() / 1000);
 
       await forEachChild(
         db,
@@ -40,6 +57,7 @@ module.exports = function createSyncOverdueDeficientItems(
               diItemSnap
             ) {
               let { state } = diItem;
+              const previousState = state;
               const currentStartDate = diItem.currentStartDate || 0;
               const currentDueDate = diItem.currentDueDate || 0;
 
@@ -53,35 +71,49 @@ module.exports = function createSyncOverdueDeficientItems(
               const secondsUntilHalfDue =
                 (currentDueDate - currentStartDate) / 2;
 
-              try {
-                if (
-                  OVERDUE_ELIGIBLE_STATES.includes(state) &&
-                  secondsUntilDue <= 0
-                ) {
-                  // Progress state
-                  state = 'overdue';
-                  diItem.state = 'overdue';
+              if (
+                OVERDUE_ELIGIBLE_STATES.includes(state) &&
+                secondsUntilDue <= 0
+              ) {
+                // Progress state
+                state = 'overdue';
+                diItem.state = 'overdue';
+
+                try {
                   const stateUpdates = await model.updateState(
                     db,
                     diItemSnap,
                     state
                   );
                   Object.assign(updates, stateUpdates); // add DI state updates to updates
+                } catch (err) {
+                  throw Error(
+                    `${PREFIX} failed to update state overdue | ${err}`
+                  );
+                }
 
+                try {
                   // Sync DI's changes to its' property's metadata
                   const metaUpdates = await processPropertyMeta(db, propertyId);
                   log.info(
                     `${PREFIX} ${topic}: property "${propertyId}" and deficient item "${defItemId}" has deficiency overdue`
                   );
                   Object.assign(updates, metaUpdates); // add property meta updates to updates
-                } else if (
-                  state === 'pending' &&
-                  isRequiresProgressUpdateStateEligible &&
-                  secondsUntilDue < secondsUntilHalfDue
-                ) {
-                  // Progress state
-                  state = 'requires-progress-update';
-                  diItem.state = 'requires-progress-update';
+                } catch (err) {
+                  log.error(
+                    `${PREFIX} failed to upate property meta of overdue | ${err}`
+                  );
+                }
+              } else if (
+                state === 'pending' &&
+                isRequiresProgressUpdateStateEligible &&
+                secondsUntilDue < secondsUntilHalfDue
+              ) {
+                // Progress state
+                state = 'requires-progress-update';
+                diItem.state = 'requires-progress-update';
+
+                try {
                   const stateUpdates = await model.updateState(
                     db,
                     diItemSnap,
@@ -91,9 +123,99 @@ module.exports = function createSyncOverdueDeficientItems(
                     `${PREFIX} ${topic}: property "${propertyId}" and deficient item "${defItemId}" has deficiency requires progress update`
                   );
                   Object.assign(updates, stateUpdates); // add state updates to updates
+                } catch (err) {
+                  throw Error(
+                    `${PREFIX} failed to update state requires-progress-update | ${err}`
+                  );
                 }
-              } catch (err) {
-                log.error(`${PREFIX} ${topic}: | ${err}`);
+              }
+
+              // If state change occurred create
+              // a global notification Deficient
+              // Item state change
+              if (previousState !== state) {
+                try {
+                  const propertySnap = await propertiesModel.findRecord(
+                    db,
+                    propertyId
+                  );
+                  const property = propertySnap.val();
+
+                  const title = diItem.itemTitle;
+                  const section = diItem.sectionTitle || '';
+                  const subSection = diItem.sectionSubtitle || '';
+                  const currentDueDateDay = diItem.currentDueDateDay || '';
+                  const currentDeferredDateDay =
+                    diItem.currentDeferredDateDay || '';
+                  const currentPlanToFix = diItem.currentPlanToFix || '';
+                  const currentResponsibilityGroup = diItem.currentResponsibilityGroup
+                    ? RESPONSIBILITY_GROUPS[diItem.currentResponsibilityGroup]
+                    : '';
+                  const currentCompleteNowReason =
+                    diItem.currentCompleteNowReason || '';
+                  const currentReasonIncomplete =
+                    diItem.currentReasonIncomplete || '';
+                  const trelloUrl = diItem.trelloCardURL;
+
+                  // Create url for deficient item
+                  const url = deficientItemUrl
+                    .replace('{{propertyId}}', propertyId)
+                    .replace('{{deficientItemId}}', defItemId);
+
+                  // Collect any progress note data
+                  const progressNoteHistory = findHistory(diItem)(
+                    'progressNotes'
+                  );
+                  const latestProgressNote = progressNoteHistory
+                    ? progressNoteHistory.current
+                    : null;
+                  let currentProgressNote = '';
+                  let progressNoteDateDay = '';
+                  if (latestProgressNote) {
+                    currentProgressNote = latestProgressNote.progressNote;
+                    progressNoteDateDay = moment
+                      .unix(latestProgressNote.createdAt)
+                      .format('MM/DD/YY');
+                  }
+
+                  await notificationsModel.createSrc(db, {
+                    title: property.name,
+                    summary: notifyTemplate(
+                      'deficient-item-state-change-summary',
+                      {
+                        title,
+                        previousState,
+                        state,
+                      }
+                    ),
+                    markdownBody: notifyTemplate(
+                      'deficient-item-state-change-markdown-body',
+                      {
+                        previousState,
+                        state,
+                        title,
+                        section,
+                        subSection,
+                        currentDeferredDateDay,
+                        currentDueDateDay,
+                        currentPlanToFix,
+                        currentResponsibilityGroup,
+                        currentProgressNote,
+                        progressNoteDateDay,
+                        currentCompleteNowReason,
+                        currentReasonIncomplete,
+                        url,
+                        trelloUrl,
+                      }
+                    ),
+                    creator: '',
+                    property: propertyId,
+                  });
+                } catch (err) {
+                  log.error(
+                    `${PREFIX} failed to create source notification | ${err}`
+                  ); // proceed with error
+                }
               }
             }
           );
