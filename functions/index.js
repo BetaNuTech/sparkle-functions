@@ -433,12 +433,14 @@ exports.regTokensSyncStaging = regTokens.pubsub.createSyncOutdated(
 exports.deficientItemsOverdueSync = deficientItems.pubsub.createSyncOverdue(
   'deficient-items-sync',
   functions.pubsub,
-  db
+  db,
+  config.clientApps.web.productionDeficientItemURL
 );
 exports.deficientItemsOverdueSyncStaging = deficientItems.pubsub.createSyncOverdue(
   'staging-deficient-items-sync',
   functions.pubsub,
-  dbStaging
+  dbStaging,
+  config.clientApps.web.stagingDeficientItemURL
 );
 
 exports.teamsSync = teams.pubsub.createSyncTeam(
