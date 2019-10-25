@@ -45,7 +45,7 @@ module.exports = modelSetup({
     const { title, summary, creator } = notification;
     assert(title && typeof title === 'string', 'has notification title');
     assert(summary && typeof summary === 'string', 'has notification summary');
-    assert(creator && typeof creator === 'string', 'has notification creator');
+    assert(typeof creator === 'string', 'has notification creator');
 
     const ref = db.ref(SRC_NOTIFICATION_PATH).push();
     return ref.set(notification);
