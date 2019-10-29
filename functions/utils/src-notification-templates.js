@@ -33,6 +33,48 @@ Deficient Item: {{{url}}}{{#if trelloUrl}}
 Trello Card: {{{trelloUrl}}}{{/if}}
 
 *Updated by*: Sparkle`,
+
+  // ////////////////////////////////////////
+  // Property Inspection - Report Creation
+  // ////////////////////////////////////////
+
+  'inspection-pdf-creation-summary':
+    '{{{createdAt}}} inspection report created by{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})',
+
+  'inspection-pdf-creation-markdown-body': `*Inspection Report Creation*
+
+\`\`\`
+{{#if templateName}}Template: {{{templateName}}}{{/if}}
+{{#if startDate}}Inspection Start Date: {{{startDate}}}{{/if}}
+{{#if completeDate}}Inspection Completion Date: {{{completeDate}}}{{/if}}
+\`\`\`{{#if inspectionUrl}}
+
+Inspection: {{{inspectionUrl}}}{{/if}}{{#if reportUrl}}
+
+Inspection Report: {{{reportUrl}}}{{/if}}
+
+*Created by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // /////////////////////////////////////
+  // Property Inspection - Report Update
+  // /////////////////////////////////////
+
+  'inspection-pdf-update-summary':
+    '{{{updatedAt}}} inspection report updated by{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})',
+
+  'inspection-pdf-update-markdown-body': `*Inspection Report Update*
+
+\`\`\`
+{{#if templateName}}Template: {{{templateName}}}{{/if}}
+{{#if startDate}}Inspection Start Date: {{{startDate}}}{{/if}}
+{{#if completeDate}}Inspection Completion Date: {{{completeDate}}}{{/if}}
+\`\`\`{{#if inspectionUrl}}
+
+Inspection: {{{inspectionUrl}}}{{/if}}{{#if reportUrl}}
+
+Inspection Report: {{{reportUrl}}}{{/if}}
+
+*Updated by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
 };
 
 /**

@@ -25,6 +25,7 @@ const PROPERTY_DATA = {
   name: `name${PROPERTY_ID}`,
   inspections: { [INSP_ID]: true },
 };
+const INSP_URL = '{{propertyId}}/{{inspectionId}}';
 
 describe('Inspection PDF Report', () => {
   afterEach(async () => {
@@ -48,7 +49,7 @@ describe('Inspection PDF Report', () => {
     await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
     // Execute & Get Result
-    const app = createApp(db, auth); // auth required when given
+    const app = createApp(db, auth, INSP_URL); // auth required when given
     return request(app)
       .get(`/${PROPERTY_ID}/${INSP_ID}`)
       .set('Accept', 'application/json')
@@ -64,7 +65,7 @@ describe('Inspection PDF Report', () => {
     await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
     // Execute & Get Result
-    const app = createApp(db);
+    const app = createApp(db, null, INSP_URL);
     return request(app)
       .get(`/${PROPERTY_ID}/${INSP_ID}`)
       .set('Accept', 'application/json')
@@ -78,7 +79,7 @@ describe('Inspection PDF Report', () => {
     await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
     // Execute & Get Result
-    const app = createApp(db);
+    const app = createApp(db, null, INSP_URL);
     const result = await request(app)
       .get(`/${PROPERTY_ID}/${INSP_ID}`)
       .set('Accept', 'application/json')
@@ -95,7 +96,7 @@ describe('Inspection PDF Report', () => {
     await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
     // Execute
-    const app = createApp(db);
+    const app = createApp(db, null, INSP_URL);
     await request(app)
       .get(`/${PROPERTY_ID}/${INSP_ID}`)
       .set('Accept', 'application/json')
@@ -119,7 +120,7 @@ describe('Inspection PDF Report', () => {
     await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
     // Execute
-    const app = createApp(db);
+    const app = createApp(db, null, INSP_URL);
     const response = await request(app)
       .get(`/${PROPERTY_ID}/${INSP_ID}`)
       .set('Accept', 'application/json')
@@ -142,7 +143,7 @@ describe('Inspection PDF Report', () => {
     await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
     // Execute
-    const app = createApp(db);
+    const app = createApp(db, null, INSP_URL);
     await request(app)
       .get(`/${PROPERTY_ID}/${INSP_ID}`)
       .set('Accept', 'application/json')
@@ -165,12 +166,21 @@ describe('Inspection PDF Report', () => {
     // Setup database
     await db.ref(`/inspections/${INSP_ID}`).set(INSPECTION_DATA); // Add inspection
     await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
-    await db.ref(`/users/${userId}`).set({ admin: true }); // Add admin user
+    await db.ref(`/users/${userId}`).set({
+      admin: true, // Add admin user
+      firstName: 'test',
+      lastName: 'user',
+      email: 'test@email.com',
+    });
 
     // Execute
-    const app = createApp(db, {
-      verifyIdToken: () => Promise.resolve({ uid: userId }),
-    });
+    const app = createApp(
+      db,
+      {
+        verifyIdToken: () => Promise.resolve({ uid: userId }),
+      },
+      INSP_URL
+    );
     await request(app)
       .get(`/${PROPERTY_ID}/${INSP_ID}`)
       .set('Authorization', 'fb-jwt 1234')
@@ -195,7 +205,7 @@ describe('Inspection PDF Report', () => {
     await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
     // Execute & Get Result
-    const app = createApp(db);
+    const app = createApp(db, null, INSP_URL);
     const result = await request(app)
       .get(`/${PROPERTY_ID}/${INSP_ID}`)
       .set('Accept', 'application/json')
@@ -218,7 +228,7 @@ describe('Inspection PDF Report', () => {
     await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
 
     // Execute, get result, and assertion
-    const app = createApp(db);
+    const app = createApp(db, null, INSP_URL);
     await request(app)
       .get(`/${PROPERTY_ID}/${INSP_ID}`)
       .set('Accept', 'application/json')
