@@ -198,11 +198,11 @@ module.exports = function createOnGetPDFReportHandler(db, auth, inspectionUrl) {
 
       try {
         const summaryTemplate = reportPreviouslyCompleted
-          ? 'inspection-pdf-creation-summary'
-          : 'inspection-pdf-update-summary';
+          ? 'inspection-pdf-update-summary'
+          : 'inspection-pdf-creation-summary';
         const markdownTemplate = reportPreviouslyCompleted
-          ? 'inspection-pdf-creation-markdown-body'
-          : 'inspection-pdf-update-markdown-body';
+          ? 'inspection-pdf-update-markdown-body'
+          : 'inspection-pdf-creation-markdown-body';
         const createdAt = formatTimestamp(inspection.creationDate);
         const updatedAt = formatTimestamp(inspection.updatedLastDate);
         const startDate = formatTimestamp(inspection.creationDate);
