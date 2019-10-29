@@ -48,6 +48,7 @@ Trello Card: {{{trelloUrl}}}{{/if}}
 {{#if startDate}}Inspection Start Date: {{{startDate}}}{{/if}}
 {{#if completeDate}}Inspection Completion Date: {{{completeDate}}}{{/if}}
 \`\`\`{{#if inspectionUrl}}
+
 Inspection: {{{inspectionUrl}}}{{/if}}{{#if reportUrl}}
 
 Inspection Report: {{{reportUrl}}}{{/if}}
@@ -63,16 +64,17 @@ Inspection Report: {{{reportUrl}}}{{/if}}
 
   'inspection-pdf-update-markdown-body': `*Inspection Report Update*
 
-  \`\`\`
-  {{#if templateName}}Template: {{{templateName}}}{{/if}}
-  {{#if startDate}}Inspection Start Date: {{{startDate}}}{{/if}}
-  {{#if completeDate}}Inspection Completion Date: {{{completeDate}}}{{/if}}
-  \`\`\`{{#if inspectionUrl}}
-  Inspection: {{{inspectionUrl}}}{{/if}}{{#if reportUrl}}
+\`\`\`
+{{#if templateName}}Template: {{{templateName}}}{{/if}}
+{{#if startDate}}Inspection Start Date: {{{startDate}}}{{/if}}
+{{#if completeDate}}Inspection Completion Date: {{{completeDate}}}{{/if}}
+\`\`\`{{#if inspectionUrl}}
 
-  Inspection Report: {{{reportUrl}}}{{/if}}
+Inspection: {{{inspectionUrl}}}{{/if}}{{#if reportUrl}}
 
-  *Updated by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+Inspection Report: {{{reportUrl}}}{{/if}}
+
+*Updated by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
 };
 
 /**
