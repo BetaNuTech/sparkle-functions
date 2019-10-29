@@ -1,10 +1,12 @@
 const assert = require('assert');
 const modelSetup = require('./utils/model-setup');
+const { firebase: firebaseConfig } = require('../config');
 
 const PREFIX = 'models: notifications:';
 const SRC_NOTIFICATION_PATH = '/notifications/src';
 const SLACK_NOTIFICATION_PATH = '/notifications/slack';
 const PUSH_NOTIFICATION_PATH = '/notifications/push';
+const STAGING_DATABASE_URL = firebaseConfig.stagingDatabaseURL || '';
 
 module.exports = modelSetup({
   /**
@@ -42,10 +44,20 @@ module.exports = modelSetup({
       'has notification configuration'
     );
 
-    const { title, summary, creator } = notification;
+    let { title } = notification;
+    const { summary, creator } = notification;
     assert(title && typeof title === 'string', 'has notification title');
     assert(summary && typeof summary === 'string', 'has notification summary');
     assert(typeof creator === 'string', 'has notification creator');
+
+    // Prefix Staging notifcation titles
+    if (
+      db.app &&
+      db.app.options &&
+      db.app.options.databaseURL === STAGING_DATABASE_URL
+    ) {
+      title = `[STAGING] ${title}`;
+    }
 
     const ref = db.ref(SRC_NOTIFICATION_PATH).push();
     return ref.set(notification);
