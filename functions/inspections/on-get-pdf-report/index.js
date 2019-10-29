@@ -60,12 +60,15 @@ module.exports = function createOnGetPDFReportHandler(db, auth, inspectionUrl) {
 
     // Lookup Inspection
     let inspectionSnap = null;
-    let reportPreviouslyCompleted = false;
+    let hasPreviousPDFReport = false;
     try {
       inspectionSnap = await inspectionsModel.findRecord(db, inspectionId);
       const inspectionData = inspectionSnap.val();
-      if (inspectionData && Boolean(inspectionData.inspectionReportURL)) {
-        reportPreviouslyCompleted = true;
+      if (
+        inspectionData &&
+        Boolean(inspectionData.inspectionReportUpdateLastDate)
+      ) {
+        hasPreviousPDFReport = true;
       }
     } catch (err) {
       log.error(`${PREFIX} inspection lookup failed | ${err}`);
@@ -197,10 +200,10 @@ module.exports = function createOnGetPDFReportHandler(db, auth, inspectionUrl) {
       const authorEmail = req.user ? req.user.email : '';
 
       try {
-        const summaryTemplate = reportPreviouslyCompleted
+        const summaryTemplate = hasPreviousPDFReport
           ? 'inspection-pdf-update-summary'
           : 'inspection-pdf-creation-summary';
-        const markdownTemplate = reportPreviouslyCompleted
+        const markdownTemplate = hasPreviousPDFReport
           ? 'inspection-pdf-update-markdown-body'
           : 'inspection-pdf-creation-markdown-body';
         const createdAt = formatTimestamp(inspection.creationDate);
