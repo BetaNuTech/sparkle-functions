@@ -31,7 +31,7 @@ const dbStaging = defaultApp.database(firebaseConfig.stagingDatabaseURL);
 
 // Send API version
 exports.latestVersion = functions.https.onRequest((request, response) =>
-  response.status(200).send({ ios: '1.5.0' })
+  response.status(200).send({ ios: '1.5.1' })
 );
 
 // Latest Completed Inspections
@@ -118,10 +118,18 @@ exports.createSlackNotificationsStaging = functions.https.onRequest(
 
 // GET Inspection PDF Report
 exports.inspectionPdfReport = functions.https.onRequest(
-  inspections.createOnGetPDFReportHandler(db, auth)
+  inspections.createOnGetPDFReportHandler(
+    db,
+    auth,
+    config.clientApps.web.productionInspectionURL
+  )
 );
 exports.inspectionPdfReportStaging = functions.https.onRequest(
-  inspections.createOnGetPDFReportHandler(dbStaging, auth)
+  inspections.createOnGetPDFReportHandler(
+    dbStaging,
+    auth,
+    config.clientApps.web.stagingInspectionURL
+  )
 );
 
 // For migrating to a new architecture only, setting a newer date
