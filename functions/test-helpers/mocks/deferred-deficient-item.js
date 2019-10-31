@@ -43,13 +43,4 @@ module.exports = {
       createdAt: 1565660497.888,
     },
   },
-  completedPhotos: {
-    '-current': {
-      createdAt: 1572189050.714,
-      downloadURL: 'https://firebasestorage.googleapis.com/diImage.jpg',
-      startDate: 1572188918.572,
-      storageDBPath: 'deficientItemImages/-inspection/-di',
-      user: '-123',
-    },
-  },
 };

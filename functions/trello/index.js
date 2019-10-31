@@ -7,7 +7,6 @@ const createOnCreateDIProgressNote = require('./on-create-deficient-item-progres
 const createCloseDiCard = require('./pubsub/close-deficient-item-card');
 const createCommentForDiState = require('./pubsub/create-comment-for-deficient-item-state');
 const createUpdateDueDate = require('./pubsub/update-card-due-date');
-const createOnCreateDICompletedPhoto = require('./on-create-deficient-item-completed-photo');
 
 module.exports = {
   createOnUpsertTrelloTokenHandler,
@@ -16,7 +15,6 @@ module.exports = {
   createOnTrelloDeficientItemCardHandler,
   createDeleteTrelloAuthHandler,
   createOnCreateDIProgressNote,
-  createOnCreateDICompletedPhoto,
 
   pubsub: {
     createCloseDiCard,

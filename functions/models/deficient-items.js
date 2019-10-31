@@ -151,49 +151,6 @@ module.exports = modelSetup({
   },
 
   /**
-   * Perform update of single completed photo of
-   * deficient items
-   * @param  {firebaseadmin.database} db
-   * @param  {String} propertyId
-   * @param  {String} deficientItemId
-   * @param  {String} completedPhotoId
-   * @param  {String} trelloAttachmentId
-   * @return {Promise} - resolves {void}
-   */
-  updateCompletedPhotoTrelloCardAttachment(
-    db,
-    propertyId,
-    deficientItemId,
-    completedPhotoId,
-    trelloAttachmentId
-  ) {
-    assert(propertyId && typeof propertyId === 'string', 'has property id');
-    assert(
-      deficientItemId && typeof deficientItemId === 'string',
-      'has deficient item id'
-    );
-    assert(
-      completedPhotoId && typeof completedPhotoId === 'string',
-      'has completed photo id'
-    );
-    assert(
-      trelloAttachmentId && typeof trelloAttachmentId === 'string',
-      'has trello attachment id'
-    );
-
-    const path = `${DATABASE_PATH}/${propertyId}/${deficientItemId}`;
-
-    // Atomic update
-    return db.ref().update({
-      // Modify DI's mark latest changes
-      [`${path}/updatedAt`]: Math.round(Date.now() / 1000),
-
-      // Update DI's completed photo trello attachment id
-      [`${path}/completedPhotos/${completedPhotoId}/trelloCardAttachement`]: trelloAttachmentId,
-    });
-  },
-
-  /**
    * Move a deficient item under `/archive`
    * and remove it from its' active location
    * @param  {firebaseadmin.database} db
