@@ -31,7 +31,7 @@ const dbStaging = defaultApp.database(firebaseConfig.stagingDatabaseURL);
 
 // Send API version
 exports.latestVersion = functions.https.onRequest((request, response) =>
-  response.status(200).send({ ios: '1.5.1' })
+  response.status(200).send({ ios: '1.4.4' })
 );
 
 // Latest Completed Inspections
@@ -359,6 +359,18 @@ exports.onCreateDeficientItemProgressNoteTrelloCommentStaging = functionsStaging
     '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/progressNotes/{progressNoteId}'
   )
   .onCreate(trello.createOnCreateDIProgressNote(dbStaging));
+
+exports.onCreateDeficientItemCompletedPhotoTrelloAttachement = functions.database
+  .ref(
+    '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/completedPhotos/{completedPhotoId}'
+  )
+  .onCreate(trello.createOnCreateDICompletedPhoto(db));
+
+exports.onCreateDeficientItemCompletedPhotoTrelloAttachementStaging = functionsStagingDatabase
+  .ref(
+    '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/completedPhotos/{completedPhotoId}'
+  )
+  .onCreate(trello.createOnCreateDICompletedPhoto(dbStaging));
 
 // Message Subscribers
 exports.propertyMetaSync = properties.pubsub.createSyncMeta(
