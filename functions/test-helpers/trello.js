@@ -33,4 +33,24 @@ module.exports = {
       'deleted Trello card URL from its deficient item'
     );
   },
+
+  /**
+   * DI's Completed Photo entry has an attachment ID
+   * @param  {firebase.database} db
+   * @param  {String} deficientItemPath
+   * @param  {String} trelloAttachmentId
+   * @return {Promise} - resolve {Boolean}
+   */
+  async hasAddTrelloAttachmentId(db, deficientItemPath, trelloAttachmentId) {
+    const completedPhotos = await db
+      .ref(`${deficientItemPath}/completedPhotos`)
+      .once('value');
+
+    const [completedPhoto] = Object.values(completedPhotos.val() || {}).filter(
+      ({ trelloCardAttachement }) =>
+        trelloCardAttachement === trelloAttachmentId
+    );
+
+    return Boolean(completedPhoto);
+  },
 };
