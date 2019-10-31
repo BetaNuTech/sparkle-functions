@@ -5,23 +5,12 @@ const config = {
     deficientItemPath:
       'properties/{{propertyId}}/deficient-items/{{deficientItemId}}',
 
-    inspectionPath:
-      'properties/{{propertyId}}/update-inspection/{{inspectionId}}',
-
     get stagingDeficientItemURL() {
       return `${this.stagingDomain}/${this.deficientItemPath}`;
     },
 
     get productionDeficientItemURL() {
       return `${this.productionDomain}/${this.deficientItemPath}`;
-    },
-
-    get stagingInspectionURL() {
-      return `${this.stagingDomain}/${this.inspectionPath}`;
-    },
-
-    get productionInspectionURL() {
-      return `${this.productionDomain}/${this.inspectionPath}`;
     },
   },
 };

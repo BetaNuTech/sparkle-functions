@@ -38,11 +38,13 @@ describe('Deficient Items Overdue Sync', () => {
     };
 
     // Setup database
-    await db.ref(`/properties/${propertyId}`).set({
-      name: `name${propertyId}`,
-      numOfRequiredActionsForDeficientItems:
-        expected.numOfRequiredActionsForDeficientItems,
-    });
+    await db
+      .ref(`/properties/${propertyId}`)
+      .set({
+        name: `name${propertyId}`,
+        numOfRequiredActionsForDeficientItems:
+          expected.numOfRequiredActionsForDeficientItems,
+      });
     await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
     const diRef = db
       .ref(`/propertyInspectionDeficientItems/${propertyId}`)
@@ -176,10 +178,12 @@ describe('Deficient Items Overdue Sync', () => {
       const eligibleState = OVERDUE_ELIGIBLE_STATES[i];
 
       // Setup database
-      await db.ref(`/properties/${propertyId}`).set({
-        name: `name${propertyId}`,
-        numOfRequiredActionsForDeficientItems: 0,
-      });
+      await db
+        .ref(`/properties/${propertyId}`)
+        .set({
+          name: `name${propertyId}`,
+          numOfRequiredActionsForDeficientItems: 0,
+        });
       await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
       const diRef = db
         .ref(`/propertyInspectionDeficientItems/${propertyId}`)
@@ -383,67 +387,5 @@ describe('Deficient Items Overdue Sync', () => {
 
     // Assertions
     expect(actual).to.equal(expected.state);
-  });
-
-  it("should create a source notification when a DI's state is updated", async () => {
-    const propertyId = uuid();
-    const inspectionId = uuid();
-    const itemId = uuid();
-    const inspectionData = mocking.createInspection({
-      deficienciesExist: true,
-      inspectionCompleted: true,
-      property: propertyId,
-
-      template: {
-        trackDeficientItems: true,
-        items: {
-          // Create single deficient item on inspection
-          [itemId]: mocking.createCompletedMainInputItem(
-            'twoactions_checkmarkx',
-            true
-          ),
-        },
-      },
-    });
-
-    // Setup database
-    await db
-      .ref(`/properties/${propertyId}`)
-      .set({ name: `name${propertyId}` });
-    await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
-    const diRef = db
-      .ref(`/propertyInspectionDeficientItems/${propertyId}`)
-      .push();
-    await diRef.set({
-      state: 'pending',
-      inspection: inspectionId,
-      item: itemId,
-      currentStartDate: timeMocking.age.threeDaysAgo, // eligible for requires progress state
-      currentDueDate: timeMocking.age.twoDaysFromNow, // over 1/2 past due
-      itemTitle: 'title',
-      sectionTitle: 'sectionTitle',
-      sectionSubtitle: 'sectionSubtitle',
-      currentDueDateDay: '10/23/40',
-      currentPlanToFix: 'currentPlanToFix',
-      urrentResponsibilityGroup: 'site_level_manages_vendor',
-      currentCompleteNowReason: 'currentCompleteNowReason',
-      currentReasonIncomplete: 'currentReasonIncomplete',
-      trelloCardURL: 'trelloCardURL',
-      progressNotes: {
-        createdAt: Math.round(Date.now() / 1000),
-        progressNote: 'progressNote',
-      },
-    });
-
-    // Execute
-    await test.wrap(cloudFunctions.deficientItemsOverdueSync)();
-
-    // Test Result
-    const resultsSnap = await db.ref('/notifications/src').once('value');
-    const result = resultsSnap.val();
-    const actual = result ? Object.keys(result).length : 0;
-
-    // Assertions
-    expect(actual).to.be.greaterThan(0);
   });
 });
