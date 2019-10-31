@@ -360,6 +360,18 @@ exports.onCreateDeficientItemProgressNoteTrelloCommentStaging = functionsStaging
   )
   .onCreate(trello.createOnCreateDIProgressNote(dbStaging));
 
+exports.onCreateDeficientItemCompletedPhotoTrelloAttachement = functions.database
+  .ref(
+    '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/completedPhotos/{completedPhotoId}'
+  )
+  .onCreate(trello.createOnCreateDICompletedPhoto(db));
+
+exports.onCreateDeficientItemCompletedPhotoTrelloAttachementStaging = functionsStagingDatabase
+  .ref(
+    '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/completedPhotos/{completedPhotoId}'
+  )
+  .onCreate(trello.createOnCreateDICompletedPhoto(dbStaging));
+
 // Message Subscribers
 exports.propertyMetaSync = properties.pubsub.createSyncMeta(
   'properties-sync',
