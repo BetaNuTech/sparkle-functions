@@ -5,11 +5,10 @@ const express = require('express');
 const cors = require('cors');
 const base64ItemImage = require('./base-64-item-image');
 const createAndUploadInspection = require('./create-and-upload-inspection-pdf');
+const notificationsModel = require('../../models/notifications');
 const authUser = require('../../utils/auth-firebase-user');
 const propertiesModel = require('../../models/properties');
 const inspectionsModel = require('../../models/inspections');
-const notificationsModel = require('../../models/notifications');
-const notifyTemplate = require('../../utils/src-notification-templates');
 const log = require('../../utils/logger');
 
 const { keys, assign } = Object;
@@ -20,16 +19,10 @@ const PREFIX = 'inspections: pdf-reports:';
  * Factory for inspection PDF generator endpoint
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
  * @param  {firebaseAdmin.auth?} auth - Firebase Admin auth service instance (optional for testing)
- * @param  {String} inspectionUrl - template for an inspection's URL
  * @return {Function} - onRequest handler
  */
-module.exports = function createOnGetPDFReportHandler(db, auth, inspectionUrl) {
+module.exports = function createOnGetPDFReportHandler(db, auth) {
   assert(Boolean(db), 'has firebase database instance');
-  assert(
-    inspectionUrl && typeof inspectionUrl === 'string',
-    'has inspection URL template'
-  );
-
   if (process.env.NODE_ENV !== 'test')
     assert(Boolean(auth), 'has firebase auth instance');
 
@@ -60,16 +53,8 @@ module.exports = function createOnGetPDFReportHandler(db, auth, inspectionUrl) {
 
     // Lookup Inspection
     let inspectionSnap = null;
-    let hasPreviousPDFReport = false;
     try {
       inspectionSnap = await inspectionsModel.findRecord(db, inspectionId);
-      const inspectionData = inspectionSnap.val();
-      if (
-        inspectionData &&
-        Boolean(inspectionData.inspectionReportUpdateLastDate)
-      ) {
-        hasPreviousPDFReport = true;
-      }
     } catch (err) {
       log.error(`${PREFIX} inspection lookup failed | ${err}`);
       return res.status(400).send({ message: 'Bad Inspection' });
@@ -86,7 +71,7 @@ module.exports = function createOnGetPDFReportHandler(db, auth, inspectionUrl) {
       return res.status(500).send({ message: 'Inspection Photo Error' });
     }
 
-    // const adminEditor = req.query.adminEditor || '';
+    const adminEditor = req.query.adminEditor || '';
 
     // Optional incognito mode query
     // defaults to false
@@ -192,47 +177,22 @@ module.exports = function createOnGetPDFReportHandler(db, auth, inspectionUrl) {
     }
 
     if (!incognitoMode) {
-      // Create global notification for
-      // inspection PDF report
-      const authorName = req.user
-        ? capitalize(`${req.user.firstName} ${req.user.lastName}`.trim())
-        : '';
-      const authorEmail = req.user ? req.user.email : '';
+      // Create firebase `sendMessages` records about
+      // inspection PDF for each relevant user
+      const creationDate = moment(
+        parseInt(inspection.creationDate * 1000, 10)
+      ).format('MMMM D');
+
+      const author = capitalize(
+        decodeURIComponent(adminEditor || inspection.inspectorName)
+      );
+      const actionType = adminEditor ? 'updated' : 'created';
 
       try {
-        const summaryTemplate = hasPreviousPDFReport
-          ? 'inspection-pdf-update-summary'
-          : 'inspection-pdf-creation-summary';
-        const markdownTemplate = hasPreviousPDFReport
-          ? 'inspection-pdf-update-markdown-body'
-          : 'inspection-pdf-creation-markdown-body';
-        const createdAt = formatTimestamp(inspection.creationDate);
-        const updatedAt = formatTimestamp(inspection.updatedLastDate);
-        const startDate = formatTimestamp(inspection.creationDate);
-        const completeDate = formatTimestamp(inspection.completionDate);
-        const templateName = inspection.templateName;
-        const compiledInspectionUrl = `${inspectionUrl}`
-          .replace('{{propertyId}}', property.id)
-          .replace('{{inspectionId}}', inspectionId);
-
         // Notify of new inspection report
         await notificationsModel.createSrc(db, {
           title: property.name,
-          summary: notifyTemplate(summaryTemplate, {
-            createdAt,
-            updatedAt,
-            authorName,
-            authorEmail,
-          }),
-          markdownBody: notifyTemplate(markdownTemplate, {
-            templateName,
-            startDate,
-            completeDate,
-            reportUrl: inspectionReportURL,
-            inspectionUrl: compiledInspectionUrl,
-            authorName,
-            authorEmail,
-          }),
+          summary: `${creationDate} Sparkle Report ${actionType} by ${author}`,
           creator: req.user ? req.user.id || '' : '',
           property: property.id,
         });
@@ -364,17 +324,4 @@ function inspectionReportUpToDate({
     typeof inspectionReportUpdateLastDate === 'number' &&
     inspectionReportUpdateLastDate > updatedLastDate
   );
-}
-
-/**
- * Format a UNIX timestamp with moment
- * @param  {Number} timestamp
- * @param  {String?} format
- * @return {String}
- */
-function formatTimestamp(timestamp, format = 'MMM DD') {
-  if (timestamp && typeof timestamp === 'number') {
-    return moment(parseInt(timestamp * 1000, 10)).format(format);
-  }
-  return '';
 }
