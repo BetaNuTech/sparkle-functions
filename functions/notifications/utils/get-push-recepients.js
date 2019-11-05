@@ -35,14 +35,15 @@ module.exports = function getPushRecepients({
             return typeof t === 'object' ? Object.keys(t || {}) : [];
           })
         );
+        const isTeamLead = Boolean(teamProperties.length);
 
         // Add all admins
         if (admin) {
           return user.id;
         }
 
-        // Add whitelisted corporate users
-        if (allowCorp && corporate) {
+        // Add whitelisted, non-team lead, corporate users
+        if (allowCorp && corporate && !isTeamLead) {
           return user.id;
         }
 
@@ -51,7 +52,8 @@ module.exports = function getPushRecepients({
           return user.id;
         }
 
-        if (allowTeamLead && teamProperties.includes(property)) {
+        // Is a team lead of this property
+        if (allowTeamLead && property && teamProperties.includes(property)) {
           return user.id;
         }
 
