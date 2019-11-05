@@ -21,6 +21,11 @@ const USERS = {
     id: uuid(),
     teams: { [TEAM_ID]: { [PROPERTY_ID]: true } },
   },
+  corporateTeamLead: {
+    id: uuid(),
+    corporate: true,
+    teams: { [TEAM_ID]: { [PROPERTY_ID]: true } },
+  },
 };
 
 describe('Push Messages | Utils | Get Recepients', () => {
@@ -47,11 +52,26 @@ describe('Push Messages | Utils | Get Recepients', () => {
 
   it('should add all team lead level users associated with a property', () => {
     const users = Object.values(USERS);
-    const expected = [USERS.admin.id, USERS.property.id, USERS.teamLead.id];
+    const expected = [
+      USERS.admin.id,
+      USERS.property.id,
+      USERS.teamLead.id,
+      USERS.corporateTeamLead.id,
+    ];
     const actual = getRecepients({
       users,
       allowTeamLead: true,
       property: PROPERTY_ID,
+    });
+    expect(actual).to.deep.equal(expected);
+  });
+
+  it('should not add corporate team leads to non property notifications', () => {
+    const users = Object.values(USERS);
+    const expected = [USERS.admin.id, USERS.corporate.id];
+    const actual = getRecepients({
+      users,
+      allowCorp: true,
     });
     expect(actual).to.deep.equal(expected);
   });
