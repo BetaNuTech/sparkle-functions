@@ -119,6 +119,10 @@ describe('Publish Slack notification', () => {
   });
 
   it('should successfully publish and cleanup all Slack notifications', async () => {
+    const expected = `*test*
+
+msg`;
+
     // Stub request
     nock('https://slack.com')
       .persist()
@@ -133,7 +137,10 @@ describe('Publish Slack notification', () => {
     nock('https://slack.com')
       .persist()
       .post('/api/chat.postMessage')
-      .query(true)
+      .query(({ text: actual }) => {
+        expect(actual).to.equal(expected, 'published expected message');
+        return true;
+      })
       .reply(200, SLACK_API_PUB_MSG_RESP);
 
     const notificationId = uuid();
@@ -170,6 +177,44 @@ describe('Publish Slack notification', () => {
       false,
       `synced /notifications/slack/${SLACK_CHANNEL}/${notificationId2} by removing once message has sent`
     );
+  });
+
+  it("should successfully publish a property's (untitled) Slack notifications", async () => {
+    const expected = 'untitled-msg';
+
+    // Stub request
+    nock('https://slack.com')
+      .persist()
+      .post('/api/channels.join')
+      .query({
+        token: INTEGRATION_PAYLOAD.accessToken,
+        name: SLACK_CHANNEL,
+        validate: true,
+      })
+      .reply(200, SLACK_API_JOIN_CHAN_RESPONSE);
+
+    const messagePOST = nock('https://slack.com')
+      .persist()
+      .post('/api/chat.postMessage')
+      .query(({ text: actual }) => {
+        expect(actual).to.equal(expected);
+        return true;
+      })
+      .reply(200, SLACK_API_PUB_MSG_RESP);
+
+    const notificationId = uuid();
+
+    // Setup database
+    await db.ref(SLACK_CREDENTIAL_DB_PATH).set(INTEGRATION_PAYLOAD); // adding slack integration configuration
+    await db
+      .ref(`/notifications/slack/${SLACK_CHANNEL}/${notificationId}`)
+      .set({ title: '', message: expected }); // Empty title property notification
+
+    // Execute
+    await test.wrap(cloudFunctions.publishSlackNotifications)();
+
+    // Assertions
+    expect(messagePOST.isDone()).to.equal(true);
   });
 
   it('should record a successfully joined channel in integrations', async () => {
