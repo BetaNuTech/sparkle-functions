@@ -114,7 +114,7 @@ module.exports = modelSetup({
       `${PREFIX} addToSlackChannel: has notification ID`
     );
     assert(
-      notification && notification.title && notification.message,
+      notification && notification.message,
       `${PREFIX} addToSlackChannel: has valid notification`
     );
 
