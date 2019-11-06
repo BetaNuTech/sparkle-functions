@@ -60,6 +60,8 @@ module.exports = function createSyncOverdueDeficientItems(
               const previousState = state;
               const currentStartDate = diItem.currentStartDate || 0;
               const currentDueDate = diItem.currentDueDate || 0;
+              const willRequireProgressNote =
+                diItem.willRequireProgressNote || false;
 
               // Eligible for "requires-progress-update" state
               // when due date is at least 5 days from the start date
@@ -107,7 +109,8 @@ module.exports = function createSyncOverdueDeficientItems(
               } else if (
                 state === 'pending' &&
                 isRequiresProgressUpdateStateEligible &&
-                secondsUntilDue < secondsUntilHalfDue
+                secondsUntilDue < secondsUntilHalfDue &&
+                willRequireProgressNote
               ) {
                 // Progress state
                 state = 'requires-progress-update';
