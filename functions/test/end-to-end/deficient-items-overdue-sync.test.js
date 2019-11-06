@@ -335,6 +335,57 @@ describe('Deficient Items Overdue Sync', () => {
     expect(actual).to.equal(expected.state);
   });
 
+  it('should not progress to "requires-progress-update" when DI does not require progress notes', async () => {
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const itemId = uuid();
+    const inspectionData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: propertyId,
+
+      template: {
+        trackDeficientItems: true,
+        items: {
+          // Create single deficient item on inspection
+          [itemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true
+          ),
+        },
+      },
+    });
+    const expected = { state: 'pending' };
+
+    // Setup database
+    await db
+      .ref(`/properties/${propertyId}`)
+      .set({ name: `name${propertyId}` });
+    await db.ref(`/inspections/${inspectionId}`).set(inspectionData);
+    const diRef = db
+      .ref(`/propertyInspectionDeficientItems/${propertyId}`)
+      .push();
+    const diPath = diRef.path.toString();
+    await diRef.set({
+      state: 'pending',
+      inspection: inspectionId,
+      item: itemId,
+      currentStartDate: timeMocking.age.threeDaysAgo, // eligible for requires progress state
+      currentDueDate: timeMocking.age.twoDaysFromNow, // over 1/2 past due
+      willRequireProgressNote: false, // Progress notes not needed
+    });
+
+    // Execute
+    await test.wrap(cloudFunctions.deficientItemsOverdueSync)();
+
+    // Test Result
+    const actualSnap = await db.ref(`${diPath}/state`).once('value');
+    const actual = actualSnap.val();
+
+    // Assertions
+    expect(actual).to.equal(expected.state);
+  });
+
   it('should progress eligible DI\'s, under half past due, to "requires-progress-update" state', async () => {
     const propertyId = uuid();
     const inspectionId = uuid();
@@ -372,6 +423,7 @@ describe('Deficient Items Overdue Sync', () => {
       item: itemId,
       currentStartDate: timeMocking.age.threeDaysAgo, // eligible for requires progress state
       currentDueDate: timeMocking.age.twoDaysFromNow, // over 1/2 past due
+      willRequireProgressNote: true,
     });
 
     // Execute
@@ -433,6 +485,7 @@ describe('Deficient Items Overdue Sync', () => {
         createdAt: Math.round(Date.now() / 1000),
         progressNote: 'progressNote',
       },
+      willRequireProgressNote: true,
     });
 
     // Execute
