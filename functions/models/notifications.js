@@ -44,8 +44,7 @@ module.exports = modelSetup({
       'has notification configuration'
     );
 
-    let { title } = notification;
-    const { summary, creator } = notification;
+    const { title, summary, creator } = notification;
     assert(title && typeof title === 'string', 'has notification title');
     assert(summary && typeof summary === 'string', 'has notification summary');
     assert(typeof creator === 'string', 'has notification creator');
@@ -56,7 +55,7 @@ module.exports = modelSetup({
       db.app.options &&
       db.app.options.databaseURL === STAGING_DATABASE_URL
     ) {
-      title = `[STAGING] ${title}`;
+      notification.title = `[STAGING] ${title}`;
     }
 
     const ref = db.ref(SRC_NOTIFICATION_PATH).push();
