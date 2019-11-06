@@ -39,6 +39,7 @@ const DEFAULT_DEFICIENT_ITEM = Object.freeze({
   itemScore: 0,
   itemMainInputSelection: 0,
   itemPhotosData: null,
+  willRequireProgressNote: false,
 });
 
 const WHITELISTED_FALSEY_ATTRS = ['itemMainInputSelection', 'hasItemPhotoData'];
