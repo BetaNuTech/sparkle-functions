@@ -264,6 +264,35 @@ _userAgent_`;
     expect(actual).to.equal(expected);
   });
 
+  it('should set an empty title for slack property notifications', async () => {
+    const expected = '';
+    const notificationData = Object.assign(
+      {
+        property: PROPERTY_ID,
+      },
+      NOTIFICATION_DATA
+    );
+
+    // Setup database
+    await db.ref(PROPERTY_PATH).set(PROPERTY_DATA);
+    await db.ref(SRC_NOTIFICATION_PATH).set(notificationData);
+    await db.ref(SLACK_ORG_INTEGRATION_PATH).set(SLACK_ORG_INTEGRATION_DATA);
+    const notificationsSnap = await db.ref(SRC_NOTIFICATION_PATH).once('value');
+
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.onCreateSourceSlackNotification);
+    await wrapped(notificationsSnap, {
+      params: { notificationId: NOTIFICATION_ID },
+    });
+
+    // Assertions
+    const snap = await db
+      .ref(`${SLACK_PROP_NOTIFICATON_PATH}/title`)
+      .once('value');
+    const actual = snap.val();
+    expect(actual).to.equal(expected);
+  });
+
   it('should mark the source notifications published mediums to include slack', async () => {
     // Setup database
     await db.ref(SRC_NOTIFICATION_PATH).set(NOTIFICATION_DATA);

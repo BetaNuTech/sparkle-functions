@@ -58,14 +58,14 @@ _${userAgent}_`; // Add Slack indent formatting
   /**
    * Representation of Slack Notification
    * @type {SlackNotificationResult}
-   * @param {String} title
+   * @param {String?} title - Optional title for admin notifications
    * @param {String} message
    * @param {String} channel
    * @param {String} path
    * @param {Object} publishedMediums
    */
   const result = {
-    title,
+    title: propertyId ? '' : title, // Title admin notifications only
     message,
     channel: '',
     path: '',
