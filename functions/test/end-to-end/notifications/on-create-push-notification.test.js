@@ -298,6 +298,7 @@ describe('Create Push Notification From Source', () => {
 
   it('creates a push notification for intended title, message, and user', async () => {
     const expected = {
+      src: NOTIFICATION_ID,
       title: NOTIFICATION_DATA.title,
       message: NOTIFICATION_DATA.summary,
       user: USER_ID,
