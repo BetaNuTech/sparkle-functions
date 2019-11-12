@@ -118,7 +118,7 @@ module.exports = async (db, notificationId, notification) => {
       db,
       result.channel,
       notificationId,
-      { title: result.title, message: result.message }
+      { title: result.title, message: result.message, src: notificationId }
     );
 
     result.path = notificationRef.path.toString();
