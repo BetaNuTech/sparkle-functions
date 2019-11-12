@@ -6,6 +6,7 @@ const PREFIX = 'models: integrations:';
 const TRELLO_PROPERTIES_PATH = '/integrations/trello/properties';
 const TRELLO_ORG_PATH = '/integrations/trello/organization';
 const SLACK_ORG_PATH = '/integrations/slack/organization';
+const SLACK_NOTIFICATION_PATH = '/notifications/slack';
 
 module.exports = modelSetup({
   /**
@@ -72,7 +73,22 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {DataSnapshot} notifications snapshot
    */
   findAllSlackNotifications(db) {
-    return db.ref('/notifications/slack').once('value');
+    return db.ref(SLACK_NOTIFICATION_PATH).once('value');
+  },
+
+  /**
+   * Lookup all notifications by a Slack channel
+   * @param  {firebaseAdmin.database} db firbase database
+   * @param  {String} channelName
+   * @return {Promise} - resolves {DataSnapshot} notifications snapshot
+   */
+  findSlackNotificationsByChannel(db, channelName) {
+    assert(
+      channelName && typeof channelName === 'string',
+      `${PREFIX} has channel name`
+    );
+
+    return db.ref(`${SLACK_NOTIFICATION_PATH}/${channelName}`).once('value');
   },
 
   /**
