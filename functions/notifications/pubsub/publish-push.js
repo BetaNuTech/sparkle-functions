@@ -33,12 +33,13 @@ module.exports = function publishPushNotification(
     // from message or select all
     let srcTarget = '*';
     try {
-      srcTarget = message.data
-        ? Buffer.from(message.data, 'base64').toString()
-        : '*';
+      srcTarget =
+        message && message.data
+          ? Buffer.from(message.data, 'base64').toString()
+          : '*';
     } catch (err) {
       log.warn(
-        `${PREFIX} message parsing failed targeting all push notifications`
+        `${PREFIX} message parsing failed, targeting all push notifications`
       );
     }
 

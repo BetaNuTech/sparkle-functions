@@ -11,7 +11,6 @@ const NOTIFICATION_ID = uuid();
 const SRC_NOTIFICATION_PATH = `/notifications/src/${NOTIFICATION_ID}`;
 const PUSH_NOTIFICATION_PATH = '/notifications/push';
 const NOTIFICATION_DATA = Object.freeze({
-  src: NOTIFICATION_ID,
   title: 'notification',
   summary: 'summary',
   creator: uuid(),
