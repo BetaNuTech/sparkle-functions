@@ -19,7 +19,7 @@ module.exports = function publishSlackNotification(topic = '', pubSub, db) {
   assert(topic && typeof topic === 'string', 'has pubsub topic');
   assert(Boolean(pubSub), 'has pubsub firebase instance');
   assert(Boolean(db), 'has firebase admin database instance');
-  return pubSub.topic(topic).onPublish(async () => {
+  return pubSub.topic(topic).onPublish(async message => {
     let accessToken = '';
     try {
       const slackIntegrationCredentialsSnap = await systemModel.findSlackCredentials(
@@ -38,21 +38,59 @@ module.exports = function publishSlackNotification(topic = '', pubSub, db) {
       throw Error(`${PREFIX} ${topic} | ${err}`);
     }
 
-    let notifications = null;
+    // Parse individual target
+    // from message or select all
+    let channelTarget = '*';
     try {
-      const notificationsSnap = await integrationModel.findAllSlackNotifications(
-        db
+      channelTarget =
+        message && message.data
+          ? Buffer.from(message.data, 'base64').toString()
+          : '*';
+    } catch (err) {
+      log.warn(
+        `${PREFIX} message parsing failed, targeting all slack notifications`
       );
+    }
 
-      if (!notificationsSnap.exists()) return;
-      notifications = notificationsSnap.val() || {};
+    let notifications = null;
+    const allChannels = [];
+
+    try {
+      let notificationsSnap = null;
+
+      if (channelTarget !== '*') {
+        // Select slack notifications for a channel notification
+        log.info(
+          `${PREFIX} ${topic}: publishing slack notifications for channel: "${channelTarget}"`
+        );
+
+        notificationsSnap = await integrationModel.findSlackNotificationsByChannel(
+          db,
+          channelTarget
+        );
+
+        if (notificationsSnap.exists) {
+          notifications = { [channelTarget]: notificationsSnap.val() };
+          allChannels.push(channelTarget);
+        }
+      } else {
+        // Select all slack notifications
+        log.info(`${PREFIX} ${topic}: publishing all slack notifications`);
+
+        notificationsSnap = await integrationModel.findAllSlackNotifications(
+          db
+        );
+
+        notifications = notificationsSnap.val() || {};
+        allChannels.push(...Object.keys(notifications));
+      }
+
+      if (!notificationsSnap || !notificationsSnap.exists()) return;
     } catch (err) {
       throw Error(
         `${PREFIX} ${topic}: error retrieving notifications | ${err}`
       );
     }
-
-    const allChannels = Object.keys(notifications);
 
     // Join any channels before
     // sending notifications

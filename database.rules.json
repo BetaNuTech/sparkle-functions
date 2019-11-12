@@ -75,7 +75,10 @@
     },
     "notifications": {
       ".read":"auth != null",
-      ".write":"auth != null"
+      ".write":"auth != null",
+      "push": {
+        ".indexOn": ["src"]
+      }
     },
     "system": {
       "integrations": {

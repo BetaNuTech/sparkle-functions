@@ -217,6 +217,46 @@ msg`;
     expect(messagePOST.isDone()).to.equal(true);
   });
 
+  it('should only publish notifications for a single channel when provided', async () => {
+    const expected = true; // unrelated slack notification exists
+    const unrelatedChannel = 'unrelated';
+    const notificationOnePath = `/notifications/slack/${SLACK_CHANNEL}/${uuid()}`;
+    const notificationTwoPath = `/notifications/slack/${unrelatedChannel}/${uuid()}`;
+
+    // Stub requests
+    nock('https://slack.com')
+      .persist()
+      .post('/api/channels.join')
+      .query({
+        token: INTEGRATION_PAYLOAD.accessToken,
+        name: SLACK_CHANNEL,
+        validate: true,
+      })
+      .reply(200, SLACK_API_JOIN_CHAN_RESPONSE);
+
+    nock('https://slack.com')
+      .persist()
+      .post('/api/chat.postMessage')
+      .query(true)
+      .reply(200, SLACK_API_PUB_MSG_RESP);
+
+    // Setup database
+    await db.ref(SLACK_CREDENTIAL_DB_PATH).set(INTEGRATION_PAYLOAD); // adding slack integration configuration
+    await db.ref(notificationOnePath).set({ title: 'test', message: 'msg' });
+    await db.ref(notificationTwoPath).set({ title: 'test', message: 'msg' });
+
+    // Execute
+    const message = { data: Buffer.from(SLACK_CHANNEL) };
+    await test.wrap(cloudFunctions.publishSlackNotifications)(message);
+
+    // Test result
+    const result = await db.ref(notificationTwoPath).once('value');
+    const actual = result.exists();
+
+    // Assertions
+    expect(actual).to.equal(expected);
+  });
+
   it('should record a successfully joined channel in integrations', async () => {
     // Stub request
     nock('https://slack.com')

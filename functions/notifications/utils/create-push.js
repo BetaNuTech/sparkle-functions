@@ -63,6 +63,7 @@ module.exports = async (db, notificationId, notification) => {
   const { title, summary: message } = notification;
   const createdAt = Math.round(Date.now() / 1000);
   const pushNotifications = recipientIds.map(user => ({
+    src: notificationId,
     title,
     message,
     user,

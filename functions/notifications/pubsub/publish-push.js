@@ -26,17 +26,45 @@ module.exports = function publishPushNotification(
   assert(Boolean(db), 'has firebase admin database instance');
   assert(Boolean(messaging), 'has firebase messaging instance');
 
-  return pubSub.topic(topic).onPublish(async () => {
+  return pubSub.topic(topic).onPublish(async message => {
     const pushNotifications = [];
-    log.info(`${PREFIX} ${topic}: publishing all push messages`);
+
+    // Parse individual target
+    // from message or select all
+    let srcTarget = '*';
+    try {
+      srcTarget =
+        message && message.data
+          ? Buffer.from(message.data, 'base64').toString()
+          : '*';
+    } catch (err) {
+      log.warn(
+        `${PREFIX} message parsing failed, targeting all push notifications`
+      );
+    }
 
     try {
-      const pushSnap = await notificationsModel.findAllPush(db);
-      const pushTree = pushSnap.val() || {};
+      let pushTree = null;
 
-      // Append all push notifications to queue
+      if (srcTarget !== '*') {
+        // Select all push notification(s) for a source notification
+        log.info(
+          `${PREFIX} ${topic}: publishing push messages for: ${srcTarget}`
+        );
+
+        const pushSnap = await notificationsModel.findPushBySrc(db, srcTarget);
+        pushTree = pushSnap.val() || {};
+      } else {
+        log.info(`${PREFIX} ${topic}: publishing all push messages`);
+
+        // Select all push notifications
+        const pushSnap = await notificationsModel.findAllPush(db);
+        pushTree = pushSnap.val() || {};
+      }
+
+      // Append each push notifications to queue
       Object.keys(pushTree).forEach(pushId => {
-        pushNotifications.push(Object.assign({ id: pushId }, pushTree[pushId]));
+        pushNotifications.push({ id: pushId, ...pushTree[pushId] });
       });
     } catch (err) {
       throw Error(
@@ -52,6 +80,7 @@ module.exports = function publishPushNotification(
       delete pushData.id;
       delete pushData.user;
       delete pushData.createdAt;
+      delete pushData.src;
 
       try {
         // Publish push notification
