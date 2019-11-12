@@ -11,6 +11,7 @@ const NOTIFICATION_ID = uuid();
 const REG_TOKEN_PATH = `/registrationTokens/${USER_ID}/${REG_TOKEN}`;
 const PUSH_NOTIFICATION_PATH = `/notifications/push/${NOTIFICATION_ID}`;
 const NOTIFICATION_DATA = Object.freeze({
+  src: NOTIFICATION_ID,
   title: 'notification',
   message: 'summary',
   user: USER_ID,
@@ -92,6 +93,37 @@ describe('Publish Push notification', () => {
 
     // Assertions
     const snap = await db.ref(PUSH_NOTIFICATION_PATH).once('value');
+    const actual = snap.exists();
+    expect(actual).to.equal(expected);
+  });
+
+  it('sends all push notifications related to a specified source notification', async () => {
+    const expected = true; // unrelated push notification exists
+
+    // Stup Requests
+    const stub = sinon.stub(messaging, 'sendToDevice');
+    stub.callsFake(() => Promise.resolve({ multicastId: uuid() }));
+
+    // Setup Database
+    const unrelatedPushId = uuid();
+    const unrelatedPushPath = PUSH_NOTIFICATION_PATH.replace(
+      NOTIFICATION_ID,
+      unrelatedPushId
+    );
+    // Create unrelated push notification for same recipient
+    const unrelatedPushData = Object.assign({}, NOTIFICATION_DATA, {
+      src: unrelatedPushId,
+    });
+    await db.ref(PUSH_NOTIFICATION_PATH).set(NOTIFICATION_DATA);
+    await db.ref(unrelatedPushPath).set(unrelatedPushData);
+    await db.ref(REG_TOKEN_PATH).set(unixNow()); // Token one
+
+    // Execute
+    const message = { data: Buffer.from(NOTIFICATION_ID) };
+    await test.wrap(cloudFunctions.publishPushNotifications)(message);
+
+    // Assertions
+    const snap = await db.ref(unrelatedPushPath).once('value');
     const actual = snap.exists();
     expect(actual).to.equal(expected);
   });
