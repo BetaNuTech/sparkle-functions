@@ -11,6 +11,7 @@ const NOTIFICATION_ID = uuid();
 const SRC_NOTIFICATION_PATH = `/notifications/src/${NOTIFICATION_ID}`;
 const PUSH_NOTIFICATION_PATH = '/notifications/push';
 const NOTIFICATION_DATA = Object.freeze({
+  src: NOTIFICATION_ID,
   title: 'notification',
   summary: 'summary',
   creator: uuid(),
@@ -298,6 +299,7 @@ describe('Create Push Notification From Source', () => {
 
   it('creates a push notification for intended title, message, and user', async () => {
     const expected = {
+      src: NOTIFICATION_ID,
       title: NOTIFICATION_DATA.title,
       message: NOTIFICATION_DATA.summary,
       user: USER_ID,

@@ -135,7 +135,7 @@ module.exports = modelSetup({
   /**
    * Atomically write a group of push
    * notifications to the the database
-   * while marking the source notification'
+   * while marking the source notification's
    * published mediums for push
    * NOTE: /notifications/push/*
    * @param  {firebaseAdmin.database} db firbase database
@@ -154,11 +154,6 @@ module.exports = modelSetup({
       `${PREFIX} createAllPush: has notifications configs`
     );
 
-    /**
-     * @type {CreateAllPushResult}
-     * @param {Object} publishedMediums
-     */
-    const result = { publishedMediums: { push: true } };
     const updates = Object.create(null);
     const parentRef = db.ref(PUSH_NOTIFICATION_PATH);
 
@@ -169,6 +164,16 @@ module.exports = modelSetup({
       // Append notification to updates
       updates[path] = notification;
     });
+
+    /**
+     * @type {CreateAllPushResult}
+     * @param {Object} publishedMediums
+     */
+    const result = {
+      publishedMediums: {
+        push: true,
+      },
+    };
 
     // Append source published mediums
     updates[
@@ -216,6 +221,24 @@ module.exports = modelSetup({
    */
   findAllPush(db) {
     return db.ref(PUSH_NOTIFICATION_PATH).once('value');
+  },
+
+  /**
+   * Find Push Notifications for a source notification
+   * @param {firebaseAdmin.database} db firbase database
+   * @param {String} srcNotificationId
+   */
+  findPushBySrc(db, srcNotificationId) {
+    assert(
+      srcNotificationId && typeof srcNotificationId === 'string',
+      `${PREFIX} findPush: has push notification ID`
+    );
+
+    return db
+      .ref(`${PUSH_NOTIFICATION_PATH}`)
+      .orderByChild('src')
+      .equalTo(srcNotificationId)
+      .once('value');
   },
 
   /**
