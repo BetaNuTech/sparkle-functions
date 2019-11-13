@@ -3,13 +3,15 @@ const uuid = require('../../test-helpers/uuid');
 const { cleanDb } = require('../../test-helpers/firebase');
 const { db, test, cloudFunctions } = require('./setup');
 
-const SIX_MONTHS_AGO_SEC = 15778800;
+const ONE_MONTHS_SEC = 2629800;
+const SIX_MONTHS_SEC = 15778800;
+const TWENTY_SEVEN_DAYS_SEC = 2332800;
 
 describe('Registration Token Sync', () => {
   afterEach(() => cleanDb(db));
 
   it('should replace boolean device tokens values with timestamps', async () => {
-    const nowUnix = Date.now() / 1000;
+    const nowUnix = Math.round(Date.now() / 1000);
     const userId = uuid();
     const unchangedTokenId = uuid();
 
@@ -50,29 +52,48 @@ describe('Registration Token Sync', () => {
     );
   });
 
-  it('should remove device tokens older than 6 months', async () => {
+  it('should remove registration tokens older than 1 months', async () => {
     const nowUnix = Date.now() / 1000;
     const userId = uuid();
     const deletedTokenId = uuid();
+    const deletedTokenId2 = uuid();
     const unchangedTokenId = uuid();
 
     // Setup database
     await db.ref('/registrationTokens').set({
       [userId]: {
-        [deletedTokenId]: nowUnix - SIX_MONTHS_AGO_SEC,
-        [unchangedTokenId]: nowUnix,
+        [deletedTokenId]: nowUnix - ONE_MONTHS_SEC,
+        [deletedTokenId2]: nowUnix - SIX_MONTHS_SEC,
+        [unchangedTokenId]: nowUnix - TWENTY_SEVEN_DAYS_SEC,
       },
     });
 
     // Execute
     await test.wrap(cloudFunctions.regTokensSync)();
 
-    // Test results
+    // Results
     const resultsSnap = await db.ref('/registrationTokens').once('value');
     const results = resultsSnap.val();
 
     // Assertions
-    expect(results[userId][deletedTokenId]).to.be.undefined;
-    expect(results[userId][unchangedTokenId]).to.exist;
+    [
+      {
+        actual: Boolean(results[userId][deletedTokenId]),
+        expected: false,
+        msg: 'removed one month old token',
+      },
+      {
+        actual: Boolean(results[userId][deletedTokenId2]),
+        expected: false,
+        msg: 'removed six month old token',
+      },
+      {
+        actual: Boolean(results[userId][unchangedTokenId]),
+        expected: true,
+        msg: 'keep twenty seven day old token',
+      },
+    ].forEach(({ actual, expected, msg }) => {
+      expect(actual).to.equal(expected, msg);
+    });
   });
 });
