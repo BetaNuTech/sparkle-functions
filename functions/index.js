@@ -90,12 +90,28 @@ exports.createTrelloDeficientItemCardStaging = functions.https.onRequest(
   )
 );
 
+// POST /slackApp
+exports.slackAppEvents = functions.https.onRequest(
+  slack.createSlackEventsApiHandler(db)
+);
+exports.slackAppEventsStaging = functions.https.onRequest(
+  slack.createSlackEventsApiHandler(dbStaging)
+);
+
 // POST /integrations/slack/authorization
 exports.createSlackAppAuth = functions.https.onRequest(
   slack.createOnSlackAppAuthHandler(db, auth)
 );
 exports.createSlackAppAuthStaging = functions.https.onRequest(
   slack.createOnSlackAppAuthHandler(dbStaging, auth)
+);
+
+// DELETE /integrations/slack/authorization
+exports.deleteSlackAuthorization = functions.https.onRequest(
+  slack.createDeleteSlackAppHandler(db, auth)
+);
+exports.deleteSlackAuthorizationStaging = functions.https.onRequest(
+  slack.createDeleteSlackAppHandler(dbStaging, auth)
 );
 
 //  POST /notifications
