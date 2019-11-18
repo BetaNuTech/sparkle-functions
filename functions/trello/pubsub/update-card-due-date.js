@@ -1,10 +1,10 @@
-const moment = require('moment');
 const log = require('../../utils/logger');
 const systemModel = require('../../models/system');
 const defItemModel = require('../../models/deficient-items');
 const toISO8601 = require('../utils/date-to-iso-8601');
 const parseDiStateEventMsg = require('../utils/parse-di-state-event-msg');
 const findPreviousDIHistory = require('../../deficient-items/utils/find-history');
+const propertiesModel = require('../../models/properties');
 
 const PREFIX = 'trello: pubsub: update-update-card-due-date:';
 
@@ -34,6 +34,16 @@ module.exports = function createUpdateDueDate(topic = '', pubsub, db) {
     log.info(
       `${PREFIX} ${topic}: for DI "${propertyId}/${deficientItemId}" and state "${deficientItemState}"`
     );
+
+    // Lookup Property
+    let property = null;
+    try {
+      const propertySnap = await propertiesModel.findRecord(db, propertyId);
+      property = propertySnap.val();
+      if (!property) throw Error('Not found');
+    } catch (err) {
+      throw Error(`${PREFIX} property lookup failed | ${err}`);
+    }
 
     // Find created Trello Card reference
     let trelloCardId = '';
@@ -86,8 +96,8 @@ module.exports = function createUpdateDueDate(topic = '', pubsub, db) {
     if (
       deficientItemState === 'deferred' &&
       currDeferDate &&
-      currDeferDate.deferredDate &&
-      updatedAt === currDeferDate.createdAt
+      updatedAt === currDeferDate.createdAt &&
+      deficientItem.currentDeferredDateDay
     ) {
       // PUT deferred as Trello card Due Date
       try {
@@ -97,7 +107,7 @@ module.exports = function createUpdateDueDate(topic = '', pubsub, db) {
           deficientItemId,
           trelloCardId,
           {
-            due: toISO8601(getCurrentDueDay(currDeferDate.deferredDate)),
+            due: toISO8601(deficientItem.currentDeferredDateDay, property.zip),
             dueComplete: false,
           }
         );
@@ -111,7 +121,11 @@ module.exports = function createUpdateDueDate(topic = '', pubsub, db) {
           `${PREFIX} ${topic}: failed to update Trello card due date to deferred date | ${err}`
         );
       }
-    } else if (currDiDueDate && updatedAt === currDiDueDate.createdAt) {
+    } else if (
+      currDiDueDate &&
+      updatedAt === currDiDueDate.createdAt &&
+      deficientItem.currentDueDateDay
+    ) {
       // PUT due date as Trello card Due Date
       try {
         await systemModel.updateTrelloCard(
@@ -120,7 +134,7 @@ module.exports = function createUpdateDueDate(topic = '', pubsub, db) {
           deficientItemId,
           trelloCardId,
           {
-            due: toISO8601(deficientItem.currentDueDateDay),
+            due: toISO8601(deficientItem.currentDueDateDay, property.zip),
             dueComplete: false,
           }
         );
@@ -160,15 +174,3 @@ module.exports = function createUpdateDueDate(topic = '', pubsub, db) {
     }
   });
 };
-
-/**
- * Convert a UNIX timestamp to at
- * `MM/DD/YYYY` UTC datestring
- * @param  {Number} timestampSec
- * @return {String}
- */
-function getCurrentDueDay(timestampSec) {
-  return moment
-    .utc(parseInt(timestampSec || 0, 10) * 1000)
-    .format('MM/DD/YYYY');
-}

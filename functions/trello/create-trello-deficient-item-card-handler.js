@@ -10,6 +10,7 @@ const systemModel = require('../models/system');
 const deficientItemsModel = require('../models/deficient-items');
 const inspectionsModel = require('../models/inspections');
 const integrationsModel = require('../models/integrations');
+const propertiesModel = require('../models/properties');
 const config = require('../config');
 
 const PREFIX = 'trello: create deficient item card:';
@@ -61,8 +62,18 @@ module.exports = function createOnTrelloDeficientItemCard(
       return res.status(400).send({ message: message.trim() });
     }
 
+    // Lookup Property
+    let property = null;
+    try {
+      const propertySnap = await propertiesModel.findRecord(db, propertyId);
+      property = propertySnap.val();
+      if (!property) throw Error('Not found');
+    } catch (err) {
+      throw Error(`${PREFIX} property lookup failed | ${err}`);
+    }
+
     // Lookup Deficient Item
-    let deficientItem;
+    let deficientItem = null;
     try {
       const deficientItemSnap = await deficientItemsModel.find(
         db,
@@ -178,9 +189,15 @@ module.exports = function createOnTrelloDeficientItemCard(
         trelloCardPayload.idMembers = trelloOrganization.member;
       }
 
-      // Append current due date as date string
-      if (deficientItem.currentDueDateDay) {
-        trelloCardPayload.due = toISO8601(deficientItem.currentDueDateDay);
+      // Append any due date as date string
+      if (
+        deficientItem.currentDueDateDay ||
+        deficientItem.currentDeferredDateDay
+      ) {
+        const dueDate =
+          deficientItem.currentDueDateDay ||
+          deficientItem.currentDeferredDateDay;
+        trelloCardPayload.due = toISO8601(dueDate, property.zip);
       }
 
       const trelloResponse = await got(
