@@ -32,7 +32,8 @@
     "moment-timezone": "^0.5.26",
     "navigator": "^1.0.1",
     "triple-beam": "^1.3.0",
-    "winston": "^3.1.0"
+    "winston": "^3.1.0",
+    "zipcode-to-timezone": "^0.0.9"
   },
   "private": true,
   "devDependencies": {
