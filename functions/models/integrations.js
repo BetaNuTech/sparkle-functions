@@ -226,6 +226,24 @@ module.exports = modelSetup({
   },
 
   /**
+   * Remove Slack integration organization data
+   * @param  {firebaseAdmin.database} db firebase database
+   * @return {Promise}
+   */
+  destroySlackOrganization(db) {
+    return db.ref(SLACK_ORG_PATH).remove();
+  },
+
+  /**
+   * Remove Slack notifications
+   * @param  {firebaseAdmin.database} db firebase database
+   * @return {Promise}
+   */
+  destroySlackNotifications(db) {
+    return db.ref(SLACK_NOTIFICATION_PATH).remove();
+  },
+
+  /**
    * Join specified Slack channel and
    * record success in integrations history
    * @param   {firebaseAdmin.database} db firbase database

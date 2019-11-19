@@ -1,6 +1,7 @@
 const { expect } = require('chai');
 const request = require('supertest');
 const nock = require('nock');
+const moment = require('moment-timezone');
 const appConfig = require('../../../config');
 const createTrelloDeficientItemCardHandler = require('../../../trello/create-trello-deficient-item-card-handler');
 const uuid = require('../../../test-helpers/uuid');
@@ -22,10 +23,12 @@ const TRELLO_LIST_ID = '5d0ab7754066f880369a4d99';
 const API_PATH = `/properties/${PROPERTY_ID}/deficient-items/${DEFICIENT_ITEM_ID}/trello/card`;
 const CLIENT_APP_URI_TEMPL =
   appConfig.clientApps.web.productionDeficientItemURL;
+const PROPERTY_DATA = { zip: '47715' }; // TZ = "America/Indiana/Indianapolis"
+const NOW = Date.now();
 const DEFICIENT_ITEM_DATA = {
-  createdAt: Date.now() / 1000,
-  currentDueDate: Date.now() / 1000,
-  currentDueDateDay: '01/15/2025',
+  createdAt: NOW / 1000,
+  currentDueDate: NOW / 1000,
+  currentDueDateDay: moment(NOW).format('MM/DD/YYYY'),
   itemTitle: 'Broken Pipe',
   itemScore: 4,
   itemInspectorNotes: 'a lot of rust around pipe',
@@ -41,8 +44,8 @@ const TRELLO_SYSTEM_INTEGRATION_DATA = {
   authToken: TRELLO_AUTH_TOKEN,
 };
 const TRELLO_INTEGRATION_DATA = {
-  createdAt: Date.now() / 1000,
-  updatedAt: Date.now() / 1000,
+  createdAt: NOW / 1000,
+  updatedAt: NOW / 1000,
   member: TRELLO_MEMBER_ID,
   trelloUsername: 'test-user',
 };
@@ -55,7 +58,7 @@ const INSPECTION_ITEM_DATA = {
 };
 const INTEGRATIONS_DATA = {
   grantedBy: USER_ID,
-  grantedAt: Date.now() / 1000,
+  grantedAt: NOW / 1000,
   openBoard: TRELLO_BOARD_ID,
   openBoardName: 'Test Board',
   openList: TRELLO_LIST_ID,
@@ -77,6 +80,7 @@ describe('Trello Create Deficient Item Cards', () => {
   it('should send forbidden error when property has no trello auth credentials', async () => {
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
+    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA);
     await db.ref(DEFICIENT_ITEM_DB_PATH).set(DEFICIENT_ITEM_DATA);
 
     // Execute & Get Result
@@ -100,6 +104,7 @@ describe('Trello Create Deficient Item Cards', () => {
   it('should return conflict error when requested deficient item does not exist', async () => {
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
+    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA);
     await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
     await db
       .ref(`/inspections/${INSPECTION_ID}/template/items/${ITEM_ID}`)
@@ -128,6 +133,7 @@ describe('Trello Create Deficient Item Cards', () => {
   it('should return conflict error when no trello board and/or open list is configured for property', async () => {
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
+    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA);
     await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
     await db.ref(DEFICIENT_ITEM_DB_PATH).set(DEFICIENT_ITEM_DATA);
     await db
@@ -164,6 +170,7 @@ describe('Trello Create Deficient Item Cards', () => {
 
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
+    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA);
     await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
     await db
       .ref(TRELLO_CARDS_DB_PATH)
@@ -223,6 +230,7 @@ https://sparkle-production.herokuapp.com/properties/${PROPERTY_ID}/deficient-ite
 
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
+    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA);
     await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
     await db.ref(DEFICIENT_ITEM_DB_PATH).set(DEFICIENT_ITEM_DATA);
     await db
@@ -276,6 +284,7 @@ https://sparkle-production.herokuapp.com/properties/${PROPERTY_ID}/deficient-ite
 
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
+    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA);
     await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
     await db.ref(DEFICIENT_ITEM_DB_PATH).set(DEFICIENT_ITEM_DATA);
     await db
@@ -315,6 +324,7 @@ https://sparkle-production.herokuapp.com/properties/${PROPERTY_ID}/deficient-ite
 
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
+    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA);
     await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
     await db.ref(DEFICIENT_ITEM_DB_PATH).set(
       Object.assign({}, DEFICIENT_ITEM_DATA, {
@@ -355,6 +365,7 @@ https://sparkle-production.herokuapp.com/properties/${PROPERTY_ID}/deficient-ite
 
     // setup database
     await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
+    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA);
     await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
     await db.ref(DEFICIENT_ITEM_DB_PATH).set(DEFICIENT_ITEM_DATA);
     await db
@@ -385,5 +396,54 @@ https://sparkle-production.herokuapp.com/properties/${PROPERTY_ID}/deficient-ite
 
     // Assertions
     expect(actual).to.equal(expected);
+  });
+
+  it("should apply any deficient item due date to the Trello card using the property's zip as a UTC offest", async () => {
+    const expected = moment(NOW)
+      .tz('America/Indiana/Indianapolis') // TZ for property
+      .toISOString(true)
+      .slice(-6);
+
+    // Stub Requests
+    const createCardReq = nock('https://api.trello.com')
+      .post(
+        `/1/cards?idList=${TRELLO_LIST_ID}&keyFromSource=all&key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}`,
+        body => {
+          const { due: result } = body;
+          const actual = result.slice(-6);
+          expect(actual).to.equal(expected);
+          return body;
+        }
+      )
+      .reply(200, trelloCardPayload);
+
+    // setup database
+    await db.ref(`/users/${USER_ID}`).set(USER); // add admin user
+    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA);
+    await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
+    await db.ref(DEFICIENT_ITEM_DB_PATH).set(DEFICIENT_ITEM_DATA);
+    await db
+      .ref(`/inspections/${INSPECTION_ID}/template/items/${ITEM_ID}`)
+      .set(INSPECTION_ITEM_DATA);
+    await db.ref(TRELLO_INTEGRATIONS_DB_PATH).set(INTEGRATIONS_DATA);
+    await db.ref(TRELLO_ORG_INTEGRATION_DB_PATH).set(TRELLO_INTEGRATION_DATA);
+
+    // Execute
+    const app = createTrelloDeficientItemCardHandler(
+      db,
+      stubFirbaseAuth(USER_ID),
+      CLIENT_APP_URI_TEMPL
+    );
+    await request(app)
+      .post(API_PATH)
+      .send()
+      .set('Accept', 'application/json')
+      .set('Authorization', 'fb-jwt stubbed-by-auth')
+      .expect('Content-Type', /json/)
+      .expect(201);
+
+    // Assertions
+    const actual = createCardReq.isDone();
+    expect(actual).to.equal(true, 'resolved Trello request');
   });
 });

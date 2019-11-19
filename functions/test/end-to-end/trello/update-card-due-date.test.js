@@ -1,5 +1,5 @@
 const nock = require('nock');
-const moment = require('moment');
+const moment = require('moment-timezone');
 const { expect } = require('chai');
 const uuid = require('../../../test-helpers/uuid');
 const appConfig = require('../../../config');
@@ -19,6 +19,7 @@ const TRELLO_CARD_ID = uuid();
 const TRELLO_API_KEY = 'f4a04dd8';
 const TRELLO_AUTH_TOKEN = 'fab424b6';
 const OVERDUE_DI_STATES = appConfig.deficientItems.overdueEligibleStates;
+const PROPERTY_DATA = { zip: '77040' }; // TZ = "America/Chicago"
 const TRELLO_CREDENTIAL_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/organization`;
 const TRELLO_CARDS_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/properties/${PROPERTY_ID}/cards`;
 const DEFICIENT_ITEM_DB_PATH = `/propertyInspectionDeficientItems/${PROPERTY_ID}/${DEFICIENT_ITEM_ID}`;
@@ -49,8 +50,11 @@ describe('Trello Card Due Date Updates', () => {
   });
 
   it("should update a trello cards due date when a deficient item's due date changes", async () => {
-    const expected = '2030-08-08T23:59:00.000Z';
-    const expectedDate = '08/08/2030';
+    const target = moment.tz('2030-11-18T23:59:59Z', 'America/Chicago'); // TZ for property
+    const offset = target.toISOString(true).slice(-6);
+    const expected = `2030-11-18T23:59:59.000${offset}`;
+    const expectedUnix = moment(expected).unix();
+    const expectedDate = '11/18/2030';
     const updatedState = OVERDUE_DI_STATES[0]; // pending
     const pubSubMessage = {
       data: Buffer.from(
@@ -60,12 +64,14 @@ describe('Trello Card Due Date Updates', () => {
     const timestamp = Date.now() / 1000;
     const deficientItemData = Object.assign({}, DEFICIENT_ITEM_DATA, {
       state: updatedState,
+      currentDueDate: expectedUnix,
       currentDueDateDay: expectedDate,
     });
     deficientItemData.updatedAt = timestamp;
     deficientItemData.dueDates['-current'].createdAt = timestamp;
 
     // Setup database
+    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA);
     await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
     await db.ref(TRELLO_CARDS_DB_PATH).set(TRELLO_CARD_DATA);
     await db.ref(`/users/${USER_ID}`).set(USER_DATA);
@@ -88,8 +94,11 @@ describe('Trello Card Due Date Updates', () => {
   });
 
   it("should update a trello card due date a newly deferred deficient item's deferred date", async () => {
-    const expected = '2030-09-09T23:59:00.000Z';
+    const target = moment.tz('2030-11-18T23:59:59Z', 'America/Chicago'); // TZ for property
+    const offset = target.toISOString(true).slice(-6);
+    const expected = `2030-11-18T23:59:59.000${offset}`;
     const expectedUnix = moment(expected).unix();
+    const expectedDate = '11/18/2030';
     const pubSubMessage = {
       data: Buffer.from(`${PROPERTY_ID}/${DEFICIENT_ITEM_ID}/state/deferred`),
     };
@@ -97,16 +106,15 @@ describe('Trello Card Due Date Updates', () => {
     const deficientItemData = Object.assign({}, DEFICIENT_ITEM_DATA, {
       state: 'deferred',
       currentDueDateDay: null,
+      currentDeferredDate: expectedUnix,
+      currentDeferredDateDay: expectedDate,
     });
     deficientItemData.updatedAt = timestamp;
     deficientItemData.dueDates['-current'].createdAt = 1;
-    deficientItemData.deferredDates['-current'] = {
-      createdAt: timestamp,
-      deferredDate: expectedUnix, // 1912481940,
-      user: USER_ID,
-    };
+    deficientItemData.deferredDates['-current'] = { createdAt: timestamp };
 
     // Setup database
+    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA);
     await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
     await db.ref(TRELLO_CARDS_DB_PATH).set(TRELLO_CARD_DATA);
     await db.ref(`/users/${USER_ID}`).set(USER_DATA);
@@ -145,6 +153,7 @@ describe('Trello Card Due Date Updates', () => {
     deficientItemData.stateHistory['-current'].createdAt = timestamp;
 
     // Setup database
+    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA);
     await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
     await db.ref(TRELLO_CARDS_DB_PATH).set(TRELLO_CARD_DATA);
     await db.ref(`/users/${USER_ID}`).set(USER_DATA);

@@ -55,6 +55,15 @@ module.exports = modelSetup({
   },
 
   /**
+   * Remove Slack integration credentials for organization
+   * @param  {firebaseAdmin.database} db firebase database
+   * @return {Promise}
+   */
+  destroySlackCredentials(db) {
+    return db.ref(SLACK_ORG_PATH).remove();
+  },
+
+  /**
    * Create or replace organization's Trello credentials
    * @param  {firebaseAdmin.database} db firbase database
    * @param  {Object} settings
