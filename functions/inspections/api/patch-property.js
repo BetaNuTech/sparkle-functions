@@ -44,9 +44,7 @@ module.exports = function createPatchProperty(db) {
       if (!property) throw Error('Not found');
     } catch (err) {
       log.error(`${PREFIX} property lookup failed | ${err}`);
-      return res
-        .status(400)
-        .send({ message: 'request payload given invalid property reference' });
+      return res.status(400).send({ message: 'body contains bad property' });
     }
 
     // Lookup Inspection
@@ -60,11 +58,17 @@ module.exports = function createPatchProperty(db) {
       if (!inspection) throw Error('Not found');
     } catch (err) {
       return res.status(409).send({
-        message: 'Requested inspection could not be found',
+        message: 'requested inspection not found',
       });
     }
 
-    // TODO reassign inspection's property
+    // Perform reassign
+    try {
+      await inspectionsModel.reassignProperty(db, inspectionId, propertyId);
+    } catch (err) {
+      log.error(`${PREFIX} inspection property reassignment failed | ${err}`);
+      return res.status(500).send({ message: 'unexpected error' });
+    }
 
     res.status(201).send({ message: 'successful' });
   };
