@@ -1,10 +1,10 @@
 const { expect } = require('chai');
-const uuid = require('../../test-helpers/uuid');
-const mocking = require('../../test-helpers/mocking');
-const { cleanDb } = require('../../test-helpers/firebase');
-const { db, test, cloudFunctions } = require('./setup');
+const uuid = require('../../../test-helpers/uuid');
+const mocking = require('../../../test-helpers/mocking');
+const { cleanDb } = require('../../../test-helpers/firebase');
+const { db, test, cloudFunctions } = require('../setup');
 
-describe('Inspection Write', () => {
+describe('Inspections | On Write Watcher', () => {
   afterEach(() => cleanDb(db));
 
   it('should set an invalid score value to zero', async () => {

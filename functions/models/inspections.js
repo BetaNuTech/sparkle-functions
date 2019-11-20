@@ -98,4 +98,61 @@ module.exports = modelSetup({
       .ref(`/inspections/${inspectionId}/inspectionReportUpdateLastDate`)
       .set(Date.now() / 1000);
   },
+
+  /**
+   * Move an active inspection to /archive
+   * removing up all proxy records for inspection
+   * @param {firebaseAdmin.database} db - Firebase Admin DB instance
+   * @param  {String} inspectionId
+   * @param  {Object?} options
+   * @return {Promise} - resolves {Object} updates hash
+   */
+  async archive(db, inspectionId, options = {}) {
+    const updates = Object.create(null);
+    let { inspection = null } = options;
+    const { dryRun = false } = options;
+
+    if (!inspection) {
+      try {
+        const inspectionSnap = await this.findRecord(db, inspectionId);
+        inspection = inspectionSnap.val();
+        if (!inspection) throw Error('not found');
+      } catch (err) {
+        throw Error(`${PREFIX} archive could not find inspection | ${err}`); // wrap error
+      }
+    }
+
+    const propertyId = inspection.property;
+    const isCompleted = Boolean(inspection.inspectionCompleted);
+
+    // Remove inspection (if it still exists)
+    updates[`/inspections/${inspectionId}`] = null;
+
+    // Add inspection to archive
+    updates[`/archive/inspections/${inspectionId}`] = inspection;
+
+    // Remove property inspection reference
+    updates[`/properties/${propertyId}/inspections/${inspectionId}`] = null;
+
+    // Remove any completed inspection proxies
+    if (isCompleted) {
+      updates[`/completedInspectionsList/${inspectionId}`] = null;
+    }
+
+    // Remove property inspection list proxy
+    updates[
+      `/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`
+    ] = null;
+
+    if (!dryRun) {
+      try {
+        // Perform atomic update
+        await db.ref().update(updates);
+      } catch (err) {
+        throw Error(`${PREFIX} archive failed | ${err}`);
+      }
+    }
+
+    return updates;
+  },
 });

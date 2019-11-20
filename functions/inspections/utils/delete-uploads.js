@@ -1,6 +1,6 @@
 const log = require('../../utils/logger');
 
-const LOG_PREFIX = 'inspections: utils: delete-uploads:';
+const PREFIX = 'inspections: utils: delete-uploads:';
 const INSP_BUCKET_NAME = `inspectionItemImages${
   process.env.NODE_ENV === 'test' ? 'Test' : ''
 }`;
@@ -46,12 +46,12 @@ module.exports = async function deleteInspectionUploads(
           .file(`${INSP_BUCKET_NAME}/${fileName}`)
           .delete();
         log.info(
-          `${LOG_PREFIX} inspection: ${inspectionId} ${fileName} removal succeeded`
+          `${PREFIX} inspection: ${inspectionId} ${fileName} removal succeeded`
         );
         updates[fileName] = 'removed';
       } catch (e) {
         log.error(
-          `${LOG_PREFIX} inspection: ${inspectionId} removal at ${url} failed ${e}`
+          `${PREFIX} inspection: ${inspectionId} removal at ${url} failed ${e}`
         );
       }
     }
