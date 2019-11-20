@@ -5,6 +5,7 @@ const createOnWriteWatcher = require('./on-write-watcher');
 const createOnDeleteWatcher = require('./on-delete-watcher');
 const createOnGetPDFReportHandler = require('./on-get-pdf-report');
 const getLatestCompleted = require('./get-latest-completed');
+const createAPIPatchProperty = require('./api/patch-property');
 const createCleanupProxyOrphans = require('./pubsub/cleanup-proxy-orphans');
 const createSyncPropertyInspectionProxies = require('./pubsub/sync-property-inspection-proxies');
 const createSyncCompletedInspectionProxies = require('./pubsub/sync-completed-inspection-proxies');
@@ -22,5 +23,9 @@ module.exports = {
     createCleanupProxyOrphans,
     createSyncPropertyInspectionProxies,
     createSyncCompletedInspectionProxies,
+  },
+
+  api: {
+    createPatchProperty: createAPIPatchProperty,
   },
 };

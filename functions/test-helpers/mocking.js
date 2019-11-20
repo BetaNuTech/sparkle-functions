@@ -11,13 +11,13 @@ module.exports = {
    * @param  {Object} config
    * @return {Object}
    */
-  createInspection(config) {
-    assert(Boolean(config.property, 'has a `config.property` id'));
+  createInspection(inspConfig) {
+    assert(Boolean(inspConfig.property, 'config has `property` id'));
 
     const now = Date.now() / 1000;
     const offset = Math.floor(Math.random() * 100);
     const items = Math.floor(Math.random() * 100);
-    const completed = config.inspectionCompleted || false;
+    const completed = inspConfig.inspectionCompleted || false;
     const templateName = `test-${offset * 3}`;
 
     return Object.assign(
@@ -39,12 +39,12 @@ module.exports = {
         totalItems: items,
         updatedLastDate: now - offset / 2,
       },
-      config
+      inspConfig
     );
   },
 
-  createItem(config = {}) {
-    assert(Boolean(config.sectionId), 'has config with sectionId');
+  createItem(itemConfig = {}) {
+    assert(Boolean(itemConfig.sectionId), 'has config with sectionId');
 
     return Object.assign(
       {
@@ -57,11 +57,11 @@ module.exports = {
         mainInputThreeValue: 0,
         mainInputTwoValue: 0,
         mainInputZeroValue: 3,
-        sectionId: config.sectionId,
+        sectionId: itemConfig.sectionId,
         textInputValue: '1',
         title: 'Unit #:',
       },
-      config
+      itemConfig
     );
   },
 
@@ -155,7 +155,7 @@ module.exports = {
     );
   },
 
-  createSection(config = {}) {
+  createSection(sectionConfig = {}) {
     return Object.assign(
       {
         added_multi_section: false,
@@ -163,7 +163,7 @@ module.exports = {
         section_type: 'single',
         title: 'Intro',
       },
-      config
+      sectionConfig
     );
   },
 };
