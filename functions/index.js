@@ -12,6 +12,7 @@ const slack = require('./slack');
 const notifications = require('./notifications');
 const regTokens = require('./reg-tokens');
 const config = require('./config');
+const createRouter = require('./router');
 
 const { firebase: firebaseConfig } = config;
 const defaultApp = admin.initializeApp(firebaseConfig);
@@ -580,3 +581,8 @@ exports.trelloDiCardCloseStaging = trello.pubsub.createCloseDiCard(
   functions.pubsub,
   dbStaging
 );
+
+// API
+
+exports.api = createRouter(db, auth);
+exports.apiStaging = createRouter(dbStaging, auth);

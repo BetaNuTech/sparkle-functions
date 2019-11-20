@@ -387,19 +387,21 @@ module.exports = modelSetup({
       'has destination property id'
     );
 
-    let inspection = null;
     const updates = Object.create(null);
+    let { inspection = null } = options;
     const { dryRun = false } = options;
 
     // Lookup inspection
-    try {
-      const inspectionSnap = await this.findRecord(db, inspectionId);
-      inspection = inspectionSnap.val();
-      if (!inspection) throw Error('not found');
-    } catch (err) {
-      throw Error(
-        `${PREFIX} reassignProperty: could not find inspection | ${err}`
-      ); // wrap error
+    if (!inspection) {
+      try {
+        const inspectionSnap = await this.findRecord(db, inspectionId);
+        inspection = inspectionSnap.val();
+        if (!inspection) throw Error('not found');
+      } catch (err) {
+        throw Error(
+          `${PREFIX} reassignProperty: could not find inspection | ${err}`
+        ); // wrap error
+      }
     }
 
     // Construct inspection
