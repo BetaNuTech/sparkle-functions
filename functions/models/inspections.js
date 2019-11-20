@@ -19,7 +19,7 @@ module.exports = modelSetup({
   findRecord(db, inspectionId) {
     assert(
       inspectionId && typeof inspectionId === 'string',
-      `${PREFIX} has inspection id`
+      'has inspection id'
     );
 
     return db.ref(`${INSPECTIONS_PATH}/${inspectionId}`).once('value');
@@ -35,12 +35,9 @@ module.exports = modelSetup({
   findItem(db, inspectionId, itemId) {
     assert(
       inspectionId && typeof inspectionId === 'string',
-      `${PREFIX} has inspection id`
+      'has inspection id'
     );
-    assert(
-      itemId && typeof itemId === 'string',
-      `${PREFIX} has inspection item id`
-    );
+    assert(itemId && typeof itemId === 'string', 'has inspection item id');
     return db
       .ref(`${INSPECTIONS_PATH}/${inspectionId}/template/items/${itemId}`)
       .once('value');
@@ -56,11 +53,11 @@ module.exports = modelSetup({
   setPDFReportStatus(db, inspectionId, status) {
     assert(
       inspectionId && typeof inspectionId === 'string',
-      `${PREFIX} has inspection id`
+      'has inspection id'
     );
     assert(
       INSPECTION_REPORT_STATUSES.includes(status),
-      `${PREFIX} has valid PDF inspection report status`
+      'has valid PDF inspection report status'
     );
 
     return db
@@ -78,7 +75,7 @@ module.exports = modelSetup({
   setReportURL(db, inspectionId, url) {
     assert(
       inspectionId && typeof inspectionId === 'string',
-      `${PREFIX} has inspection id`
+      'has inspection id'
     );
     assert(url && typeof url === 'string', `${PREFIX} has report url`);
     return db
@@ -95,7 +92,7 @@ module.exports = modelSetup({
   updatePDFReportTimestamp(db, inspectionId) {
     assert(
       inspectionId && typeof inspectionId === 'string',
-      `${PREFIX} has inspection id`
+      'has inspection id'
     );
     return db
       .ref(`${INSPECTIONS_PATH}/${inspectionId}/inspectionReportUpdateLastDate`)
@@ -234,7 +231,7 @@ module.exports = modelSetup({
   async archive(db, inspectionId, options = {}) {
     assert(
       inspectionId && typeof inspectionId === 'string',
-      `${PREFIX} has inspection id`
+      'has inspection id'
     );
     const updates = Object.create(null);
     let { inspection = null } = options;
@@ -294,7 +291,7 @@ module.exports = modelSetup({
   async unarchive(db, inspectionId, options = {}) {
     assert(
       inspectionId && typeof inspectionId === 'string',
-      `${PREFIX} has inspection id`
+      'has inspection id'
     );
     const updates = Object.create(null);
     let { inspection = null } = options;
@@ -364,6 +361,88 @@ module.exports = modelSetup({
         await db.ref().update(updates);
       } catch (err) {
         throw Error(`${PREFIX} unarchive: failed | ${err}`);
+      }
+    }
+
+    return updates;
+  },
+
+  /**
+   * Reassign an Inspection to a new
+   * property by mocking archival and
+   * unarchival updates
+   * @param {firebaseAdmin.database} db - Firebase Admin DB instance
+   * @param  {String} inspectionId
+   * @param  {String}  destPropertyId
+   * @param  {Object?}  options
+   * @return {Promise} - resolves {Object} updates
+   */
+  async reassignProperty(db, inspectionId, destPropertyId, options = {}) {
+    assert(
+      inspectionId && typeof inspectionId === 'string',
+      'has inspection id'
+    );
+    assert(
+      destPropertyId && typeof destPropertyId === 'string',
+      'has destination property id'
+    );
+
+    let inspection = null;
+    const updates = Object.create(null);
+    const { dryRun = false } = options;
+
+    // Lookup inspection
+    try {
+      const inspectionSnap = await this.findRecord(db, inspectionId);
+      inspection = inspectionSnap.val();
+      if (!inspection) throw Error('not found');
+    } catch (err) {
+      throw Error(
+        `${PREFIX} reassignProperty: could not find inspection | ${err}`
+      ); // wrap error
+    }
+
+    // Construct inspection
+    // archive updates hash
+    try {
+      const archiveUpdates = await this.archive(db, inspectionId, {
+        inspection,
+        dryRun: true,
+      });
+      Object.assign(updates, archiveUpdates);
+    } catch (err) {
+      throw Error(
+        `${PREFIX} reassignProperty: failed call to archive | ${err}`
+      );
+    }
+
+    // Construct inspection
+    // unarchive updates hash
+    // merging in destination property
+    // ID in place of src property ID
+    try {
+      const unarchiveUpdatesSrc = await this.unarchive(db, inspectionId, {
+        inspection,
+        dryRun: true,
+      });
+      const reSearch = new RegExp(inspection.property, 'g');
+      const unarchiveUpdates = JSON.parse(
+        JSON.stringify(unarchiveUpdatesSrc).replace(reSearch, destPropertyId)
+      );
+
+      Object.assign(updates, unarchiveUpdates);
+    } catch (err) {
+      throw Error(
+        `${PREFIX} reassignProperty: failed call to archive | ${err}`
+      );
+    }
+
+    if (!dryRun) {
+      try {
+        // Perform atomic update
+        await db.ref().update(updates);
+      } catch (err) {
+        throw Error(`${PREFIX} reassignProperty: failed | ${err}`);
       }
     }
 
