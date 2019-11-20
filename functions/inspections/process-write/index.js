@@ -1,13 +1,14 @@
+const log = require('../../utils/logger');
+const inspectionsModel = require('../../models/inspections');
 const processPropertyMeta = require('../../properties/utils/process-meta');
-const propertyInspectionsList = require('./property-inspections-list');
-const completedInspectionsList = require('./completed-inspections-list');
 const { isInspectionWritable } = require('./utils');
 
-const LOG_PREFIX = 'inspections: process-write:';
+const PREFIX = 'inspections: process-write:';
 
 /**
- * Perform update of all inspection proxies: nested,
- * propertyInspectionsList and completedInspectionsList
+ * Sync property meta and all inspection proxies.
+ * Proxies include nested, propertyInspectionsList,
+ * and completedInspectionsList
  * @param  {firebaseAdmin.database} db
  * @param  {String} inspectionId
  * @param  {Object} inspection
@@ -18,29 +19,35 @@ module.exports = async function processWrite(db, inspectionId, inspection) {
 
   // Throw errors if inspection
   // cannot write a proxies
-  await isInspectionWritable(db, inspection, LOG_PREFIX);
+  await isInspectionWritable(db, inspection, PREFIX);
 
   // Update property inspections proxy
-  await propertyInspectionsList({
-    db,
-    inspectionId,
-    inspection,
-  });
-  updates[
-    `/propertyInspectionsList/${inspection.property}/inspections/${inspectionId}`
-  ] = 'upserted';
+  try {
+    const propertyProxyUpdate = await inspectionsModel.syncPropertyInspectionProxy(
+      db,
+      inspectionId,
+      inspection
+    );
+    Object.assign(updates, propertyProxyUpdate);
+  } catch (err) {
+    log.error(
+      `${PREFIX} processWrite: property inspection proxy failed | ${err}`
+    );
+  }
 
   // Upsert / remove completed inspections proxy
-  const addedCompleted = await completedInspectionsList({
-    db,
-    inspectionId,
-    inspection,
-  });
+  try {
+    const completedProxyUpdate = await inspectionsModel.syncCompletedInspectionProxy(
+      db,
+      inspectionId,
+      inspection
+    );
 
-  if (addedCompleted) {
-    updates[`/completedInspectionsList/${inspectionId}`] = addedCompleted;
-  } else {
-    updates[`/completedInspectionsList/${inspectionId}`] = 'removed';
+    Object.assign(updates, completedProxyUpdate);
+  } catch (err) {
+    log.error(
+      `${PREFIX} processWrite: completed inspection proxy failed | ${err}`
+    );
   }
 
   // Update property attributes related
