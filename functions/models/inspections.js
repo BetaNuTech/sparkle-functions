@@ -302,7 +302,9 @@ module.exports = modelSetup({
 
     if (!inspection) {
       try {
-        const inspectionSnap = await this.findRecord(db, inspectionId);
+        const inspectionSnap = await db
+          .ref(`/archive${INSPECTIONS_PATH}/${inspectionId}`)
+          .once('value');
         inspection = inspectionSnap.val();
         if (!inspection) throw Error('not found');
       } catch (err) {
@@ -311,6 +313,18 @@ module.exports = modelSetup({
         ); // wrap error
       }
     }
+
+    // Write inspection
+    updates[`${INSPECTIONS_PATH}/${inspectionId}`] = inspection;
+
+    // Remove inspection from archive
+    updates[`/archive${INSPECTIONS_PATH}/${inspectionId}`] = null;
+
+    // Re-add property inspection reference
+    // TODO: will standard has many relationship work?
+    updates[
+      `/properties/${inspection.property}/inspections/${inspectionId}`
+    ] = true;
 
     // Construct completed proxy
     // updates hash
