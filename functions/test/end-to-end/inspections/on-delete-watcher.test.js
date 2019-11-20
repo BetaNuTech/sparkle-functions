@@ -22,8 +22,56 @@ const PROPERTY_DATA = {
 describe('Inspections | On Delete Watcher', () => {
   afterEach(() => cleanDb(db));
 
-  // it('archives inspection and removes its\' public facing references', async () => {
-  // });
+  it("archives inspection and removes its' public facing references", async () => {
+    const now = Math.round(Date.now() / 1000);
+    const inspectionData = {
+      templateName: 'template',
+      inspector: '23423423',
+      inspectorName: 'testor',
+      creationDate: now - 100000,
+      score: 10,
+      deficienciesExist: false,
+      itemsCompleted: 10,
+      totalItems: 10,
+      property: PROPERTY_ID,
+      updatedLastDate: now,
+      inspectionCompleted: true,
+    };
+
+    // Setup database
+    await db.ref(INSPECTION_PATH).set(inspectionData);
+    await db.ref(PROPERTY_PATH).set(PROPERTY_DATA);
+    await db.ref(COMPLETED_INSP_PROXY_PATH).set(inspectionData); // Add completedInspectionsList
+    await db.ref(PROP_INSP_PROXY_PATH).set(inspectionData); // Add propertyInspectionsList
+    const snap = await db.ref(INSPECTION_PATH).once('value'); // Create snap
+    await db.ref(INSPECTION_PATH).remove(); // Remove inspection
+
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.inspectionDelete);
+    await wrapped(snap, { params: { inspectionId: INSPECTION_ID } });
+
+    // Test result
+    const [inspectionSnap, propertyRelSnap] = await Promise.all([
+      db.ref(`archive${INSPECTION_PATH}`).once('value'),
+      db.ref(`${PROPERTY_PATH}/inspections/${INSPECTION_ID}`).once('value'),
+    ]);
+
+    // Assertions
+    [
+      {
+        actual: inspectionSnap.exists(),
+        expected: true,
+        msg: 'added inspection to archive',
+      },
+      {
+        actual: propertyRelSnap.exists(),
+        expected: false,
+        msg: 'remove property inspection relationship',
+      },
+    ].forEach(({ actual, expected, msg }) => {
+      expect(actual).to.equal(expected, msg);
+    });
+  });
 
   it('should remove proxy records of a deleted inspection', async () => {
     const now = Math.round(Date.now() / 1000);
