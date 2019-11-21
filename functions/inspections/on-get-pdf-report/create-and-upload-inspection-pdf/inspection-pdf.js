@@ -147,7 +147,7 @@ const prototype = {
       })
       .sort((a, b) => a.index - b.index)
       .map(section => {
-        const items = section.items.map(item =>
+        const itemsCmds = section.items.map(item =>
           [].concat(
             this.getItemHeader(item),
             this.getItemBody(item),
@@ -158,7 +158,7 @@ const prototype = {
           )
         );
 
-        return [].concat(this.getSectionHeader(section.title), ...items, [
+        return [].concat(this.getSectionHeader(section.title), ...itemsCmds, [
           { _placeholder: true, _vertical: 'sectionEnd' },
         ]);
       });
@@ -353,7 +353,7 @@ const prototype = {
       .sort((a, b) => a.edit_date - b.edit_date)
       .map(e =>
         [
-          moment(new Date(parseInt(e.edit_date * 1000))).format(
+          moment(new Date(parseInt(e.edit_date * 1000, 10))).format(
             'M/D/YY, h:mm A:'
           ),
           e.admin_name,
@@ -578,7 +578,7 @@ const prototype = {
         }
 
         lastStyleCommands.push(i);
-        continue;
+        continue; // eslint-disable-line no-continue
       }
 
       assert(
@@ -586,7 +586,7 @@ const prototype = {
         `applyPdfVerticals() command: ${type} configured vertical settings`
       );
 
-      let { top = 0, height = 0 } = settings[type];
+      let { top = 0, height = 0 } = settings[type]; // eslint-disable-line
 
       /*
        * Use any image height if not pre-defined
@@ -610,7 +610,7 @@ const prototype = {
           ],
           this.getHeader(),
           [{ _placeholder: true, _vertical: 'pageCutBuffer' }],
-          lastStyleCommands.map(index => cloneDeep(page[index])),
+          lastStyleCommands.map(index => cloneDeep(page[index])), // eslint-disable-line
           page.slice(i)
         );
 
@@ -618,7 +618,7 @@ const prototype = {
         l = page.length;
         cursor = 0;
         lastVerticalCommand = 0;
-        continue;
+        continue; // eslint-disable-line no-continue
       }
 
       cursor += top;
@@ -702,7 +702,7 @@ module.exports = function createInspectionPdf(inspection, property) {
     page: {
       get: (function() {
         let page = 0;
-        return () => (page += 1);
+        return () => (page += 1); // eslint-disable-line
       })(),
     },
 

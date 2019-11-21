@@ -584,5 +584,10 @@ exports.trelloDiCardCloseStaging = trello.pubsub.createCloseDiCard(
 
 // API
 
-exports.api = createRouter(db, auth);
-exports.apiStaging = createRouter(dbStaging, auth);
+exports.api = createRouter(db, auth, {
+  inspectionUrl: config.clientApps.web.productionInspectionURL,
+});
+
+exports.apiStaging = createRouter(dbStaging, auth, {
+  inspectionUrl: config.clientApps.web.stagingInspectionURL,
+});
