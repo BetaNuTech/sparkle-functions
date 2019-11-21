@@ -318,7 +318,6 @@ module.exports = modelSetup({
     updates[`/archive${INSPECTIONS_PATH}/${inspectionId}`] = null;
 
     // Re-add property inspection reference
-    // TODO: will standard has many relationship work?
     updates[
       `/properties/${inspection.property}/inspections/${inspectionId}`
     ] = true;
