@@ -1,6 +1,7 @@
 const log = require('../utils/logger');
 const processPropertyMeta = require('../properties/utils/process-meta');
 const deleteUploads = require('./utils/delete-uploads');
+const inspectionsModel = require('../models/inspections');
 
 const PREFIX = 'inspections: on-delete:';
 
@@ -16,63 +17,43 @@ module.exports = function createOnDeleteHandler(db, storage) {
     const inspection = inspectionSnap.val() || {};
     const propertyId = inspection.property;
     const isCompleted = Boolean(inspection.inspectionCompleted);
-    const updates = Object.create(null);
-    const requests = [];
 
-    log.info(`${PREFIX} ${inspectionId} deleted`);
+    log.info(`${PREFIX} inspection "${inspectionId}" deleted`);
 
     if (!propertyId || !inspection) {
-      log.error(
-        `${PREFIX} inspection ${inspectionId} missing property reference`
-      );
-      return Promise.resolve(updates);
-    }
-
-    // Remove any completed inspection proxies
-    if (isCompleted) {
-      updates[`/completedInspectionsList/${inspectionId}`] = 'removed';
-
-      requests.push(
-        db.ref(`/completedInspectionsList/${inspectionId}`).remove()
+      throw Error(
+        `${PREFIX} inspection "${inspectionId}" missing property reference`
       );
     }
 
-    // Remove property inspection proxy
-    updates[
-      `/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`
-    ] = 'removed';
-
-    requests.push(
-      db
-        .ref(
-          `/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`
-        )
-        .remove()
-    );
-
-    // Wait for proxy removal
+    // Removal all uploads, ignoring errors
+    // NOTE: Must run before archival, in order
+    // to reference inspection's items
     try {
-      await Promise.all(requests);
+      await deleteUploads(db, storage, inspectionId);
     } catch (err) {
-      log.error(
-        `${PREFIX} ${inspectionId} proxy record cleanup failed | ${err}`
+      log.error(`${PREFIX} failed to delete inspection uploads | ${err}`);
+    }
+
+    try {
+      // Archive deleted inspection
+      await inspectionsModel.archive(db, inspectionId, { inspection });
+    } catch (err) {
+      throw Error(
+        `${PREFIX} archiving inspection "${inspectionId}" failed | ${err}`
       );
     }
 
     // Update property attributes related
     // to completed inspection meta data
     if (isCompleted) {
-      const metaUpdates = await processPropertyMeta(db, propertyId);
-      Object.assign(updates, metaUpdates); // combine updates
+      try {
+        await processPropertyMeta(db, propertyId);
+      } catch (err) {
+        log.error(
+          `${PREFIX} failed to update property "${propertyId}" meta data | ${err}`
+        );
+      }
     }
-
-    // Removal all uploads, ignoring errors
-    try {
-      await deleteUploads(db, storage, inspectionId);
-    } catch (err) {
-      log.error(`${PREFIX} ${err}`);
-    }
-
-    return updates;
   };
 };

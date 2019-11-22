@@ -1,7 +1,7 @@
 const log = require('../../utils/logger');
 const adminUtils = require('../../utils/firebase-admin');
+const inspectionsModel = require('../../models/inspections');
 const { isInspectionWritable } = require('../process-write/utils');
-const propertyInspectionsList = require('../process-write/property-inspections-list');
 const { isInspectionOutdated } = require('./utils');
 
 const PREFIX = 'inspections: pubsub: sync-property-inspection-proxies:';
@@ -41,11 +41,11 @@ module.exports = function createSyncPropertyInspectionProxieshandler(
 
             if (isProxyOutdated) {
               // Update inspections' propertyInspectionsList proxy
-              await propertyInspectionsList({
+              await inspectionsModel.syncPropertyInspectionProxy(
                 db,
                 inspectionId,
-                inspection,
-              });
+                inspection
+              );
 
               updates[inspectionId] = true;
             }

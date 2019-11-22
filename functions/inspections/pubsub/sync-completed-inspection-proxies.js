@@ -1,7 +1,7 @@
 const log = require('../../utils/logger');
 const adminUtils = require('../../utils/firebase-admin');
+const inspectionsModel = require('../../models/inspections');
 const { isInspectionWritable } = require('../process-write/utils');
-const completedInspectionsList = require('../process-write/completed-inspections-list');
 const { isInspectionOutdated } = require('./utils');
 
 const PREFIX = 'inspections: pubsub: sync-completed-inspection-proxies:';
@@ -41,13 +41,15 @@ module.exports = function createSyncCompletedInspectionProxieshandler(
 
             if (isProxyOutdated) {
               // Update inspections' completedInspectionsList proxy
-              const result = await completedInspectionsList({
+              const result = await inspectionsModel.syncCompletedInspectionProxy(
                 db,
                 inspectionId,
-                inspection,
-              });
+                inspection
+              );
 
-              updates[inspectionId] = result ? 'upserted' : 'removed';
+              updates[inspectionId] = Object.values(result)[0]
+                ? 'upserted'
+                : 'removed';
             }
           } catch (err) {
             log.error(`${PREFIX} ${topic} | ${err}`);
