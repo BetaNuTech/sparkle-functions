@@ -54,10 +54,13 @@ const prototype = {
    * @return {Object[]}
    */
   getHeader() {
-    const subHeader = [
+    const headerTitle = [
       `${this._property.name || 'Unknown Property'} | `,
       `${this._inspection.inspectorName || 'Inspector Unknown'} | `,
       `${this.creationDate}`,
+    ];
+    const subHeader = [
+      `Template: ${this._inspection.templateName || 'Unknown Template'}`,
     ];
 
     const imgSize = 10.75;
@@ -67,7 +70,7 @@ const prototype = {
       { setFontType: pdfFonts.header.weight },
       { setFontStyle: pdfFonts.header.style },
       {
-        text: [LEFT_GUTTER, 0, 'Sparkle Report'],
+        text: [LEFT_GUTTER, 0, headerTitle.join('')],
         _vertical: 'headerTitle',
       }, // eslint-disable-line
       {
