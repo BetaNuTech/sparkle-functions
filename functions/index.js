@@ -32,7 +32,7 @@ const dbStaging = defaultApp.database(firebaseConfig.stagingDatabaseURL);
 
 // Send API version
 exports.latestVersion = functions.https.onRequest((request, response) =>
-  response.status(200).send({ ios: '1.5.1' })
+  response.status(200).send({ ios: '1.5.2' })
 );
 
 // Latest Completed Inspections
@@ -584,10 +584,14 @@ exports.trelloDiCardCloseStaging = trello.pubsub.createCloseDiCard(
 
 // API
 
-exports.api = createRouter(db, auth, {
-  inspectionUrl: config.clientApps.web.productionInspectionURL,
-});
+exports.api = functions.https.onRequest(
+  createRouter(db, auth, {
+    inspectionUrl: config.clientApps.web.productionInspectionURL,
+  })
+);
 
-exports.apiStaging = createRouter(dbStaging, auth, {
-  inspectionUrl: config.clientApps.web.stagingInspectionURL,
-});
+exports.apiStaging = functions.https.onRequest(
+  createRouter(dbStaging, auth, {
+    inspectionUrl: config.clientApps.web.stagingInspectionURL,
+  })
+);
