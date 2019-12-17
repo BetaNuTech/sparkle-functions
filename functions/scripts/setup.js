@@ -16,10 +16,12 @@ const admin = require('firebase-admin'); // eslint-disable-line
 const defaultApp = admin.initializeApp(fbConfig, 'script');
 const db = defaultApp.database(fbConfig.stagingDatabaseURL);
 const test = require('firebase-functions-test')(fbConfig); // eslint-disable-line
-const cloudFunctions = require('../index');
+const cloudFunctions = require('../index'); // eslint-disable-line
+const auth = admin.auth();
 
 module.exports = {
   admin,
+  auth,
   db,
   test,
   cloudFunctions,

@@ -2,7 +2,7 @@ const log = require('../../utils/logger');
 const adminUtils = require('../../utils/firebase-admin');
 
 const PREFIX = 'reg-tokens: pubsub: sync-outdated:';
-const OUTDATED_OFFSET = 15778800; // seconds in 6 months
+const OUTDATED_OFFSET = 2629800; // seconds in 1 month
 
 /**
  * Sync registration tokens with booleans
@@ -21,58 +21,39 @@ module.exports = function createSyncOudated(topic = '', pubSub, db) {
       db,
       '/registrationTokens',
       async function tokenTimestampWrite(userId, tokens) {
-        const now = Date.now() / 1000;
-        const booleanTokenIds = Object.keys(tokens).filter(
+        const now = Math.round(Date.now() / 1000);
+        const maxDate = now - OUTDATED_OFFSET;
+        const tokenIds = Object.keys(tokens);
+        const booleanTokenIds = tokenIds.filter(
           tokenId => typeof tokens[tokenId] === 'boolean'
         );
+        const expiredTokenIds = tokenIds.filter(tokenId => {
+          const tokenCreationDate = tokens[tokenId];
+          return (
+            typeof tokenCreationDate === 'number' &&
+            tokenCreationDate <= maxDate
+          );
+        });
 
-        // Set boolean token to updates
+        // Replace boolean token with UNIX
+        // timestamp and append to updates hash
         booleanTokenIds.forEach(tokenId => {
           updates[`/registrationTokens/${userId}/${tokenId}`] = now;
+        });
+
+        // Append expired token removal to updates
+        expiredTokenIds.forEach(tokenId => {
+          updates[`/registrationTokens/${userId}/${tokenId}`] = null;
         });
       }
     );
 
+    // Atomically write updates
     try {
-      // Update boolean device tokens to timestamps
-      Object.keys(updates).forEach(updatePath =>
-        log.info(`${PREFIX} ${topic}: set timestamp at: ${updatePath}`)
-      );
       await db.ref().update(updates);
-    } catch (e) {
-      log.error(`${PREFIX} ${e}`);
+    } catch (err) {
+      log.error(`${PREFIX} ${topic} update write failed | ${err}`);
     }
-
-    // Remove old & unused device tokens
-    await adminUtils.forEachChild(
-      db,
-      '/registrationTokens',
-      async function outdatedTokenWrite(userId, tokens) {
-        const maxDate = Date.now() / 1000 - OUTDATED_OFFSET;
-        const tokenIds = Object.keys(tokens);
-
-        for (let i = 0; i < tokenIds.length; i++) {
-          const tokenId = tokenIds[i];
-          const tokenCreationDate = tokens[tokenId];
-
-          if (
-            typeof tokenCreationDate === 'number' &&
-            tokenCreationDate <= maxDate
-          ) {
-            const updatePath = `/registrationTokens/${userId}/${tokenId}`;
-            try {
-              await db.ref(updatePath).remove();
-              updates[updatePath] = 'removed';
-              log.info(
-                `${PREFIX} ${topic}: removed outdated registration token at: ${updatePath}`
-              );
-            } catch (err) {
-              log.error(`${PREFIX} ${topic} | ${err}`);
-            }
-          }
-        }
-      }
-    );
 
     return updates;
   });

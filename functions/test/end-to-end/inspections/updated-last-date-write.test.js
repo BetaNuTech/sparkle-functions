@@ -1,17 +1,15 @@
 const { expect } = require('chai');
-const uuid = require('../../test-helpers/uuid');
-const mocking = require('../../test-helpers/mocking');
-const { cleanDb } = require('../../test-helpers/firebase');
-const { db, test, cloudFunctions } = require('./setup');
+const uuid = require('../../../test-helpers/uuid');
+const mocking = require('../../../test-helpers/mocking');
+const { cleanDb } = require('../../../test-helpers/firebase');
+const { db, test, cloudFunctions } = require('../setup');
 
-const { assign } = Object;
-
-describe('Inspections Migration Date Write', () => {
+describe('Inspections | Updated Last Date Write', () => {
   afterEach(() => cleanDb(db));
 
-  it("should migrate all an inspections' outdated proxy records", async () => {
-    const propertyId = uuid();
+  it("should update all an inspections' outdated proxy records", async () => {
     const inspectionId = uuid();
+    const propertyId = uuid();
     const categoryId = uuid();
     const now = Date.now() / 1000;
     const inspectionData = {
@@ -27,7 +25,6 @@ describe('Inspections Migration Date Write', () => {
       templateCategory: categoryId,
       updatedLastDate: now,
       inspectionCompleted: true,
-      migrationDate: now,
     };
 
     // Setup database
@@ -39,21 +36,21 @@ describe('Inspections Migration Date Write', () => {
       .set({ name: `name${categoryId}` }); // sanity check
     await db
       .ref(`/inspections/${inspectionId}`)
-      .set(assign({}, inspectionData, { migrationDate: now - 1000 })); // Add inspection with old migration
+      .set(Object.assign({}, inspectionData, { updatedLastDate: now - 1000 })); // Add inspection with old updated date
     const beforeSnap = await db
-      .ref(`/inspections/${inspectionId}/migrationDate`)
+      .ref(`/inspections/${inspectionId}/updatedLastDate`)
       .once('value');
-    await db.ref(`/inspections/${inspectionId}/migrationDate`).set(now);
+    await db.ref(`/inspections/${inspectionId}/updatedLastDate`).set(now);
     const afterSnap = await db
-      .ref(`/inspections/${inspectionId}/migrationDate`)
+      .ref(`/inspections/${inspectionId}/updatedLastDate`)
       .once('value');
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
-    const wrapped = test.wrap(cloudFunctions.inspectionMigrationDateWrite);
+    const wrapped = test.wrap(cloudFunctions.inspectionUpdatedLastDateWrite);
     await wrapped(changeSnap, { params: { inspectionId } });
 
-    // Test Results
+    // Test results
     const propertyInspectionProxy = await db
       .ref(`/propertyInspectionsList/${propertyId}/inspections/${inspectionId}`)
       .once('value');
@@ -62,16 +59,14 @@ describe('Inspections Migration Date Write', () => {
       .once('value');
 
     // Assertions
-    const expected = assign({}, inspectionData);
+    const expected = Object.assign({}, inspectionData);
     delete expected.property;
-    delete expected.migrationDate;
     expect(propertyInspectionProxy.val()).to.deep.equal(
       expected,
       'updated /propertyInspectionsList proxy'
     );
 
-    const expectedCompleted = assign({}, inspectionData);
-    delete expectedCompleted.migrationDate;
+    const expectedCompleted = Object.assign({}, inspectionData);
     delete expectedCompleted.itemsCompleted;
     delete expectedCompleted.totalItems;
     delete expectedCompleted.templateCategory;
@@ -82,8 +77,8 @@ describe('Inspections Migration Date Write', () => {
   });
 
   it("should update property with any meta data from its' completed inspections", async () => {
-    const inspection1Id = uuid();
-    const inspection2Id = uuid();
+    const insp1Id = uuid();
+    const insp2Id = uuid();
     const propertyId = uuid();
     const newest = Date.now() / 1000;
     const oldest = Date.now() / 1000 - 100000;
@@ -103,30 +98,28 @@ describe('Inspections Migration Date Write', () => {
       numOfInspections: 2,
       lastInspectionScore: inspectionOne.score,
       lastInspectionDate: inspectionOne.creationDate,
-      numOfDeficientItems: 0,
-      numOfRequiredActionsForDeficientItems: 0,
     };
 
     // Setup database
-    await db.ref(`/inspections/${inspection1Id}`).set(inspectionOne); // Add inspection #1
-    await db.ref(`/inspections/${inspection2Id}`).set(inspectionTwo); // Add inspection #2
     await db
       .ref(`/properties/${propertyId}`)
       .set({ name: `name${propertyId}` }); // required
+    await db.ref(`/inspections/${insp1Id}`).set(inspectionOne); // Add inspection #1
+    await db.ref(`/inspections/${insp2Id}`).set(inspectionTwo); // Add inspection #2
     const beforeSnap = await db
-      .ref(`/inspections/${inspection1Id}/updatedLastDate`)
+      .ref(`/inspections/${insp1Id}/updatedLastDate`)
       .once('value');
-    await db.ref(`/inspections/${inspection1Id}/updatedLastDate`).set(newest);
+    await db.ref(`/inspections/${insp1Id}/updatedLastDate`).set(newest);
     const afterSnap = await db
-      .ref(`/inspections/${inspection1Id}/updatedLastDate`)
+      .ref(`/inspections/${insp1Id}/updatedLastDate`)
       .once('value');
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
-    const wrapped = test.wrap(cloudFunctions.inspectionMigrationDateWrite);
-    await wrapped(changeSnap, { params: { inspectionId: inspection1Id } });
+    const wrapped = test.wrap(cloudFunctions.inspectionUpdatedLastDateWrite);
+    await wrapped(changeSnap, { params: { inspectionId: insp1Id } });
 
-    // Test results
+    // Test result
     const propertySnap = await db
       .ref(`/properties/${propertyId}`)
       .once('value');
@@ -144,14 +137,6 @@ describe('Inspections Migration Date Write', () => {
     expect(actual.lastInspectionDate).to.equal(
       expected.lastInspectionDate,
       "updated property's `lastInspectionDate`"
-    );
-    expect(actual.numOfDeficientItems).to.equal(
-      expected.numOfDeficientItems,
-      "updated property's `numOfDeficientItems`"
-    );
-    expect(actual.numOfRequiredActionsForDeficientItems).to.equal(
-      expected.numOfRequiredActionsForDeficientItems,
-      "updated property's `numOfRequiredActionsForDeficientItems`"
     );
   });
 });

@@ -28,6 +28,7 @@ module.exports = async (db, notificationId, notification) => {
     summary,
     property: propertyId,
     markdownBody,
+    userAgent,
     publishedMediums,
   } = notification;
 
@@ -45,18 +46,27 @@ module.exports = async (db, notificationId, notification) => {
     );
   }
 
+  // Create Slack message from markdow or summary
+  let message = markdownBody || summary;
+
+  // Append any User agent to message
+  if (userAgent) {
+    message = `${message}
+_${userAgent}_`; // Add Slack indent formatting
+  }
+
   /**
    * Representation of Slack Notification
    * @type {SlackNotificationResult}
-   * @param {String} title
+   * @param {String?} title - Optional title for admin notifications
    * @param {String} message
    * @param {String} channel
    * @param {String} path
    * @param {Object} publishedMediums
    */
   const result = {
-    title,
-    message: markdownBody || summary,
+    title: propertyId ? '' : title, // Title admin notifications only
+    message,
     channel: '',
     path: '',
     publishedMediums: {},
@@ -91,7 +101,7 @@ module.exports = async (db, notificationId, notification) => {
 
   // Abandon when channel undiscovered
   if (!channel) {
-    const message = propertyId
+    const errMsg = propertyId
       ? 'No Slack channel associated with this property'
       : 'Admin channel has not been setup';
 
@@ -103,7 +113,7 @@ module.exports = async (db, notificationId, notification) => {
       });
       result.publishedMediums.slack = true;
     } catch (err) {
-      throw Error(`${PREFIX} ${message}`);
+      throw Error(`${PREFIX} ${errMsg}`);
     }
     return result;
   }

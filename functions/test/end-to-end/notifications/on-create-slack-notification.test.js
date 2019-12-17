@@ -235,6 +235,64 @@ Edited by: Test User (testor@gmail.com)`;
     expect(actual).to.equal(expected);
   });
 
+  it('should append any user agent to the notification message', async () => {
+    /* eslint-disable */
+    const expected = `test
+_userAgent_`;
+    /* eslint-enable */
+    const markdownNotification = Object.assign({}, NOTIFICATION_DATA, {
+      markdownBody: 'test',
+      userAgent: 'userAgent',
+    });
+
+    // Setup database
+    await db.ref(SRC_NOTIFICATION_PATH).set(markdownNotification);
+    await db.ref(SLACK_ORG_INTEGRATION_PATH).set(SLACK_ORG_INTEGRATION_DATA);
+    const notificationsSnap = await db.ref(SRC_NOTIFICATION_PATH).once('value');
+
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.onCreateSourceSlackNotification);
+    await wrapped(notificationsSnap, {
+      params: { notificationId: NOTIFICATION_ID },
+    });
+
+    // Assertions
+    const snap = await db
+      .ref(`${SLACK_ADMIN_NOTIFICATON_PATH}/message`)
+      .once('value');
+    const actual = snap.val();
+    expect(actual).to.equal(expected);
+  });
+
+  it('should set an empty title for slack property notifications', async () => {
+    const expected = '';
+    const notificationData = Object.assign(
+      {
+        property: PROPERTY_ID,
+      },
+      NOTIFICATION_DATA
+    );
+
+    // Setup database
+    await db.ref(PROPERTY_PATH).set(PROPERTY_DATA);
+    await db.ref(SRC_NOTIFICATION_PATH).set(notificationData);
+    await db.ref(SLACK_ORG_INTEGRATION_PATH).set(SLACK_ORG_INTEGRATION_DATA);
+    const notificationsSnap = await db.ref(SRC_NOTIFICATION_PATH).once('value');
+
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.onCreateSourceSlackNotification);
+    await wrapped(notificationsSnap, {
+      params: { notificationId: NOTIFICATION_ID },
+    });
+
+    // Assertions
+    const snap = await db
+      .ref(`${SLACK_PROP_NOTIFICATON_PATH}/title`)
+      .once('value');
+    const actual = snap.val();
+    expect(actual).to.equal(expected);
+  });
+
   it('should mark the source notifications published mediums to include slack', async () => {
     // Setup database
     await db.ref(SRC_NOTIFICATION_PATH).set(NOTIFICATION_DATA);

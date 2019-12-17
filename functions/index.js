@@ -12,6 +12,7 @@ const slack = require('./slack');
 const notifications = require('./notifications');
 const regTokens = require('./reg-tokens');
 const config = require('./config');
+const createRouter = require('./router');
 
 const { firebase: firebaseConfig } = config;
 const defaultApp = admin.initializeApp(firebaseConfig);
@@ -31,7 +32,7 @@ const dbStaging = defaultApp.database(firebaseConfig.stagingDatabaseURL);
 
 // Send API version
 exports.latestVersion = functions.https.onRequest((request, response) =>
-  response.status(200).send({ ios: '1.5.1' })
+  response.status(200).send({ ios: '1.5.2' })
 );
 
 // Latest Completed Inspections
@@ -90,12 +91,28 @@ exports.createTrelloDeficientItemCardStaging = functions.https.onRequest(
   )
 );
 
+// POST /slackApp
+exports.slackAppEvents = functions.https.onRequest(
+  slack.createSlackEventsApiHandler(db)
+);
+exports.slackAppEventsStaging = functions.https.onRequest(
+  slack.createSlackEventsApiHandler(dbStaging)
+);
+
 // POST /integrations/slack/authorization
 exports.createSlackAppAuth = functions.https.onRequest(
   slack.createOnSlackAppAuthHandler(db, auth)
 );
 exports.createSlackAppAuthStaging = functions.https.onRequest(
   slack.createOnSlackAppAuthHandler(dbStaging, auth)
+);
+
+// DELETE /integrations/slack/authorization
+exports.deleteSlackAuthorization = functions.https.onRequest(
+  slack.createDeleteSlackAppHandler(db, auth)
+);
+exports.deleteSlackAuthorizationStaging = functions.https.onRequest(
+  slack.createDeleteSlackAppHandler(dbStaging, auth)
 );
 
 //  POST /notifications
@@ -360,6 +377,18 @@ exports.onCreateDeficientItemProgressNoteTrelloCommentStaging = functionsStaging
   )
   .onCreate(trello.createOnCreateDIProgressNote(dbStaging));
 
+exports.onCreateDeficientItemCompletedPhotoTrelloAttachement = functions.database
+  .ref(
+    '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/completedPhotos/{completedPhotoId}'
+  )
+  .onCreate(trello.createOnCreateDICompletedPhoto(db));
+
+exports.onCreateDeficientItemCompletedPhotoTrelloAttachementStaging = functionsStagingDatabase
+  .ref(
+    '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/completedPhotos/{completedPhotoId}'
+  )
+  .onCreate(trello.createOnCreateDICompletedPhoto(dbStaging));
+
 // Message Subscribers
 exports.propertyMetaSync = properties.pubsub.createSyncMeta(
   'properties-sync',
@@ -551,4 +580,18 @@ exports.trelloDiCardCloseStaging = trello.pubsub.createCloseDiCard(
   'staging-deficient-item-status-update',
   functions.pubsub,
   dbStaging
+);
+
+// API
+
+exports.api = functions.https.onRequest(
+  createRouter(db, auth, {
+    inspectionUrl: config.clientApps.web.productionInspectionURL,
+  })
+);
+
+exports.apiStaging = functions.https.onRequest(
+  createRouter(dbStaging, auth, {
+    inspectionUrl: config.clientApps.web.stagingInspectionURL,
+  })
 );

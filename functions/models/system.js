@@ -55,6 +55,15 @@ module.exports = modelSetup({
   },
 
   /**
+   * Remove Slack integration credentials for organization
+   * @param  {firebaseAdmin.database} db firebase database
+   * @return {Promise}
+   */
+  destroySlackCredentials(db) {
+    return db.ref(SLACK_ORG_PATH).remove();
+  },
+
+  /**
    * Create or replace organization's Trello credentials
    * @param  {firebaseAdmin.database} db firbase database
    * @param  {Object} settings
@@ -318,6 +327,43 @@ module.exports = modelSetup({
     } catch (err) {
       throw Error(`${PREFIX} error removing Trello card URL from DI | ${err}`);
     }
+
+    // remove Trello card attachment id on DI
+    try {
+      const completedPhotos = await db
+        .ref(
+          `${DI_DATABASE_PATH}/${propertyId}/${deficientItemId}/completedPhotos`
+        )
+        .once('value');
+      if (completedPhotos.exists()) {
+        await Promise.all(
+          Object.keys(completedPhotos.val()).map(async key => {
+            await db.ref().update({
+              [`${DI_DATABASE_PATH}/${propertyId}/${deficientItemId}/completedPhotos/${key}/trelloCardAttachement`]: null,
+            });
+          })
+        );
+      }
+
+      const archivedCompletedPhotos = await db
+        .ref(
+          `archive${DI_DATABASE_PATH}/${propertyId}/${deficientItemId}/completedPhotos`
+        )
+        .once('value');
+      if (archivedCompletedPhotos.exists()) {
+        await Promise.all(
+          Object.keys(archivedCompletedPhotos.val()).map(async key => {
+            await db.ref().update({
+              [`archive${DI_DATABASE_PATH}/${propertyId}/${deficientItemId}/completedPhotos/${key}/trelloCardAttachement`]: null,
+            });
+          })
+        );
+      }
+    } catch (err) {
+      throw Error(
+        `${PREFIX} error removing Trello attachment ID from DI completed photos | ${err}`
+      );
+    }
   },
 
   /**
@@ -473,6 +519,91 @@ module.exports = modelSetup({
     } catch (err) {
       const resultErr = Error(
         `${PREFIX} updateTrelloCard: PUT card: ${trelloCardId} via trello API failed: ${err}`
+      );
+
+      // Handle Deleted Trello card
+      if (err.statusCode === 404) {
+        resultErr.code = 'ERR_TRELLO_CARD_DELETED';
+
+        try {
+          await this._cleanupDeletedTrelloCard(
+            db,
+            propertyId,
+            deficientItemId,
+            trelloCardId
+          );
+        } catch (cleanUpErr) {
+          resultErr.message += `${cleanUpErr}`; // append to primary error
+        }
+      }
+
+      throw resultErr;
+    }
+
+    return response;
+  },
+
+  /**
+   * POST a Trello card attachment
+   * @param  {firebaseadmin.database} db
+   * @param  {String} propertyId
+   * @param  {String} deficientItemId
+   * @param  {String} trelloCardId
+   * @param  {String} url
+   * @return {Promise} - resolves {Object} Trello API response
+   */
+  async postTrelloCardAttachment(
+    db,
+    propertyId,
+    deficientItemId,
+    trelloCardId,
+    url
+  ) {
+    assert(
+      trelloCardId && typeof trelloCardId === 'string',
+      `${PREFIX} has Trello Card id`
+    );
+    assert(
+      propertyId && typeof propertyId === 'string',
+      `${PREFIX} has property id`
+    );
+    assert(
+      deficientItemId && typeof deficientItemId === 'string',
+      `${PREFIX} has deficient item ID`
+    );
+    assert(typeof url === 'string', `${PREFIX} has attachment url`);
+
+    // Lookup Trello credentials
+    let apikey = '';
+    let authToken = '';
+    try {
+      const trelloCredentialsSnap = await this.findTrelloCredentials(db);
+      const trelloCredentials = trelloCredentialsSnap.val() || {};
+      apikey = trelloCredentials.apikey;
+      authToken = trelloCredentials.authToken;
+      if (!apikey || !authToken) return null;
+    } catch (err) {
+      throw Error(
+        `${PREFIX} postTrelloCardAttachment: failed to recover trello credentials: ${err}`
+      );
+    }
+
+    // POST card comment to Trello
+    let response = null;
+    try {
+      response = await got(
+        `https://api.trello.com/1/cards/${trelloCardId}/attachments?key=${apikey}&token=${authToken}&url=${encodeURIComponent(
+          url
+        )}`,
+        {
+          responseType: 'json',
+          method: 'POST',
+          json: true,
+        }
+      );
+    } catch (err) {
+      const resultErr = Error(
+        `${PREFIX} POST attachment card: ${trelloCardId} request to trello API failed: ${err}`
       );
 
       // Handle Deleted Trello card

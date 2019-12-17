@@ -1,10 +1,10 @@
 const { expect } = require('chai');
 const request = require('supertest');
-const createApp = require('../../inspections/on-get-pdf-report');
-const uuid = require('../../test-helpers/uuid');
-const mocking = require('../../test-helpers/mocking');
-const { cleanDb } = require('../../test-helpers/firebase');
-const { db, auth, deletePDFInspection } = require('./setup');
+const createApp = require('../../../inspections/on-get-pdf-report');
+const uuid = require('../../../test-helpers/uuid');
+const mocking = require('../../../test-helpers/mocking');
+const { cleanDb } = require('../../../test-helpers/firebase');
+const { db, auth, deletePDFInspection } = require('../setup');
 
 // Avoid creating lots of PDF's
 const INSP_ID = uuid();
@@ -27,7 +27,7 @@ const PROPERTY_DATA = {
 };
 const INSP_URL = '{{propertyId}}/{{inspectionId}}';
 
-describe('Inspection PDF Report', () => {
+describe('Inspections | PDF Report', () => {
   afterEach(async () => {
     const reportURL = await db
       .ref(`/inspections/${INSP_ID}/inspectionReportURL`)

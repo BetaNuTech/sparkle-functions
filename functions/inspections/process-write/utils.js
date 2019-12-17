@@ -19,24 +19,4 @@ module.exports = {
       throw new Error(`${logPrefix} inspection belongs to archived property`);
     }
   },
-
-  /**
-   * Lookup template name inspection
-   * @param  {Object} inspection
-   * @return {String} - templateName
-   */
-  getTemplateName(inspection) {
-    return inspection.templateName || inspection.template.name;
-  },
-
-  /**
-   * Get inspection score or `0`
-   * @param  {Object} inspection
-   * @return {Number} - score
-   */
-  getScore(inspection) {
-    return inspection.score && typeof inspection.score === 'number'
-      ? inspection.score
-      : 0;
-  },
 };

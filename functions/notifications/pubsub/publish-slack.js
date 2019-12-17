@@ -131,8 +131,8 @@ module.exports = function publishSlackNotification(topic = '', pubSub, db) {
           await slack.sendSlackChannelMessage(
             accessToken,
             channelName,
-            notification.title,
-            notification.message
+            notification.message,
+            notification.title
           );
           log.info(
             `${PREFIX} ${topic}: successfully sent notification "${notificationId}" to channel "${channelName}"`
