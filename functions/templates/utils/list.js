@@ -75,7 +75,7 @@ module.exports = {
   async removeCategory(db, categoryId) {
     assert(categoryId && typeof categoryId === 'string', 'has category ID');
 
-    const updates = Object.create(null);
+    const updates = {};
 
     try {
       const templatesListItemsInCategory = await db

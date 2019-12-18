@@ -26,7 +26,7 @@ module.exports = function createOnDeleteHandler(db) {
    * @return {Promise}
    */
   return async (templateCategorySnapshot, context) => {
-    const updates = Object.create(null);
+    const updates = {};
     const { categoryId } = context.params;
 
     if (!categoryId) {
@@ -69,9 +69,9 @@ module.exports = function createOnDeleteHandler(db) {
           'removed';
         await propertyTemplates.remove(db, templateIds[i], '/category');
       }
-    } catch (e) {
+    } catch (err) {
       log.error(
-        `${PREFIX} Failed to disassociate template relationship | ${e}`
+        `${PREFIX} Failed to disassociate template relationship | ${err}`
       );
     }
 
