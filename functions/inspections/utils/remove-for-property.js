@@ -10,7 +10,7 @@ const PREFIX = 'inspections: utils: remove-for-property';
  * @return {Promise} - resolves {Object} hash of updates
  */
 module.exports = async function removeForProperty(db, storage, propertyId) {
-  const updates = Object.create(null);
+  const updates = {};
 
   const inspectionsSnap = await db
     .ref('/inspections')

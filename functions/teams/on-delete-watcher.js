@@ -11,7 +11,7 @@ const PREFIX = 'teams: team-delete:';
  */
 module.exports = function teamDeleteHandler(db) {
   return async (teamSnap, context) => {
-    const updates = Object.create(null);
+    const updates = {};
     const { teamId } = context.params;
 
     if (!teamId) {

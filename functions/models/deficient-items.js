@@ -132,7 +132,7 @@ module.exports = modelSetup({
     assert(newState && typeof newState === 'string', 'has new state string');
     const path = diSnap.ref.path.toString();
     const diItem = diSnap.val();
-    const updates = Object.create(null);
+    const updates = {};
     diItem.state = newState;
 
     // Update DI's state
@@ -202,7 +202,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {Object} updates hash
    */
   async toggleArchive(db, diSnap, archiving = true) {
-    const updates = Object.create(null);
+    const updates = {};
     const activePath = diSnap.ref.path.toString();
     const [propertyId] = activePath.split('/').slice(-2, -1);
     const deficientItem = diSnap.val();

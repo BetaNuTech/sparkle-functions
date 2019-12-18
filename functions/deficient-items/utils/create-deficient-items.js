@@ -69,7 +69,7 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
     `${LOG_PREFIX} has deficient items list enabled`
   );
 
-  const result = Object.create(null);
+  const result = {};
 
   // Create list of all inspection's template items
   const items = Object.keys(inspection.template.items).map(itemId =>
