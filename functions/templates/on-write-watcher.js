@@ -11,7 +11,7 @@ const PREFIX = 'templates: on-write:';
  */
 module.exports = function createOnWriteWatcher(db) {
   return async (change, event) => {
-    const updates = Object.create(null);
+    const updates = {};
     const { templateId } = event.params;
 
     if (!templateId) {
