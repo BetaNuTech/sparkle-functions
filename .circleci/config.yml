@@ -6,10 +6,16 @@ jobs:
       - image: circleci/node:10
     steps:
       - checkout
+      - restore_cache:
+          key: dependency-cache-{{ checksum "functions/package.json" }}
       - run:
           name: Install Dependencies
           command: yarn
           working_directory: functions
+      - save_cache:
+          key: dependency-cache-{{ checksum "functions/package.json" }}
+          paths:
+            - ./functions/node_modules
       - run:
           name: Unit Tests
           command: yarn test-unit
