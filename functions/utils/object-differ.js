@@ -12,7 +12,7 @@ module.exports = {
     assert(src && typeof src === 'object', 'has source object');
     assert(dest && typeof dest === 'object', 'has destination object');
 
-    const updates = Object.create(null);
+    const updates = {};
 
     if (!Array.isArray(attrs) || attrs.length === 0) {
       attrs = Object.keys(src); // diff all of source
