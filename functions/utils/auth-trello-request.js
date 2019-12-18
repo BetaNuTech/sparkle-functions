@@ -50,7 +50,7 @@ module.exports = function authTrelloRequest(db) {
     // }
 
     // Set Trello credentials on request
-    req.trelloCredentials = req.trelloCredentials || Object.create(null);
+    req.trelloCredentials = req.trelloCredentials || {};
     Object.assign(req.trelloCredentials, trelloCredentials);
     next();
   };

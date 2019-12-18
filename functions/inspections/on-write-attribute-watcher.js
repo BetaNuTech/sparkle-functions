@@ -10,7 +10,7 @@ const PREFIX = 'inspections: on-attribute-write:';
  */
 module.exports = function createOnAttributeWriteHandler(db) {
   return async (change, event) => {
-    const updates = Object.create(null);
+    const updates = {};
     const { inspectionId } = event.params;
 
     if (!inspectionId) {
