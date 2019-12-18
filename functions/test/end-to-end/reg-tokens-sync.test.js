@@ -34,9 +34,9 @@ describe('Registration Token Sync', () => {
     const results = resultsSnap.val();
 
     // Assertions
-    Object.keys(results).forEach(userId => {
-      Object.keys(results[userId]).forEach(tokenId => {
-        const actual = results[userId][tokenId];
+    Object.keys(results).forEach(resUserId => {
+      Object.keys(results[resUserId]).forEach(tokenId => {
+        const actual = results[resUserId][tokenId];
         expect(actual).to.be.a('number', 'token value a number');
         expect(actual).to.be.at.least(
           nowUnix,
@@ -53,7 +53,7 @@ describe('Registration Token Sync', () => {
   });
 
   it('should remove registration tokens older than 1 months', async () => {
-    const nowUnix = Date.now() / 1000;
+    const nowUnix = Math.round(Date.now() / 1000);
     const userId = uuid();
     const deletedTokenId = uuid();
     const deletedTokenId2 = uuid();
