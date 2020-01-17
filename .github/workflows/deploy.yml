@@ -1,0 +1,74 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - production
+      - staging
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Use Node.js 10
+        uses: actions/setup-node@v1
+        with:
+          node-version: 10.x
+
+      - name: Cache NPM dependencies
+        uses: actions/cache@v1
+        with:
+          path: functions/node_modules
+          key: ${{ runner.OS }}-npm-cache-${{ hashFiles('functions/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.OS }}-npm-cache-
+
+      - name: Install dependencies
+        run: yarn install
+        working-directory: ./functions
+
+      - name: Run unit tests
+        run: yarn test-unit
+        working-directory: ./functions
+
+      - name: Run End to End Tests
+        run: yarn test-e2e
+        working-directory: ./functions
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    container:
+      image: mj3000/firebase-tools
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Cache NPM dependencies
+        uses: actions/cache@v1
+        with:
+          path: functions/node_modules
+          key: ${{ runner.OS }}-npm-cache-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.OS }}-npm-cache-
+
+      - name: Install dependencies
+        run: yarn install
+        working-directory: ./functions
+
+      - name: Use staging project
+        if: github.ref == 'refs/heads/staging'
+        run: firebase use ${{ secrets.STAGING_FIREBASE_PROJECT }} --non-interactive --token ${{ secrets.FIREBASE_TOKEN }}
+
+      - name: Use production project
+        if: github.ref == 'refs/heads/production'
+        run: firebase use ${{ secrets.PRODUCTION_FIREBASE_PROJECT }} --non-interactive --token ${{ secrets.FIREBASE_TOKEN }}
+
+      - name: Deploy staging functions
+        if: github.ref == 'refs/heads/staging'
+        run: NODE_ENV=production FIREBASE_TOKEN=${{ secrets.FIREBASE_TOKEN }} FIREBASE_FUNCTIONS_AUTH=${{ secrets.FIREBASE_FUNCTIONS_AUTH }} SLACK_CLIENT_SECRET=${{ secrets.STAGING_STAGING_SLACK_CLIENT_SECRET }} ./scripts/deploy-functions.sh
+
+      - name: Deploy production functions
+        if: github.ref == 'refs/heads/staging'
+        run: NODE_ENV=production FIREBASE_TOKEN=${{ secrets.FIREBASE_TOKEN }} FIREBASE_FUNCTIONS_AUTH=${{ secrets.FIREBASE_FUNCTIONS_AUTH }} SLACK_CLIENT_SECRET=${{ secrets.PRODUCTION_STAGING_SLACK_CLIENT_SECRET }} ./scripts/deploy-functions.sh
