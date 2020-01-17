@@ -30,12 +30,16 @@ jobs:
         working-directory: ./functions
 
       - name: Run unit tests
-        run: FIREBASE_FUNCTIONS_AUTH=${{ secrets.PRODUCTION_FIREBASE_FUNCTIONS_AUTH }} yarn test-unit
+        run: yarn test-unit
         working-directory: ./functions
+        env:
+          FIREBASE_FUNCTIONS_AUTH: ${{ secrets.PRODUCTION_FIREBASE_FUNCTIONS_AUTH }} 
 
       - name: Run End to End Tests
-        run: FIREBASE_FUNCTIONS_AUTH=${{ secrets.PRODUCTION_FIREBASE_FUNCTIONS_AUTH }} yarn test-e2e
+        run: yarn test-e2e
         working-directory: ./functions
+        env:
+          FIREBASE_FUNCTIONS_AUTH: ${{ secrets.PRODUCTION_FIREBASE_FUNCTIONS_AUTH }} 
 
   deploy:
     needs: test
