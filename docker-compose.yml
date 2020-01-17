@@ -35,7 +35,7 @@ services:
       - ./functions:/src/functions
 
   test-e2e-fn:
-    image: "circleci/node:10"
+    image: "node:10.15-alpine"
     working_dir: /src/functions
     env_file: .env
     environment:
