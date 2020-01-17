@@ -33,13 +33,15 @@ jobs:
         run: yarn test-unit
         working-directory: ./functions
         env:
-          FIREBASE_FUNCTIONS_AUTH: ${{ secrets.PRODUCTION_FIREBASE_FUNCTIONS_AUTH }} 
+          FIREBASE_FUNCTIONS_AUTH: ${{ secrets.PRODUCTION_FIREBASE_FUNCTIONS_AUTH }}
+          SLACK_CLIENT_SECRET: ${{ secrets.PRODUCTION_STAGING_SLACK_CLIENT_SECRET }}
 
       - name: Run End to End Tests
         run: yarn test-e2e
         working-directory: ./functions
         env:
-          FIREBASE_FUNCTIONS_AUTH: ${{ secrets.PRODUCTION_FIREBASE_FUNCTIONS_AUTH }} 
+          FIREBASE_FUNCTIONS_AUTH: ${{ secrets.PRODUCTION_FIREBASE_FUNCTIONS_AUTH }}
+          SLACK_CLIENT_SECRET: ${{ secrets.PRODUCTION_STAGING_SLACK_CLIENT_SECRET }}
 
   deploy:
     needs: test
