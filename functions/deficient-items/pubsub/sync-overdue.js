@@ -41,7 +41,7 @@ module.exports = function createSyncOverdueDeficientItems(
   return pubsub
     .topic(topic)
     .onPublish(async function syncOverdueDeficientItemsHandler() {
-      const updates = Object.create(null);
+      const updates = {};
       const now = Math.round(Date.now() / 1000);
 
       await forEachChild(

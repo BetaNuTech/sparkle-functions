@@ -19,14 +19,14 @@ services:
       - ./appengine:/src
 
   yarn-fn:
-    image: "node:8-alpine"
+    image: "node:10-alpine"
     working_dir: /src/functions
     entrypoint: yarn
     volumes:
       - ./functions:/src/functions
 
   test-unit-fn:
-    image: "node:8-alpine"
+    image: "node:10-alpine"
     working_dir: /src/functions
     env_file: .env
     command: [sh, -c, "yarn test-unit"]
@@ -35,7 +35,7 @@ services:
       - ./functions:/src/functions
 
   test-e2e-fn:
-    image: "circleci/node:8"
+    image: "node:10.15-alpine"
     working_dir: /src/functions
     env_file: .env
     environment:
@@ -46,7 +46,7 @@ services:
       - ./functions:/src/functions
 
   deploy-staging-fn:
-    image: okuyan/firebase-tools
+    image: mj3000/firebase-tools
     working_dir: /srv
     env_file: .env
     command: [sh, -c, "./scripts/deploy-functions.sh staging"]

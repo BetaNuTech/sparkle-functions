@@ -3,13 +3,19 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/node:8
+      - image: circleci/node:10
     steps:
       - checkout
+      - restore_cache:
+          key: dependency-cache-{{ checksum "functions/package.json" }}
       - run:
           name: Install Dependencies
           command: yarn
           working_directory: functions
+      - save_cache:
+          key: dependency-cache-{{ checksum "functions/package.json" }}
+          paths:
+            - ./functions/node_modules
       - run:
           name: Unit Tests
           command: yarn test-unit
@@ -21,7 +27,7 @@ jobs:
 
   deploy-staging:
     docker:
-      - image: okuyan/firebase-tools
+      - image: mj3000/firebase-tools
     steps:
       - checkout
       - run:
@@ -33,7 +39,7 @@ jobs:
 
   deploy-production:
     docker:
-      - image: okuyan/firebase-tools
+      - image: mj3000/firebase-tools
     steps:
       - checkout
       - run:

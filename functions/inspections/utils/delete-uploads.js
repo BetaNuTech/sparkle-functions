@@ -20,7 +20,7 @@ module.exports = async function deleteInspectionUploads(
   const itemsSnaps = await db
     .ref(`/inspections/${inspectionId}/template/items`)
     .once('value');
-  const updates = Object.create(null);
+  const updates = {};
   const itemUploadUrls = [];
 
   // Collect each items list of uploads

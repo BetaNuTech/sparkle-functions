@@ -23,7 +23,7 @@ module.exports = function createOnDeleteHandler(
   userTeamsTopic
 ) {
   return async (propertySnap, event) => {
-    const updates = Object.create(null);
+    const updates = {};
     const { propertyId } = event.params;
 
     log.info(`${PREFIX} property ${propertyId} deleted`);

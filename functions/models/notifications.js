@@ -153,7 +153,7 @@ module.exports = modelSetup({
       `${PREFIX} createAllPush: has notifications configs`
     );
 
-    const updates = Object.create(null);
+    const updates = {};
     const parentRef = db.ref(PUSH_NOTIFICATION_PATH);
 
     notifications.forEach(notification => {
