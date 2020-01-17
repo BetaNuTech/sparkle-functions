@@ -67,8 +67,8 @@ jobs:
 
       - name: Deploy staging functions
         if: github.ref == 'refs/heads/staging'
-        run: NODE_ENV=production FIREBASE_TOKEN=${{ secrets.FIREBASE_TOKEN }} FIREBASE_FUNCTIONS_AUTH=${{ secrets.FIREBASE_FUNCTIONS_AUTH }} SLACK_CLIENT_SECRET=${{ secrets.STAGING_STAGING_SLACK_CLIENT_SECRET }} ./scripts/deploy-functions.sh
+        run: NODE_ENV=production FIREBASE_TOKEN=${{ secrets.FIREBASE_TOKEN }} FIREBASE_FUNCTIONS_AUTH=${{ secrets.STAGING_FIREBASE_FUNCTIONS_AUTH }} SLACK_CLIENT_SECRET=${{ secrets.STAGING_STAGING_SLACK_CLIENT_SECRET }} ./scripts/deploy-functions.sh
 
       - name: Deploy production functions
-        if: github.ref == 'refs/heads/staging'
-        run: NODE_ENV=production FIREBASE_TOKEN=${{ secrets.FIREBASE_TOKEN }} FIREBASE_FUNCTIONS_AUTH=${{ secrets.FIREBASE_FUNCTIONS_AUTH }} SLACK_CLIENT_SECRET=${{ secrets.PRODUCTION_STAGING_SLACK_CLIENT_SECRET }} ./scripts/deploy-functions.sh
+        if: github.ref == 'refs/heads/production'
+        run: NODE_ENV=production FIREBASE_TOKEN=${{ secrets.FIREBASE_TOKEN }} FIREBASE_FUNCTIONS_AUTH=${{ secrets.PRODUCTION_FIREBASE_FUNCTIONS_AUTH }} SLACK_CLIENT_SECRET=${{ secrets.PRODUCTION_STAGING_SLACK_CLIENT_SECRET }} ./scripts/deploy-functions.sh
