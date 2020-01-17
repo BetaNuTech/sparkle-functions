@@ -1,0 +1,38 @@
+name: Test
+
+on:
+  push:
+    branches-ignore:
+      - production
+      - staging
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Use Node.js 10
+        uses: actions/setup-node@v1
+        with:
+          node-version: 10.x
+
+      - name: Cache NPM dependencies
+        uses: actions/cache@v1
+        with:
+          path: functions/node_modules
+          key: ${{ runner.OS }}-npm-cache-${{ hashFiles('functions/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.OS }}-npm-cache-
+
+      - name: Install dependencies
+        run: yarn install
+        working-directory: ./functions
+
+      - name: Run unit tests
+        run: yarn test-unit
+        working-directory: ./functions
+
+      - name: Run End to End Tests
+        run: yarn test-e2e
+        working-directory: ./functions
