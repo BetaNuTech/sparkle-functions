@@ -37,6 +37,8 @@ jobs:
       - name: Clean Test DB
         run: node ./scripts/clean-test-db.js
         working-directory: ./functions
+        env:
+          FIREBASE_FUNCTIONS_AUTH: ${{ secrets.PRODUCTION_FIREBASE_FUNCTIONS_AUTH }}
 
       - name: Run End to End Tests
         run: NODE_ENV=test LOG_LEVEL=crit ./node_modules/.bin/mocha ./test/end-to-end/cleanup-inspection-proxy-orphans-sync.test.js
