@@ -36,7 +36,7 @@ jobs:
 
       - name: Fail Test
         continue-on-error: true
-        run: NODE_ENV=test LOG_LEVEL=crit ./node_modules/.bin/mocha ./test/end-to-end/cleanup-inspection-proxy-orphans-sync.test.js
+        run: yarn test-e2e
         working-directory: ./functions
         env:
           FIREBASE_FUNCTIONS_AUTH: ${{ secrets.PRODUCTION_FIREBASE_FUNCTIONS_AUTH }}
