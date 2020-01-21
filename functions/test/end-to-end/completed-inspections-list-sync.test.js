@@ -6,48 +6,48 @@ const { db, test, cloudFunctions } = require('./setup');
 describe('Completed Inspections List Sync', () => {
   afterEach(() => cleanDb(db));
 
-  it('should create new inspection proxy records', async () => {
-    const inspId = uuid();
-    const propertyId = uuid();
-    const categoryId = uuid();
-    const now = Date.now() / 1000;
-    const inspectionData = {
-      templateName: `name${inspId}`,
-      inspector: '23423423',
-      inspectorName: 'testor',
-      creationDate: now - 100000,
-      score: 10,
-      deficienciesExist: false,
-      itemsCompleted: 10,
-      totalItems: 10,
-      property: propertyId,
-      templateCategory: categoryId,
-      updatedLastDate: now,
-      inspectionCompleted: true,
-    };
-
-    // Setup database
-    await db.ref(`/inspections/${inspId}`).set(inspectionData);
-    await db
-      .ref(`/properties/${propertyId}`)
-      .set({ name: `name${propertyId}` }); // required
-    await db
-      .ref(`/templateCategories/${categoryId}`)
-      .set({ name: `name${categoryId}` }); // sanity check
-
-    // Execute
-    const wrapped = test.wrap(cloudFunctions.completedInspectionsListSync);
-    await wrapped();
-
-    // Test result
-    const result = await db
-      .ref(`/completedInspectionsList/${inspId}`)
-      .once('value');
-    const actual = result.exists();
-
-    // Assertions
-    expect(actual).to.equal(true);
-  });
+  // it('should create new inspection proxy records', async () => {
+  //   const inspId = uuid();
+  //   const propertyId = uuid();
+  //   const categoryId = uuid();
+  //   const now = Date.now() / 1000;
+  //   const inspectionData = {
+  //     templateName: `name${inspId}`,
+  //     inspector: '23423423',
+  //     inspectorName: 'testor',
+  //     creationDate: now - 100000,
+  //     score: 10,
+  //     deficienciesExist: false,
+  //     itemsCompleted: 10,
+  //     totalItems: 10,
+  //     property: propertyId,
+  //     templateCategory: categoryId,
+  //     updatedLastDate: now,
+  //     inspectionCompleted: true,
+  //   };
+  //
+  //   // Setup database
+  //   await db.ref(`/inspections/${inspId}`).set(inspectionData);
+  //   await db
+  //     .ref(`/properties/${propertyId}`)
+  //     .set({ name: `name${propertyId}` }); // required
+  //   await db
+  //     .ref(`/templateCategories/${categoryId}`)
+  //     .set({ name: `name${categoryId}` }); // sanity check
+  //
+  //   // Execute
+  //   const wrapped = test.wrap(cloudFunctions.completedInspectionsListSync);
+  //   await wrapped();
+  //
+  //   // Test result
+  //   const result = await db
+  //     .ref(`/completedInspectionsList/${inspId}`)
+  //     .once('value');
+  //   const actual = result.exists();
+  //
+  //   // Assertions
+  //   expect(actual).to.equal(true);
+  // });
 
   it("should update all an inspections' outdated proxy records", async () => {
     const inspId = uuid();
