@@ -10,7 +10,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: circleci/node:10
+      image: node:10-alpine
 
     steps:
       - uses: actions/checkout@v1
