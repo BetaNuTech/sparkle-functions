@@ -3,7 +3,7 @@ const uuid = require('../../test-helpers/uuid');
 const { cleanDb } = require('../../test-helpers/firebase');
 const { db, test, cloudFunctions } = require('./setup');
 
-const ONE_MONTHS_SEC = 2629800;
+const ONE_MONTHS_SEC = 2629805;
 const SIX_MONTHS_SEC = 15778800;
 const TWENTY_SEVEN_DAYS_SEC = 2332800;
 
@@ -34,9 +34,9 @@ describe('Registration Token Sync', () => {
     const results = resultsSnap.val();
 
     // Assertions
-    Object.keys(results).forEach(resUserId => {
-      Object.keys(results[resUserId]).forEach(tokenId => {
-        const actual = results[resUserId][tokenId];
+    Object.keys(results).forEach(id => {
+      Object.keys(results[id]).forEach(tokenId => {
+        const actual = results[id][tokenId];
         expect(actual).to.be.a('number', 'token value a number');
         expect(actual).to.be.at.least(
           nowUnix,
@@ -52,7 +52,7 @@ describe('Registration Token Sync', () => {
     );
   });
 
-  it('should remove registration tokens older than 1 months', async () => {
+  it('should remove registration tokens older than 1 month', async () => {
     const nowUnix = Math.round(Date.now() / 1000);
     const userId = uuid();
     const deletedTokenId = uuid();
@@ -72,23 +72,25 @@ describe('Registration Token Sync', () => {
     await test.wrap(cloudFunctions.regTokensSync)();
 
     // Results
-    const resultsSnap = await db.ref('/registrationTokens').once('value');
+    const resultsSnap = await db
+      .ref(`/registrationTokens/${userId}`)
+      .once('value');
     const results = resultsSnap.val();
 
     // Assertions
     [
       {
-        actual: Boolean(results[userId][deletedTokenId]),
+        actual: Boolean(results[deletedTokenId]),
         expected: false,
         msg: 'removed one month old token',
       },
       {
-        actual: Boolean(results[userId][deletedTokenId2]),
+        actual: Boolean(results[deletedTokenId2]),
         expected: false,
         msg: 'removed six month old token',
       },
       {
-        actual: Boolean(results[userId][unchangedTokenId]),
+        actual: Boolean(results[unchangedTokenId]),
         expected: true,
         msg: 'keep twenty seven day old token',
       },
