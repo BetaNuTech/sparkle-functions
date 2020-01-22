@@ -45,11 +45,25 @@ services:
       - ./auth.json:/src/auth.json
       - ./functions:/src/functions
 
-  deploy-staging-fn:
+  deploy-fn:
     image: mj3000/firebase-tools
     working_dir: /srv
     env_file: .env
-    command: [sh, -c, "./scripts/deploy-functions.sh staging"]
+    command:  >
+      bash -c "if [[ -z \"${FIREBASE_TOKEN}\" ]];
+      then
+        echo 'ERROR: FIREBASE_TOKEN not provided'; exit 1;
+      else
+        if [[ -z \"${FIREBASE_PROJECT}\" ]];
+        then
+          echo 'Deploying default project'
+        else
+          echo 'Deploying to project \"${FIREBASE_PROJECT}\"';
+          firebase use $FIREBASE_PROJECT --non-interactive --token $FIREBASE_TOKEN
+        fi
+        ./scripts/deploy-functions.sh production
+      fi"
+
     volumes:
       - .:/srv
 
