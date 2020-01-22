@@ -53,13 +53,13 @@ jobs:
     steps:
       - uses: actions/checkout@v1
 
-      - name: Cache NPM dependencies
-        uses: actions/cache@v1
-        with:
-          path: functions/node_modules
-          key: ${{ runner.OS }}-npm-cache-${{ hashFiles('functions/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.OS }}-npm-cache-
+      # - name: Cache NPM dependencies
+      #   uses: actions/cache@v1
+      #   with:
+      #     path: functions/node_modules
+      #     key: ${{ runner.OS }}-npm-cache-${{ hashFiles('functions/yarn.lock') }}
+      #     restore-keys: |
+      #       ${{ runner.OS }}-npm-cache-
 
       - name: Install dependencies
         run: yarn install
@@ -76,10 +76,6 @@ jobs:
       - name: Deploy staging functions
         if: github.ref == 'refs/heads/staging'
         run: NODE_ENV=production FIREBASE_TOKEN=${{ secrets.FIREBASE_TOKEN }} FIREBASE_FUNCTIONS_AUTH=${{ secrets.STAGING_FIREBASE_FUNCTIONS_AUTH }} SLACK_CLIENT_SECRET=${{ secrets.STAGING_SLACK_CLIENT_SECRET }} ./scripts/deploy-functions.sh
-
-      - name: NPM Rebuild
-        run: npm rebuild
-        working-directory: ./functions
 
       - name: Deploy production functions
         if: github.ref == 'refs/heads/production'
