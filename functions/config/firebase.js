@@ -28,16 +28,15 @@ try {
   } else {
     config = {
       projectId: serviceAccount.project_id,
-      storageBucket: 'sapphire-inspections.appspot.com',
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
     };
 
     if (process.env.NODE_ENV === 'production') {
       // Production database must be specifically requested
-      config.databaseURL = 'https://sapphire-inspections.firebaseio.com';
+      config.databaseURL = process.env.FIREBASE_DB_URL;
     } else {
       // Default database to test
-      config.databaseURL =
-        'https://test-sapphire-inspections-8a9e3.firebaseio.com';
+      config.databaseURL = process.env.FIREBASE_TEST_DB_URL;
     }
   }
 
