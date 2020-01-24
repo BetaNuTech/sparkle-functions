@@ -34,7 +34,21 @@ jobs:
           FIREBASE_FUNCTIONS_AUTH: ${{ secrets.PRODUCTION_FIREBASE_FUNCTIONS_AUTH }}
           SLACK_CLIENT_SECRET: ${{ secrets.PRODUCTION_SLACK_CLIENT_SECRET }}
 
-      - name: Run End to End Tests
+      - name: Run End to End Staging Tests
+        if: github.ref == 'refs/heads/staging'
+        run: yarn test-e2e
+        working-directory: ./functions
+        env:
+          FIREBASE_FUNCTIONS_AUTH: ${{ secrets.STAGING_FIREBASE_FUNCTIONS_AUTH }}
+          SLACK_CLIENT_SECRET: ${{ secrets.STAGING_SLACK_CLIENT_SECRET }}
+          GOOGLE_CLOUD_PROJECT: sapphire-inspections
+          AWS_S3_ACCESS_KEY_ID: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+          AWS_S3_SECRET_ACCESS_KEY: ${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}
+          FIREBASE_TEST_DB_URL: ${{ secrets.STAGING_FIREBASE_TEST_DB_URL }}
+          FIREBASE_STORAGE_BUCKET: ${{ secrets.STAGING_FIREBASE_STORAGE_BUCKET }}
+
+      - name: Run End to End Production Tests
+        if: github.ref == 'refs/heads/staging'
         run: yarn test-e2e
         working-directory: ./functions
         env:
@@ -43,6 +57,8 @@ jobs:
           GOOGLE_CLOUD_PROJECT: sapphire-inspections
           AWS_S3_ACCESS_KEY_ID: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
           AWS_S3_SECRET_ACCESS_KEY: ${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}
+          FIREBASE_TEST_DB_URL: ${{ secrets.PRODUCTION_FIREBASE_TEST_DB_URL }}
+          FIREBASE_STORAGE_BUCKET: ${{ secrets.PRODUCTION_FIREBASE_STORAGE_BUCKET }}
 
   deploy:
     needs: test
@@ -67,8 +83,8 @@ jobs:
 
       - name: Deploy staging functions
         if: github.ref == 'refs/heads/staging'
-        run: NODE_ENV=production FIREBASE_TOKEN=${{ secrets.FIREBASE_TOKEN }} FIREBASE_FUNCTIONS_AUTH=${{ secrets.STAGING_FIREBASE_FUNCTIONS_AUTH }} SLACK_CLIENT_SECRET=${{ secrets.STAGING_SLACK_CLIENT_SECRET }} ./scripts/deploy-functions.sh production
+        run: NODE_ENV=production FIREBASE_TOKEN=${{ secrets.FIREBASE_TOKEN }} FIREBASE_FUNCTIONS_AUTH=${{ secrets.STAGING_FIREBASE_FUNCTIONS_AUTH }} SLACK_CLIENT_SECRET=${{ secrets.STAGING_SLACK_CLIENT_SECRET }} FIREBASE_DB_URL=${{ secrets.STAGING_FIREBASE_DB_URL }} FIREBASE_STORAGE_BUCKET=${{ secrets.STAGING_FIREBASE_STORAGE_BUCKET }} ./scripts/deploy-functions.sh production
 
       - name: Deploy production functions
         if: github.ref == 'refs/heads/production'
-        run: NODE_ENV=production FIREBASE_TOKEN=${{ secrets.FIREBASE_TOKEN }} FIREBASE_FUNCTIONS_AUTH=${{ secrets.PRODUCTION_FIREBASE_FUNCTIONS_AUTH }} SLACK_CLIENT_SECRET=${{ secrets.PRODUCTION_SLACK_CLIENT_SECRET }} ./scripts/deploy-functions.sh production
+        run: NODE_ENV=production FIREBASE_TOKEN=${{ secrets.FIREBASE_TOKEN }} FIREBASE_FUNCTIONS_AUTH=${{ secrets.PRODUCTION_FIREBASE_FUNCTIONS_AUTH }} SLACK_CLIENT_SECRET=${{ secrets.PRODUCTION_SLACK_CLIENT_SECRET }} FIREBASE_DB_URL=${{ secrets.PRODUCTION_FIREBASE_DB_URL }} FIREBASE_STORAGE_BUCKET=${{ secrets.PRODUCTION_FIREBASE_STORAGE_BUCKET }} ./scripts/deploy-functions.sh production
