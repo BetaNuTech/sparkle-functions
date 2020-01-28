@@ -7,71 +7,6 @@ on:
       - staging
 
 jobs:
-<<<<<<< HEAD
-=======
-<<<<<<< Updated upstream
->>>>>>> develop
-  # test:
-  #   runs-on: ubuntu-latest
-  #   container:
-  #     image: node:10.15-alpine
-  #
-  #   steps:
-  #     - uses: actions/checkout@v1
-  #
-  #     - name: Cache NPM dependencies
-  #       uses: actions/cache@v1
-  #       with:
-  #         path: functions/node_modules
-  #         key: ${{ runner.OS }}-npm-cache-${{ hashFiles('functions/yarn.lock') }}
-  #         restore-keys: |
-  #           ${{ runner.OS }}-npm-cache-
-  #
-  #     - name: Install dependencies
-  #       run: yarn install
-  #       working-directory: ./functions
-  #
-  #     - name: Run unit tests
-  #       run: yarn test-unit
-  #       working-directory: ./functions
-  #       env:
-  #         FIREBASE_FUNCTIONS_AUTH: ${{ secrets.PRODUCTION_FIREBASE_FUNCTIONS_AUTH }}
-  #         SLACK_CLIENT_SECRET: ${{ secrets.PRODUCTION_SLACK_CLIENT_SECRET }}
-  #
-  #     - name: Run End to End Staging Tests
-  #       if: github.ref == 'refs/heads/staging'
-  #       run: yarn test-e2e
-  #       working-directory: ./functions
-  #       env:
-  #         FIREBASE_FUNCTIONS_AUTH: ${{ secrets.STAGING_FIREBASE_FUNCTIONS_AUTH }}
-  #         SLACK_CLIENT_SECRET: ${{ secrets.STAGING_SLACK_CLIENT_SECRET }}
-  #         GOOGLE_CLOUD_PROJECT: sapphire-inspections
-  #         AWS_S3_ACCESS_KEY_ID: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
-  #         AWS_S3_SECRET_ACCESS_KEY: ${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}
-  #         FIREBASE_TEST_DB_URL: ${{ secrets.STAGING_FIREBASE_TEST_DB_URL }}
-  #         FIREBASE_STORAGE_BUCKET: ${{ secrets.STAGING_FIREBASE_STORAGE_BUCKET }}
-  #
-  #     - name: Run End to End Production Tests
-  #       if: github.ref == 'refs/heads/staging'
-  #       run: yarn test-e2e
-  #       working-directory: ./functions
-  #       env:
-  #         FIREBASE_FUNCTIONS_AUTH: ${{ secrets.PRODUCTION_FIREBASE_FUNCTIONS_AUTH }}
-  #         SLACK_CLIENT_SECRET: ${{ secrets.PRODUCTION_SLACK_CLIENT_SECRET }}
-  #         GOOGLE_CLOUD_PROJECT: sapphire-inspections
-  #         AWS_S3_ACCESS_KEY_ID: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
-  #         AWS_S3_SECRET_ACCESS_KEY: ${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}
-  #         FIREBASE_TEST_DB_URL: ${{ secrets.PRODUCTION_FIREBASE_TEST_DB_URL }}
-  #         FIREBASE_STORAGE_BUCKET: ${{ secrets.PRODUCTION_FIREBASE_STORAGE_BUCKET }}
-<<<<<<< HEAD
-
-  deploy:
-    # needs: test
-=======
-
-  deploy:
-    # needs: test
-=======
   test:
     runs-on: ubuntu-latest
     container:
@@ -127,8 +62,6 @@ jobs:
 
   deploy:
     needs: test
->>>>>>> Stashed changes
->>>>>>> develop
     runs-on: ubuntu-latest
     container:
       image: mj3000/firebase-tools
@@ -165,12 +98,6 @@ jobs:
 
       - name: Deploy production functions
         if: github.ref == 'refs/heads/production'
-<<<<<<< HEAD
-        run: NODE_ENV=production FIREBASE_TOKEN=${{ secrets.FIREBASE_TOKEN }} FIREBASE_FUNCTIONS_AUTH=${{ secrets.PRODUCTION_FIREBASE_FUNCTIONS_AUTH }} SLACK_CLIENT_SECRET=${{ secrets.PRODUCTION_SLACK_CLIENT_SECRET }} FIREBASE_DB_URL=${{ secrets.PRODUCTION_FIREBASE_DB_URL }} FIREBASE_STORAGE_BUCKET=${{ secrets.PRODUCTION_FIREBASE_STORAGE_BUCKET }} ./scripts/deploy-functions.sh production
-=======
-<<<<<<< Updated upstream
-        run: NODE_ENV=production FIREBASE_TOKEN=${{ secrets.FIREBASE_TOKEN }} FIREBASE_FUNCTIONS_AUTH=${{ secrets.PRODUCTION_FIREBASE_FUNCTIONS_AUTH }} SLACK_CLIENT_SECRET=${{ secrets.PRODUCTION_SLACK_CLIENT_SECRET }} FIREBASE_DB_URL=${{ secrets.PRODUCTION_FIREBASE_DB_URL }} FIREBASE_STORAGE_BUCKET=${{ secrets.PRODUCTION_FIREBASE_STORAGE_BUCKET }} ./scripts/deploy-functions.sh production
-=======
         env:
           NODE_ENV: production
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
@@ -183,5 +110,3 @@ jobs:
           FIREBASE_TEST_DB_URL: ${{ secrets.PRODUCTION_FIREBASE_TEST_DB_URL }}
           FIREBASE_STORAGE_BUCKET: ${{ secrets.PRODUCTION_FIREBASE_STORAGE_BUCKET }}
         run: ./scripts/deploy-functions.sh production
->>>>>>> Stashed changes
->>>>>>> develop
