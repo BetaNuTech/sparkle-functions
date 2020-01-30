@@ -45,3 +45,4 @@ jobs:
           AWS_S3_SECRET_ACCESS_KEY: ${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}
           FIREBASE_TEST_DB_URL: ${{ secrets.PRODUCTION_FIREBASE_TEST_DB_URL }}
           FIREBASE_STORAGE_BUCKET: ${{ secrets.PRODUCTION_FIREBASE_STORAGE_BUCKET }}
+          CLIENT_DOMAIN: https://sparkle-production.herokuapp.com

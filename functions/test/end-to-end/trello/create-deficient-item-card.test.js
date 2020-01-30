@@ -21,8 +21,7 @@ const TRELLO_AUTH_TOKEN = '2a0ecf16ceb';
 const TRELLO_BOARD_ID = '5d0ab7754066f880369a4d97';
 const TRELLO_LIST_ID = '5d0ab7754066f880369a4d99';
 const API_PATH = `/properties/${PROPERTY_ID}/deficient-items/${DEFICIENT_ITEM_ID}/trello/card`;
-const CLIENT_APP_URI_TEMPL =
-  appConfig.clientApps.web.productionDeficientItemURL;
+const CLIENT_APP_URI_TEMPL = appConfig.clientApps.web.deficientItemURL;
 const PROPERTY_DATA = { zip: '47715' }; // TZ = "America/Indiana/Indianapolis"
 const NOW = Date.now();
 const DEFICIENT_ITEM_DATA = {
@@ -214,7 +213,7 @@ Plan to fix: replace pipe completely
 Section: Title
 Subtitle: Sub Title
 
-https://sparkle-production.herokuapp.com/properties/${PROPERTY_ID}/deficient-items/${DEFICIENT_ITEM_ID}`;
+${process.env.CLIENT_DOMAIN}/properties/${PROPERTY_ID}/deficient-items/${DEFICIENT_ITEM_ID}`;
     let actual = '';
 
     // Stub Requests

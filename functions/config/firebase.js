@@ -40,15 +40,6 @@ try {
     }
   }
 
-  // Staging database location
-  config.stagingDatabaseURL =
-    config.stagingDatabaseURL ||
-    'https://staging-sapphire-inspections.firebaseio.com';
-
-  // Staging database name
-  config.stagingDatabaseName =
-    config.stagingDatabaseName || 'staging-sapphire-inspections';
-
   // Add service account crentials to config
   config.credential = admin.credential.cert(serviceAccount);
 
