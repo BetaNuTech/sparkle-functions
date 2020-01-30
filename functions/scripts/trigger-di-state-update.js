@@ -17,9 +17,7 @@ if (!deficientItemId) throw Error('Deficient Item ID not provided');
 
   // Execute
   const changeSnap = test.makeChange(beforeSnap, afterSnap);
-  const wrapped = test.wrap(
-    cloudFunctions.deficientItemsPropertyMetaSyncStaging
-  );
+  const wrapped = test.wrap(cloudFunctions.deficientItemsPropertyMetaSync);
   await wrapped(changeSnap, {
     params: {
       propertyId,

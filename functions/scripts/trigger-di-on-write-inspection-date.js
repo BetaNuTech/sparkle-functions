@@ -12,7 +12,7 @@ if (!inspectionId) throw Error('Inspection ID not provided');
 
   // Execute
   const changeSnap = test.makeChange(beforeSnap, afterSnap);
-  const wrapped = test.wrap(cloudFunctions.deficientItemsWriteStaging);
+  const wrapped = test.wrap(cloudFunctions.deficientItemsWrite);
   await wrapped(changeSnap, {
     params: { inspectionId },
   });
