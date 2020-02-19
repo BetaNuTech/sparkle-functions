@@ -4,7 +4,7 @@ const cors = require('cors');
 const moment = require('moment');
 const log = require('../utils/logger');
 
-const LOG_PREFIX = 'inspections: get-latest-completed:';
+const PREFIX = 'inspections: get-latest-completed:';
 const TEMP_NAME_LOOKUP = 'Blueshift Product Inspection';
 
 /**
@@ -33,7 +33,7 @@ module.exports = function createGetLatestCompletedInspection(db) {
     }
 
     log.info(
-      `${LOG_PREFIX} requesting latest completed inspection of cobalt code: ${propertyCode}`
+      `${PREFIX} requesting latest completed inspection of cobalt code: ${propertyCode}`
     );
 
     let propertySnap;
@@ -44,8 +44,8 @@ module.exports = function createGetLatestCompletedInspection(db) {
         .equalTo(propertyCode)
         .limitToFirst(1)
         .once('value');
-    } catch (e) {
-      log.error(`${LOG_PREFIX} ${e}`);
+    } catch (err) {
+      log.error(`${PREFIX} ${err}`);
       return res.status(500).send('Unable to retrieve data');
     }
 
@@ -63,9 +63,9 @@ module.exports = function createGetLatestCompletedInspection(db) {
         .orderByChild('property')
         .equalTo(propertyId)
         .once('value');
-    } catch (e) {
+    } catch (err) {
       // Handle any errors
-      log.error(`${LOG_PREFIX} ${e}`);
+      log.error(`${PREFIX} ${err}`);
       res.status(500).send('No inspections found.');
     }
 
