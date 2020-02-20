@@ -3,8 +3,8 @@ const { lookup: zipToTZ } = require('zipcode-to-timezone');
 /**
  * Lookup timezone from
  * an optional zip code
- * @param  {String?} zipCode [description]
- * @return {String}         [description]
+ * @param  {String?} zipCode
+ * @return {String}
  */
 module.exports = zipCode => {
   let timezone = '';

@@ -1,7 +1,7 @@
 const assert = require('assert');
 const express = require('express');
 const cors = require('cors');
-const moment = require('moment');
+const moment = require('moment-timezone');
 const log = require('../utils/logger');
 const zipToTimezone = require('../utils/zip-to-timezone');
 
