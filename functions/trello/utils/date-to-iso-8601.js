@@ -1,5 +1,5 @@
 const moment = require('moment-timezone');
-const { lookup: zipToTZ } = require('zipcode-to-timezone');
+const zipToTimezone = require('../../utils/zip-to-timezone');
 
 /**
  * Convert a `MM-DD-YYYY` date string to
@@ -11,12 +11,7 @@ const { lookup: zipToTZ } = require('zipcode-to-timezone');
  */
 module.exports = (dateStr, zipCode) => {
   const [month, date, year] = dateStr.split('/').map(str => parseInt(str, 10));
-
-  // Set timezone from
-  // a optional zip code
-  let timezone = '';
-  if (zipCode) timezone = zipToTZ(zipCode);
-  if (!timezone) timezone = 'America/New_York'; // default Timezone
+  const timezone = zipToTimezone(zipCode);
 
   // Set to last second of provided date
   return moment

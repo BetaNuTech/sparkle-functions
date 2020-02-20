@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const moment = require('moment');
 const log = require('../utils/logger');
+const zipToTimezone = require('../utils/zip-to-timezone');
 
 const PREFIX = 'inspections: get-latest-completed:';
 const TEMP_NAME_LOOKUP = 'Blueshift Product Inspection';
@@ -33,7 +34,7 @@ module.exports = function createGetLatestCompletedInspection(db) {
     }
 
     log.info(
-      `${PREFIX} requesting latest completed inspection of cobalt code: ${propertyCode}`
+      `${PREFIX} requesting latest completed inspection of cobalt code: "${propertyCode}"`
     );
 
     let propertySnap;
@@ -85,18 +86,22 @@ module.exports = function createGetLatestCompletedInspection(db) {
     }
 
     // Successful response
+    const property = propertySnap.val()[propertyId];
+    const propertyTimezone = zipToTimezone(property.zip);
     const responseData = latestInspectionResponseData(
       new Date(),
       propertyId,
       latestInspection,
-      latestInspectionId
+      latestInspectionId,
+      propertyTimezone
     );
     if (latestInspectionByDate) {
       responseData.latest_inspection_by_date = latestInspectionResponseData(
         new Date(otherDate),
         propertyId,
         latestInspectionByDate,
-        latestInspectionByDateId
+        latestInspectionByDateId,
+        propertyTimezone
       );
     }
 
@@ -187,13 +192,15 @@ function findLatestInspectionData(inspectionsSnapshot, dateForInspection) {
  * @param  {String} propertyId
  * @param  {Object} latestInspection
  * @param  {String} latestInspectionId
+ * @param  {String} timezone
  * @return {Object} - response JSON
  */
 function latestInspectionResponseData(
   date,
   propertyId,
   latestInspection,
-  latestInspectionId
+  latestInspectionId,
+  timezone
 ) {
   const currentTimeSecs = date.getTime() / 1000;
   const currentDay = currentTimeSecs / 60 / 60 / 24;
@@ -212,10 +219,12 @@ function latestInspectionResponseData(
 
   if (inspectionOverdue) {
     alert = 'Blueshift Product Inspection OVERDUE (Last: ';
-    alert += moment(latestInspection.creationDate * 1000).format('MM/DD/YY');
-    alert += `, Completed: ${moment(
-      latestInspection.completionDate * 1000
-    ).format('MM/DD/YY')}).`;
+    alert += moment(latestInspection.creationDate * 1000)
+      .tz(timezone)
+      .format('MM/DD/YY');
+    alert += `, Completed: ${moment(latestInspection.completionDate * 1000)
+      .tz(timezone)
+      .format('MM/DD/YY')}).`;
 
     // Append extra alert for past max duration warning
     if (completionDateDay - creationDateDay > 3) {
@@ -236,12 +245,12 @@ function latestInspectionResponseData(
   }
 
   return {
-    creationDate: moment(latestInspection.creationDate * 1000).format(
-      'MM/DD/YY'
-    ),
-    completionDate: moment(latestInspection.completionDate * 1000).format(
-      'MM/DD/YY'
-    ),
+    creationDate: moment(latestInspection.creationDate * 1000)
+      .tz(timezone)
+      .format('MM/DD/YY'),
+    completionDate: moment(latestInspection.completionDate * 1000)
+      .tz(timezone)
+      .format('MM/DD/YY'),
     score: `${score}%`,
     inspectionReportURL: latestInspection.inspectionReportURL,
     alert: alert || undefined,
