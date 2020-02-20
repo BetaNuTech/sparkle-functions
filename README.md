@@ -52,7 +52,6 @@ AWS_S3_SECRET_ACCESS_KEY=123
 
 8. Add environment variables to production for HTTP endpoints:
   - inspectionPdfReport
-  - inspectionPdfReportStaging
 
 **To add their ENV variables:**
   - In the Google Cloud Platform Console, select Cloud Functions from the left menu.

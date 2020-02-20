@@ -46,6 +46,7 @@ jobs:
           AWS_S3_SECRET_ACCESS_KEY: ${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}
           FIREBASE_TEST_DB_URL: ${{ secrets.STAGING_FIREBASE_TEST_DB_URL }}
           FIREBASE_STORAGE_BUCKET: ${{ secrets.STAGING_FIREBASE_STORAGE_BUCKET }}
+          CLIENT_DOMAIN: https://staging.sapphire-standard.com
 
       - name: Run End to End Production Tests
         if: github.ref == 'refs/heads/production'
@@ -59,6 +60,7 @@ jobs:
           AWS_S3_SECRET_ACCESS_KEY: ${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}
           FIREBASE_TEST_DB_URL: ${{ secrets.PRODUCTION_FIREBASE_TEST_DB_URL }}
           FIREBASE_STORAGE_BUCKET: ${{ secrets.PRODUCTION_FIREBASE_STORAGE_BUCKET }}
+          CLIENT_DOMAIN: https://sparkle-production.herokuapp.com
 
   deploy:
     needs: test
@@ -94,6 +96,7 @@ jobs:
           AWS_S3_SECRET_ACCESS_KEY: ${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}
           FIREBASE_TEST_DB_URL: ${{ secrets.STAGING_FIREBASE_TEST_DB_URL }}
           FIREBASE_STORAGE_BUCKET: ${{ secrets.STAGING_FIREBASE_STORAGE_BUCKET }}
+          CLIENT_DOMAIN: https://staging.sapphire-standard.com
         run: ./scripts/deploy-functions.sh production
 
       - name: Deploy production functions
@@ -109,4 +112,5 @@ jobs:
           AWS_S3_SECRET_ACCESS_KEY: ${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}
           FIREBASE_TEST_DB_URL: ${{ secrets.PRODUCTION_FIREBASE_TEST_DB_URL }}
           FIREBASE_STORAGE_BUCKET: ${{ secrets.PRODUCTION_FIREBASE_STORAGE_BUCKET }}
+          CLIENT_DOMAIN: https://sparkle-production.herokuapp.com
         run: ./scripts/deploy-functions.sh production

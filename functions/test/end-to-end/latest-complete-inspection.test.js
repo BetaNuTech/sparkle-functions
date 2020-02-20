@@ -1,5 +1,5 @@
 const { expect } = require('chai');
-const moment = require('moment');
+const moment = require('moment-timezone');
 const request = require('supertest');
 const uuid = require('../../test-helpers/uuid');
 const createApp = require('../../inspections/get-latest-completed');
@@ -9,6 +9,7 @@ const { cleanDb } = require('../../test-helpers/firebase');
 const { db } = require('./setup');
 
 const TEMP_NAME_LOOKUP = 'Blueshift Product Inspection';
+const DEFAULT_TZ = 'America/New_York';
 const AGE = timeMocking.age;
 
 describe('Latest Complete Inspection', () => {
@@ -97,12 +98,12 @@ describe('Latest Complete Inspection', () => {
     const oldestInspection = mocking.createInspection(
       Object.assign({ creationDate: oldest }, inspectionBase)
     );
-    const expectedCreationDate = moment(expected.creationDate * 1000).format(
-      'MM/DD/YY'
-    );
-    const expectedCompletionDate = moment(
-      expected.completionDate * 1000
-    ).format('MM/DD/YY');
+    const expectedCreationDate = moment(expected.creationDate * 1000)
+      .tz(DEFAULT_TZ)
+      .format('MM/DD/YY');
+    const expectedCompletionDate = moment(expected.completionDate * 1000)
+      .tz(DEFAULT_TZ)
+      .format('MM/DD/YY');
     const expectedScore = `${expected.score}%`;
     const expectedUrl = expected.inspectionReportURL;
 
@@ -382,17 +383,17 @@ describe('Latest Complete Inspection', () => {
       {
         data: [inspections.latest, inspections.middle, inspections.oldest],
         query: inspections.middle.completionDate,
-        expected: moment(inspections.middle.completionDate * 1000).format(
-          'MM/DD/YY'
-        ),
+        expected: moment(inspections.middle.completionDate * 1000)
+          .tz(DEFAULT_TZ)
+          .format('MM/DD/YY'),
         message: 'found latest by date created before a date',
       },
       {
         data: [inspections.latest, inspections.middle, inspections.oldest],
         query: inspections.latest.completionDate,
-        expected: moment(inspections.middle.completionDate * 1000).format(
-          'MM/DD/YY'
-        ),
+        expected: moment(inspections.middle.completionDate * 1000)
+          .tz(DEFAULT_TZ)
+          .format('MM/DD/YY'),
         message: 'allow latest to also be latest by date',
       },
     ];
@@ -434,9 +435,13 @@ describe('Latest Complete Inspection', () => {
 function createOverdueAlertMsg(inspection) {
   return `Blueshift Product Inspection OVERDUE (Last: ${moment(
     inspection.creationDate * 1000
-  ).format('MM/DD/YY')}, Completed: ${moment(
+  )
+    .tz(DEFAULT_TZ)
+    .format('MM/DD/YY')}, Completed: ${moment(
     (inspection.completionDate + 1000) * 1000
-  ).format('MM/DD/YY')}).`;
+  )
+    .tz(DEFAULT_TZ)
+    .format('MM/DD/YY')}).`;
 }
 
 function create3DayMaxAlert() {
