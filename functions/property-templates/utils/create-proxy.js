@@ -5,7 +5,7 @@
  * @return {Object} - template copy
  */
 module.exports = function createProxy(template) {
-  const templateCopy = Object.create(null);
+  const templateCopy = {};
 
   // Required attributes
   templateCopy.name = template.name || '';

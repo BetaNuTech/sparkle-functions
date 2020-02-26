@@ -13,7 +13,7 @@ module.exports = function createOnTemplatesWriteHandler(db) {
   assert(Boolean(db), 'has firebase admin database instance');
 
   return async (change, event) => {
-    const updates = Object.create(null);
+    const updates = {};
     const { propertyId } = event.params;
 
     if (!propertyId) {

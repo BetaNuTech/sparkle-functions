@@ -77,7 +77,7 @@ describe('Utils | Source Notifications Templates', () => {
 
       for (let k = 0; k < values.length; k++) {
         const value = values[k];
-        const data = Object.create(null);
+        const data = {};
 
         if (typeof value === 'object') {
           Object.assign(data, value);

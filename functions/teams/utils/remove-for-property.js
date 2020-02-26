@@ -29,7 +29,7 @@ module.exports = async function removeForProperty(
     'has user teams topic'
   );
 
-  const updates = Object.create(null);
+  const updates = {};
   const publisher = pubsubClient.topic(userTeamsTopic).publisher();
 
   try {

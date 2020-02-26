@@ -10,7 +10,7 @@ const LOG_PREFIX = 'properties: on-write:';
  */
 module.exports = function createOnWriteHandler(db) {
   return async (change, event) => {
-    const updates = Object.create(null);
+    const updates = {};
     const { propertyId } = event.params;
 
     if (!propertyId) {

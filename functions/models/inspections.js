@@ -233,7 +233,7 @@ module.exports = modelSetup({
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
     );
-    const updates = Object.create(null);
+    const updates = {};
     let { inspection = null } = options;
     const { dryRun = false } = options;
 
@@ -293,7 +293,7 @@ module.exports = modelSetup({
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
     );
-    const updates = Object.create(null);
+    const updates = {};
     let { inspection = null } = options;
     const { dryRun = false } = options;
 
@@ -386,7 +386,7 @@ module.exports = modelSetup({
       'has destination property id'
     );
 
-    const updates = Object.create(null);
+    const updates = {};
     let { inspection = null } = options;
     const { dryRun = false } = options;
 

@@ -41,7 +41,7 @@ module.exports = {
     }
 
     // Template added or updated
-    const upsertData = Object.create(null);
+    const upsertData = {};
 
     // Required attributes
     upsertData.name = after.name;
@@ -75,7 +75,7 @@ module.exports = {
   async removeCategory(db, categoryId) {
     assert(categoryId && typeof categoryId === 'string', 'has category ID');
 
-    const updates = Object.create(null);
+    const updates = {};
 
     try {
       const templatesListItemsInCategory = await db
@@ -125,7 +125,7 @@ module.exports = {
       'has existing templates ids array'
     );
 
-    const updates = Object.create(null);
+    const updates = {};
 
     try {
       const templatesListIds = await utils.fetchRecordIds(db, '/templatesList');

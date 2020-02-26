@@ -10,7 +10,7 @@ const LOG_PREFIX = 'inspections: on-write:';
  */
 module.exports = function createOnWriteHandler(db) {
   return async function onWriteHandler(change, event) {
-    const updates = Object.create(null);
+    const updates = {};
     const { inspectionId } = event.params;
 
     if (!inspectionId) {

@@ -69,7 +69,7 @@ module.exports = async function processMeta(db, propertyId) {
       propertyId,
       inspections,
       deficientItems: deficientItemsCurrent,
-      updates: Object.create(null),
+      updates: {},
     });
 
     // Atomically write each metadata update

@@ -31,7 +31,7 @@ module.exports = function createOnDiStateUpdateHandler(
     .publisher();
 
   return async (change, event) => {
-    const updates = Object.create(null);
+    const updates = {};
     const { propertyId, itemId: deficientItemId } = event.params;
 
     assert(Boolean(propertyId), 'has property ID');

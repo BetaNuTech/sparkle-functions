@@ -14,7 +14,7 @@ module.exports = function createOnDiToggleArchiveUpdateHandler(db) {
   assert(Boolean(db), 'has firebase admin database reference');
 
   return async (change, event) => {
-    const updates = Object.create(null);
+    const updates = {};
     const { propertyId, deficientItemId } = event.params;
 
     assert(Boolean(propertyId), 'has property ID');

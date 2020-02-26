@@ -441,12 +441,12 @@ describe('Deficient Items Create, Update, and Delete', () => {
       if (typeof expected === 'object') {
         expect(actual).to.deep.equal(
           expected,
-          `updated DI proxy object attribute ${diAttr}`
+          `updated DI proxy object attribute "${diAttr}"`
         );
       } else {
         expect(actual).to.equal(
           expected,
-          `updated DI proxy attribute ${diAttr}`
+          `updated DI proxy attribute "${diAttr}"`
         );
       }
 

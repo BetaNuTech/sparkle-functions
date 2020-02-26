@@ -9,7 +9,7 @@ if (!state) throw Error('DI state not provided');
     data: Buffer.from(`${propertyId}/${deficientItemId}/state/${state}`),
   };
 
-  await test.wrap(cloudFunctions.trelloCommentsForDefItemStateUpdatesStaging)(
+  await test.wrap(cloudFunctions.trelloCommentsForDefItemStateUpdates)(
     pubSubMessage
   );
 

@@ -19,13 +19,12 @@ module.exports = (db, auth, settings) => {
 
   const app = express();
   const { inspectionUrl } = settings;
+  app.use(bodyParser.json(), cors({ origin: true, credentials: true }));
 
   // Inspection property
   // reassignment endpoint
   app.patch(
     '/v0/inspections/:inspectionId',
-    cors(),
-    bodyParser.json(),
     authUser(db, auth, true), // admin only
     inspections.api.createPatchProperty(db)
   );
@@ -33,7 +32,6 @@ module.exports = (db, auth, settings) => {
   // Generate Inspection PDF report
   app.get(
     '/v0/inspections/:inspection/pdf-report',
-    cors(),
     authUser(db, auth),
     inspections.api.createGetInspectionPDF(db, inspectionUrl)
   );
