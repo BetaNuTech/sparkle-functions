@@ -26,7 +26,7 @@ const pubsubClient = new PubSub({
 
 // Send API version
 exports.latestVersion = functions.https.onRequest((request, response) =>
-  response.status(200).send({ ios: '1.5.3' })
+  response.status(200).send({ ios: '1.5.5' })
 );
 
 // Latest Completed Inspections
