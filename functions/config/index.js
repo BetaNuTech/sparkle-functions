@@ -1,4 +1,4 @@
-const s3Config = require('./s3.json');
+const s3Config = require('./s3');
 const inspectionItems = require('./inspection-items');
 const deficientItems = require('./deficient-items');
 const firebaseConfig = require('./firebase');
@@ -14,9 +14,6 @@ if (env === 'development') {
 } else {
   // Production (default) settings
 }
-
-s3Config.accessKeyId = process.env.AWS_S3_ACCESS_KEY_ID;
-s3Config.secretAccessKey = process.env.AWS_S3_SECRET_ACCESS_KEY;
 
 module.exports = Object.assign(
   { env },
