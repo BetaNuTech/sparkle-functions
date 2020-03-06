@@ -17,6 +17,7 @@ const createRouter = require('./router');
 const { firebase: firebaseConfig } = config;
 const defaultApp = admin.initializeApp(firebaseConfig);
 const db = defaultApp.database();
+const fs = admin.firestore();
 const auth = admin.auth();
 const storage = admin.storage();
 const messaging = admin.messaging();
@@ -174,7 +175,7 @@ exports.deficientItemsUnarchiving = functions.database
 // Template onWrite
 exports.templateWrite = functions.database
   .ref('/templates/{templateId}')
-  .onWrite(templates.createOnWriteWatcher(db));
+  .onWrite(templates.createOnWriteWatcher(db, fs));
 
 // Inspection updatedLastDate onWrite
 exports.inspectionUpdatedLastDateWrite = functions.database
@@ -194,7 +195,7 @@ exports.inspectionDelete = functions.database
 // Template Category Delete
 exports.templateCategoryDelete = functions.database
   .ref('/templateCategories/{categoryId}')
-  .onDelete(templateCategories.createOnDeleteWatcher(db));
+  .onDelete(templateCategories.createOnDeleteWatcher(db, fs));
 
 // Create Slack Notifications From Source
 exports.onCreateSourceSlackNotification = functions.database
@@ -240,7 +241,8 @@ exports.propertyMetaSync = properties.pubsub.createSyncMeta(
 exports.templatesListSync = templates.pubsub.createSyncTemplatesList(
   'templates-sync',
   functions.pubsub,
-  db
+  db,
+  fs
 );
 
 exports.propertyTemplatesListSync = templates.pubsub.createSyncPropertyTemplatesList(

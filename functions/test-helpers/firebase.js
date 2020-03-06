@@ -37,6 +37,36 @@ module.exports = {
   },
 
   /**
+   * Create a Firestore stub for testing
+   * @param  {Object} config
+   * @param  {Object} dataSnapshot
+   * @param  {Object} childConf
+   * @return {Object} - stub
+   */
+  createFirestoreStub(config = {}, dataSnapshot = {}, childConf = {}) {
+    const childWrapper = Object.assign(
+      {
+        collection: () => childWrapper,
+        doc: () => childWrapper,
+        set: () => Promise.resolve(),
+        get: () => Promise.resolve(dataSnapshot),
+        add: () => Promise.resolve(),
+        update: () => Promise.resolve(),
+        delete: () => Promise.resolve(true),
+      },
+      childConf
+    );
+
+    return Object.assign(
+      {
+        _isTestStub: true,
+        collection: () => childWrapper,
+      },
+      config
+    );
+  },
+
+  /**
    * Create stub for PubSub Subscriber
    * @return {Object} - Wrapper for `firebase.pubsub.topic.onPublish()`
    */
