@@ -1,17 +1,27 @@
 const { expect } = require('chai');
-const { createDatabaseStub } = require('../../test-helpers/firebase');
+const {
+  createDatabaseStub,
+  createFirestoreStub,
+} = require('../../test-helpers/firebase');
 const { write, removeCategory, removeOrphans } = require('./list');
 
 describe('Templates List', () => {
   describe('Writing a template change', () => {
     it('should return a promise', () => {
-      const actual = write(createDatabaseStub().value(), 'test', {}, null);
+      const actual = write(
+        createDatabaseStub().value(),
+        createFirestoreStub(),
+        'test',
+        {},
+        null
+      );
       expect(actual).to.be.an.instanceof(Promise);
     });
 
     it('should resolve `null` on template deletion', () =>
       write(
         createDatabaseStub().value(),
+        createFirestoreStub(),
         'test',
         { name: 'test' },
         null // removed
@@ -20,6 +30,7 @@ describe('Templates List', () => {
     it('should reject template without name', () =>
       write(
         createDatabaseStub().value(),
+        createFirestoreStub(),
         'test',
         { name: 'before' },
         { name: '' } // New template has no name
@@ -36,6 +47,7 @@ describe('Templates List', () => {
       ].map((expected, i) =>
         write(
           createDatabaseStub().value(),
+          createFirestoreStub(),
           `test-${i}`,
           { name: 'test' }, // before
           expected // update
@@ -51,7 +63,13 @@ describe('Templates List', () => {
   describe('Removing a category', () => {
     it('should return a promise', () => {
       const actual = removeCategory(
-        createDatabaseStub({}, { exists: () => false }).value(),
+        createDatabaseStub(
+          {},
+          {
+            exists: () => false,
+          }
+        ).value(),
+        createFirestoreStub(),
         'test'
       );
       expect(actual).to.be.an.instanceof(Promise);
@@ -60,6 +78,7 @@ describe('Templates List', () => {
     it('should resolve an update hash', () =>
       removeCategory(
         createDatabaseStub({}, { exists: () => true, val: () => ({}) }).value(),
+        createFirestoreStub(),
         'test'
       ).then(actual => expect(actual).to.be.an('object')));
   });
@@ -68,6 +87,7 @@ describe('Templates List', () => {
     it('should return a promise', () => {
       const actual = removeOrphans(
         createDatabaseStub().value(),
+        createFirestoreStub(),
         ['test'],
         stupAdminUtils({}, ['test'])
       );
@@ -77,6 +97,7 @@ describe('Templates List', () => {
     it('should resolve an update hash', () =>
       removeOrphans(
         createDatabaseStub().value(),
+        createFirestoreStub(),
         ['test'],
         stupAdminUtils({}, ['test'])
       ).then(actual => expect(actual).to.be.an('object')));
