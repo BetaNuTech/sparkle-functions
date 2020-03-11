@@ -1,7 +1,7 @@
 const { expect } = require('chai');
 const uuid = require('../../test-helpers/uuid');
 const { cleanDb, findStorageFile } = require('../../test-helpers/firebase');
-const { db, test, storage, cloudFunctions } = require('./setup');
+const { db, test, storage, cloudFunctions } = require('../setup');
 
 const SRC_PROFILE_IMG = 'test-image.jpg';
 const PROP_UPLOAD_DIR = 'propertyImagesTest';

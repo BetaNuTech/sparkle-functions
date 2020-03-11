@@ -4,7 +4,7 @@ const uuid = require('../../test-helpers/uuid');
 const mocking = require('../../test-helpers/mocking');
 const timeMocking = require('../../test-helpers/time');
 const { cleanDb } = require('../../test-helpers/firebase');
-const { db, test, cloudFunctions } = require('./setup');
+const { db, test, cloudFunctions } = require('../setup');
 
 const REQUIRED_ACTIONS_VALUES = config.deficientItems.requiredActionStates;
 const OVERDUE_ELIGIBLE_STATES = config.deficientItems.overdueEligibleStates;
