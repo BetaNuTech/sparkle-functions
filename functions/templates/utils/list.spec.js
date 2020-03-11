@@ -67,9 +67,10 @@ describe('Templates List', () => {
           {},
           {
             exists: () => false,
+            val: () => ({}),
           }
         ).value(),
-        createFirestoreStub(),
+        createFirestoreStub({}, { docs: { forEach: () => {} } }),
         'test'
       );
       expect(actual).to.be.an.instanceof(Promise);
@@ -78,7 +79,7 @@ describe('Templates List', () => {
     it('should resolve an update hash', () =>
       removeCategory(
         createDatabaseStub({}, { exists: () => true, val: () => ({}) }).value(),
-        createFirestoreStub(),
+        createFirestoreStub({}, { docs: { forEach: () => {} } }),
         'test'
       ).then(actual => expect(actual).to.be.an('object')));
   });
@@ -87,7 +88,6 @@ describe('Templates List', () => {
     it('should return a promise', () => {
       const actual = removeOrphans(
         createDatabaseStub().value(),
-        createFirestoreStub(),
         ['test'],
         stupAdminUtils({}, ['test'])
       );
@@ -97,7 +97,6 @@ describe('Templates List', () => {
     it('should resolve an update hash', () =>
       removeOrphans(
         createDatabaseStub().value(),
-        createFirestoreStub(),
         ['test'],
         stupAdminUtils({}, ['test'])
       ).then(actual => expect(actual).to.be.an('object')));

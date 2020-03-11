@@ -33,7 +33,7 @@ module.exports = function createSyncTemplatesListSubscriber(
       const templateIds = await adminUtils.fetchRecordIds(db, '/templates');
 
       // Cleanup templatesList items without a source template
-      await list.removeOrphans(db, fs, templateIds);
+      await list.removeOrphans(db, templateIds);
     } catch (err) {
       log.error(`${PREFIX} ${topic} | ${err}`);
     }

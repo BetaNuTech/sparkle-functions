@@ -48,6 +48,8 @@ module.exports = {
       {
         collection: () => childWrapper,
         doc: () => childWrapper,
+        batch: () => childWrapper,
+        where: () => childWrapper,
         set: () => Promise.resolve(),
         get: () => Promise.resolve(dataSnapshot),
         add: () => Promise.resolve(),
@@ -60,8 +62,8 @@ module.exports = {
     return Object.assign(
       {
         _isTestStub: true,
-        collection: () => childWrapper,
       },
+      childWrapper,
       config
     );
   },
