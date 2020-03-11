@@ -3,6 +3,7 @@ const modelSetup = require('./utils/model-setup');
 
 const PREFIX = 'models: templates:';
 const LIST_DB = '/templatesList';
+const TEMPLATES_DB = '/templates';
 const TEMPLATE_COLLECTION = 'templates';
 
 module.exports = modelSetup({
@@ -37,6 +38,25 @@ module.exports = modelSetup({
   },
 
   /**
+   * Lookup all templates
+   * associated with a category
+   * @param  {firebaseAdmin.database} db - Realtime DB Instance
+   * @param  {String} categoryId
+   * @return {Promise}
+   */
+  realtimeQueryByCategory(db, categoryId) {
+    assert(
+      categoryId && typeof categoryId === 'string',
+      `${PREFIX} has category id`
+    );
+    return db
+      .ref(TEMPLATES_DB)
+      .orderByChild('category')
+      .equalTo(categoryId)
+      .once('value');
+  },
+
+  /**
    * Lookup all template lists
    * associated with a category
    * @param  {firebaseAdmin.database} db - Realtime DB Instance
@@ -53,6 +73,22 @@ module.exports = modelSetup({
       .orderByChild('category')
       .equalTo(categoryId)
       .once('value');
+  },
+
+  /**
+   * Bulk update template
+   * @param  {firebaseAdmin.database} db - Realtime DB Instance
+   * @param  {Object} updates
+   * @return {Promise}
+   */
+  realtimeBatchUpdate(db, updates) {
+    assert(typeof updates === 'object', 'has updates hash');
+
+    if (!updates || !Object.keys(updates).length) {
+      return Promise.resolve();
+    }
+
+    return db.ref(TEMPLATES_DB).update(updates);
   },
 
   /**

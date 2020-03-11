@@ -1,6 +1,7 @@
 const assert = require('assert');
 const log = require('../utils/logger');
 const templatesList = require('../templates/utils/list');
+const templatesModel = require('../models/templates');
 const propertyTemplates = require('../property-templates');
 
 const PREFIX = 'template-categories: on-delete:';
@@ -22,8 +23,6 @@ module.exports = function createOnDeleteHandler(db, fs) {
 
   /**
    * Handler for the deletion of a Template Category
-   *
-   *
    * @param {functions.database.DataSnapshot} templateCategorySnapshot
    * @return {Promise}
    */
@@ -39,11 +38,10 @@ module.exports = function createOnDeleteHandler(db, fs) {
     log.info(`${PREFIX} category ID: ${categoryId}`);
 
     // Lookup associated templates
-    const templatesInCategory = await db
-      .ref('/templates')
-      .orderByChild('category')
-      .equalTo(categoryId)
-      .once('value');
+    const templatesInCategory = await templatesModel.realtimeQueryByCategory(
+      db,
+      categoryId
+    );
 
     // Category has no associated templates
     if (!templatesInCategory.exists()) {
@@ -55,15 +53,12 @@ module.exports = function createOnDeleteHandler(db, fs) {
     // associated templates
     const templateIds = Object.keys(templatesInCategory.val());
     templateIds.forEach(tempId => {
-      updates[`/templates/${tempId}/category`] = null;
-      log.info(`${PREFIX} disassociating template: ${tempId}`);
+      updates[`/${tempId}/category`] = null;
     });
 
     try {
       // Write all template updates to database
-      if (Object.keys(updates).length) {
-        await db.ref().update(updates);
-      }
+      await templatesModel.realtimeBatchUpdate(db, updates);
 
       // Remove each template's proxy record `category`
       for (let i = 0; i < templateIds.length; i++) {
