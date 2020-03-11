@@ -17,11 +17,11 @@ process.env.NODE_ENV = 'test';
 
 const sinon = require('sinon');
 const PubSub = require('@google-cloud/pubsub');
-const CONFIG = require('../../config');
+const CONFIG = require('../config');
 
 const { firebase: testConfig } = CONFIG;
 const test = require('firebase-functions-test')(testConfig); // eslint-disable-line
-const s3Client = require('../../utils/s3-client');
+const s3Client = require('../utils/s3-client');
 
 admin.initializeApp(testConfig);
 const db = admin.database();
@@ -68,7 +68,7 @@ module.exports = {
   storage,
   messaging,
   uid: testConfig.databaseAuthVariableOverride.uid,
-  cloudFunctions: require('../../index'), // eslint-disable-line
+  cloudFunctions: require('../index'), // eslint-disable-line
 
   /**
    * Delete an inspection PDF from S3 Bucket

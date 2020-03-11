@@ -4,7 +4,7 @@ const nock = require('nock');
 
 const slackEventsApiHandler = require('../../slack/create-slack-events-api-handler');
 const { cleanDb } = require('../../test-helpers/firebase');
-const { db, uid: SERVICE_ACCOUNT_ID } = require('./setup');
+const { db, uid: SERVICE_ACCOUNT_ID } = require('../setup');
 
 const SLACK_CREDENTIAL_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/slack/organization`;
 const SLACK_INTEGRATION_DB_PATH = '/integrations/slack/organization';

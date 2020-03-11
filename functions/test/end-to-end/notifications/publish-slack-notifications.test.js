@@ -7,7 +7,7 @@ const {
   test,
   cloudFunctions,
   uid: SERVICE_ACCOUNT_ID,
-} = require('../setup');
+} = require('../../setup');
 
 const SLACK_CHANNEL = 'development';
 const SLACK_CREDENTIAL_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/slack/organization`;

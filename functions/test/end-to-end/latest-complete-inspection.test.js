@@ -6,7 +6,7 @@ const createApp = require('../../inspections/get-latest-completed');
 const mocking = require('../../test-helpers/mocking');
 const timeMocking = require('../../test-helpers/time');
 const { cleanDb } = require('../../test-helpers/firebase');
-const { db } = require('./setup');
+const { db } = require('../setup');
 
 const TEMP_NAME_LOOKUP = 'Blueshift Product Inspection';
 const DEFAULT_TZ = 'America/New_York';

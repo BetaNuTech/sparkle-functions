@@ -8,7 +8,7 @@ const {
   stubFirbaseAuth,
   createPubSubStub,
 } = require('../../test-helpers/firebase');
-const { db } = require('./setup');
+const { db } = require('../setup');
 
 const USER_ID = uuid();
 const USER = { admin: true, corporate: true };
