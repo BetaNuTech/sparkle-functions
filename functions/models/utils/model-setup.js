@@ -8,8 +8,8 @@ const assert = require('assert');
  */
 module.exports = target =>
   new Proxy(target, {
-    apply(target, thisArg, args) {
+    apply(tar, thisArg, args) {
       assert(Boolean(args[0]), 'has firebase admin database reference');
-      return target.apply(thisArg, args);
+      return tar.apply(thisArg, args);
     },
   });
