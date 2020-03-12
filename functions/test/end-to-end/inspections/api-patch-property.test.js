@@ -5,7 +5,7 @@ const bodyParser = require('body-parser');
 const handler = require('../../../inspections/api/patch-property');
 const uuid = require('../../../test-helpers/uuid');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { db } = require('../setup');
+const { db } = require('../../setup');
 const mocking = require('../../../test-helpers/mocking');
 
 const PROPERTY_ID = uuid();

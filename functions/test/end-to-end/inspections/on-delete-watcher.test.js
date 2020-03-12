@@ -3,7 +3,7 @@ const { expect } = require('chai');
 const uuid = require('../../../test-helpers/uuid');
 const mocking = require('../../../test-helpers/mocking');
 const { cleanDb, findStorageFile } = require('../../../test-helpers/firebase');
-const { db, test, storage, cloudFunctions } = require('../setup');
+const { db, test, storage, cloudFunctions } = require('../../setup');
 
 const SRC_UPLOAD_IMG = 'test-image.jpg';
 const SRC_UPLOAD_IMG_DIR = path.resolve(__dirname, '..');

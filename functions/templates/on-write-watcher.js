@@ -1,3 +1,4 @@
+const assert = require('assert');
 const log = require('../utils/logger');
 const propertyTemplates = require('../property-templates');
 const templatesList = require('./utils/list');
@@ -6,10 +7,14 @@ const PREFIX = 'templates: on-write:';
 
 /**
  * Factory for template on write handler
- * @param  {firebaseAdmin.database} - Firebase Admin DB instance
+ * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+ * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
  * @return {Function} - property onWrite handler
  */
-module.exports = function createOnWriteWatcher(db) {
+module.exports = function createOnWriteWatcher(db, fs) {
+  assert(Boolean(db), 'has realtime DB instance');
+  assert(Boolean(fs), 'has firestore DB instance');
+
   return async (change, event) => {
     const updates = {};
     const { templateId } = event.params;
@@ -23,9 +28,9 @@ module.exports = function createOnWriteWatcher(db) {
     const afterData = change.after.val();
 
     try {
-      await templatesList.write(db, templateId, beforeData, afterData);
-    } catch (e) {
-      log.error(`${PREFIX} ${e}`);
+      await templatesList.write(db, fs, templateId, beforeData, afterData);
+    } catch (err) {
+      log.error(`${PREFIX} Failed to sync proxies | ${err}`);
     }
 
     // Delete template proxies

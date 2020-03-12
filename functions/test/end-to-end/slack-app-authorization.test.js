@@ -5,7 +5,7 @@ const nock = require('nock');
 const slackAppAuthEndpoint = require('../../slack/on-create-request-handler');
 const uuid = require('../../test-helpers/uuid');
 const { cleanDb, stubFirbaseAuth } = require('../../test-helpers/firebase');
-const { db, uid: SERVICE_ACCOUNT_ID } = require('./setup');
+const { db, uid: SERVICE_ACCOUNT_ID } = require('../setup');
 const { slackApp } = require('../../config');
 
 const USER_ID = uuid();

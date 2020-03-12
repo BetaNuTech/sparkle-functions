@@ -10,7 +10,7 @@ const {
   test,
   cloudFunctions,
   uid: SERVICE_ACCOUNT_ID,
-} = require('./setup');
+} = require('../setup');
 
 const PROPERTY_ID = uuid();
 const DEFICIENT_ITEM_ID = uuid();
