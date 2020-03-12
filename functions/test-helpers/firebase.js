@@ -53,6 +53,7 @@ module.exports = {
         set: () => Promise.resolve(),
         get: () => Promise.resolve(dataSnapshot),
         add: () => Promise.resolve(),
+        create: () => Promise.resolve(),
         update: () => Promise.resolve(),
         delete: () => Promise.resolve(true),
       },
