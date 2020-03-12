@@ -27,7 +27,6 @@ module.exports = function createOnDeleteHandler(db, fs) {
    * @return {Promise}
    */
   return async (templateCategorySnapshot, context) => {
-    const updates = {};
     const { categoryId } = context.params;
 
     if (!categoryId) {
@@ -38,10 +37,17 @@ module.exports = function createOnDeleteHandler(db, fs) {
     log.info(`${PREFIX} category ID: ${categoryId}`);
 
     // Lookup associated templates
-    const templatesInCategory = await templatesModel.realtimeQueryByCategory(
-      db,
-      categoryId
-    );
+    let templatesInCategory = null;
+    try {
+      templatesInCategory = await templatesModel.realtimeQueryByCategory(
+        db,
+        categoryId
+      );
+    } catch (err) {
+      log.error(
+        `${PREFIX} realtime template lookup by category failed | ${err}`
+      );
+    }
 
     // Category has no associated templates
     if (!templatesInCategory.exists()) {
@@ -51,6 +57,7 @@ module.exports = function createOnDeleteHandler(db, fs) {
 
     // Create update hash for all
     // associated templates
+    const updates = {};
     const templateIds = Object.keys(templatesInCategory.val());
     templateIds.forEach(tempId => {
       updates[`/${tempId}/category`] = null;
@@ -62,24 +69,24 @@ module.exports = function createOnDeleteHandler(db, fs) {
 
       // Remove each template's proxy record `category`
       for (let i = 0; i < templateIds.length; i++) {
-        // updates[`/propertyTemplatesList/**/${templateIds[i]}/category`] =
-        //   'removed';
         await propertyTemplates.remove(db, templateIds[i], '/category');
       }
     } catch (err) {
       log.error(
-        `${PREFIX} Failed to disassociate template relationship | ${err}`
+        `${PREFIX} Failed to disassociate realtime template relationship | ${err}`
       );
+      return;
     }
 
     // Remove Realtime DB associations in /templatesList
     // Remove Firestore DB associations in /templates
     try {
       await templatesList.removeCategory(db, fs, categoryId);
-    } catch (e) {
-      log.error(e);
+    } catch (err) {
+      log.error(`${PREFIX} Failed to update template proxies ${err}`);
+      return;
     }
 
-    // return updates;
+    log.info(`${PREFIX} template category associations delete successful`);
   };
 };

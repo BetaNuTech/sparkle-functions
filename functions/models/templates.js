@@ -8,6 +8,20 @@ const TEMPLATE_COLLECTION = 'templates';
 
 module.exports = modelSetup({
   /**
+   * Lookup Template
+   * @param  {firebaseAdmin.database} db - Realtime DB Instance
+   * @param  {String} templateId
+   * @return {Promise}
+   */
+  realtimeFindRecord(db, templateId) {
+    assert(
+      templateId && typeof templateId === 'string',
+      `${PREFIX} has template id`
+    );
+    return db.ref(`${TEMPLATES_DB}/${templateId}`).once('value');
+  },
+
+  /**
    * Remove Template List proxy
    * @param  {firebaseAdmin.database} db - Realtime DB Instance
    * @param  {String} templateId
@@ -19,6 +33,22 @@ module.exports = modelSetup({
       `${PREFIX} has template id`
     );
     return db.ref(`${LIST_DB}/${templateId}`).remove();
+  },
+
+  /**
+   * Add/update Template
+   * @param  {firebaseAdmin.database} db - Realtime DB Instance
+   * @param  {String} templateId
+   * @param  {Object} data
+   * @return {Promise}
+   */
+  realtimeUpsertRecord(db, templateId, data) {
+    assert(
+      templateId && typeof templateId === 'string',
+      `${PREFIX} has template id`
+    );
+    assert(data && typeof data === 'object', `${PREFIX} has upsert data`);
+    return db.ref(`${TEMPLATES_DB}/${templateId}`).update(data);
   },
 
   /**
@@ -105,6 +135,23 @@ module.exports = modelSetup({
     }
 
     return db.ref(LIST_DB).update(updates);
+  },
+
+  /**
+   * Lookup Firestore Template
+   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {String} templateId
+   * @return {Promise}
+   */
+  firestoreFindRecord(fs, templateId) {
+    assert(
+      templateId && typeof templateId === 'string',
+      `${PREFIX} has template id`
+    );
+    return fs
+      .collection(TEMPLATE_COLLECTION)
+      .doc(templateId)
+      .get();
   },
 
   /**
@@ -200,7 +247,7 @@ module.exports = modelSetup({
     }
 
     // Apply each templates' update to batch
-    Object.key(updates).forEach(id => {
+    Object.keys(updates).forEach(id => {
       const update = updates[id];
       assert(typeof update === 'object', `has update hash for "${id}"`);
       const templateDoc = templatesRef.doc(id);
@@ -208,5 +255,25 @@ module.exports = modelSetup({
     });
 
     return batch.commit();
+  },
+
+  /**
+   * Lookup all template documents snapshots
+   * @param  {firebaseAdmin.firestore} fs
+   * @return {Promise} - resolves {DocumentSnapshot[]}
+   */
+  firestoreFindAll(fs) {
+    return fs
+      .collection(TEMPLATE_COLLECTION)
+      .get()
+      .then(collectionSnap => {
+        const result = [];
+
+        collectionSnap.docs.forEach(docSnap => {
+          result.push(docSnap);
+        });
+
+        return result;
+      });
   },
 });

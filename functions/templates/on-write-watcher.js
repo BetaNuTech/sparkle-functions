@@ -29,8 +29,8 @@ module.exports = function createOnWriteWatcher(db, fs) {
 
     try {
       await templatesList.write(db, fs, templateId, beforeData, afterData);
-    } catch (e) {
-      log.error(`${PREFIX} ${e}`);
+    } catch (err) {
+      log.error(`${PREFIX} Failed to sync proxies | ${err}`);
     }
 
     // Delete template proxies

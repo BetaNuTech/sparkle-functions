@@ -1,4 +1,5 @@
 const assert = require('assert');
+const FieldValue = require('firebase-admin').firestore.FieldValue;
 const adminUtils = require('../../utils/firebase-admin');
 const templatesModel = require('../../models/templates');
 
@@ -65,7 +66,15 @@ module.exports = {
     }
 
     try {
-      await templatesModel.firestoreUpsertRecord(fs, templateId, after);
+      // Copy new template data
+      const fsUpsertData = { ...after };
+
+      // Ensure category removed if not found
+      if (!after.category) {
+        fsUpsertData.category = FieldValue.delete();
+      }
+
+      await templatesModel.firestoreUpsertRecord(fs, templateId, fsUpsertData);
     } catch (err) {
       throw Error(
         `${PREFIX} write: failed template list ${
