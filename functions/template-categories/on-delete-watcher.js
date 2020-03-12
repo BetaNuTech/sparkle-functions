@@ -62,8 +62,8 @@ module.exports = function createOnDeleteHandler(db, fs) {
 
       // Remove each template's proxy record `category`
       for (let i = 0; i < templateIds.length; i++) {
-        updates[`/propertyTemplatesList/**/${templateIds[i]}/category`] =
-          'removed';
+        // updates[`/propertyTemplatesList/**/${templateIds[i]}/category`] =
+        //   'removed';
         await propertyTemplates.remove(db, templateIds[i], '/category');
       }
     } catch (err) {
@@ -80,6 +80,6 @@ module.exports = function createOnDeleteHandler(db, fs) {
       log.error(e);
     }
 
-    return updates;
+    // return updates;
   };
 };

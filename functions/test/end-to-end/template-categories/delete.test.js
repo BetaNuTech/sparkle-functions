@@ -1,9 +1,9 @@
 const { expect } = require('chai');
-const uuid = require('../../test-helpers/uuid');
-const { cleanDb } = require('../../test-helpers/firebase');
-const { db, test, cloudFunctions } = require('../setup');
+const uuid = require('../../../test-helpers/uuid');
+const { cleanDb } = require('../../../test-helpers/firebase');
+const { db, test, cloudFunctions } = require('../../setup');
 
-describe('Template Category Delete', () => {
+describe('Template Categories | Delete', () => {
   afterEach(() => cleanDb(db));
 
   it('should disassociate all templates belonging to the template category', async () => {
@@ -68,7 +68,7 @@ describe('Template Category Delete', () => {
     );
   });
 
-  it('should disassociate all /templatesList belonging to the template category', async () => {
+  it('should disassociate all template list proxies belonging to the template category', async () => {
     const tmpl1Id = uuid();
     const tmpl2Id = uuid();
     const tmpl3Id = uuid();
