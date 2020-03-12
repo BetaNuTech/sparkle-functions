@@ -4,7 +4,7 @@ const nock = require('nock');
 const getAllBoardListsAppEndpoint = require('../../../trello/get-all-trello-board-lists-handler');
 const uuid = require('../../../test-helpers/uuid');
 const { cleanDb, stubFirbaseAuth } = require('../../../test-helpers/firebase');
-const { db, uid: SERVICE_ACCOUNT_ID } = require('../setup');
+const { db, uid: SERVICE_ACCOUNT_ID } = require('../../setup');
 const TRELLO_BOARDS_PAYLOAD = require('../../../test-helpers/mocks/get-all-trello-board-lists.json');
 
 const USER_ID = uuid();

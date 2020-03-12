@@ -1,6 +1,7 @@
 const assert = require('assert');
 const log = require('../utils/logger');
 const templatesList = require('../templates/utils/list');
+const templatesModel = require('../models/templates');
 const propertyTemplates = require('../property-templates');
 
 const PREFIX = 'template-categories: on-delete:';
@@ -12,21 +13,20 @@ const PREFIX = 'template-categories: on-delete:';
  * Disassociates any Templates connected to deleted
  * Template Category record
  *
- * @param  {firebaseAdmin.database} - Allow interface for tests
+ * @param  {firebaseAdmin.database} db - Allow interface for tests
+ * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
  * @return {function}
  */
-module.exports = function createOnDeleteHandler(db) {
-  assert(Boolean(db), 'has firebase admin database reference');
+module.exports = function createOnDeleteHandler(db, fs) {
+  assert(Boolean(db), 'has realtime DB reference');
+  assert(Boolean(fs), 'has firestore DB reference');
 
   /**
    * Handler for the deletion of a Template Category
-   *
-   *
    * @param {functions.database.DataSnapshot} templateCategorySnapshot
    * @return {Promise}
    */
   return async (templateCategorySnapshot, context) => {
-    const updates = {};
     const { categoryId } = context.params;
 
     if (!categoryId) {
@@ -37,11 +37,17 @@ module.exports = function createOnDeleteHandler(db) {
     log.info(`${PREFIX} category ID: ${categoryId}`);
 
     // Lookup associated templates
-    const templatesInCategory = await db
-      .ref('/templates')
-      .orderByChild('category')
-      .equalTo(categoryId)
-      .once('value');
+    let templatesInCategory = null;
+    try {
+      templatesInCategory = await templatesModel.realtimeQueryByCategory(
+        db,
+        categoryId
+      );
+    } catch (err) {
+      log.error(
+        `${PREFIX} realtime template lookup by category failed | ${err}`
+      );
+    }
 
     // Category has no associated templates
     if (!templatesInCategory.exists()) {
@@ -51,37 +57,36 @@ module.exports = function createOnDeleteHandler(db) {
 
     // Create update hash for all
     // associated templates
+    const updates = {};
     const templateIds = Object.keys(templatesInCategory.val());
     templateIds.forEach(tempId => {
-      updates[`/templates/${tempId}/category`] = null;
-      log.info(`${PREFIX} disassociating template: ${tempId}`);
+      updates[`/${tempId}/category`] = null;
     });
 
     try {
       // Write all template updates to database
-      if (Object.keys(updates).length) {
-        await db.ref().update(updates);
-      }
+      await templatesModel.realtimeBatchUpdate(db, updates);
 
       // Remove each template's proxy record `category`
       for (let i = 0; i < templateIds.length; i++) {
-        updates[`/propertyTemplatesList/**/${templateIds[i]}/category`] =
-          'removed';
         await propertyTemplates.remove(db, templateIds[i], '/category');
       }
     } catch (err) {
       log.error(
-        `${PREFIX} Failed to disassociate template relationship | ${err}`
+        `${PREFIX} Failed to disassociate realtime template relationship | ${err}`
       );
+      return;
     }
 
-    // Remove associations in /templatesList
+    // Remove Realtime DB associations in /templatesList
+    // Remove Firestore DB associations in /templates
     try {
-      await templatesList.removeCategory(db, categoryId);
-    } catch (e) {
-      log.error(e);
+      await templatesList.removeCategory(db, fs, categoryId);
+    } catch (err) {
+      log.error(`${PREFIX} Failed to update template proxies ${err}`);
+      return;
     }
 
-    return updates;
+    log.info(`${PREFIX} template category associations delete successful`);
   };
 };

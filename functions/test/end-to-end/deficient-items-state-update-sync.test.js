@@ -9,7 +9,7 @@ const {
   pubsub,
   cloudFunctions,
   uid: SERVICE_ACCOUNT_ID,
-} = require('./setup');
+} = require('../setup');
 
 const REQUIRED_ACTIONS_VALUES = config.deficientItems.requiredActionStates;
 const FOLLOW_UP_ACTION_VALUES = config.deficientItems.followUpActionStates;

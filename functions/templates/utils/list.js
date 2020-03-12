@@ -1,47 +1,52 @@
 const assert = require('assert');
-const log = require('../../utils/logger');
+const FieldValue = require('firebase-admin').firestore.FieldValue;
 const adminUtils = require('../../utils/firebase-admin');
+const templatesModel = require('../../models/templates');
 
 const PREFIX = 'templates: utils: list:';
 
 module.exports = {
   /**
-   * Handle adds, deletes, & updates to `/templatesList/*`
+   * Handle adds, deletes, & updates to
+   * templatesList proxies and Firestore records
    * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+   * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
    * @param  {String} templateId
    * @param  {Object} before - record POJO
    * @param  {Object} after - record POJO
    * @return {Promise} - resolves {Object} write result (template or null)
    */
-  write(db, templateId, before, after) {
+  async write(db, fs, templateId, before, after) {
+    assert(Boolean(db), 'has realtime DB instance');
+    assert(Boolean(fs), 'has firestore DB instance');
     assert(templateId && typeof templateId === 'string', 'has template ID');
     assert(typeof before === 'object', 'has before object');
     assert(typeof after === 'object', 'has after object');
-    const target = `/templatesList/${templateId}`;
 
     // Template removed
     if (!after) {
-      log.info(`${PREFIX} write: removing ${target}`);
+      try {
+        await templatesModel.realtimeRemoveListRecord(db, templateId);
+      } catch (err) {
+        throw Error(`${PREFIX} write: ${err}`);
+      }
 
-      return db
-        .ref(target)
-        .remove()
-        .catch(e =>
-          Promise.reject(
-            Error(`${PREFIX} write: failed to remove at ${target} ${e}`) // wrap error
-          )
-        )
-        .then(() => null);
+      try {
+        await templatesModel.firestoreRemoveRecord(fs, templateId);
+      } catch (err) {
+        throw Error(`${PREFIX} write: ${err}`);
+      }
+
+      return null;
     }
 
     if (!after.name) {
-      return Promise.reject(
-        Error(`${PREFIX} write: required template name missing`)
-      );
+      throw Error(`${PREFIX} write: required template name missing`);
     }
 
     // Template added or updated
     const upsertData = {};
+    const isUpdate = Boolean(before);
 
     // Required attributes
     upsertData.name = after.name;
@@ -50,75 +55,104 @@ module.exports = {
     // Optional attributes
     if (after.description) upsertData.description = after.description;
 
-    return db
-      .ref(target)
-      .update(upsertData)
-      .catch(e =>
-        Promise.reject(
-          Error(
-            `${PREFIX} write: failed to ${
-              before ? 'update' : 'add'
-            } record at ${target} ${e}`
-          ) // wrap error
-        )
-      )
-      .then(() => upsertData);
+    try {
+      await templatesModel.realtimeUpsertListRecord(db, templateId, upsertData);
+    } catch (err) {
+      throw Error(
+        `${PREFIX} write: failed template list ${
+          isUpdate ? 'update' : 'create'
+        }: ${err}`
+      );
+    }
+
+    try {
+      // Copy new template data
+      const fsUpsertData = { ...after };
+
+      // Ensure category removed if not found
+      if (!after.category) {
+        fsUpsertData.category = FieldValue.delete();
+      }
+
+      await templatesModel.firestoreUpsertRecord(fs, templateId, fsUpsertData);
+    } catch (err) {
+      throw Error(
+        `${PREFIX} write: failed template list ${
+          isUpdate ? 'update' : 'create'
+        }: ${err}`
+      );
+    }
+
+    return upsertData;
   },
 
   /**
    * Remove category attribute for all template list
-   * items of a given category ID
+   * proxies and Firestore templates with a given category ID
    * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+   * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
    * @param  {String} categoryId
-   * @return {Promise} - resolves (Object) hash of updates
+   * @return {Promise} - resolves (Object) hash of realtime DB updates
    */
-  async removeCategory(db, categoryId) {
+  async removeCategory(db, fs, categoryId) {
+    assert(Boolean(db), 'has realtime DB instance');
+    assert(Boolean(fs), 'has firestore DB instance');
     assert(categoryId && typeof categoryId === 'string', 'has category ID');
 
-    const updates = {};
+    const realtimeUpdates = {};
 
     try {
-      const templatesListItemsInCategory = await db
-        .ref('/templatesList')
-        .orderByChild('category')
-        .equalTo(categoryId)
-        .once('value');
-
-      // Category has no associated /templatesList
-      if (!templatesListItemsInCategory.exists()) {
-        return updates;
-      }
+      const templatesListItemsInCategory = await templatesModel.realtimeQueryListByCategory(
+        db,
+        categoryId
+      );
 
       // Collect all updates to associated /templatesList records
-      Object.keys(templatesListItemsInCategory.val()).forEach(id => {
-        const target = `/templatesList/${id}/category`;
-        updates[target] = null;
-        log.info(`${PREFIX} remove-category: ${target}`);
+      Object.keys(templatesListItemsInCategory.val() || {}).forEach(id => {
+        realtimeUpdates[`${id}/category`] = null;
       });
 
       // Update database
-      if (Object.keys(updates).length) {
-        await db.ref().update(updates);
-      }
+      await templatesModel.realtimeBatchUpdateList(db, realtimeUpdates);
     } catch (err) {
       // wrap error
       throw Error(
-        `${PREFIX} remove-category: ${categoryId} from /templatesList failed | ${err}`
+        `${PREFIX} removeCategory: "${categoryId}" realtime update failed | ${err}`
       );
     }
 
-    return updates;
+    try {
+      const firestoreUpdates = {};
+      const templatesInCategorySnap = await templatesModel.firestoreQueryByCategory(
+        fs,
+        categoryId
+      );
+
+      // Add all category removals to updates
+      templatesInCategorySnap.docs.forEach(templateSnap => {
+        firestoreUpdates[templateSnap.id] = { category: null };
+      });
+
+      await templatesModel.firestoreBatchUpdate(fs, firestoreUpdates);
+    } catch (err) {
+      throw Error(
+        `${PREFIX} removeCategory: "${categoryId}" firestore update failed | ${err}`
+      );
+    }
+
+    return realtimeUpdates;
   },
 
   /**
-   * Remove templatesList items that do not have a
-   * existing source template record
+   * Remove templatesList proxies that do not
+   * have an existing source template record
    * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
    * @param  {String[]} existingTemplateIds
    * @param  {utils}    adminUtils
    * @return {Promise} - resolves {Object} updates hash
    */
   async removeOrphans(db, existingTemplateIds = [], utils = adminUtils) {
+    assert(Boolean(db), 'has realtime DB instance');
     assert(
       Array.isArray(existingTemplateIds) &&
         existingTemplateIds.every(id => id && typeof id === 'string'),

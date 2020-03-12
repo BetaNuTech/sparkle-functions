@@ -1,7 +1,7 @@
 const { expect } = require('chai');
 const uuid = require('../../../test-helpers/uuid');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { db, test, pubsub, cloudFunctions } = require('../setup');
+const { db, test, pubsub, cloudFunctions } = require('../../setup');
 
 const USER_ID = uuid();
 const USER_TWO_ID = uuid();
