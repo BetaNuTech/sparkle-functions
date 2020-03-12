@@ -15,10 +15,10 @@ try {
   const firebaseAuthHex = firebaseConfig.auth
     ? firebaseConfig.auth.firebase
     : process.env.FIREBASE_FUNCTIONS_AUTH;
-  if (fs.existsSync(AUTH_FILE_PATH)) {
-    serviceAccount = require(AUTH_FILE_PATH); // eslint-disable-line import/no-dynamic-require,global-require
-  } else if (firebaseAuthHex) {
+  if (firebaseAuthHex) {
     serviceAccount = JSON.parse(Buffer.from(firebaseAuthHex, 'hex').toString());
+  } else if (fs.existsSync(AUTH_FILE_PATH)) {
+    serviceAccount = require(AUTH_FILE_PATH); // eslint-disable-line import/no-dynamic-require,global-require
   } else {
     throw Error('Service account not configured');
   }
