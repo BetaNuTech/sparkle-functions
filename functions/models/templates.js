@@ -197,12 +197,19 @@ module.exports = modelSetup({
     }
 
     const { exists } = docSnap;
+    const upsert = { ...data };
 
     try {
       if (exists) {
-        await docRef.update(data);
+        await docRef.update(upsert);
       } else {
-        await docRef.create(data);
+        // NOTE: is a safety check to prevent
+        // removing a category on create, which
+        // will throw an error
+        if (typeof data.category !== 'string') {
+          delete upsert.category;
+        }
+        await docRef.create(upsert);
       }
     } catch (err) {
       throw Error(
