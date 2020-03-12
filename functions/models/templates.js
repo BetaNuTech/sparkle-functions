@@ -129,18 +129,43 @@ module.exports = modelSetup({
    * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
    * @param  {String} templateId
    * @param  {Object} data
-   * @return {Promise}
+   * @return {Promise} - resolves {DocumentReference}
    */
-  firestoreUpsertRecord(fs, templateId, data) {
+  async firestoreUpsertRecord(fs, templateId, data) {
     assert(
       templateId && typeof templateId === 'string',
       `${PREFIX} has template id`
     );
     assert(data && typeof data === 'object', `${PREFIX} has upsert data`);
-    return fs
-      .collection(TEMPLATE_COLLECTION)
-      .doc(templateId)
-      .update(data);
+
+    const docRef = fs.collection(TEMPLATE_COLLECTION).doc(templateId);
+    let docSnap = null;
+
+    try {
+      docSnap = await docRef.get();
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreUpsertRecord: Failed to get document: ${err}`
+      );
+    }
+
+    const { exists } = docSnap;
+
+    try {
+      if (exists) {
+        await docRef.update(data);
+      } else {
+        await docRef.create(data);
+      }
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreUpsertRecord: ${
+          exists ? 'updating' : 'creating'
+        } document: ${err}`
+      );
+    }
+
+    return docRef;
   },
 
   /**

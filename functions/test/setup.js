@@ -25,6 +25,7 @@ const s3Client = require('../utils/s3-client');
 
 admin.initializeApp(testConfig);
 const db = admin.database();
+const fs = admin.firestore();
 const auth = admin.auth();
 const storage = admin.storage();
 const messaging = admin.messaging();
@@ -63,6 +64,7 @@ Object.defineProperty(PubSub.prototype, 'topic', {
 
 module.exports = {
   db,
+  fs,
   auth,
   test,
   storage,
