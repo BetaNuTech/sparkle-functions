@@ -1,4 +1,5 @@
 const assert = require('assert');
+const FieldValue = require('firebase-admin').firestore.FieldValue;
 const modelSetup = require('./utils/model-setup');
 
 const PREFIX = 'models: templates:';
@@ -201,14 +202,21 @@ module.exports = modelSetup({
 
     try {
       if (exists) {
+        // Replace optional field nulls
+        // with Firestore delete values
+        if (upsert.category === null) {
+          upsert.category = FieldValue.delete();
+        }
+        if (upsert.description === null) {
+          upsert.description = FieldValue.delete();
+        }
+
         await docRef.update(upsert);
       } else {
-        // NOTE: is a safety check to prevent
-        // removing a category on create, which
-        // will throw an error
-        if (typeof data.category !== 'string') {
-          delete upsert.category;
-        }
+        // Ensure optional falsey values
+        // do not exist on created Firestore
+        if (!upsert.category) delete upsert.category;
+        if (!upsert.description) delete upsert.description;
         await docRef.create(upsert);
       }
     } catch (err) {
