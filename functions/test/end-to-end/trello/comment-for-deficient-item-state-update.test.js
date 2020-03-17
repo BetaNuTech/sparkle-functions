@@ -9,7 +9,7 @@ const {
   test,
   cloudFunctions,
   uid: SERVICE_ACCOUNT_ID,
-} = require('../setup');
+} = require('../../setup');
 
 const USER_ID = uuid();
 const PROPERTY_ID = uuid();

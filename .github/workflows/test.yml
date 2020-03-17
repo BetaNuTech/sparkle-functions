@@ -31,18 +31,31 @@ jobs:
         run: yarn test-unit
         working-directory: ./functions
         env:
-          FIREBASE_FUNCTIONS_AUTH: ${{ secrets.PRODUCTION_FIREBASE_FUNCTIONS_AUTH }}
+          AWS_S3_ACCESS_KEY_ID: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+          AWS_S3_SECRET_ACCESS_KEY: ${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}
+          FIREBASE_FUNCTIONS_AUTH: ${{ secrets.TEST_FIREBASE_FUNCTIONS_AUTH }}
+          FIREBASE_TEST_DB_URL: ${{ secrets.TEST_FIREBASE_TEST_DB_URL }}
+          SLACK_CLIENT_SECRET: ${{ secrets.PRODUCTION_SLACK_CLIENT_SECRET }}
+
+      - name: Run integration tests
+        run: yarn test-int
+        working-directory: ./functions
+        env:
+          AWS_S3_ACCESS_KEY_ID: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+          AWS_S3_SECRET_ACCESS_KEY: ${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}
+          FIREBASE_FUNCTIONS_AUTH: ${{ secrets.TEST_FIREBASE_FUNCTIONS_AUTH }}
+          FIREBASE_TEST_DB_URL: ${{ secrets.TEST_FIREBASE_TEST_DB_URL }}
           SLACK_CLIENT_SECRET: ${{ secrets.PRODUCTION_SLACK_CLIENT_SECRET }}
 
       - name: Run End to End Tests
         run: yarn test-e2e
         working-directory: ./functions
         env:
-          FIREBASE_FUNCTIONS_AUTH: ${{ secrets.PRODUCTION_FIREBASE_FUNCTIONS_AUTH }}
+          FIREBASE_FUNCTIONS_AUTH: ${{ secrets.TEST_FIREBASE_FUNCTIONS_AUTH }}
           SLACK_CLIENT_SECRET: ${{ secrets.PRODUCTION_SLACK_CLIENT_SECRET }}
-          GOOGLE_CLOUD_PROJECT: sapphire-inspections
+          GOOGLE_CLOUD_PROJECT: sapphire-inspections-testing
           AWS_S3_ACCESS_KEY_ID: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
           AWS_S3_SECRET_ACCESS_KEY: ${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}
-          FIREBASE_TEST_DB_URL: ${{ secrets.PRODUCTION_FIREBASE_TEST_DB_URL }}
-          FIREBASE_STORAGE_BUCKET: ${{ secrets.PRODUCTION_FIREBASE_STORAGE_BUCKET }}
-          CLIENT_DOMAIN: https://sparkle-production.herokuapp.com
+          FIREBASE_TEST_DB_URL: ${{ secrets.TEST_FIREBASE_TEST_DB_URL }}
+          FIREBASE_STORAGE_BUCKET: ${{ secrets.TEST_FIREBASE_STORAGE_BUCKET }}
+          CLIENT_DOMAIN: https://staging.sapphire-standard.com

@@ -37,6 +37,39 @@ module.exports = {
   },
 
   /**
+   * Create a Firestore stub for testing
+   * @param  {Object} config
+   * @param  {Object} dataSnapshot
+   * @param  {Object} childConf
+   * @return {Object} - stub
+   */
+  createFirestoreStub(config = {}, dataSnapshot = {}, childConf = {}) {
+    const childWrapper = Object.assign(
+      {
+        collection: () => childWrapper,
+        doc: () => childWrapper,
+        batch: () => childWrapper,
+        where: () => childWrapper,
+        set: () => Promise.resolve(),
+        get: () => Promise.resolve(dataSnapshot),
+        add: () => Promise.resolve(),
+        create: () => Promise.resolve(),
+        update: () => Promise.resolve(),
+        delete: () => Promise.resolve(true),
+      },
+      childConf
+    );
+
+    return Object.assign(
+      {
+        _isTestStub: true,
+      },
+      childWrapper,
+      config
+    );
+  },
+
+  /**
    * Create stub for PubSub Subscriber
    * @return {Object} - Wrapper for `firebase.pubsub.topic.onPublish()`
    */
@@ -65,27 +98,43 @@ module.exports = {
     );
   },
 
-  cleanDb(db) {
-    return Promise.all(
-      [
-        'archive',
-        'completedInspectionsList',
-        'inspections',
-        'properties',
-        'propertyInspectionDeficientItems',
-        'propertyInspectionsList',
-        'propertyTemplatesList',
-        'registrationTokens',
-        'teams',
-        'templateCategories',
-        'templates',
-        'templatesList',
-        'users',
-        'sendMessages',
-        'integrations',
-        'notifications',
-      ].map(path => db.ref(path).set(null))
-    );
+  /**
+   * Remove all records from
+   * Realtime and Firebase database
+   * @param  {firebaseAdmin.database} db
+   * @param  {firebaseAdmin.firestore?} fs
+   * @return {Promise}
+   */
+  cleanDb(db, fs) {
+    const realtimeDbReq = [
+      'archive',
+      'completedInspectionsList',
+      'inspections',
+      'properties',
+      'propertyInspectionDeficientItems',
+      'propertyInspectionsList',
+      'propertyTemplatesList',
+      'registrationTokens',
+      'teams',
+      'templateCategories',
+      'templates',
+      'templatesList',
+      'users',
+      'sendMessages',
+      'integrations',
+      'notifications',
+    ].map(path => db.ref(path).set(null));
+
+    const firestoreDbReq = [];
+
+    // Optionally remove all Firestore collections
+    if (fs) {
+      firestoreDbReq.push(
+        ...['templates'].map(col => deleteFirestoreCollection(fs, col))
+      );
+    }
+
+    return Promise.all([...realtimeDbReq, ...firestoreDbReq]);
   },
 
   /**
@@ -122,3 +171,23 @@ module.exports = {
     };
   },
 };
+
+/**
+ * Remove all documents from a Firestore
+ * collectoin
+ * @param  {firebaseAdmin.firestore} fs
+ * @param  {String} collection
+ * @return {Promise}
+ */
+async function deleteFirestoreCollection(fs, collection) {
+  const snapshot = await fs.collection(collection).get();
+  if (snapshot.size === 0) return;
+
+  // Delete documents in a batch
+  const batch = fs.batch();
+  snapshot.docs.forEach(doc => {
+    batch.delete(doc.ref);
+  });
+
+  return batch.commit();
+}

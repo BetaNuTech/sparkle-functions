@@ -4,7 +4,7 @@ const createApp = require('../../../inspections/on-get-pdf-report');
 const uuid = require('../../../test-helpers/uuid');
 const mocking = require('../../../test-helpers/mocking');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { db, auth, deletePDFInspection } = require('../setup');
+const { db, auth, deletePDFInspection } = require('../../setup');
 
 // Avoid creating lots of PDF's
 const INSP_ID = uuid();

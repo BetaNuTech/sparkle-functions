@@ -1,7 +1,7 @@
 const { expect } = require('chai');
 const uuid = require('../../test-helpers/uuid');
 const { cleanDb } = require('../../test-helpers/firebase');
-const { db, test, cloudFunctions } = require('./setup');
+const { db, test, cloudFunctions } = require('../setup');
 
 describe('Team Delete Handler', () => {
   afterEach(() => cleanDb(db));
