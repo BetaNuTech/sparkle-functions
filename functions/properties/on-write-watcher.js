@@ -23,12 +23,21 @@ module.exports = function createOnWriteHandler(db) {
     }
 
     // Sync property updates to property template proxies
-    await propertyTemplates.processWrite(
-      db,
-      propertyId,
-      change.after.val().templates
-    );
-    log.info(`${PREFIX} property "${propertyId}" template list updated`);
+    try {
+      const updates = await propertyTemplates.processWrite(
+        db,
+        propertyId,
+        change.after.val().templates
+      );
+      if (updates && Object.keys(updates).length) {
+        log.info(`${PREFIX} property "${propertyId}" template list updated`);
+      }
+    } catch (err) {
+      log.error(
+        `${PREFIX} failed to update property "${propertyId}" template list | ${err}`
+      );
+      throw err;
+    }
 
     // TODO: sync property updates to Firestore
   };
