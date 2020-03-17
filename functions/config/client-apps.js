@@ -1,3 +1,12 @@
+const functions = require('firebase-functions');
+
+const firebaseConfig = functions.config() || {};
+
+// Use any system or firebase AWS secrets
+const CLIENT_DOMAIN =
+  process.env.CLIENT_DOMAIN ||
+  (firebaseConfig.web && firebaseConfig.web.clientdomain);
+
 const config = {
   web: {
     deficientItemPath:
@@ -7,11 +16,11 @@ const config = {
       'properties/{{propertyId}}/update-inspection/{{inspectionId}}',
 
     get deficientItemURL() {
-      return `${process.env.CLIENT_DOMAIN}/${this.deficientItemPath}`;
+      return `${CLIENT_DOMAIN}/${this.deficientItemPath}`;
     },
 
     get inspectionURL() {
-      return `${process.env.CLIENT_DOMAIN}/${this.inspectionPath}`;
+      return `${CLIENT_DOMAIN}/${this.inspectionPath}`;
     },
   },
 };
