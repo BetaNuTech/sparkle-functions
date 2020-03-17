@@ -88,6 +88,8 @@ module.exports = function createOnDeleteHandler(
       }
     }
 
+    // TODO remove Firestore record
+
     return updates;
   };
 };
