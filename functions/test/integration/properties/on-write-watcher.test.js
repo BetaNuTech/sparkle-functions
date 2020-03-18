@@ -1,6 +1,7 @@
 const { expect } = require('chai');
 const sinon = require('sinon');
 const propertyTemplates = require('../../../property-templates');
+const propertiesModel = require('../../../models/properties');
 const createOnWriteHandler = require('../../../properties/on-write-watcher');
 
 describe('Properties | On Write', function() {
@@ -12,7 +13,7 @@ describe('Properties | On Write', function() {
       .stub(propertyTemplates, 'processWrite')
       .resolves({});
 
-    await createOnWriteHandler({})(
+    await createOnWriteHandler({}, {})(
       {
         before: { exists: () => true, val: () => ({ name: 'test' }) },
         after: { exists: () => false },
@@ -29,8 +30,9 @@ describe('Properties | On Write', function() {
     const syncTemplates = sinon
       .stub(propertyTemplates, 'processWrite')
       .resolves({});
+    sinon.stub(propertiesModel, 'firestoreUpsertRecord').resolves({});
 
-    await createOnWriteHandler({})(
+    await createOnWriteHandler({}, {})(
       {
         before: { exists: () => true, val: () => ({ name: 'old' }) },
         after: { exists: () => true, val: () => ({ name: 'new' }) },

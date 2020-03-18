@@ -130,7 +130,9 @@ module.exports = {
     // Optionally remove all Firestore collections
     if (fs) {
       firestoreDbReq.push(
-        ...['templates'].map(col => deleteFirestoreCollection(fs, col))
+        ...['templates', 'properties'].map(col =>
+          deleteFirestoreCollection(fs, col)
+        )
       );
     }
 
