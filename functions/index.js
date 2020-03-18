@@ -120,6 +120,7 @@ exports.propertyDelete = functions.database
   .onDelete(
     properties.createOnDeleteWatcher(
       db,
+      fs,
       storage,
       pubsubClient,
       'user-teams-sync'

@@ -115,6 +115,7 @@ describe('Properties | Write', () => {
     const wrapped = test.wrap(cloudFunctions.propertyWrite);
     await wrapped(changeSnap, { params: { propertyId } });
 
+    // Test results
     const result = await propertiesModel.firestoreFindRecord(fs, propertyId);
     const actual = result.data();
 
@@ -141,6 +142,7 @@ describe('Properties | Write', () => {
     const wrapped = test.wrap(cloudFunctions.propertyWrite);
     await wrapped(changeSnap, { params: { propertyId } });
 
+    // Test results
     const result = await propertiesModel.firestoreFindRecord(fs, propertyId);
     const actual = result.data();
 

@@ -19,7 +19,22 @@ module.exports = modelSetup({
       `${PREFIX} has property id`
     );
 
-    return db.ref(`/properties/${propertyId}`).once('value');
+    return db.ref(`${PROPERTIES_DB}/${propertyId}`).once('value');
+  },
+
+  /**
+   * Remove property by ID
+   * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+   * @param  {String} propertyId
+   * @return {Promise}
+   */
+  realtimeRemoveRecord(db, propertyId) {
+    assert(
+      propertyId && typeof propertyId === 'string',
+      `${PREFIX} has property id`
+    );
+
+    return db.ref(`${PROPERTIES_DB}/${propertyId}`).remove();
   },
 
   /**
@@ -120,5 +135,22 @@ module.exports = modelSetup({
     }
 
     return docRef;
+  },
+
+  /**
+   * Remove Firestore Property
+   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {String} propertyId
+   * @return {Promise}
+   */
+  firestoreRemoveRecord(fs, propertyId) {
+    assert(
+      propertyId && typeof propertyId === 'string',
+      `${PREFIX} has property id`
+    );
+    return fs
+      .collection(PROPERTY_COLLECTION)
+      .doc(propertyId)
+      .delete();
   },
 });
