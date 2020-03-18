@@ -1,11 +1,13 @@
 const { expect } = require('chai');
 const uuid = require('../../../test-helpers/uuid');
 const mocking = require('../../../test-helpers/mocking');
+const inspectionsModel = require('../../../models/inspections');
+const inspectionData = require('../../../test-helpers/mocks/inspection');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { db, test, cloudFunctions } = require('../../setup');
+const { db, fs, test, cloudFunctions } = require('../../setup');
 
 describe('Inspections | On Write Watcher', () => {
-  afterEach(() => cleanDb(db));
+  afterEach(() => cleanDb(db, fs));
 
   it('should set an invalid score value to zero', async () => {
     const inspectionId = uuid();
@@ -339,5 +341,51 @@ describe('Inspections | On Write Watcher', () => {
       expected.numOfRequiredActionsForDeficientItems,
       "updated property's `numOfRequiredActionsForDeficientItems`"
     );
+  });
+
+  it('should create a firestore inspection when an inspection is created', async () => {
+    const inspectionId = uuid();
+    const expected = JSON.parse(JSON.stringify(inspectionData));
+
+    // Setup database
+    await inspectionsModel.realtimeUpsertRecord(db, inspectionId, expected); // Create Realtime
+    const snap = await inspectionsModel.findRecord(db, inspectionId);
+
+    // Execute
+    const changeSnap = test.makeChange(snap, snap);
+    const wrapped = test.wrap(cloudFunctions.inspectionWrite);
+    await wrapped(changeSnap, { params: { inspectionId } });
+
+    // Test results
+    const result = await inspectionsModel.firestoreFindRecord(fs, inspectionId);
+    const actual = result.data();
+
+    // Assertions
+    expect(actual).to.deep.equal(expected);
+  });
+
+  it('should update an existing firestore inspection when an inspection is updated', async () => {
+    const inspectionId = uuid();
+    const data = JSON.parse(JSON.stringify(inspectionData));
+    const expected = { ...data };
+    expected.templateCategory = '';
+
+    // Setup database
+    await inspectionsModel.realtimeUpsertRecord(db, inspectionId, data); // Create Realtime
+    await inspectionsModel.firestoreUpsertRecord(fs, inspectionId, data); // Create Firestore
+    await inspectionsModel.realtimeUpsertRecord(db, inspectionId, expected); // Update Realtime
+    const snap = await inspectionsModel.findRecord(db, inspectionId);
+
+    // Execute
+    const changeSnap = test.makeChange(snap, snap);
+    const wrapped = test.wrap(cloudFunctions.inspectionWrite);
+    await wrapped(changeSnap, { params: { inspectionId } });
+
+    // Test results
+    const result = await inspectionsModel.firestoreFindRecord(fs, inspectionId);
+    const actual = result.data();
+
+    // Assertions
+    expect(actual).to.deep.equal(expected);
   });
 });

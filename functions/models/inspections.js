@@ -3,6 +3,7 @@ const modelSetup = require('./utils/model-setup');
 
 const PREFIX = 'models: inspections:';
 const INSPECTIONS_PATH = '/inspections';
+const INSPECTION_COLLECTION = 'inspections';
 const INSPECTION_REPORT_STATUSES = [
   'generating',
   'completed_success',
@@ -23,6 +24,22 @@ module.exports = modelSetup({
     );
 
     return db.ref(`${INSPECTIONS_PATH}/${inspectionId}`).once('value');
+  },
+
+  /**
+   * Add/update Realtime Inspection
+   * @param  {firebaseAdmin.database} db - Realtime DB Instance
+   * @param  {String} inspectionId
+   * @param  {Object} data
+   * @return {Promise}
+   */
+  realtimeUpsertRecord(db, inspectionId, data) {
+    assert(
+      inspectionId && typeof inspectionId === 'string',
+      `${PREFIX} has inspection id`
+    );
+    assert(data && typeof data === 'object', `${PREFIX} has upsert data`);
+    return db.ref(`${INSPECTIONS_PATH}/${inspectionId}`).update(data);
   },
 
   /**
@@ -448,6 +465,68 @@ module.exports = modelSetup({
     }
 
     return updates;
+  },
+
+  /**
+   * Create or update a Firestore inspection
+   * @param  {firebaseAdmin.firestore} fs
+   * @param  {String}  inspectionId
+   * @param  {Object}  data
+   * @return {Promise} - resolves {DocumentReference}
+   */
+  async firestoreUpsertRecord(fs, inspectionId, data) {
+    assert(
+      inspectionId && typeof inspectionId === 'string',
+      `${PREFIX} has inspection id`
+    );
+    assert(data && typeof data === 'object', `${PREFIX} has upsert data`);
+
+    const docRef = fs.collection(INSPECTION_COLLECTION).doc(inspectionId);
+    let docSnap = null;
+
+    try {
+      docSnap = await docRef.get();
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreUpsertRecord: Failed to get document: ${err}`
+      );
+    }
+
+    const { exists } = docSnap;
+    const upsert = { ...data };
+
+    try {
+      if (exists) {
+        await docRef.update(upsert);
+      } else {
+        await docRef.create(upsert);
+      }
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreUpsertRecord: ${
+          exists ? 'updating' : 'creating'
+        } document: ${err}`
+      );
+    }
+
+    return docRef;
+  },
+
+  /**
+   * Lookup Firestore Property
+   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {String} inspectionId
+   * @return {Promise}
+   */
+  firestoreFindRecord(fs, inspectionId) {
+    assert(
+      inspectionId && typeof inspectionId === 'string',
+      `${PREFIX} has inspection id`
+    );
+    return fs
+      .collection(INSPECTION_COLLECTION)
+      .doc(inspectionId)
+      .get();
   },
 });
 

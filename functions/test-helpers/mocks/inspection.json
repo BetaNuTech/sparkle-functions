@@ -1,0 +1,62 @@
+{
+  "completionDate": 1.580242802843e9,
+  "creationDate": 1.580242736824e9,
+  "deficienciesExist": true,
+  "inspectionCompleted": true,
+  "inspectionReportUpdateLastDate": 0,
+  "inspector": "4b58Aoiwv0bOp2W9Sfd3ygi4qOD3",
+  "inspectorName": "Test Author",
+  "itemsCompleted": 6,
+  "property": "-LzhlmfsQk8fbLLJ4v17",
+  "score": 84.21052631578947,
+  "template": {
+    "category": "-LzNLI45Mhbf8qAx9Nne",
+    "description": "Test the notes and photos requirement for inspections",
+    "items": {
+      "-LzhmxQ4H5rnXH1Lv2i0": {
+        "deficient": true,
+        "index": 0,
+        "inspectorNotes": "OOps",
+        "isItemNA": false,
+        "isTextInputItem": false,
+        "itemType": "main",
+        "mainInputFourValue": 0,
+        "mainInputOneValue": 0,
+        "mainInputSelected": true,
+        "mainInputSelection": 1,
+        "mainInputThreeValue": 0,
+        "mainInputTwoValue": 0,
+        "mainInputType": "TwoActions_checkmarkX",
+        "mainInputZeroValue": 3,
+        "notes": true,
+        "photos": true,
+        "photosData": {
+          "1580242766": {
+            "caption": "Magnet",
+            "downloadURL": "https://firebasestorage.googleapis.com/v0/b/sapphire-inspections-staging.appspot.com/o/inspectionItemImages%2F-LzhndPXiqIjmri_QGTT%2F-LzhmxQ4H5rnXH1Lv2i0%2F1580242766.jpg?alt=media&token=e95e27f7-3113-4b65-8db8-91a150fbf46e"
+          }
+        },
+        "sectionId": "-LzhmvrKkKr1hK2cUhrl",
+        "signatureDownloadURL": "",
+        "signatureTimestampKey": "",
+        "title": "One"
+      }
+    },
+    "name": "DI Require Notes & Photos",
+    "requireDeficientItemNoteAndPhoto": true,
+    "sections": {
+      "-LzhmvrKkKr1hK2cUhrl": {
+        "added_multi_section": false,
+        "index": 0,
+        "section_type": "multi",
+        "title": "A"
+      }
+    },
+    "trackDeficientItems": true
+  },
+  "templateCategory": "-LzNLI45Mhbf8qAx9Nne",
+  "templateName": "DI Require Notes & Photos",
+  "totalItems": 6,
+  "updatedAt": 1.580242802847e9,
+  "updatedLastDate": 1.580242786964e9
+}
