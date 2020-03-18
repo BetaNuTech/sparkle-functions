@@ -1,6 +1,7 @@
 const pipe = require('lodash/fp/flow');
-const log = require('../../utils/logger');
 const defItemsModel = require('../../models/deficient-items');
+const propertiesModel = require('../../models/properties');
+const inspectionsModel = require('../../models/inspections');
 const { deficientItems } = require('../../config');
 const createDeficientItems = require('../../deficient-items/utils/create-deficient-items');
 
@@ -21,70 +22,84 @@ const propertyMetaUpdates = pipe([
  * Process changes to a property's
  * metadata if it's inspections chanage
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+ * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
  * @param  {String} propertyId
  * @return {Promise} - resolves {Object} updates
  */
-module.exports = async function processMeta(db, propertyId) {
+module.exports = async function processMeta(db, fs, propertyId) {
+  let inspectionsSnap = null;
+
+  // Lookup all property's inspections
   try {
-    // Find all property's inspections
-    const inspectionsSnap = await db
-      .ref('/inspections')
-      .orderByChild('property')
-      .equalTo(propertyId)
-      .once('value');
-    const inspectionsData = inspectionsSnap.exists()
-      ? inspectionsSnap.val()
-      : {};
-    const inspections = Object.keys(inspectionsData).map(inspId =>
-      Object.assign({ id: inspId }, inspectionsData[inspId])
-    );
+    inspectionsSnap = await inspectionsModel.queryByProperty(db, propertyId);
+  } catch (err) {
+    throw Error(`${PREFIX} property inspection lookup failed: ${err}`);
+  }
 
-    if (!inspections.length) {
-      return {};
-    }
+  const inspectionsData = inspectionsSnap.exists() ? inspectionsSnap.val() : {};
+  const inspections = Object.keys(inspectionsData).map(inspId =>
+    Object.assign({ id: inspId }, inspectionsData[inspId])
+  );
 
-    // Find any deficient items data for property
-    const propertyInspectionDeficientItemsSnap = await defItemsModel.findAllByProperty(
+  if (!inspections.length) {
+    return {};
+  }
+
+  let propertyInspectionDeficientItemsSnap = null;
+
+  // Find any deficient items data for property
+  try {
+    propertyInspectionDeficientItemsSnap = await defItemsModel.findAllByProperty(
       db,
       propertyId
     );
-    const propertyInspectionDeficientItemsData = propertyInspectionDeficientItemsSnap.exists()
-      ? propertyInspectionDeficientItemsSnap.val()
-      : {};
-    const deficientItemsCurrent = Object.keys(
-      propertyInspectionDeficientItemsData
-    )
-      .filter(defItemId =>
-        Boolean(propertyInspectionDeficientItemsData[defItemId].state)
-      ) // require state
-      .map(defItemId =>
-        Object.assign(
-          { id: defItemId },
-          propertyInspectionDeficientItemsData[defItemId]
-        )
-      );
-
-    // Collect updates to write to property's metadata attrs
-    const { updates } = propertyMetaUpdates({
-      propertyId,
-      inspections,
-      deficientItems: deficientItemsCurrent,
-      updates: {},
-    });
-
-    // Atomically write each metadata update
-    const updatePaths = Object.keys(updates);
-    for (let i = 0; i < updatePaths.length; i++) {
-      const path = updatePaths[i];
-      await db.ref(path).set(updates[path]);
-    }
-
-    log.info(`${PREFIX} successfully updated property: ${propertyId} metadata`);
-    return updates;
   } catch (err) {
-    log.error(`${PREFIX} failed updating property metadata | ${err}`);
-    return null;
+    throw Error(
+      `${PREFIX} failed to lookup properties deficicent items: ${err}`
+    );
   }
+
+  const propertyInspectionDeficientItemsData = propertyInspectionDeficientItemsSnap.exists()
+    ? propertyInspectionDeficientItemsSnap.val()
+    : {};
+  const deficientItemsCurrent = Object.keys(
+    propertyInspectionDeficientItemsData
+  )
+    .filter(defItemId =>
+      Boolean(propertyInspectionDeficientItemsData[defItemId].state)
+    ) // require state
+    .map(defItemId =>
+      Object.assign(
+        { id: defItemId },
+        propertyInspectionDeficientItemsData[defItemId]
+      )
+    );
+
+  // Collect updates to write to property's metadata attrs
+  const { updates } = propertyMetaUpdates({
+    propertyId,
+    inspections,
+    deficientItems: deficientItemsCurrent,
+    updates: {},
+  });
+
+  // Update Realtime Property
+  try {
+    await propertiesModel.realtimeUpsertRecord(db, propertyId, updates);
+  } catch (err) {
+    throw Error(`${PREFIX} failed updating realtime property metadata: ${err}`);
+  }
+
+  // Update Firebase Property
+  try {
+    await propertiesModel.firestoreUpsertRecord(fs, propertyId, updates);
+  } catch (err) {
+    throw Error(
+      `${PREFIX} failed updating firestore property metadata: ${err}`
+    );
+  }
+
+  return updates;
 };
 
 /**
@@ -98,15 +113,16 @@ module.exports = async function processMeta(db, propertyId) {
 function updateNumOfInspections(
   config = { propertyId: '', inspections: [], updates: {} }
 ) {
-  config.updates[
-    `/properties/${config.propertyId}/numOfInspections`
-  ] = config.inspections.reduce((acc, { inspectionCompleted }) => {
-    if (inspectionCompleted) {
-      acc += 1;
-    }
+  config.updates.numOfInspections = config.inspections.reduce(
+    (acc, { inspectionCompleted }) => {
+      if (inspectionCompleted) {
+        acc += 1;
+      }
 
-    return acc;
-  }, 0);
+      return acc;
+    },
+    0
+  );
 
   return config;
 }
@@ -127,10 +143,8 @@ function updateLastInspectionAttrs(
   ); // DESC
 
   if (latestInspection && latestInspection.inspectionCompleted) {
-    config.updates[`/properties/${config.propertyId}/lastInspectionScore`] =
-      latestInspection.score;
-    config.updates[`/properties/${config.propertyId}/lastInspectionDate`] =
-      latestInspection.creationDate;
+    config.updates.lastInspectionScore = latestInspection.score;
+    config.updates.lastInspectionDate = latestInspection.creationDate;
   }
 
   return config;
@@ -195,24 +209,18 @@ function updateDeficientItemsAttrs(
   );
 
   // Count all deficient items
-  config.updates[
-    `/properties/${config.propertyId}/numOfDeficientItems`
-  ] = deficientItemsLatest.filter(
+  config.updates.numOfDeficientItems = deficientItemsLatest.filter(
     ({ state }) => !EXCLUDED_DI_COUNTER_VALUES.includes(state)
   ).length;
 
   // Count all deficient items where state requires action
-  config.updates[
-    `/properties/${config.propertyId}/numOfRequiredActionsForDeficientItems`
-  ] = deficientItemsLatest.filter(({ state }) =>
-    REQUIRED_ACTIONS_VALUES.includes(state)
+  config.updates.numOfRequiredActionsForDeficientItems = deficientItemsLatest.filter(
+    ({ state }) => REQUIRED_ACTIONS_VALUES.includes(state)
   ).length;
 
   // Count all deficient items where state requires follow up
-  config.updates[
-    `/properties/${config.propertyId}/numOfFollowUpActionsForDeficientItems`
-  ] = deficientItemsLatest.filter(({ state }) =>
-    FOLLOW_UP_ACTION_VALUES.includes(state)
+  config.updates.numOfFollowUpActionsForDeficientItems = deficientItemsLatest.filter(
+    ({ state }) => FOLLOW_UP_ACTION_VALUES.includes(state)
   ).length;
 
   return config;

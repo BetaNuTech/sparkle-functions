@@ -43,6 +43,21 @@ module.exports = modelSetup({
   },
 
   /**
+   * Remove inspection by ID
+   * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+   * @param  {String} inspectionId
+   * @return {Promise}
+   */
+  realtimeRemoveRecord(db, inspectionId) {
+    assert(
+      inspectionId && typeof inspectionId === 'string',
+      `${PREFIX} has property id`
+    );
+
+    return db.ref(`${INSPECTIONS_PATH}/${inspectionId}`).remove();
+  },
+
+  /**
    * Lookup single deficient item
    * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
    * @param  {String} inspectionId
@@ -57,6 +72,21 @@ module.exports = modelSetup({
     assert(itemId && typeof itemId === 'string', 'has inspection item id');
     return db
       .ref(`${INSPECTIONS_PATH}/${inspectionId}/template/items/${itemId}`)
+      .once('value');
+  },
+
+  /**
+   * Query all inspections belonging to a property
+   * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+   * @param  {String} inspectionId
+   * @return {Promise} - resolves {DataSnapshot} inspections snapshot
+   */
+  queryByProperty(db, propertyId) {
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    return db
+      .ref(INSPECTIONS_PATH)
+      .orderByChild('property')
+      .equalTo(propertyId)
       .once('value');
   },
 

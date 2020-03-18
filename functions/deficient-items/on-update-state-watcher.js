@@ -9,17 +9,20 @@ const FOLLOW_UP_ACTION_VALUES = config.deficientItems.followUpActionStates;
 
 /**
  * Factory for Deficient Items sync on DI state updates
- * @param  {firebaseAdmin.database} - Firebase Admin DB instance
+ * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+ * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
  * @param  {functions.pubsub} pubsubClient
  * @param  {String} statusUpdateTopic
  * @return {Function} - property onWrite handler
  */
 module.exports = function createOnDiStateUpdateHandler(
   db,
+  fs,
   pubsubClient,
   statusUpdateTopic
 ) {
-  assert(Boolean(db), 'has firebase admin database reference');
+  assert(Boolean(db), 'has realtime DB instance');
+  assert(Boolean(fs), 'has firestore DB instance');
   assert(Boolean(pubsubClient), 'has pubsub client');
   assert(
     statusUpdateTopic && typeof statusUpdateTopic === 'string',
@@ -57,7 +60,7 @@ module.exports = function createOnDiStateUpdateHandler(
       beforeState !== afterState
     ) {
       try {
-        await processPropertyMeta(db, propertyId);
+        await processPropertyMeta(db, fs, propertyId);
         log.info(`${PREFIX} updated property's deficient item metadata`);
       } catch (err) {
         log.error(`${PREFIX} property metadata update failed | ${err}`);
