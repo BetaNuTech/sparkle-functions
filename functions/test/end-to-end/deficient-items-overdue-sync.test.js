@@ -4,13 +4,13 @@ const uuid = require('../../test-helpers/uuid');
 const mocking = require('../../test-helpers/mocking');
 const timeMocking = require('../../test-helpers/time');
 const { cleanDb } = require('../../test-helpers/firebase');
-const { db, test, cloudFunctions } = require('../setup');
+const { db, fs, test, cloudFunctions } = require('../setup');
 
 const REQUIRED_ACTIONS_VALUES = config.deficientItems.requiredActionStates;
 const OVERDUE_ELIGIBLE_STATES = config.deficientItems.overdueEligibleStates;
 
 describe('Deficient Items Overdue Sync', () => {
-  afterEach(() => cleanDb(db));
+  afterEach(() => cleanDb(db, fs));
 
   it('should not set ineligible, past due, deficiency items to overdue', async () => {
     const propertyId = uuid();

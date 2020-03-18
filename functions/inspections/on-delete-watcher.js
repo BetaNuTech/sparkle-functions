@@ -1,3 +1,4 @@
+const assert = require('assert');
 const log = require('../utils/logger');
 const processPropertyMeta = require('../properties/utils/process-meta');
 const deleteUploads = require('./utils/delete-uploads');
@@ -8,10 +9,15 @@ const PREFIX = 'inspections: on-delete:';
 /**
  * Factory for inspection onDelete handler
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+ * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
  * @param  {firebaseAdmin.storage} storage - Firebase Admin Storage instance
  * @return {Function} - inspection onDelete handler
  */
-module.exports = function createOnDeleteHandler(db, storage) {
+module.exports = function createOnDeleteHandler(db, fs, storage) {
+  assert(Boolean(db), 'has realtime DB instance');
+  assert(Boolean(fs), 'has firestore DB instance');
+  assert(Boolean(storage), 'has firebase storage instance');
+
   return async (inspectionSnap, event) => {
     const { inspectionId } = event.params;
     const inspection = inspectionSnap.val() || {};
@@ -48,7 +54,7 @@ module.exports = function createOnDeleteHandler(db, storage) {
     // to completed inspection meta data
     if (isCompleted) {
       try {
-        await processPropertyMeta(db, propertyId);
+        await processPropertyMeta(db, fs, propertyId);
       } catch (err) {
         log.error(
           `${PREFIX} failed to update property "${propertyId}" meta data | ${err}`

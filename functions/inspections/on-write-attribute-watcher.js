@@ -1,3 +1,4 @@
+const assert = require('assert');
 const log = require('../utils/logger');
 const processWrite = require('./process-write');
 
@@ -5,10 +6,14 @@ const PREFIX = 'inspections: on-attribute-write:';
 
 /**
  * Factory for general inspection updated onWrite handler
- * @param  {firebaseAdmin.database} - Firebase Admin DB instance
+ * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+ * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
  * @return {Function} - inspection attribute onWrite handler
  */
-module.exports = function createOnAttributeWriteHandler(db) {
+module.exports = function createOnAttributeWriteHandler(db, fs) {
+  assert(Boolean(db), 'has realtime DB instance');
+  assert(Boolean(fs), 'has firestore DB instance');
+
   return async (change, event) => {
     const updates = {};
     const { inspectionId } = event.params;
@@ -36,6 +41,7 @@ module.exports = function createOnAttributeWriteHandler(db) {
       );
       const processWriteUpdates = await processWrite(
         db,
+        fs,
         inspectionId,
         inspectionSnapshot.val()
       );

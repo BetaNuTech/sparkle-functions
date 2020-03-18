@@ -1,3 +1,4 @@
+const assert = require('assert');
 const log = require('../../utils/logger');
 const inspectionsModel = require('../../models/inspections');
 const processPropertyMeta = require('../../properties/utils/process-meta');
@@ -9,12 +10,21 @@ const PREFIX = 'inspections: process-write:';
  * Sync property meta and all inspection proxies.
  * Proxies include nested, propertyInspectionsList,
  * and completedInspectionsList
- * @param  {firebaseAdmin.database} db
+ * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+ * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
  * @param  {String} inspectionId
  * @param  {Object} inspection
  * @return {Promise} - resolves {Object} hash of updates
  */
-module.exports = async function processWrite(db, inspectionId, inspection) {
+module.exports = async function processWrite(db, fs, inspectionId, inspection) {
+  assert(Boolean(db), 'has realtime DB instance');
+  assert(Boolean(fs), 'has firestore DB instance');
+  assert(inspectionId && typeof inspectionId === 'string', 'has inspection id');
+  assert(
+    Boolean(inspection) && typeof inspection === 'object',
+    'has inspection object'
+  );
+
   const updates = {};
 
   // Throw errors if inspection
@@ -52,7 +62,7 @@ module.exports = async function processWrite(db, inspectionId, inspection) {
 
   // Update property attributes related
   // to completed inspection meta data
-  const metaUpdates = await processPropertyMeta(db, inspection.property);
+  const metaUpdates = await processPropertyMeta(db, fs, inspection.property);
   Object.assign(updates, metaUpdates); // combine updates
 
   return updates;
