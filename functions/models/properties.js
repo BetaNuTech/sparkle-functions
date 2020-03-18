@@ -71,7 +71,7 @@ module.exports = modelSetup({
   },
 
   /**
-   * Create or update a Firestore record
+   * Create or update a Firestore property
    * @param  {firebaseAdmin.firestore} fs
    * @param  {String}  propertyId
    * @param  {Object}  data
