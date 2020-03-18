@@ -31,7 +31,7 @@ module.exports = function createOnWriteHandler(db, fs) {
     const data = change.after.val();
 
     try {
-      await processWrite(db, inspectionId, data);
+      await processWrite(db, fs, inspectionId, data);
       log.info(`${PREFIX} inspection "${inspectionId}" upserted`);
     } catch (err) {
       log.error(`${PREFIX} inspections process write failed | ${err}`);

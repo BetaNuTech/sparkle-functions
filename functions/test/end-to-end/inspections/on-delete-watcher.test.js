@@ -2,8 +2,10 @@ const path = require('path');
 const { expect } = require('chai');
 const uuid = require('../../../test-helpers/uuid');
 const mocking = require('../../../test-helpers/mocking');
+const propertiesModel = require('../../../models/properties');
+const inspectionsModel = require('../../../models/inspections');
 const { cleanDb, findStorageFile } = require('../../../test-helpers/firebase');
-const { db, test, storage, cloudFunctions } = require('../../setup');
+const { db, fs, test, storage, cloudFunctions } = require('../../setup');
 
 const SRC_UPLOAD_IMG = 'test-image.jpg';
 const SRC_UPLOAD_IMG_DIR = path.resolve(__dirname, '..');
@@ -20,7 +22,7 @@ const PROPERTY_DATA = {
 };
 
 describe('Inspections | On Delete Watcher', () => {
-  afterEach(() => cleanDb(db));
+  afterEach(() => cleanDb(db, fs));
 
   it("archives inspection and removes its' public facing references", async () => {
     const now = Math.round(Date.now() / 1000);
@@ -143,48 +145,80 @@ describe('Inspections | On Delete Watcher', () => {
     propertyData.inspections[insp2Id] = true;
 
     // Setup database
-    await db.ref(PROPERTY_PATH).set(propertyData);
-    await db.ref(INSPECTION_PATH).set(inspectionOne);
-    await db
-      .ref(INSPECTION_PATH.replace(INSPECTION_ID, insp2Id))
-      .set(inspectionTwo);
-    const snap = await db.ref(INSPECTION_PATH).once('value');
-    await db.ref(INSPECTION_PATH).remove();
+    await propertiesModel.realtimeUpsertRecord(db, PROPERTY_ID, propertyData);
+    await inspectionsModel.realtimeUpsertRecord(
+      db,
+      INSPECTION_ID,
+      inspectionOne
+    );
+    await inspectionsModel.realtimeUpsertRecord(db, insp2Id, inspectionTwo);
+    const snap = await inspectionsModel.findRecord(db, INSPECTION_ID);
+    await inspectionsModel.realtimeRemoveRecord(db, INSPECTION_ID);
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.inspectionDelete);
     await wrapped(snap, { params: { inspectionId: INSPECTION_ID } });
 
     // Test result
-    const propertySnap = await db.ref(PROPERTY_PATH).once('value');
-    const result = propertySnap.val();
+    const propertySnap = await propertiesModel.findRecord(db, PROPERTY_ID);
+    const propertyDoc = await propertiesModel.firestoreFindRecord(
+      fs,
+      PROPERTY_ID
+    );
+    const realtime = propertySnap.val();
+    const firestore = propertyDoc.data();
 
     // Assertions
     [
       {
         expected: 1,
-        actual: result.numOfInspections,
-        msg: "updated property's `numOfInspections`",
+        actual: realtime.numOfInspections,
+        msg: "updated realtime property's number of inspections",
+      },
+      {
+        expected: 1,
+        actual: firestore.numOfInspections,
+        msg: "updated firestore property's number of inspections",
       },
       {
         expected: inspectionTwo.score,
-        actual: result.lastInspectionScore,
-        msg: "updated property's `lastInspectionScore`",
+        actual: realtime.lastInspectionScore,
+        msg: "updated realtime property's last inspection score",
+      },
+      {
+        expected: inspectionTwo.score,
+        actual: firestore.lastInspectionScore,
+        msg: "updated firestore property's last inspection score",
       },
       {
         expected: inspectionTwo.creationDate,
-        actual: result.lastInspectionDate,
-        msg: "updated property's `lastInspectionDate`",
+        actual: realtime.lastInspectionDate,
+        msg: "updated realtime property's last inspection date",
+      },
+      {
+        expected: inspectionTwo.creationDate,
+        actual: firestore.lastInspectionDate,
+        msg: "updated firestore property's last inspection date",
       },
       {
         expected: 1,
-        actual: result.numOfDeficientItems,
-        msg: "updated property's `numOfDeficientItems`",
+        actual: realtime.numOfDeficientItems,
+        msg: "updated realtime property's number of deficient items",
       },
       {
         expected: 1,
-        actual: result.numOfRequiredActionsForDeficientItems,
-        msg: "updated property's `numOfRequiredActionsForDeficientItems`",
+        actual: firestore.numOfDeficientItems,
+        msg: "updated firestore property's number of deficient items",
+      },
+      {
+        expected: 1,
+        actual: realtime.numOfRequiredActionsForDeficientItems,
+        msg: "updated realtime property's number of required actions",
+      },
+      {
+        expected: 1,
+        actual: firestore.numOfRequiredActionsForDeficientItems,
+        msg: "updated firestore property's number of required actions",
       },
     ].forEach(({ actual, expected, msg }) => {
       expect(actual).to.equal(expected, msg);

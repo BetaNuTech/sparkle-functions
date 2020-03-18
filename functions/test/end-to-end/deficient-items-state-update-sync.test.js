@@ -5,6 +5,7 @@ const mocking = require('../../test-helpers/mocking');
 const { cleanDb } = require('../../test-helpers/firebase');
 const {
   db,
+  fs,
   test,
   pubsub,
   cloudFunctions,
@@ -17,7 +18,7 @@ const SYSTEM_INTEGRATION_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}`;
 
 describe('Deficient Items Property Meta Sync', () => {
   afterEach(async () => {
-    await cleanDb(db);
+    await cleanDb(db, fs);
     return db.ref(SYSTEM_INTEGRATION_PATH).remove();
   });
 

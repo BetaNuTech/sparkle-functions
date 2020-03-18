@@ -20,7 +20,8 @@ const RESPONSIBILITY_GROUPS = config.deficientItems.responsibilityGroups;
  * and update associated property metadata
  * @param  {String} topic
  * @param  {functions.pubsub} pubsub
- * @param  {firebaseadmin.database} db
+ * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+ * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
  * @param  {String} deficientItemUrl
  * @return {functions.cloudfunction}
  */
@@ -28,11 +29,13 @@ module.exports = function createSyncOverdueDeficientItems(
   topic = '',
   pubsub,
   db,
+  fs,
   deficientItemUrl
 ) {
   assert(topic && typeof topic === 'string', 'has pubsub topic');
   assert(Boolean(pubsub), 'has pubsub instance');
-  assert(Boolean(db), 'has database instance');
+  assert(Boolean(db), 'has realtime DB instance');
+  assert(Boolean(fs), 'has firestore DB instance');
   assert(
     deficientItemUrl && typeof deficientItemUrl === 'string',
     'has DI URL template'
@@ -96,7 +99,11 @@ module.exports = function createSyncOverdueDeficientItems(
 
                 try {
                   // Sync DI's changes to its' property's metadata
-                  const metaUpdates = await processPropertyMeta(db, propertyId);
+                  const metaUpdates = await processPropertyMeta(
+                    db,
+                    fs,
+                    propertyId
+                  );
                   log.info(
                     `${PREFIX} ${topic}: property "${propertyId}" and deficient item "${defItemId}" has deficiency overdue`
                   );
