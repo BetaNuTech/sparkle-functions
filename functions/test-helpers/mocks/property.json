@@ -1,0 +1,31 @@
+{
+  "addr1": "13516 Skywatch Lane",
+  "bannerPhotoName": "-KRipJDhgkZkdjOF2ocv_banner.jpg",
+  "bannerPhotoURL": "https://firebasestorage.googleapis.com/v0/b/sapphire-inspections.appspot.com/o/propertyImages%2F-KRipJDhgkZkdjOF2ocv_banner.jpg?alt=media&token=a75bd869-6283-4196-bcf3-eb326e9f993a",
+  "city": "Louisville",
+  "code": "paddock",
+  "inspections": {
+    "-KieUsJNEgtsxfRw7UkB": true
+  },
+  "lastInspectionDate": 1.584405700593e9,
+  "lastInspectionScore": 92.72727272727272,
+  "loan_type": "",
+  "maint_super_name": "",
+  "manager_name": "Carrie Fenley",
+  "name": "The Paddock at Eastpoint",
+  "numOfDeficientItems": 82,
+  "numOfFollowUpActionsForDeficientItems": 0,
+  "numOfInspections": 136,
+  "numOfRequiredActionsForDeficientItems": 82,
+  "num_of_units": 500,
+  "photoName": "-KRipJDhgkZkdjOF2ocv.jpg",
+  "photoURL": "https://firebasestorage.googleapis.com/v0/b/sapphire-inspections.appspot.com/o/propertyImages%2F-KRipJDhgkZkdjOF2ocv.jpg?alt=media&token=dc16664b-e0c5-453c-ae0e-c1489510805a",
+  "slackChannel": "#sparkle-paddock",
+  "state": "KY",
+  "team": "-LiEO_X5lWCS6dznX465",
+  "templates": {
+    "-KRng4DXKrPb1wQPJWgy": true
+  },
+  "year_built": 1997,
+  "zip": "40245"
+}
