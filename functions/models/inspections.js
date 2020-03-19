@@ -558,6 +558,23 @@ module.exports = modelSetup({
       .doc(inspectionId)
       .get();
   },
+
+  /**
+   * Remove Firestore Inspection
+   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {String} inspectionId
+   * @return {Promise}
+   */
+  firestoreRemoveRecord(fs, inspectionId) {
+    assert(
+      inspectionId && typeof inspectionId === 'string',
+      `${PREFIX} has inspection id`
+    );
+    return fs
+      .collection(INSPECTION_COLLECTION)
+      .doc(inspectionId)
+      .delete();
+  },
 });
 
 /**
