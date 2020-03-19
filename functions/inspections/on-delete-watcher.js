@@ -61,5 +61,14 @@ module.exports = function createOnDeleteHandler(db, fs, storage) {
         );
       }
     }
+
+    // Remove matching Firestore Inspection
+    try {
+      await inspectionsModel.firestoreRemoveRecord(fs, inspectionId);
+    } catch (err) {
+      throw Error(
+        `${PREFIX} failed to remove firestore inspection "${inspectionId}": ${err}`
+      );
+    }
   };
 };
