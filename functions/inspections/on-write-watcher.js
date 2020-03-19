@@ -1,42 +1,48 @@
+const assert = require('assert');
 const log = require('../utils/logger');
 const processWrite = require('./process-write');
+const inspectionsModel = require('../models/inspections');
 
-const LOG_PREFIX = 'inspections: on-write:';
+const PREFIX = 'inspections: on-write:';
 
 /**
  * Factory for inspection onWrite handler
- * @param  {firebaseAdmin.database} - Firebase Admin DB instance
+ * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+ * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
  * @return {Function} - inspection onWrite handler
  */
-module.exports = function createOnWriteHandler(db) {
+module.exports = function createOnWriteHandler(db, fs) {
+  assert(Boolean(db), 'has realtime DB instance');
+  assert(Boolean(fs), 'has firestore DB instance');
+
   return async function onWriteHandler(change, event) {
-    const updates = {};
     const { inspectionId } = event.params;
 
     if (!inspectionId) {
-      log.warn(
-        `${LOG_PREFIX} incorrectly defined event parameter "inspectionId"`
-      );
+      log.error(`${PREFIX} incorrectly defined event parameter "inspectionId"`);
       return;
     }
 
     // Inspection removed
     if (!change.after.exists()) {
-      return updates;
+      return;
+    }
+
+    const data = change.after.val();
+
+    try {
+      await processWrite(db, fs, inspectionId, data);
+      log.info(`${PREFIX} inspection "${inspectionId}" upserted`);
+    } catch (err) {
+      log.error(`${PREFIX} inspections process write failed | ${err}`);
     }
 
     try {
-      const processWriteUpdates = await processWrite(
-        db,
-        inspectionId,
-        change.after.val()
+      await inspectionsModel.firestoreUpsertRecord(fs, inspectionId, data);
+    } catch (err) {
+      log.error(
+        `${PREFIX} upserting Firestore inspection "${inspectionId}" failed | ${err}`
       );
-      log.info(`${LOG_PREFIX} inspection ${inspectionId} upserted`);
-      Object.assign(updates, processWriteUpdates);
-    } catch (e) {
-      log.error(`${LOG_PREFIX} ${e}`);
     }
-
-    return updates;
   };
 };

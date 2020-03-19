@@ -1,7 +1,9 @@
+const assert = require('assert');
 const log = require('../utils/logger');
 const inspections = require('../inspections');
 const teams = require('../teams');
 const propertyTemplates = require('../property-templates');
+const propertiesModel = require('../models/properties');
 
 const PREFIX = 'properties: on-delete:';
 const PROPERTY_BUCKET_NAME = `propertyImages${
@@ -18,10 +20,20 @@ const PROPERTY_BUCKET_NAME = `propertyImages${
  */
 module.exports = function createOnDeleteHandler(
   db,
+  fs,
   storage,
   pubsubClient,
   userTeamsTopic
 ) {
+  assert(Boolean(db), 'has realtime DB instance');
+  assert(Boolean(fs), 'has firestore DB instance');
+  assert(Boolean(storage), 'has firebase storage instance');
+  assert(Boolean(pubsubClient), 'has firebase pubsub client');
+  assert(
+    userTeamsTopic && typeof userTeamsTopic === 'string',
+    'has user teams pubsub topic'
+  );
+
   return async (propertySnap, event) => {
     const updates = {};
     const { propertyId } = event.params;
@@ -86,6 +98,15 @@ module.exports = function createOnDeleteHandler(
           );
         }
       }
+    }
+
+    // Remove matching firestore Property
+    try {
+      await propertiesModel.firestoreRemoveRecord(fs, propertyId);
+    } catch (err) {
+      log.error(
+        `${PREFIX} failed to remove Firestore property "${propertyId}"`
+      );
     }
 
     return updates;

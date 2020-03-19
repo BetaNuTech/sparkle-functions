@@ -1,11 +1,14 @@
 const { expect } = require('chai');
 const uuid = require('../../../test-helpers/uuid');
 const mocking = require('../../../test-helpers/mocking');
+const inspectionData = require('../../../test-helpers/mocks/inspection');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { db, test, cloudFunctions } = require('../../setup');
+const propertiesModel = require('../../../models/properties');
+const inspectionsModel = require('../../../models/inspections');
+const { db, fs, test, cloudFunctions } = require('../../setup');
 
 describe('Inspections | On Write Watcher', () => {
-  afterEach(() => cleanDb(db));
+  afterEach(() => cleanDb(db, fs));
 
   it('should set an invalid score value to zero', async () => {
     const inspectionId = uuid();
@@ -251,7 +254,7 @@ describe('Inspections | On Write Watcher', () => {
       property: propertyId,
       inspectionCompleted: true,
     };
-    const inspectionOne = mocking.createInspection(
+    const inspOne = mocking.createInspection(
       Object.assign(
         {
           creationDate: newest,
@@ -271,7 +274,7 @@ describe('Inspections | On Write Watcher', () => {
         inspectionBase
       )
     );
-    const inspectionTwo = mocking.createInspection(
+    const inspTwo = mocking.createInspection(
       Object.assign(
         {
           creationDate: oldest,
@@ -291,53 +294,135 @@ describe('Inspections | On Write Watcher', () => {
         inspectionBase
       )
     );
-    const expected = {
+    const propertyData = { name: `name${propertyId}` };
+    const final = {
       numOfInspections: 2,
-      lastInspectionScore: inspectionOne.score,
-      lastInspectionDate: inspectionOne.creationDate,
+      lastInspectionScore: inspOne.score,
+      lastInspectionDate: inspOne.creationDate,
       numOfDeficientItems: 2,
       numOfRequiredActionsForDeficientItems: 2,
     };
 
     // Setup database
-    await db
-      .ref(`/properties/${propertyId}`)
-      .set({ name: `name${propertyId}` }); // required
-    await db.ref(`/inspections/${insp1Id}`).set(inspectionOne); // Add inspection #1
-    await db.ref(`/inspections/${insp2Id}`).set(inspectionTwo); // Add inspection #2
-    const snap = await db.ref(`/inspections/${insp1Id}`).once('value'); // Create snapshot
+    await propertiesModel.realtimeUpsertRecord(db, propertyId, propertyData); // required
+    await inspectionsModel.realtimeUpsertRecord(db, insp1Id, inspOne); // Add inspection #1
+    await inspectionsModel.realtimeUpsertRecord(db, insp2Id, inspTwo); // Add inspection #2
+    const snap = await inspectionsModel.findRecord(db, insp1Id); // Create snapshot
 
     // Execute
     const changeSnap = test.makeChange(snap, snap);
     const wrapped = test.wrap(cloudFunctions.inspectionWrite);
     await wrapped(changeSnap, { params: { inspectionId: insp1Id } });
 
-    // Test result
-    const propertySnap = await db
-      .ref(`/properties/${propertyId}`)
-      .once('value');
-    const actual = propertySnap.val();
+    // Test results
+    const propertySnap = await propertiesModel.findRecord(db, propertyId);
+    const propertyDoc = await propertiesModel.firestoreFindRecord(
+      fs,
+      propertyId
+    );
+    const realtime = propertySnap.val();
+    const firestore = propertyDoc.data();
 
     // Assertions
-    expect(actual.numOfInspections).to.equal(
-      expected.numOfInspections,
-      "updated property's `numOfInspections`"
+    [
+      {
+        actual: realtime.numOfInspections,
+        expected: final.numOfInspections,
+        msg: "updated realtime property's num of inspections",
+      },
+      {
+        actual: firestore.numOfInspections,
+        expected: final.numOfInspections,
+        msg: "updated firestore property's num of inspections",
+      },
+      {
+        actual: realtime.lastInspectionScore,
+        expected: final.lastInspectionScore,
+        msg: "updated realtime property's last inspection score",
+      },
+      {
+        actual: firestore.lastInspectionScore,
+        expected: final.lastInspectionScore,
+        msg: "updated firestore property's last inspection score",
+      },
+      {
+        actual: realtime.lastInspectionDate,
+        expected: final.lastInspectionDate,
+        msg: "updated realtime property's last inspection date",
+      },
+      {
+        actual: firestore.lastInspectionDate,
+        expected: final.lastInspectionDate,
+        msg: "updated firestore property's last inspection date",
+      },
+      {
+        actual: realtime.numOfDeficientItems,
+        expected: final.numOfDeficientItems,
+        msg: "updated realtime property's number of Deficient Items",
+      },
+      {
+        actual: firestore.numOfDeficientItems,
+        expected: final.numOfDeficientItems,
+        msg: "updated firestore property's number of Deficient Items",
+      },
+      {
+        actual: realtime.numOfRequiredActionsForDeficientItems,
+        expected: final.numOfRequiredActionsForDeficientItems,
+        msg: "updated realtime property's number of required actions",
+      },
+      {
+        actual: firestore.numOfRequiredActionsForDeficientItems,
+        expected: final.numOfRequiredActionsForDeficientItems,
+        msg: "updated firestore property's number of required actions",
+      },
+    ].forEach(({ actual, expected, msg }) =>
+      expect(actual).to.equal(expected, msg)
     );
-    expect(actual.lastInspectionScore).to.equal(
-      expected.lastInspectionScore,
-      "updated property's `lastInspectionScore`"
-    );
-    expect(actual.lastInspectionDate).to.equal(
-      expected.lastInspectionDate,
-      "updated property's `lastInspectionDate`"
-    );
-    expect(actual.numOfDeficientItems).to.equal(
-      expected.numOfDeficientItems,
-      "updated property's `numOfDeficientItems`"
-    );
-    expect(actual.numOfRequiredActionsForDeficientItems).to.equal(
-      expected.numOfRequiredActionsForDeficientItems,
-      "updated property's `numOfRequiredActionsForDeficientItems`"
-    );
+  });
+
+  it('should create a firestore inspection when an inspection is created', async () => {
+    const inspectionId = uuid();
+    const expected = JSON.parse(JSON.stringify(inspectionData));
+
+    // Setup database
+    await inspectionsModel.realtimeUpsertRecord(db, inspectionId, expected); // Create Realtime
+    const snap = await inspectionsModel.findRecord(db, inspectionId);
+
+    // Execute
+    const changeSnap = test.makeChange(snap, snap);
+    const wrapped = test.wrap(cloudFunctions.inspectionWrite);
+    await wrapped(changeSnap, { params: { inspectionId } });
+
+    // Test results
+    const result = await inspectionsModel.firestoreFindRecord(fs, inspectionId);
+    const actual = result.data();
+
+    // Assertions
+    expect(actual).to.deep.equal(expected);
+  });
+
+  it('should update an existing firestore inspection when an inspection is updated', async () => {
+    const inspectionId = uuid();
+    const data = JSON.parse(JSON.stringify(inspectionData));
+    const expected = { ...data };
+    expected.templateCategory = '';
+
+    // Setup database
+    await inspectionsModel.realtimeUpsertRecord(db, inspectionId, data); // Create Realtime
+    await inspectionsModel.firestoreUpsertRecord(fs, inspectionId, data); // Create Firestore
+    await inspectionsModel.realtimeUpsertRecord(db, inspectionId, expected); // Update Realtime
+    const snap = await inspectionsModel.findRecord(db, inspectionId);
+
+    // Execute
+    const changeSnap = test.makeChange(snap, snap);
+    const wrapped = test.wrap(cloudFunctions.inspectionWrite);
+    await wrapped(changeSnap, { params: { inspectionId } });
+
+    // Test results
+    const result = await inspectionsModel.firestoreFindRecord(fs, inspectionId);
+    const actual = result.data();
+
+    // Assertions
+    expect(actual).to.deep.equal(expected);
   });
 });

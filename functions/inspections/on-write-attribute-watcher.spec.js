@@ -6,7 +6,8 @@ describe('Inspections', function() {
   describe('On Attribute Write Handler', function() {
     it('should create a handler that returns a promise resolving updates hash', () => {
       const actual = createOnAttributeWriteHandler(
-        createDatabaseStub().value()
+        createDatabaseStub().value(),
+        {}
       )(
         {
           before: { exists: () => true },

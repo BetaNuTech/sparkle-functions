@@ -102,7 +102,7 @@ exports.inspectionPdfReport = functions.https.onRequest(
 // This allow the updatedLastDate to stay as-is (make sure client doesn't update it though)
 exports.inspectionMigrationDateWrite = functions.database
   .ref('/inspections/{inspectionId}/migrationDate')
-  .onWrite(inspections.createOnWriteAttributeWatcher(db));
+  .onWrite(inspections.createOnWriteAttributeWatcher(db, fs));
 
 // Property templates onWrite
 exports.propertyTemplatesWrite = functions.database
@@ -112,7 +112,7 @@ exports.propertyTemplatesWrite = functions.database
 // Property onWrite
 exports.propertyWrite = functions.database
   .ref('/properties/{propertyId}')
-  .onWrite(properties.createOnWriteWatcher(db));
+  .onWrite(properties.createOnWriteWatcher(db, fs));
 
 // Property onDelete
 exports.propertyDelete = functions.database
@@ -120,6 +120,7 @@ exports.propertyDelete = functions.database
   .onDelete(
     properties.createOnDeleteWatcher(
       db,
+      fs,
       storage,
       pubsubClient,
       'user-teams-sync'
@@ -155,6 +156,7 @@ exports.deficientItemsPropertyMetaSync = functions.database
   .onUpdate(
     deficientItems.createOnUpdateState(
       db,
+      fs,
       pubsubClient,
       'deficient-item-status-update'
     )
@@ -180,17 +182,17 @@ exports.templateWrite = functions.database
 // Inspection updatedLastDate onWrite
 exports.inspectionUpdatedLastDateWrite = functions.database
   .ref('/inspections/{inspectionId}/updatedLastDate')
-  .onWrite(inspections.createOnWriteAttributeWatcher(db));
+  .onWrite(inspections.createOnWriteAttributeWatcher(db, fs));
 
 // Inspection onWrite
 exports.inspectionWrite = functions.database
   .ref('/inspections/{inspectionId}')
-  .onWrite(inspections.createOnWriteWatcher(db));
+  .onWrite(inspections.createOnWriteWatcher(db, fs));
 
 // Inspection onDelete
 exports.inspectionDelete = functions.database
   .ref('/inspections/{inspectionId}')
-  .onDelete(inspections.createOnDeleteWatcher(db, storage));
+  .onDelete(inspections.createOnDeleteWatcher(db, fs, storage));
 
 // Template Category Delete
 exports.templateCategoryDelete = functions.database
@@ -235,7 +237,8 @@ exports.onCreateDeficientItemCompletedPhotoTrelloAttachement = functions.databas
 exports.propertyMetaSync = properties.pubsub.createSyncMeta(
   'properties-sync',
   functions.pubsub,
-  db
+  db,
+  fs
 );
 
 exports.templatesListSync = templates.pubsub.createSyncTemplatesList(
@@ -279,6 +282,7 @@ exports.deficientItemsOverdueSync = deficientItems.pubsub.createSyncOverdue(
   'deficient-items-sync',
   functions.pubsub,
   db,
+  fs,
   config.clientApps.web.deficientItemURL
 );
 
