@@ -4,6 +4,7 @@ const uuid = require('../../../test-helpers/uuid');
 const mocking = require('../../../test-helpers/mocking');
 const propertiesModel = require('../../../models/properties');
 const inspectionsModel = require('../../../models/inspections');
+const inspectionJson = require('../../../test-helpers/mocks/inspection');
 const { cleanDb, findStorageFile } = require('../../../test-helpers/firebase');
 const { db, fs, test, storage, cloudFunctions } = require('../../setup');
 
@@ -112,6 +113,42 @@ describe('Inspections | On Delete Watcher', () => {
 
     // Assertions
     expect(actual).to.deep.equal([false, false]);
+  });
+
+  it('should remove matching firestore inspection', async () => {
+    const expected = false;
+    const inspectionData = JSON.parse(JSON.stringify(inspectionJson));
+
+    // Setup database
+    await inspectionsModel.realtimeUpsertRecord(
+      db,
+      INSPECTION_ID,
+      inspectionData
+    );
+    await inspectionsModel.firestoreUpsertRecord(
+      fs,
+      INSPECTION_ID,
+      inspectionData
+    );
+    // await db.ref(PROPERTY_PATH).set(PROPERTY_DATA);
+    // await db.ref(COMPLETED_INSP_PROXY_PATH).set(inspectionData); // Add completedInspectionsList
+    // await db.ref(PROP_INSP_PROXY_PATH).set(inspectionData); // Add propertyInspectionsList
+    const snap = await inspectionsModel.findRecord(db, INSPECTION_ID);
+    await inspectionsModel.realtimeRemoveRecord(db, INSPECTION_ID); // Remove realtime
+
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.inspectionDelete);
+    await wrapped(snap, { params: { inspectionId: INSPECTION_ID } });
+
+    // Test result
+    const result = await inspectionsModel.firestoreFindRecord(
+      fs,
+      INSPECTION_ID
+    );
+    const actual = result.exists;
+
+    // Assertions
+    expect(actual).to.equal(expected);
   });
 
   it('should update property meta data when latest completed inspection is removed', async () => {
