@@ -16,7 +16,6 @@ module.exports = function createOnAttributeWriteHandler(db, fs) {
   assert(Boolean(fs), 'has firestore DB instance');
 
   return async (change, event) => {
-    const updates = {};
     const { inspectionId } = event.params;
 
     if (!inspectionId) {
@@ -26,7 +25,7 @@ module.exports = function createOnAttributeWriteHandler(db, fs) {
 
     // Inspection deleted or already up to date
     if (!change.after.exists() || change.before.val() === change.after.val()) {
-      return updates;
+      return;
     }
 
     // Lookup parent Inspection
@@ -36,8 +35,8 @@ module.exports = function createOnAttributeWriteHandler(db, fs) {
       const inspectionSnapshot = await change.after.ref.parent.once('value');
 
       if (!inspectionSnapshot.exists()) {
-        log.info(`${PREFIX} ${inspectionId} no inspection record found`);
-        return updates;
+        log.info(`${PREFIX} inspection "${inspectionId}" not found`);
+        return;
       }
 
       inspection = inspectionSnapshot.val();
@@ -68,20 +67,12 @@ module.exports = function createOnAttributeWriteHandler(db, fs) {
       log.info(
         `${PREFIX} ${inspectionId} updated, migrating proxy inspections`
       );
-      const processWriteUpdates = await processWrite(
-        db,
-        fs,
-        inspectionId,
-        inspection
-      );
-      return Object.assign({}, processWriteUpdates, updates);
+      await processWrite(db, fs, inspectionId, inspection);
     } catch (err) {
       // Handle any errors
       log.error(
         `${PREFIX} failed to updated inspection proxies "${inspectionId}" | ${err}`
       );
     }
-
-    return updates;
   };
 };
