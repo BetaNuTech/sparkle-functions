@@ -184,11 +184,6 @@ exports.inspectionUpdatedLastDateWrite = functions.database
   .ref('/inspections/{inspectionId}/updatedLastDate')
   .onWrite(inspections.createOnWriteAttributeWatcher(db, fs));
 
-// Inspection onWrite
-exports.inspectionWrite = functions.database
-  .ref('/inspections/{inspectionId}')
-  .onWrite(inspections.createOnWriteWatcher(db, fs));
-
 // Inspection onDelete
 exports.inspectionDelete = functions.database
   .ref('/inspections/{inspectionId}')

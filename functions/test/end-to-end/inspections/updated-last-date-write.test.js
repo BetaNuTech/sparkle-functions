@@ -78,6 +78,45 @@ describe('Inspections | Updated Last Date Write', () => {
     );
   });
 
+  it("should propagate all Inspection data to its' matching Firestore Inspection", async () => {
+    const inspId = uuid();
+    const propertyId = uuid();
+    const now = Math.round(Date.now() / 1000);
+    const data = mocking.createInspection({
+      property: propertyId,
+      inspectionCompleted: true,
+      creationDate: now - 100000,
+      score: 65,
+    });
+
+    // Setup database
+    await propertiesModel.realtimeUpsertRecord(db, propertyId, {
+      name: 'test',
+    }); // Required
+    await inspectionsModel.realtimeUpsertRecord(db, inspId, data); // Add inspection #1
+    const beforeSnap = await db
+      .ref(`/inspections/${inspId}/updatedLastDate`)
+      .once('value');
+    await db.ref(`/inspections/${inspId}/updatedLastDate`).set(now);
+    const afterSnap = await db
+      .ref(`/inspections/${inspId}/updatedLastDate`)
+      .once('value');
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.inspectionUpdatedLastDateWrite);
+    await wrapped(changeSnap, { params: { inspectionId: inspId } });
+
+    // Test results
+    const inspSnap = await inspectionsModel.findRecord(db, inspId);
+    const inspDoc = await inspectionsModel.firestoreFindRecord(fs, inspId);
+    const expected = inspSnap.val();
+    const actual = inspDoc.data();
+
+    // Assertions
+    expect(actual).to.deep.equal(expected);
+  });
+
   it("should update property with any meta data from its' completed inspections", async () => {
     const insp1Id = uuid();
     const insp2Id = uuid();

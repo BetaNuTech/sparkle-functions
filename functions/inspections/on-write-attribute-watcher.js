@@ -1,6 +1,7 @@
 const assert = require('assert');
 const log = require('../utils/logger');
 const processWrite = require('./process-write');
+const inspectionsModel = require('../models/inspections');
 
 const PREFIX = 'inspections: on-attribute-write:';
 
@@ -28,6 +29,9 @@ module.exports = function createOnAttributeWriteHandler(db, fs) {
       return updates;
     }
 
+    // Lookup parent Inspection
+    // of updated attribute
+    let inspection = null;
     try {
       const inspectionSnapshot = await change.after.ref.parent.once('value');
 
@@ -36,6 +40,31 @@ module.exports = function createOnAttributeWriteHandler(db, fs) {
         return updates;
       }
 
+      inspection = inspectionSnapshot.val();
+    } catch (err) {
+      throw Error(
+        `${PREFIX} failed to lookup parent inspection "${inspectionId}" | ${err}`
+      );
+    }
+
+    // Upsert matching Firestore
+    // w/ full Inspection data
+    try {
+      await inspectionsModel.firestoreUpsertRecord(
+        fs,
+        inspectionId,
+        inspection
+      );
+    } catch (err) {
+      log.error(
+        `${PREFIX} upserting Firestore inspection "${inspectionId}" failed | ${err}`
+      );
+    }
+
+    // Update proxy Inspections,
+    // and Property Meta data in
+    // both Realtime & Firestore
+    try {
       log.info(
         `${PREFIX} ${inspectionId} updated, migrating proxy inspections`
       );
@@ -43,15 +72,16 @@ module.exports = function createOnAttributeWriteHandler(db, fs) {
         db,
         fs,
         inspectionId,
-        inspectionSnapshot.val()
+        inspection
       );
       return Object.assign({}, processWriteUpdates, updates);
-    } catch (e) {
+    } catch (err) {
       // Handle any errors
       log.error(
-        `${PREFIX} ${inspectionId} failed to migrate updated inspection ${e}`
+        `${PREFIX} failed to updated inspection proxies "${inspectionId}" | ${err}`
       );
-      return updates;
     }
+
+    return updates;
   };
 };
