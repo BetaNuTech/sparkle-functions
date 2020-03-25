@@ -20,7 +20,6 @@ module.exports = function createOnInspectionWriteHandler(db) {
   assert(Boolean(db), 'has firebase admin database reference');
 
   return async (change, event) => {
-    const updates = {};
     const { inspectionId } = event.params;
 
     assert(Boolean(inspectionId), 'has inspection ID');
@@ -39,13 +38,10 @@ module.exports = function createOnInspectionWriteHandler(db) {
           db,
           inspectionId
         );
-        const archiveUpdates = await Promise.all(
+        await Promise.all(
           deficientItemSnapshots.map(deficientItemSnap =>
             model.toggleArchive(db, deficientItemSnap)
           )
-        );
-        archiveUpdates.forEach(archiveUpdate =>
-          Object.assign(updates, archiveUpdate)
         );
         log.info(`${PREFIX} archived deficient items for deleted inspection`);
       }
@@ -57,7 +53,7 @@ module.exports = function createOnInspectionWriteHandler(db) {
         !inspection.template ||
         !inspection.template.trackDeficientItems
       ) {
-        return updates;
+        return;
       }
 
       // Calculate expected and lookup current DI's
@@ -85,8 +81,7 @@ module.exports = function createOnInspectionWriteHandler(db) {
         const [deficientItemSnap] = currentDeficientItemSnaps.filter(
           ({ key: id }) => id === removeDeficientItemId
         );
-        const archiveUpdates = await model.toggleArchive(db, deficientItemSnap);
-        Object.assign(updates, archiveUpdates);
+        await model.toggleArchive(db, deficientItemSnap);
         log.info(
           `${PREFIX} archived no longer deficient item ${removeDeficientItemId}`
         );
@@ -131,8 +126,16 @@ module.exports = function createOnInspectionWriteHandler(db) {
         // Write, log, and set in memory w/ any updates
         if (Object.keys(itemUpdates).length) {
           itemUpdates.updatedAt = Date.now() / 1000; // modify updatedAt
-          await deficientItemSnap.ref.update(itemUpdates);
-          updates[deficientItemSnap.ref.path.toString()] = 'updated';
+          const propertyId = deficientItemSnap.ref.path
+            .toString()
+            .split('/')[2];
+          await model.updateRecord(
+            db,
+            propertyId,
+            updateDeficientItemId,
+            itemUpdates
+          );
+          // await deficientItemSnap.ref.update(itemUpdates);
           log.info(
             `${PREFIX} updating out of date deficient item ${updateDeficientItemId}`
           );
@@ -160,7 +163,6 @@ module.exports = function createOnInspectionWriteHandler(db) {
           deficientItemData
         );
         const addedDeficientItemID = Object.keys(addResult)[0];
-        updates[addedDeficientItemID] = 'created';
         log.info(
           `${PREFIX} added new deficient item: ${addedDeficientItemID
             .split('/')
@@ -176,8 +178,6 @@ module.exports = function createOnInspectionWriteHandler(db) {
 
       log.error(`${PREFIX} ${err}`);
     }
-
-    return updates;
   };
 };
 

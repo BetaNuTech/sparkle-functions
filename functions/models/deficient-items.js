@@ -75,6 +75,7 @@ module.exports = modelSetup({
 
   /**
    * Add a deficient item to a property
+   * TODO: Support firestore
    * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
    * @param  {String} propertyId
    * @param  {Object} recordData
@@ -115,8 +116,31 @@ module.exports = modelSetup({
   },
 
   /**
+   * Update Deficient Item
+   * TODO: update firestore
+   * @param  {firebaseAdmin.database} db - Realtime DB Instance
+   * @param  {String} propertyId
+   * @param  {String} defItemId
+   * @param  {Object} data
+   * @return {Promise}
+   */
+  updateRecord(db, propertyId, defItemId, data) {
+    assert(
+      propertyId && typeof propertyId === 'string',
+      `${PREFIX} has property id`
+    );
+    assert(
+      defItemId && typeof defItemId === 'string',
+      `${PREFIX} has inspection id`
+    );
+    assert(data && typeof data === 'object', `${PREFIX} has upsert data`);
+    return db.ref(`${DATABASE_PATH}/${propertyId}/${defItemId}`).update(data);
+  },
+
+  /**
    * Perform all updates to progress
    * a single deficient items' state
+   * TODO: update Firestore state
    * @param  {firebaseadmin.database} db
    * @param  {DataSnapshot} diSnap
    * @param  {String} newState
@@ -196,6 +220,7 @@ module.exports = modelSetup({
   /**
    * Move a deficient item under `/archive`
    * and remove it from its' active location
+   * TODO: support firestore archive
    * @param  {firebaseadmin.database} db
    * @param  {DataSnapshot} diSnap
    * @param  {Boolean} archiving is the function either archiving or unarchiving this deficient item?
