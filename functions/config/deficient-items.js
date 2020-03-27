@@ -52,6 +52,7 @@ const progressNoteTempl = `{{{firstName}}} {{{lastName}}} ({{{email}}}) has adde
 
 module.exports = {
   dbPath: '/propertyInspectionDeficientItems',
+  collection: 'deficiencies',
   initialState: 'requires-action',
   defaultTimezone: 'America/New_York',
   requiredActionStates: ['requires-action', 'go-back', 'overdue'],

@@ -2,10 +2,12 @@ const assert = require('assert');
 const modelSetup = require('./utils/model-setup');
 const createStateHistory = require('../deficient-items/utils/create-state-history');
 const systemModel = require('./system');
+const archive = require('./_internal/archive');
 const config = require('../config');
 
-const DATABASE_PATH = config.deficientItems.dbPath;
 const PREFIX = 'models: deficient-items:';
+const DATABASE_PATH = config.deficientItems.dbPath;
+const DEFICIENT_COLLECTION = config.deficientItems.collection;
 
 module.exports = modelSetup({
   /**
@@ -26,7 +28,7 @@ module.exports = modelSetup({
     );
 
     return db
-      .ref(`/propertyInspectionDeficientItems/${propertyId}/${deficientItemId}`)
+      .ref(`/${DATABASE_PATH}/${propertyId}/${deficientItemId}`)
       .once('value');
   },
 
@@ -75,44 +77,128 @@ module.exports = modelSetup({
 
   /**
    * Add a deficient item to a property
-   * TODO: Support firestore
    * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+   * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
    * @param  {String} propertyId
    * @param  {Object} recordData
    * @return {Promise} - resolves {Object} JSON of path and update
    */
-  async createRecord(db, propertyId, recordData) {
+  async createRecord(db, fs, propertyId, recordData) {
+    assert(Boolean(fs), 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(recordData && typeof recordData === 'object', 'has record data');
     assert(Boolean(recordData.inspection), 'has inspection reference');
     assert(Boolean(recordData.item), 'has item reference');
-
-    // Recover any previously archived deficient item
-    const archivedSnap = await this._findArchived(db, {
+    const archiveQuery = {
       propertyId,
       inspectionId: recordData.inspection,
       itemId: recordData.item,
-    });
-    const archived = archivedSnap ? archivedSnap.val() : null;
+    };
+
+    let archived = null;
+    let archivedId = '';
+
+    // Recover any previously
+    // archived realtime deficient item
+    try {
+      const archivedSnap = await archive.deficientItem.realtimeFindRecord(
+        db,
+        archiveQuery
+      );
+      archived = archivedSnap ? archivedSnap.val() : null;
+      if (archived) archivedId = archivedSnap.key;
+    } catch (err) {
+      throw Error(
+        `${PREFIX} createRecord: realtime archive lookup failed | ${err}`
+      );
+    }
+
+    // Recover any previously
+    // archived firestore deficiency
+    if (!archived) {
+      try {
+        const archivedDoc = await archive.deficientItem.firestoreFindRecord(
+          fs,
+          archiveQuery
+        );
+        archived = archivedDoc ? archivedDoc.data() : null;
+        if (archived) archivedId = archived.id;
+      } catch (err) {
+        throw Error(
+          `${PREFIX} createRecord: firestore archive lookup failed | ${err}`
+        );
+      }
+    }
 
     let ref;
+    let deficiencyId = '';
     if (archived) {
       // Re-use previously created DI identifier
-      ref = db.ref(`${DATABASE_PATH}/${propertyId}/${archivedSnap.key}`);
+      ref = db.ref(`${DATABASE_PATH}/${propertyId}/${archivedId}`);
+      deficiencyId = archivedId;
     } else {
       // Create brand new DI identifier
       ref = db.ref(`${DATABASE_PATH}/${propertyId}`).push();
+      deficiencyId = ref.path
+        .toString()
+        .split('/')
+        .pop();
     }
 
-    // Merge archived and created into active path
-    await ref.set(Object.assign(recordData, archived));
+    // Merge any archived into new record
+    const data = {};
+    Object.assign(data, recordData, archived);
 
+    try {
+      await ref.set(data);
+    } catch (err) {
+      throw Error(`${PREFIX} createRecord: realtime record set: ${err}`);
+    }
+
+    try {
+      fs.collection(DEFICIENT_COLLECTION)
+        .doc(deficiencyId)
+        .create(data);
+    } catch (err) {
+      throw Error(`${PREFIX} createRecord: firestore record create: ${err}`);
+    }
+
+    // Cleanup archive
     if (archived) {
-      // Cleanup archive
-      await archivedSnap.ref.remove();
+      try {
+        await archive.deficientItem.realtimeRemoveRecord(
+          db,
+          propertyId,
+          archivedId
+        );
+      } catch (err) {
+        throw Error(`${PREFIX} createRecord: realtime archive remove: ${err}`);
+      }
+
+      try {
+        await archive.deficientItem.firestoreRemoveRecord(fs, archivedId);
+      } catch (err) {
+        throw Error(`${PREFIX} createRecord: firestore archive remove: ${err}`);
+      }
     }
 
-    return { [ref.path.toString()]: recordData };
+    return { [ref.path.toString()]: data };
+  },
+
+  /**
+   * Create a new realtime
+   * Deficient Item record
+   * NOTE: ignores archive
+   * @param  {firebaseAdmin.database} db - Realtime DB Instance
+   * @param  {String} propertyId
+   * @param  {Object} data
+   * @return {Promise} - resolves {Reference}
+   */
+  realtimeCreateRecord(db, propertyId, data) {
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    assert(data && typeof data === 'object', 'has data');
+    const ref = db.ref(`${DATABASE_PATH}/${propertyId}`).push();
+    return ref.set(data).then(() => ref);
   },
 
   /**
@@ -275,40 +361,65 @@ module.exports = modelSetup({
   },
 
   /**
-   * Recover any deficient item from archive
-   * matching a property's inspection item
-   * @param  {firebaseadmin.database} db
-   * @param  {String}  propertyId
-   * @param  {String}  inspectionId
-   * @param  {String}  itemId
-   * @return {Promise} - resolve {DataSnapshot|Object}
+   * Create a Firestore Deficient Item
+   * @param  {firebaseAdmin.firestore} fs
+   * @param  {String}  deficientItemId
+   * @param  {Object}  data
+   * @return {Promise} - resolves {WriteResult}
    */
-  async _findArchived(db, { propertyId, inspectionId, itemId }) {
+  firestoreCreateRecord(fs, deficientItemId, data) {
+    assert(
+      deficientItemId && typeof deficientItemId === 'string',
+      'has deficient item id'
+    );
+    assert(data && typeof data === 'object', 'has data');
+    assert(
+      data.property && typeof data.property === 'string',
+      'data has property id'
+    );
+    assert(
+      data.inspection && typeof data.inspection === 'string',
+      'data has inspection id'
+    );
+    assert(data.item && typeof data.item === 'string', 'data has item id');
+    return fs
+      .collection(DEFICIENT_COLLECTION)
+      .doc(deficientItemId)
+      .create(data);
+  },
+
+  /**
+   * Lookup Firestore Deficiency
+   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {String} deficientItemId
+   * @return {Promise}
+   */
+  firestoreFindRecord(fs, deficientItemId) {
+    assert(
+      deficientItemId && typeof deficientItemId === 'string',
+      `${PREFIX} has deficient item id`
+    );
+    return fs
+      .collection(DEFICIENT_COLLECTION)
+      .doc(deficientItemId)
+      .get();
+  },
+
+  /**
+   * Lookup Firestore Deficiency Item's
+   * belonging to a single property
+   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {String} propertyId
+   * @return {Promise} - resolves {DocumentSnapshot[]}
+   */
+  firestoreQueryByProperty(fs, propertyId) {
     assert(
       propertyId && typeof propertyId === 'string',
-      'has property reference'
+      `${PREFIX} has property id`
     );
-    assert(
-      inspectionId && typeof inspectionId === 'string',
-      'has inspection reference'
-    );
-    assert(itemId && typeof itemId === 'string', 'has item reference');
 
-    let result = null;
-    const archPropertyDiRef = db.ref(`archive${DATABASE_PATH}/${propertyId}`);
-    const deficientItemSnaps = await archPropertyDiRef
-      .orderByChild('item')
-      .equalTo(itemId)
-      .once('value');
-
-    // Find DI's matching inspection ID
-    // (we've matched or property and item already)
-    deficientItemSnaps.forEach(deficientItemSnap => {
-      if (!result && deficientItemSnap.val().inspection === inspectionId) {
-        result = deficientItemSnap;
-      }
-    });
-
-    return result;
+    const colRef = fs.collection(DEFICIENT_COLLECTION);
+    colRef.where('property', '==', propertyId);
+    return colRef.get();
   },
 });

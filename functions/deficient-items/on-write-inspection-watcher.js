@@ -13,11 +13,13 @@ const DEFICIENT_ITEM_PROXY_ATTRS = Object.keys(
 
 /**
  * Factory for Deficient Items sync on Inspection write
- * @param  {firebaseAdmin.database} - Firebase Admin DB instance
+ * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+ * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
  * @return {Function} - property onWrite handler
  */
-module.exports = function createOnInspectionWriteHandler(db) {
+module.exports = function createOnInspectionWriteHandler(db, fs) {
   assert(Boolean(db), 'has firebase admin database reference');
+  assert(Boolean(fs), 'has firestore DB instance');
 
   return async (change, event) => {
     const { inspectionId } = event.params;
@@ -159,6 +161,7 @@ module.exports = function createOnInspectionWriteHandler(db) {
         const deficientItemData = expectedDeficientItems[inspectionItemId];
         const addResult = await model.createRecord(
           db,
+          fs,
           inspection.property,
           deficientItemData
         );

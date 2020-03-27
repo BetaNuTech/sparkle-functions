@@ -149,7 +149,7 @@ exports.teamDelete = functions.database
 // Deficient Items
 exports.deficientItemsWrite = functions.database
   .ref('/inspections/{inspectionId}/updatedAt')
-  .onWrite(deficientItems.createOnWriteInspection(db));
+  .onWrite(deficientItems.createOnWriteInspection(db, fs));
 
 exports.deficientItemsPropertyMetaSync = functions.database
   .ref('/propertyInspectionDeficientItems/{propertyId}/{itemId}/state')

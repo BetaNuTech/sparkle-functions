@@ -1,9 +1,9 @@
 const { expect } = require('chai');
-const config = require('../../config');
-const uuid = require('../../test-helpers/uuid');
-const mocking = require('../../test-helpers/mocking');
-const { cleanDb } = require('../../test-helpers/firebase');
-const { db, fs, test, cloudFunctions } = require('../setup');
+const config = require('../../../config');
+const uuid = require('../../../test-helpers/uuid');
+const mocking = require('../../../test-helpers/mocking');
+const { cleanDb } = require('../../../test-helpers/firebase');
+const { db, fs, test, cloudFunctions } = require('../../setup');
 
 const DEFICIENT_ITEM_PROXY_ATTRS =
   config.deficientItems.inspectionItemProxyAttrs;
@@ -11,10 +11,10 @@ const DEFICIENT_ITEM_ELIGIBLE = config.inspectionItems.deficientListEligible;
 const INSPECTION_ITEM_SCORES = config.inspectionItems.scores;
 const ITEM_VALUE_NAMES = config.inspectionItems.valueNames;
 
-describe('Deficient Items Create, Update, and Delete', () => {
+describe('Deficient Items | Inspection Change', () => {
   afterEach(() => cleanDb(db, fs));
 
-  it('should archive all deficient items associated with a deleted inspection', async () => {
+  it('should archive all deficient items associated with a deleted inspection item', async () => {
     const propertyId = uuid();
     const inspectionId = uuid();
     const itemId = uuid();
@@ -163,7 +163,7 @@ describe('Deficient Items Create, Update, and Delete', () => {
     );
   });
 
-  it('should create deficient items for a newly deficient inspection', async () => {
+  it('should create new deficient items for a newly deficient inspection items', async () => {
     const propertyId = uuid();
     const inspectionId = uuid();
     const item1Id = uuid();
