@@ -109,7 +109,7 @@ module.exports = modelSetup({
       if (archived) archivedId = archivedSnap.key;
     } catch (err) {
       throw Error(
-        `${PREFIX} createRecord: realtime archive lookup failed | ${err}`
+        `${PREFIX} createRecord: realtime archive lookup failed: ${err}`
       );
     }
 
@@ -122,10 +122,10 @@ module.exports = modelSetup({
           archiveQuery
         );
         archived = archivedDoc ? archivedDoc.data() : null;
-        if (archived) archivedId = archived.id;
+        if (archived) archivedId = archivedDoc.id;
       } catch (err) {
         throw Error(
-          `${PREFIX} createRecord: firestore archive lookup failed | ${err}`
+          `${PREFIX} createRecord: firestore archive lookup failed: ${err}`
         );
       }
     }
@@ -156,16 +156,17 @@ module.exports = modelSetup({
     }
 
     try {
-      fs.collection(DEFICIENT_COLLECTION)
-        .doc(deficiencyId)
-        .create(data);
+      await this.firestoreCreateRecord(fs, deficiencyId, {
+        property: propertyId,
+        ...data,
+      });
     } catch (err) {
       throw Error(`${PREFIX} createRecord: firestore record create: ${err}`);
     }
 
-    // Cleanup archive
     if (archived) {
       try {
+        // Cleanup realtime archive
         await archive.deficientItem.realtimeRemoveRecord(
           db,
           propertyId,
@@ -176,6 +177,7 @@ module.exports = modelSetup({
       }
 
       try {
+        // Cleanup firestore archive
         await archive.deficientItem.firestoreRemoveRecord(fs, archivedId);
       } catch (err) {
         throw Error(`${PREFIX} createRecord: firestore archive remove: ${err}`);
@@ -306,14 +308,19 @@ module.exports = modelSetup({
   /**
    * Move a deficient item under `/archive`
    * and remove it from its' active location
-   * TODO: support firestore archive
    * @param  {firebaseadmin.database} db
-   * @param  {DataSnapshot} diSnap
+   * @param  {firebaseadmin.firebase} fs
+   * @param  {DataSnapshot} diSnap // TODO: remove requiring
    * @param  {Boolean} archiving is the function either archiving or unarchiving this deficient item?
    * @return {Promise} - resolves {Object} updates hash
    */
-  async toggleArchive(db, diSnap, archiving = true) {
+  async toggleArchive(db, fs, diSnap, archiving = true) {
+    assert(Boolean(fs), 'has firebase db instance');
+    assert(Boolean(diSnap), 'has snapshot');
+    assert(typeof archiving === 'boolean', 'has archiving boolean');
+
     const updates = {};
+    const defItemId = diSnap.key;
     const activePath = diSnap.ref.path.toString();
     const [propertyId] = activePath.split('/').slice(-2, -1);
     const deficientItem = diSnap.val();
@@ -331,24 +338,87 @@ module.exports = modelSetup({
       await db.ref(writePath).set(deficientItem);
       updates[writePath] = 'created';
     } catch (err) {
-      throw Error(`${PREFIX} ${toggleType} write failed: ${err}`);
+      throw Error(`${PREFIX} realtime ${toggleType} write failed: ${err}`);
     }
 
     try {
       await db.ref(removePath).remove();
       updates[removePath] = 'removed';
     } catch (err) {
-      throw Error(`${PREFIX} deficient item removal failed: ${err}`);
+      throw Error(`${PREFIX} realtime deficient item removal failed: ${err}`);
+    }
+
+    if (archiving) {
+      // Archive
+      let diDoc = null;
+      try {
+        diDoc = await this.firestoreFindRecord(fs, defItemId);
+      } catch (err) {
+        throw Error(
+          `${PREFIX} firestore DI "${defItemId}" lookup failed: ${err}`
+        );
+      }
+
+      try {
+        await archive.deficientItem.firestoreCreateRecord(
+          fs,
+          defItemId,
+          diDoc.data() || { property: propertyId, ...deficientItem }
+        );
+      } catch (err) {
+        throw Error(
+          `${PREFIX} firestore archived DI "${defItemId}" create failed: ${err}`
+        );
+      }
+
+      try {
+        await this.firestoreRemoveRecord(fs, defItemId);
+      } catch (err) {
+        throw Error(
+          `${PREFIX} firestore DI "${defItemId}" remove failed: ${err}`
+        );
+      }
+    } else {
+      // Unarchive
+      let diDoc = null;
+      try {
+        diDoc = await archive.deficientItem.firestoreFindRecord(fs, defItemId);
+      } catch (err) {
+        throw Error(
+          `${PREFIX} firestore DI "${defItemId}" lookup failed: ${err}`
+        );
+      }
+      const diData = diDoc.data() || {
+        property: propertyId,
+        ...deficientItem,
+      };
+      delete diData._collection; // Remove archive only attribute
+
+      try {
+        await this.firestoreCreateRecord(fs, defItemId, diData);
+      } catch (err) {
+        throw Error(
+          `${PREFIX} firestore DI "${defItemId}" create failed: ${err}`
+        );
+      }
+
+      try {
+        await archive.deficientItem.firestoreRemoveRecord(fs, defItemId);
+      } catch (err) {
+        throw Error(
+          `${PREFIX} firestore DI "${defItemId}" create failed: ${err}`
+        );
+      }
     }
 
     try {
-      const archiveResponse = await systemModel.archiveTrelloCard(
+      const trelloResponse = await systemModel.archiveTrelloCard(
         db,
         propertyId,
         diSnap.key,
         archiving
       );
-      if (archiveResponse) updates.trelloCardChanged = archiveResponse.id;
+      if (trelloResponse) updates.trelloCardChanged = trelloResponse.id;
     } catch (err) {
       const resultErr = Error(
         `${PREFIX} associated Trello card ${toggleType} failed | ${err}`
@@ -363,8 +433,8 @@ module.exports = modelSetup({
   /**
    * Create a Firestore Deficient Item
    * @param  {firebaseAdmin.firestore} fs
-   * @param  {String}  deficientItemId
-   * @param  {Object}  data
+   * @param  {String} deficientItemId
+   * @param  {Object} data
    * @return {Promise} - resolves {WriteResult}
    */
   firestoreCreateRecord(fs, deficientItemId, data) {
@@ -413,13 +483,40 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {DocumentSnapshot[]}
    */
   firestoreQueryByProperty(fs, propertyId) {
-    assert(
-      propertyId && typeof propertyId === 'string',
-      `${PREFIX} has property id`
-    );
-
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
     const colRef = fs.collection(DEFICIENT_COLLECTION);
     colRef.where('property', '==', propertyId);
     return colRef.get();
+  },
+
+  /**
+   * Lookup Firestore Deficiency Item query
+   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {String} propertyId
+   * @param  {Object} query
+   * @return {Promise} - resolves {DocumentSnapshot[]}
+   */
+  firestoreQuery(fs, query) {
+    assert(query && typeof query === 'object', 'has query hash');
+    const colRef = fs.collection(DEFICIENT_COLLECTION);
+    Object.keys(query).forEach(attr => colRef.where(attr, '==', query[attr]));
+    return colRef.get();
+  },
+
+  /**
+   * Remove Firestore Deficient Item
+   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {String} deficientItemId
+   * @return {Promise}
+   */
+  firestoreRemoveRecord(fs, deficientItemId) {
+    assert(
+      deficientItemId && typeof deficientItemId === 'string',
+      `${PREFIX} has deficient item id`
+    );
+    return fs
+      .collection(DEFICIENT_COLLECTION)
+      .doc(deficientItemId)
+      .delete();
   },
 });

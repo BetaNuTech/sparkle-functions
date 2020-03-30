@@ -79,22 +79,41 @@ module.exports = modelSetup({
      * @param  {String}  itemId
      * @return {Promise} - resolve {Document|Object}
      */
-    async firestoreFindRecord(fs, { propertyId, inspectionId, itemId }) {
-      assert(
-        propertyId && typeof propertyId === 'string',
-        'has property reference'
-      );
-      assert(
-        inspectionId && typeof inspectionId === 'string',
-        'has inspection reference'
-      );
-      assert(itemId && typeof itemId === 'string', 'has item reference');
+    async firestoreFindRecord(fs, query) {
+      assert(Boolean(query), 'has string/object query');
+      let propertyId = '';
+      let inspectionId = '';
+      let itemId = '';
+      let deficientItemId = '';
+      const hasDiIdentifier = typeof query === 'string';
+
+      if (hasDiIdentifier) {
+        deficientItemId = query;
+      } else {
+        propertyId = query.propertyId;
+        inspectionId = query.inspectionId;
+        itemId = query.itemId;
+        assert(
+          propertyId && typeof propertyId === 'string',
+          'has property reference'
+        );
+        assert(
+          inspectionId && typeof inspectionId === 'string',
+          'has inspection reference'
+        );
+        assert(itemId && typeof itemId === 'string', 'has item reference');
+      }
 
       const deficienciesRef = fs.collection(ARCHIVE_COLLECTION);
-      deficienciesRef.where('_collection', '==', DEFICIENT_COLLECTION);
-      deficienciesRef.where('property', '==', propertyId);
-      deficienciesRef.where('inspection', '==', inspectionId);
-      deficienciesRef.where('item', '==', itemId);
+
+      if (hasDiIdentifier) {
+        deficienciesRef.doc(deficientItemId);
+      } else {
+        deficienciesRef.where('_collection', '==', DEFICIENT_COLLECTION);
+        deficienciesRef.where('property', '==', propertyId);
+        deficienciesRef.where('inspection', '==', inspectionId);
+        deficienciesRef.where('item', '==', itemId);
+      }
 
       let deficiency = null;
       try {
@@ -122,6 +141,37 @@ module.exports = modelSetup({
         .collection(ARCHIVE_COLLECTION)
         .doc(deficientItemId)
         .delete();
+    },
+
+    /**
+     * Create Firestore Inspection
+     * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+     * @param  {String} deficientItemId
+     * @param  {Object} data
+     * @return {Promise}
+     */
+    firestoreCreateRecord(fs, deficientItemId, data) {
+      assert(
+        deficientItemId && typeof deficientItemId === 'string',
+        'has deficient item id'
+      );
+      assert(data && typeof data === 'object', 'has data');
+      assert(
+        data.property && typeof data.property === 'string',
+        'data has property id'
+      );
+      assert(
+        data.inspection && typeof data.inspection === 'string',
+        'data has inspection id'
+      );
+      assert(data.item && typeof data.item === 'string', 'data has item id');
+
+      // Add collection name to archive record
+      const archiveData = { _collection: DEFICIENT_COLLECTION, ...data };
+      return fs
+        .collection(ARCHIVE_COLLECTION)
+        .doc(deficientItemId)
+        .create(archiveData);
     },
   },
 });
