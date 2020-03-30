@@ -1,14 +1,17 @@
+const path = require('path');
 const { expect } = require('chai');
-const uuid = require('../../test-helpers/uuid');
-const { cleanDb, findStorageFile } = require('../../test-helpers/firebase');
-const { db, test, storage, cloudFunctions } = require('../setup');
+const uuid = require('../../../test-helpers/uuid');
+const { cleanDb, findStorageFile } = require('../../../test-helpers/firebase');
+const propertiesModel = require('../../../models/properties');
+const { db, fs, test, storage, cloudFunctions } = require('../../setup');
 
 const SRC_PROFILE_IMG = 'test-image.jpg';
+const PROFILE_IMG_PATH = path.join(__dirname, `../${SRC_PROFILE_IMG}`);
 const PROP_UPLOAD_DIR = 'propertyImagesTest';
 const INSP_UPLOAD_DIR = 'inspectionItemImagesTest';
 
-describe('Property Delete', () => {
-  afterEach(() => cleanDb(db));
+describe('Properties | Delete', () => {
+  afterEach(() => cleanDb(db, fs));
 
   it("should remove a property's profile image from storage", async () => {
     const propertyId = uuid();
@@ -16,7 +19,7 @@ describe('Property Delete', () => {
 
     // Setup database
     const destination = `${PROP_UPLOAD_DIR}/${propertyId}-${Date.now()}-${SRC_PROFILE_IMG}`;
-    await bucket.upload(`${__dirname}/${SRC_PROFILE_IMG}`, {
+    await bucket.upload(PROFILE_IMG_PATH, {
       gzip: true,
       destination,
     }); // upload file
@@ -54,7 +57,7 @@ describe('Property Delete', () => {
       '.'
     );
     destination = `${destination[0]}_banner.${destination[1]}`;
-    await bucket.upload(`${__dirname}/${SRC_PROFILE_IMG}`, {
+    await bucket.upload(PROFILE_IMG_PATH, {
       gzip: true,
       destination,
     }); // upload file
@@ -120,7 +123,7 @@ describe('Property Delete', () => {
     // Setup database
     const destination1 = `${INSP_UPLOAD_DIR}/${inspection1Id}-${Date.now()}-${SRC_PROFILE_IMG}`;
     const destination2 = `${INSP_UPLOAD_DIR}/${inspection2Id}-${Date.now()}-${SRC_PROFILE_IMG}`;
-    await bucket.upload(`${__dirname}/${SRC_PROFILE_IMG}`, {
+    await bucket.upload(PROFILE_IMG_PATH, {
       gzip: true,
       destination: destination1,
     }); // upload file
@@ -133,7 +136,7 @@ describe('Property Delete', () => {
       action: 'read',
       expires: '01-01-2491',
     }); // get download URL
-    await bucket.upload(`${__dirname}/${SRC_PROFILE_IMG}`, {
+    await bucket.upload(PROFILE_IMG_PATH, {
       gzip: true,
       destination: destination2,
     }); // upload file
@@ -292,5 +295,28 @@ describe('Property Delete', () => {
       true,
       'second added property still exists on team'
     );
+  });
+
+  it('should remove any matching firestore property', async () => {
+    const expected = false;
+    const propertyId = uuid();
+    const data = { name: 'test' };
+
+    // Setup database
+    await propertiesModel.realtimeUpsertRecord(db, propertyId, data); // Create realtime
+    await propertiesModel.firestoreUpsertRecord(fs, propertyId, data); // Create firestore
+    await propertiesModel.realtimeRemoveRecord(db, propertyId); // Remove realtime
+    const propertyAfterSnap = await propertiesModel.findRecord(db, propertyId);
+
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.propertyDelete);
+    await wrapped(propertyAfterSnap, { params: { propertyId } });
+
+    // Test results
+    const result = await propertiesModel.firestoreFindRecord(fs, propertyId);
+    const actual = result.exists;
+
+    // Assertions
+    expect(actual).to.deep.equal(expected);
   });
 });

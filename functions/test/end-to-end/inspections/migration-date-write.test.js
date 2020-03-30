@@ -2,12 +2,14 @@ const { expect } = require('chai');
 const uuid = require('../../../test-helpers/uuid');
 const mocking = require('../../../test-helpers/mocking');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { db, test, cloudFunctions } = require('../../setup');
+const propertiesModel = require('../../../models/properties');
+const inspectionsModel = require('../../../models/inspections');
+const { db, fs, test, cloudFunctions } = require('../../setup');
 
 const { assign } = Object;
 
 describe('Inspections | Migration Date Write', () => {
-  afterEach(() => cleanDb(db));
+  afterEach(() => cleanDb(db, fs));
 
   it("should migrate all an inspections' outdated proxy records", async () => {
     const propertyId = uuid();
@@ -81,77 +83,152 @@ describe('Inspections | Migration Date Write', () => {
     );
   });
 
+  it("should propagate all Inspection data to its' matching Firestore Inspection", async () => {
+    const inspId = uuid();
+    const propertyId = uuid();
+    const now = Math.round(Date.now() / 1000);
+    const data = mocking.createInspection({
+      property: propertyId,
+      inspectionCompleted: true,
+      creationDate: now - 100000,
+      score: 65,
+    });
+
+    // Setup database
+    await propertiesModel.realtimeUpsertRecord(db, propertyId, {
+      name: 'test',
+    }); // Required
+    await inspectionsModel.realtimeUpsertRecord(db, inspId, data); // Add inspection #1
+    const beforeSnap = await db
+      .ref(`/inspections/${inspId}/migrationDate`)
+      .once('value');
+    await db.ref(`/inspections/${inspId}/migrationDate`).set(now);
+    const afterSnap = await db
+      .ref(`/inspections/${inspId}/migrationDate`)
+      .once('value');
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.inspectionUpdatedLastDateWrite);
+    await wrapped(changeSnap, { params: { inspectionId: inspId } });
+
+    // Test results
+    const inspSnap = await inspectionsModel.findRecord(db, inspId);
+    const inspDoc = await inspectionsModel.firestoreFindRecord(fs, inspId);
+    const expected = inspSnap.val();
+    const actual = inspDoc.data();
+
+    // Assertions
+    expect(actual).to.deep.equal(expected);
+  });
+
   it("should update property with any meta data from its' completed inspections", async () => {
-    const inspection1Id = uuid();
-    const inspection2Id = uuid();
+    const insp1Id = uuid();
+    const insp2Id = uuid();
     const propertyId = uuid();
     const newest = Date.now() / 1000;
     const oldest = Date.now() / 1000 - 100000;
-    const inspectionOne = mocking.createInspection({
+    const inspOne = mocking.createInspection({
       property: propertyId,
       inspectionCompleted: true,
       creationDate: newest,
       score: 65,
     });
-    const inspectionTwo = mocking.createInspection({
+    const inspTwo = mocking.createInspection({
       property: propertyId,
       inspectionCompleted: true,
       creationDate: oldest,
       score: 25,
     });
-    const expected = {
+    const propertyData = { name: `name${propertyId}` };
+    const final = {
       numOfInspections: 2,
-      lastInspectionScore: inspectionOne.score,
-      lastInspectionDate: inspectionOne.creationDate,
+      lastInspectionScore: inspOne.score,
+      lastInspectionDate: inspOne.creationDate,
       numOfDeficientItems: 0,
       numOfRequiredActionsForDeficientItems: 0,
     };
 
     // Setup database
-    await db.ref(`/inspections/${inspection1Id}`).set(inspectionOne); // Add inspection #1
-    await db.ref(`/inspections/${inspection2Id}`).set(inspectionTwo); // Add inspection #2
-    await db
-      .ref(`/properties/${propertyId}`)
-      .set({ name: `name${propertyId}` }); // required
+    await inspectionsModel.realtimeUpsertRecord(db, insp1Id, inspOne); // Add inspection #1
+    await inspectionsModel.realtimeUpsertRecord(db, insp2Id, inspTwo); // Add inspection #2
+    await propertiesModel.realtimeUpsertRecord(db, propertyId, propertyData); // Required
     const beforeSnap = await db
-      .ref(`/inspections/${inspection1Id}/updatedLastDate`)
+      .ref(`/inspections/${insp1Id}/migrationDate`)
       .once('value');
-    await db.ref(`/inspections/${inspection1Id}/updatedLastDate`).set(newest);
+    await db.ref(`/inspections/${insp1Id}/migrationDate`).set(newest);
     const afterSnap = await db
-      .ref(`/inspections/${inspection1Id}/updatedLastDate`)
+      .ref(`/inspections/${insp1Id}/migrationDate`)
       .once('value');
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
     const wrapped = test.wrap(cloudFunctions.inspectionMigrationDateWrite);
-    await wrapped(changeSnap, { params: { inspectionId: inspection1Id } });
+    await wrapped(changeSnap, { params: { inspectionId: insp1Id } });
 
     // Test results
-    const propertySnap = await db
-      .ref(`/properties/${propertyId}`)
-      .once('value');
-    const actual = propertySnap.val();
+    const propertySnap = await propertiesModel.findRecord(db, propertyId);
+    const propertyDoc = await propertiesModel.firestoreFindRecord(
+      fs,
+      propertyId
+    );
+    const realtime = propertySnap.val();
+    const firestore = propertyDoc.data();
 
     // Assertions
-    expect(actual.numOfInspections).to.equal(
-      expected.numOfInspections,
-      "updated property's `numOfInspections`"
-    );
-    expect(actual.lastInspectionScore).to.equal(
-      expected.lastInspectionScore,
-      "updated property's `lastInspectionScore`"
-    );
-    expect(actual.lastInspectionDate).to.equal(
-      expected.lastInspectionDate,
-      "updated property's `lastInspectionDate`"
-    );
-    expect(actual.numOfDeficientItems).to.equal(
-      expected.numOfDeficientItems,
-      "updated property's `numOfDeficientItems`"
-    );
-    expect(actual.numOfRequiredActionsForDeficientItems).to.equal(
-      expected.numOfRequiredActionsForDeficientItems,
-      "updated property's `numOfRequiredActionsForDeficientItems`"
+    [
+      {
+        actual: realtime.numOfInspections,
+        expected: final.numOfInspections,
+        msg: "updated realtime property's num of inspections",
+      },
+      {
+        actual: firestore.numOfInspections,
+        expected: final.numOfInspections,
+        msg: "updated firestore property's num of inspections",
+      },
+      {
+        actual: realtime.lastInspectionScore,
+        expected: final.lastInspectionScore,
+        msg: "updated realtime property's last inspection score",
+      },
+      {
+        actual: firestore.lastInspectionScore,
+        expected: final.lastInspectionScore,
+        msg: "updated firestore property's last inspection score",
+      },
+      {
+        actual: realtime.lastInspectionDate,
+        expected: final.lastInspectionDate,
+        msg: "updated realtime property's last inspection date",
+      },
+      {
+        actual: firestore.lastInspectionDate,
+        expected: final.lastInspectionDate,
+        msg: "updated firestore property's last inspection date",
+      },
+      {
+        actual: realtime.numOfDeficientItems,
+        expected: final.numOfDeficientItems,
+        msg: "updated realtime property's number of Deficient Items",
+      },
+      {
+        actual: firestore.numOfDeficientItems,
+        expected: final.numOfDeficientItems,
+        msg: "updated firestore property's number of Deficient Items",
+      },
+      {
+        actual: realtime.numOfRequiredActionsForDeficientItems,
+        expected: final.numOfRequiredActionsForDeficientItems,
+        msg: "updated realtime property's number of required actions",
+      },
+      {
+        actual: firestore.numOfRequiredActionsForDeficientItems,
+        expected: final.numOfRequiredActionsForDeficientItems,
+        msg: "updated firestore property's number of required actions",
+      },
+    ].forEach(({ actual, expected, msg }) =>
+      expect(actual).to.equal(expected, msg)
     );
   });
 });

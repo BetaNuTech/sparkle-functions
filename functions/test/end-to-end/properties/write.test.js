@@ -1,10 +1,12 @@
 const { expect } = require('chai');
-const uuid = require('../../test-helpers/uuid');
-const { cleanDb } = require('../../test-helpers/firebase');
-const { db, test, cloudFunctions } = require('../setup');
+const uuid = require('../../../test-helpers/uuid');
+const { cleanDb } = require('../../../test-helpers/firebase');
+const propertyData = require('../../../test-helpers/mocks/property');
+const propertiesModel = require('../../../models/properties');
+const { db, fs, test, cloudFunctions } = require('../../setup');
 
-describe('Property Write', () => {
-  afterEach(() => cleanDb(db));
+describe('Properties | Write', () => {
+  afterEach(() => cleanDb(db, fs));
 
   it("should remove a template's property proxies when a template is disassociated from property", async () => {
     const tmplId1 = uuid();
@@ -95,6 +97,54 @@ describe('Property Write', () => {
       .ref(`/propertyTemplatesList/${propertyId}`)
       .once('value');
     const actual = result.val();
+
+    // Assertions
+    expect(actual).to.deep.equal(expected);
+  });
+
+  it('should create a firestore property when a property is created', async () => {
+    const propertyId = uuid();
+    const expected = JSON.parse(JSON.stringify(propertyData));
+
+    const beforeSnap = await propertiesModel.findRecord(db, propertyId);
+    await propertiesModel.realtimeUpsertRecord(db, propertyId, expected); // Create
+    const afterSnap = await propertiesModel.findRecord(db, propertyId);
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.propertyWrite);
+    await wrapped(changeSnap, { params: { propertyId } });
+
+    // Test results
+    const result = await propertiesModel.firestoreFindRecord(fs, propertyId);
+    const actual = result.data();
+
+    // Assertions
+    expect(actual).to.deep.equal(expected);
+  });
+
+  it('should update a firestore property when a property is created', async () => {
+    const propertyId = uuid();
+    const beforeData = JSON.parse(JSON.stringify(propertyData));
+    const afterData = JSON.parse(JSON.stringify(propertyData));
+    afterData.inspections = null; // trigger Realtime DB delete
+    const expected = { ...afterData };
+    delete expected.inspections; // Undefined in Firestore
+
+    await propertiesModel.realtimeUpsertRecord(db, propertyId, beforeData); // Create Realtime
+    await propertiesModel.firestoreUpsertRecord(fs, propertyId, beforeData); // Create Firestore
+    const beforeSnap = await propertiesModel.findRecord(db, propertyId);
+    await propertiesModel.realtimeUpsertRecord(db, propertyId, afterData); // Update
+    const afterSnap = await propertiesModel.findRecord(db, propertyId);
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.propertyWrite);
+    await wrapped(changeSnap, { params: { propertyId } });
+
+    // Test results
+    const result = await propertiesModel.firestoreFindRecord(fs, propertyId);
+    const actual = result.data();
 
     // Assertions
     expect(actual).to.deep.equal(expected);

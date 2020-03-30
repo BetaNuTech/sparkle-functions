@@ -4,16 +4,16 @@ const utils = require('../utils/firebase-admin');
 const templatesModel = require('../models/templates');
 
 (async () => {
-  await utils.forEachChild(db, '/templates', async (id, template) => {
+  await utils.forEachChild(db, '/templates', async (id, data) => {
     log.info(`Syning template "${id}"`);
 
     try {
-      await templatesModel.firestoreUpsertRecord(fs, id, template);
+      await templatesModel.firestoreUpsertRecord(fs, id, data);
     } catch (err) {
       log.error(`Failed to sync template "${id}" to Firestore`);
     }
   });
 
-  log.info('Completed successfully');
+  log.info('Completed template sync successfully');
   process.exit();
 })();
