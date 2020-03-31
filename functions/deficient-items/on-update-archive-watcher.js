@@ -7,11 +7,13 @@ const PREFIX = 'deficient-items: on-di-toggle-archive-update:';
 /**
  * Factory for client requested Deficient
  * Items archiving on DI state updates
- * @param  {firebaseAdmin.database} database - Firebase Admin DB instance
+ * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+ * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
  * @return {Function} - property onWrite handler
  */
-module.exports = function createOnDiToggleArchiveUpdateHandler(db) {
+module.exports = function createOnDiToggleArchiveUpdateHandler(db, fs) {
   assert(Boolean(db), 'has firebase admin database reference');
+  assert(Boolean(fs), 'has firestore DB instance');
 
   return async (change, event) => {
     const updates = {};
@@ -34,13 +36,13 @@ module.exports = function createOnDiToggleArchiveUpdateHandler(db) {
     try {
       diSnap = await change.after.ref.parent.once('value');
     } catch (err) {
-      log.error(`${PREFIX} parent DI lookup failed`);
+      log.error(`${PREFIX} parent DI lookup failed | ${err}`);
       throw err;
     }
 
     let archiveUpdates = null;
     try {
-      archiveUpdates = await model.toggleArchive(db, diSnap, isArchiving);
+      archiveUpdates = await model.toggleArchive(db, fs, diSnap, isArchiving);
     } catch (err) {
       if (err.code === 'ERR_TRELLO_CARD_DELETED') {
         log.info(
@@ -48,7 +50,7 @@ module.exports = function createOnDiToggleArchiveUpdateHandler(db) {
         );
       }
 
-      log.error(`${PREFIX} toggling DI to ${archiveType} failed`);
+      log.error(`${PREFIX} toggling DI to ${archiveType} failed | ${err}`);
       throw err;
     }
 
