@@ -1,16 +1,17 @@
 const { expect } = require('chai');
 const nock = require('nock');
-const uuid = require('../../test-helpers/uuid');
-const mocking = require('../../test-helpers/mocking');
-const { cleanDb } = require('../../test-helpers/firebase');
-const trelloTest = require('../../test-helpers/trello');
-const TRELLO_API_CARD_PAYLOAD = require('../../test-helpers/mocks/get-trello-card.json');
+const uuid = require('../../../test-helpers/uuid');
+const mocking = require('../../../test-helpers/mocking');
+const { cleanDb } = require('../../../test-helpers/firebase');
+const trelloTest = require('../../../test-helpers/trello');
+const TRELLO_API_CARD_PAYLOAD = require('../../../test-helpers/mocks/get-trello-card.json');
 const {
   db,
+  fs,
   test,
   cloudFunctions,
   uid: SERVICE_ACCOUNT_ID,
-} = require('../setup');
+} = require('../../setup');
 
 const PROPERTY_ID = uuid();
 const DEFICIENT_ITEM_ID = uuid();
@@ -45,7 +46,7 @@ const DEFICIENT_ITEM_ARCHIVE_DB_PATH = `/archive${DEFICIENT_ITEM_DB_PATH}`;
 
 describe('Deficient Items Archiving', () => {
   afterEach(async () => {
-    await cleanDb(db);
+    await cleanDb(db, fs);
     await db.ref(`/system/integrations/${SERVICE_ACCOUNT_ID}`).remove();
     return db.ref(TRELLO_INTEGRATIONS_DB_PATH).remove();
   });
@@ -239,6 +240,7 @@ describe('Deficient Items Archiving', () => {
 
   it('should remove old Trello card references when it detects the card has been deleted', async () => {
     const inspectionId = uuid();
+    const itemId = uuid();
     const inspectionData = mocking.createInspection({
       deficienciesExist: true,
       inspectionCompleted: true,
@@ -248,7 +250,7 @@ describe('Deficient Items Archiving', () => {
         trackDeficientItems: true,
         items: {
           // Create single deficient item on inspection
-          [uuid()]: mocking.createCompletedMainInputItem(
+          [itemId]: mocking.createCompletedMainInputItem(
             'twoactions_checkmarkx',
             true
           ),
@@ -270,6 +272,7 @@ describe('Deficient Items Archiving', () => {
     await diRef.set({
       state: 'requires-action',
       inspection: inspectionId,
+      item: itemId,
       trelloCardURL: 'something',
     });
     await db
@@ -307,7 +310,7 @@ describe('Deficient Items Archiving', () => {
 
 describe('Deficient Items Unarchiving', () => {
   afterEach(async () => {
-    await cleanDb(db);
+    await cleanDb(db, fs);
     await db.ref(`/system/integrations/${SERVICE_ACCOUNT_ID}`).remove();
     return db.ref(TRELLO_INTEGRATIONS_DB_PATH).remove();
   });
@@ -497,6 +500,7 @@ describe('Deficient Items Unarchiving', () => {
 
   it('should remove old Trello card references when it detects the card has been deleted', async () => {
     const inspectionId = uuid();
+    const itemId = uuid();
     const inspectionData = mocking.createInspection({
       deficienciesExist: true,
       inspectionCompleted: true,
@@ -506,7 +510,7 @@ describe('Deficient Items Unarchiving', () => {
         trackDeficientItems: true,
         items: {
           // Create single deficient item on inspection
-          [DEFICIENT_ITEM_ID]: mocking.createCompletedMainInputItem(
+          [itemId]: mocking.createCompletedMainInputItem(
             'twoactions_checkmarkx',
             true
           ),
@@ -528,6 +532,7 @@ describe('Deficient Items Unarchiving', () => {
     await diRef.set({
       state: 'requires-action',
       inspection: inspectionId,
+      item: itemId,
       trelloCardURL: 'something',
     });
     await db

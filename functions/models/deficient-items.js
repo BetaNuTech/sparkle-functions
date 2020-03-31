@@ -373,7 +373,7 @@ module.exports = modelSetup({
         await archive.deficientItem.firestoreCreateRecord(
           fs,
           defItemId,
-          diDoc.data() || { property: propertyId, ...deficientItem }
+          (diDoc && diDoc.data()) || { property: propertyId, ...deficientItem }
         );
       } catch (err) {
         throw Error(
@@ -398,7 +398,7 @@ module.exports = modelSetup({
           `${PREFIX} firestore DI "${defItemId}" lookup failed: ${err}`
         );
       }
-      const diData = diDoc.data() || {
+      const diData = (diDoc && diDoc.data()) || {
         property: propertyId,
         ...deficientItem,
       };
