@@ -227,7 +227,10 @@ module.exports = modelSetup({
     }
 
     try {
-      await this.firebaseUpdateRecord(fs, defItemId, data);
+      await this.firestoreUpsertRecord(fs, defItemId, {
+        property: propertyId,
+        ...data,
+      });
     } catch (err) {
       throw Error(
         `${PREFIX} updateRecord: firestore "${defItemId}" update failed: ${err}`
@@ -537,7 +540,7 @@ module.exports = modelSetup({
    * @param  {Object} data
    * @return {Promise}
    */
-  firebaseUpdateRecord(fs, deficientItemId, data) {
+  firestoreUpdateRecord(fs, deficientItemId, data) {
     assert(
       deficientItemId && typeof deficientItemId === 'string',
       'has deficient item id'
@@ -547,5 +550,49 @@ module.exports = modelSetup({
       .collection(DEFICIENT_COLLECTION)
       .doc(deficientItemId)
       .update(data);
+  },
+
+  /**
+   * Create/Update Firestore Deficient Item
+   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {String} deficientItemId
+   * @param  {Object} data
+   * @return {Promise}
+   */
+  async firestoreUpsertRecord(fs, deficientItemId, data) {
+    assert(
+      deficientItemId && typeof deficientItemId === 'string',
+      'has deficient item id'
+    );
+    assert(data && typeof data === 'object', 'has update data');
+
+    const docRef = fs.collection(DEFICIENT_COLLECTION).doc(deficientItemId);
+    let docSnap = null;
+
+    try {
+      docSnap = await docRef.get();
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreUpsertRecord: Failed to get document: ${err}`
+      );
+    }
+
+    const { exists } = docSnap;
+
+    try {
+      if (exists) {
+        await this.firestoreUpdateRecord(fs, deficientItemId, data);
+      } else {
+        await this.firestoreCreateRecord(fs, deficientItemId, data);
+      }
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreUpsertRecord: ${
+          exists ? 'updating' : 'creating'
+        } document: ${err}`
+      );
+    }
+
+    return docRef;
   },
 });

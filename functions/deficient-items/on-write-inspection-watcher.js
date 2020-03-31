@@ -131,13 +131,10 @@ module.exports = function createOnInspectionWriteHandler(db, fs) {
           const propertyId = deficientItemSnap.ref.path
             .toString()
             .split('/')[2];
-          await model.updateRecord(
-            db,
-            fs,
-            propertyId,
-            updateDeficientItemId,
-            itemUpdates
-          );
+          await model.updateRecord(db, fs, propertyId, updateDeficientItemId, {
+            ...deficientItem,
+            ...itemUpdates,
+          });
           // await deficientItemSnap.ref.update(itemUpdates);
           log.info(
             `${PREFIX} updating out of date deficient item ${updateDeficientItemId}`
