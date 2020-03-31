@@ -133,6 +133,7 @@ module.exports = function createOnInspectionWriteHandler(db, fs) {
             .split('/')[2];
           await model.updateRecord(
             db,
+            fs,
             propertyId,
             updateDeficientItemId,
             itemUpdates

@@ -205,24 +205,34 @@ module.exports = modelSetup({
 
   /**
    * Update Deficient Item
-   * TODO: update firestore
    * @param  {firebaseAdmin.database} db - Realtime DB Instance
+   * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
    * @param  {String} propertyId
    * @param  {String} defItemId
    * @param  {Object} data
    * @return {Promise}
    */
-  updateRecord(db, propertyId, defItemId, data) {
-    assert(
-      propertyId && typeof propertyId === 'string',
-      `${PREFIX} has property id`
-    );
-    assert(
-      defItemId && typeof defItemId === 'string',
-      `${PREFIX} has inspection id`
-    );
-    assert(data && typeof data === 'object', `${PREFIX} has upsert data`);
-    return db.ref(`${DATABASE_PATH}/${propertyId}/${defItemId}`).update(data);
+  async updateRecord(db, fs, propertyId, defItemId, data) {
+    assert(Boolean(fs), 'has firestore db insatance');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    assert(defItemId && typeof defItemId === 'string', 'has inspection id');
+    assert(data && typeof data === 'object', 'has upsert data');
+
+    try {
+      await db.ref(`${DATABASE_PATH}/${propertyId}/${defItemId}`).update(data);
+    } catch (err) {
+      throw Error(
+        `${PREFIX} updateRecord: realtime "${defItemId}" update failed: ${err}`
+      );
+    }
+
+    try {
+      await this.firebaseUpdateRecord(fs, defItemId, data);
+    } catch (err) {
+      throw Error(
+        `${PREFIX} updateRecord: firestore "${defItemId}" update failed: ${err}`
+      );
+    }
   },
 
   /**
@@ -512,11 +522,30 @@ module.exports = modelSetup({
   firestoreRemoveRecord(fs, deficientItemId) {
     assert(
       deficientItemId && typeof deficientItemId === 'string',
-      `${PREFIX} has deficient item id`
+      'has deficient item id'
     );
     return fs
       .collection(DEFICIENT_COLLECTION)
       .doc(deficientItemId)
       .delete();
+  },
+
+  /**
+   * Update Firestore Deficient Item
+   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {String} deficientItemId
+   * @param  {Object} data
+   * @return {Promise}
+   */
+  firebaseUpdateRecord(fs, deficientItemId, data) {
+    assert(
+      deficientItemId && typeof deficientItemId === 'string',
+      'has deficient item id'
+    );
+    assert(data && typeof data === 'object', 'has update data');
+    return fs
+      .collection(DEFICIENT_COLLECTION)
+      .doc(deficientItemId)
+      .update(data);
   },
 });
