@@ -21,8 +21,9 @@ module.exports = function createOnDiToggleArchiveUpdateHandler(db, fs) {
     assert(Boolean(propertyId), 'has property ID');
     assert(Boolean(deficientItemId), 'has deficient item ID');
 
+    const afterSnap = change.after.ref.parent;
+    const isArchived = afterSnap.path.toString().search(/^\/archive/) > -1;
     const isArchiving = change.after.val();
-    const previousArchive = Boolean(change.before.val());
     const archiveType = isArchiving ? 'archived' : 'unarchived';
 
     // Sanity check
@@ -30,14 +31,14 @@ module.exports = function createOnDiToggleArchiveUpdateHandler(db, fs) {
 
     let diSnap = null;
     try {
-      diSnap = await change.after.ref.parent.once('value');
+      diSnap = await afterSnap.once('value');
     } catch (err) {
       log.error(`${PREFIX} parent DI lookup failed | ${err}`);
       throw err;
     }
 
     let archiveUpdates = null;
-    const archiveChanged = isArchiving !== previousArchive;
+    const archiveChanged = isArchiving !== isArchived;
 
     if (archiveChanged) {
       try {

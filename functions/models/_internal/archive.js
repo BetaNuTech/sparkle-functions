@@ -51,6 +51,30 @@ module.exports = modelSetup({
     },
 
     /**
+     * Create a realtime archived Deficient Item
+     * @param  {firebaseadmin.database} db
+     * @param  {String} propertyId
+     * @param  {String} deficientItemId
+     * @param  {Object} data
+     * @return {Promise} - resolves {DatabaseRef}
+     */
+    realtimeCreateRecord(db, propertyId, deficientItemId, data) {
+      assert(
+        propertyId && typeof propertyId === 'string',
+        'has property reference'
+      );
+      assert(
+        deficientItemId && typeof deficientItemId === 'string',
+        'has property reference'
+      );
+      assert(data && typeof data === 'object', 'has deficient item data');
+      const ref = db.ref(
+        `${ARCHIVE_PATH}${DEFICIENT_ITEM_PATH}/${propertyId}/${deficientItemId}`
+      );
+      return ref.set(data).then(() => ref);
+    },
+
+    /**
      * Remove a realtime archived record
      * @param  {firebaseadmin.database} db
      * @param  {String}  propertyId
