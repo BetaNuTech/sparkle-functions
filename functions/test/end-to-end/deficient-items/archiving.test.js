@@ -171,8 +171,9 @@ describe('Deficient Items Archiving', () => {
     );
   });
 
-  it('should archive a deficient items trello card when requested', async () => {
+  it("should request to archive an archived deficient items' trello card", async () => {
     const inspectionId = uuid();
+    const itemId = uuid();
     const inspectionData = mocking.createInspection({
       deficienciesExist: true,
       inspectionCompleted: true,
@@ -211,7 +212,7 @@ describe('Deficient Items Archiving', () => {
     await diRef.set({
       state: 'requires-action',
       inspection: inspectionId,
-      item: DEFICIENT_ITEM_ID,
+      item: itemId,
     });
 
     await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);

@@ -1,4 +1,5 @@
 const assert = require('assert');
+const FieldValue = require('firebase-admin').firestore.FieldValue;
 const modelSetup = require('./utils/model-setup');
 const createStateHistory = require('../deficient-items/utils/create-state-history');
 const systemModel = require('./system');
@@ -428,16 +429,26 @@ module.exports = modelSetup({
       const trelloResponse = await systemModel.archiveTrelloCard(
         db,
         propertyId,
-        diSnap.key,
+        defItemId,
         archiving
       );
       if (trelloResponse) updates.trelloCardChanged = trelloResponse.id;
     } catch (err) {
-      const resultErr = Error(
-        `${PREFIX} associated Trello card ${toggleType} failed | ${err}`
-      );
-      resultErr.code = err.code || 'ERR_ARCHIVE_TRELLO_CARD';
-      throw resultErr;
+      if (err.code === 'ERR_TRELLO_CARD_DELETED') {
+        try {
+          await this._firestoreCleanupDeletedTrelloCard(fs, defItemId);
+        } catch (cleanErr) {
+          throw Error(
+            `${PREFIX} Firestore Trello card detail cleanup failed: ${cleanErr}`
+          );
+        }
+      } else {
+        const resultErr = Error(
+          `${PREFIX} associated Trello card ${toggleType} failed | ${err}`
+        );
+        resultErr.code = err.code || 'ERR_ARCHIVE_TRELLO_CARD';
+        throw resultErr;
+      }
     }
 
     return updates;
@@ -594,5 +605,101 @@ module.exports = modelSetup({
     }
 
     return docRef;
+  },
+
+  /**
+   * Cleanup Trello Attributes of
+   * Deficient Item or Archived Record
+   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {String} deficientItemId
+   * @return {Promise}
+   */
+  async _firestoreCleanupDeletedTrelloCard(fs, deficientItemId) {
+    assert(
+      deficientItemId && typeof deficientItemId === 'string',
+      'has deficient item ID'
+    );
+
+    // Lookup Active Record
+    let deficientItem = null;
+    let isActive = false;
+    let isArchived = false;
+
+    try {
+      const diDoc = await this.firestoreFindRecord(fs, deficientItemId);
+      isActive = Boolean(diDoc && diDoc.exists);
+      if (isActive) deficientItem = diDoc.data();
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreCleanupDeletedTrelloCard: firestore DI "${deficientItemId}" lookup failed: ${err}`
+      );
+    }
+
+    // Lookup Archived Record
+    if (!isActive) {
+      try {
+        const diDoc = await archive.deficientItem.firestoreFindRecord(
+          fs,
+          deficientItemId
+        );
+        isArchived = Boolean(diDoc && diDoc.exists);
+        if (isArchived) deficientItem = diDoc.data();
+      } catch (err) {
+        throw Error(
+          `${PREFIX} firestoreCleanupDeletedTrelloCard: firestore archived DI "${deficientItemId}" lookup failed: ${err}`
+        );
+      }
+    }
+
+    // Firestore record does not exist
+    if (!isActive && !isArchived) {
+      return;
+    }
+
+    const updates = {};
+
+    // Remove DI's Trello Card link
+    if (deficientItem.trelloCardURL) {
+      updates.trelloCardURL = FieldValue.delete();
+    }
+
+    // Remove any Trello Card Attachment references
+    // from the completed photos of the DI
+    Object.keys(deficientItem.completedPhotos || {}).forEach(id => {
+      const photo = deficientItem.completedPhotos[id];
+      if (photo && photo.trelloCardAttachement) {
+        updates.completedPhotos = updates.completedPhotos || {};
+        updates.completedPhotos[id] = {
+          ...photo,
+          trelloCardAttachement: FieldValue.delete(),
+        };
+      }
+    });
+
+    if (isActive) {
+      try {
+        await this.firestoreUpdateRecord(fs, deficientItemId, {
+          ...deficientItem,
+          ...updates,
+        });
+      } catch (err) {
+        throw Error(
+          `${PREFIX} firestoreCleanupDeletedTrelloCard: firestore update DI failed: ${err}`
+        );
+      }
+    }
+
+    if (isArchived) {
+      try {
+        await archive.deficientItem.firestoreUpdateRecord(fs, deficientItemId, {
+          ...deficientItem,
+          ...updates,
+        });
+      } catch (err) {
+        throw Error(
+          `${PREFIX} firestoreCleanupDeletedTrelloCard: firestore archive update DI failed: ${err}`
+        );
+      }
+    }
   },
 });

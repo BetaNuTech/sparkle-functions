@@ -16,21 +16,17 @@ module.exports = function createOnDiToggleArchiveUpdateHandler(db, fs) {
   assert(Boolean(fs), 'has firestore DB instance');
 
   return async (change, event) => {
-    const updates = {};
     const { propertyId, deficientItemId } = event.params;
 
     assert(Boolean(propertyId), 'has property ID');
     assert(Boolean(deficientItemId), 'has deficient item ID');
 
     const isArchiving = change.after.val();
+    const previousArchive = Boolean(change.before.val());
     const archiveType = isArchiving ? 'archived' : 'unarchived';
 
     // Sanity check
     if (typeof isArchiving !== 'boolean') return;
-
-    log.info(
-      `${PREFIX} property: ${propertyId} | deficient item: ${deficientItemId}`
-    );
 
     let diSnap = null;
     try {
@@ -41,30 +37,28 @@ module.exports = function createOnDiToggleArchiveUpdateHandler(db, fs) {
     }
 
     let archiveUpdates = null;
-    try {
-      archiveUpdates = await model.toggleArchive(db, fs, diSnap, isArchiving);
-    } catch (err) {
-      if (err.code === 'ERR_TRELLO_CARD_DELETED') {
-        log.info(
-          `${PREFIX} Trello API card not found, removed card refrences from DB`
-        );
+    const archiveChanged = isArchiving !== previousArchive;
+
+    if (archiveChanged) {
+      try {
+        archiveUpdates = await model.toggleArchive(db, fs, diSnap, isArchiving);
+      } catch (err) {
+        if (err.code === 'ERR_TRELLO_CARD_DELETED') {
+          log.info(
+            `${PREFIX} Trello API card not found, removed card refrences from DB`
+          );
+        } else {
+          log.error(`${PREFIX} toggling DI to ${archiveType} failed | ${err}`);
+          throw err;
+        }
       }
 
-      log.error(`${PREFIX} toggling DI to ${archiveType} failed | ${err}`);
-      throw err;
+      // Log archived Trello card
+      if (archiveUpdates.trelloCardChanged) {
+        log.info(
+          `${PREFIX} ${archiveType} Trello card ${archiveUpdates.trelloCardChanged}`
+        );
+      }
     }
-
-    Object.assign(updates, archiveUpdates);
-
-    // Log archived Trello card
-    if (archiveUpdates.trelloCardChanged) {
-      log.info(
-        `${PREFIX} ${archiveType} Trello card ${archiveUpdates.trelloCardChanged}`
-      );
-    }
-
-    log.info(`${PREFIX} ${archiveType} deficient item: ${deficientItemId}`);
-
-    return updates;
   };
 };
