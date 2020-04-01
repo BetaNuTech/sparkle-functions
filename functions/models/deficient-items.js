@@ -242,13 +242,14 @@ module.exports = modelSetup({
   /**
    * Perform all updates to progress
    * a single deficient items' state
-   * TODO: update Firestore state
    * @param  {firebaseadmin.database} db
-   * @param  {DataSnapshot} diSnap
+   * @param  {firebaseadmin.firebase} fs
+   * @param  {DataSnapshot} diSnap // TODO: remove requiring
    * @param  {String} newState
    * @return {Promise} - resolves {Object} updates hash
    */
-  async updateState(db, diSnap, newState) {
+  async updateState(db, fs, diSnap, newState) {
+    assert(Boolean(fs), 'has firebase db instance');
     assert(
       diSnap &&
         typeof diSnap.ref === 'object' &&
@@ -257,21 +258,43 @@ module.exports = modelSetup({
     );
     assert(newState && typeof newState === 'string', 'has new state string');
     const path = diSnap.ref.path.toString();
+    const deficientItemId = diSnap.key;
+    const [propertyId] = path.split('/').slice(-2, -1);
     const diItem = diSnap.val();
     const updates = {};
     diItem.state = newState;
 
-    // Update DI's state
-    await db.ref(`${path}/state`).set(diItem.state);
-    updates[`${path}/state`] = 'updated';
+    const stateHistoryId = db
+      .ref(`${path}/stateHistory`)
+      .push()
+      .path.toString()
+      .split('/')
+      .pop();
+    const updateData = {
+      state: newState,
+      stateHistory: {
+        [stateHistoryId]: createStateHistory(diItem), // Append state history update
+        ...(diItem.stateHistory || {}),
+      },
+      updatedAt: Math.round(Date.now() / 1000),
+    };
 
-    // Update `stateHistory` with latest DI state
-    await db.ref(`${path}/stateHistory`).push(createStateHistory(diItem));
-    updates[`${path}/stateHistory`] = 'added';
+    try {
+      await db.ref(path).set(updateData);
+    } catch (err) {
+      throw Error(`${PREFIX} updateState: realtime updated DI failed: ${err}`);
+    }
 
-    // Modify updatedAt to denote changes
-    await db.ref(`${path}/updatedAt`).set(Date.now() / 1000);
-    updates[`${path}/updatedAt`] = 'updated';
+    // Create/Update Firestore DI w/ latest data
+    try {
+      await this.firestoreUpsertRecord(fs, deficientItemId, {
+        property: propertyId,
+        ...diItem,
+        ...updateData,
+      });
+    } catch (err) {
+      throw Error(`${PREFIX} updateState: firestore upsert DI failed: ${err}`);
+    }
 
     return updates;
   },
