@@ -173,5 +173,24 @@ module.exports = modelSetup({
         .doc(deficientItemId)
         .create(archiveData);
     },
+
+    /**
+     * Update Archived Firestore Deficient Item
+     * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+     * @param  {String} deficientItemId
+     * @param  {Object} data
+     * @return {Promise}
+     */
+    firestoreUpdateRecord(fs, deficientItemId, data) {
+      assert(
+        deficientItemId && typeof deficientItemId === 'string',
+        'has deficient item id'
+      );
+      assert(data && typeof data === 'object', 'has update data');
+      return fs
+        .collection(ARCHIVE_COLLECTION)
+        .doc(deficientItemId)
+        .update(data);
+    },
   },
 });

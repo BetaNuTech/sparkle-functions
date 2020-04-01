@@ -192,15 +192,12 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {Object} Trello API response
    */
   async archiveTrelloCard(db, propertyId, deficientItemId, archiving) {
-    assert(
-      propertyId && typeof propertyId === 'string',
-      `${PREFIX} has property id`
-    );
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
-      `${PREFIX} has deficient item id`
+      'has deficient item id'
     );
-    assert(typeof archiving === 'boolean', `${PREFIX} has archiving boolean`);
+    assert(typeof archiving === 'boolean', 'has archiving boolean');
 
     let trelloCardId = '';
     try {
@@ -294,17 +291,14 @@ module.exports = modelSetup({
     deficientItemId,
     trelloCardId
   ) {
-    assert(
-      propertyId && typeof propertyId === 'string',
-      `${PREFIX} has property id`
-    );
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
-      `${PREFIX} has deficient item ID`
+      'has deficient item ID'
     );
     assert(
       trelloCardId && typeof trelloCardId === 'string',
-      `${PREFIX} has Trello card ID`
+      'has Trello card ID'
     );
 
     // Remove the Trello card reference from property integration
@@ -314,7 +308,7 @@ module.exports = modelSetup({
         .remove();
     } catch (err) {
       throw Error(
-        `${PREFIX} error removing card from trello integration path | ${err}`
+        `${PREFIX} error removing card from trello integration path: ${err}`
       );
     }
 
@@ -325,7 +319,7 @@ module.exports = modelSetup({
         [`archive${DI_DATABASE_PATH}/${propertyId}/${deficientItemId}/trelloCardURL`]: null,
       });
     } catch (err) {
-      throw Error(`${PREFIX} error removing Trello card URL from DI | ${err}`);
+      throw Error(`${PREFIX} error removing Trello card URL from DI: ${err}`);
     }
 
     // remove Trello card attachment id on DI
@@ -361,7 +355,7 @@ module.exports = modelSetup({
       }
     } catch (err) {
       throw Error(
-        `${PREFIX} error removing Trello attachment ID from DI completed photos | ${err}`
+        `${PREFIX} error removing Trello attachment ID from DI completed photos: ${err}`
       );
     }
   },
