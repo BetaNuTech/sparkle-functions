@@ -149,7 +149,7 @@ exports.teamDelete = functions.database
 // Deficient Items
 exports.deficientItemsWrite = functions.database
   .ref('/inspections/{inspectionId}/updatedAt')
-  .onWrite(deficientItems.createOnWriteInspection(db));
+  .onWrite(deficientItems.createOnWriteInspection(db, fs));
 
 exports.deficientItemsPropertyMetaSync = functions.database
   .ref('/propertyInspectionDeficientItems/{propertyId}/{itemId}/state')
@@ -166,13 +166,13 @@ exports.deficientItemsArchiving = functions.database
   .ref(
     '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/archive'
   )
-  .onUpdate(deficientItems.createOnUpdateArchive(db));
+  .onUpdate(deficientItems.createOnUpdateArchive(db, fs));
 
 exports.deficientItemsUnarchiving = functions.database
   .ref(
     '/archive/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/archive'
   )
-  .onUpdate(deficientItems.createOnUpdateArchive(db));
+  .onUpdate(deficientItems.createOnUpdateArchive(db, fs));
 
 // Template onWrite
 exports.templateWrite = functions.database

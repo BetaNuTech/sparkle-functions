@@ -44,7 +44,6 @@ module.exports = function createSyncOverdueDeficientItems(
   return pubsub
     .topic(topic)
     .onPublish(async function syncOverdueDeficientItemsHandler() {
-      const updates = {};
       const now = Math.round(Date.now() / 1000);
 
       await forEachChild(
@@ -85,12 +84,7 @@ module.exports = function createSyncOverdueDeficientItems(
                 diItem.state = 'overdue';
 
                 try {
-                  const stateUpdates = await model.updateState(
-                    db,
-                    diItemSnap,
-                    state
-                  );
-                  Object.assign(updates, stateUpdates); // add DI state updates to updates
+                  await model.updateState(db, fs, diItemSnap, state);
                 } catch (err) {
                   throw Error(
                     `${PREFIX} failed to update state overdue | ${err}`
@@ -99,15 +93,10 @@ module.exports = function createSyncOverdueDeficientItems(
 
                 try {
                   // Sync DI's changes to its' property's metadata
-                  const metaUpdates = await processPropertyMeta(
-                    db,
-                    fs,
-                    propertyId
-                  );
+                  await processPropertyMeta(db, fs, propertyId);
                   log.info(
                     `${PREFIX} ${topic}: property "${propertyId}" and deficient item "${defItemId}" has deficiency overdue`
                   );
-                  Object.assign(updates, metaUpdates); // add property meta updates to updates
                 } catch (err) {
                   log.error(
                     `${PREFIX} failed to upate property meta of overdue | ${err}`
@@ -124,15 +113,10 @@ module.exports = function createSyncOverdueDeficientItems(
                 diItem.state = 'requires-progress-update';
 
                 try {
-                  const stateUpdates = await model.updateState(
-                    db,
-                    diItemSnap,
-                    state
-                  );
+                  await model.updateState(db, fs, diItemSnap, state);
                   log.info(
                     `${PREFIX} ${topic}: property "${propertyId}" and deficient item "${defItemId}" has deficiency requires progress update`
                   );
-                  Object.assign(updates, stateUpdates); // add state updates to updates
                 } catch (err) {
                   throw Error(
                     `${PREFIX} failed to update state requires-progress-update | ${err}`
@@ -231,7 +215,5 @@ module.exports = function createSyncOverdueDeficientItems(
           );
         }
       );
-
-      return updates;
     });
 };
