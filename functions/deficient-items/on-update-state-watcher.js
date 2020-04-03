@@ -1,6 +1,7 @@
 const assert = require('assert');
 const log = require('../utils/logger');
 const config = require('../config');
+const diModel = require('../models/deficient-items');
 const processPropertyMeta = require('../properties/utils/process-meta');
 
 const PREFIX = 'deficient-items: on-di-state-update:';
@@ -43,6 +44,31 @@ module.exports = function createOnDiStateUpdateHandler(
     log.info(
       `${PREFIX} property: ${propertyId} | deficient item: ${deficientItemId}`
     );
+
+    // Lookup parent record
+    let deficientItem = null;
+    try {
+      const diSnap = await change.after.ref.parent.once('value');
+      deficientItem = diSnap.val();
+    } catch (err) {
+      log.error(
+        `${PREFIX} failed to lookup Deficient Item "${deficientItemId}" | ${err}`
+      );
+    }
+
+    // Sync Firestore record
+    if (deficientItem) {
+      try {
+        await diModel.firestoreUpsertRecord(fs, deficientItemId, {
+          property: propertyId,
+          ...deficientItem,
+        });
+      } catch (err) {
+        log.error(
+          `${PREFIX} failed to firestore Deficient Item "${deficientItemId}" | ${err}`
+        );
+      }
+    }
 
     const beforeState = change.before.val();
     const afterState = change.after.val();

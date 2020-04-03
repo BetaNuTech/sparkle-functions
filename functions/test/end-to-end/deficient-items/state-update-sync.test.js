@@ -2,6 +2,9 @@ const { expect } = require('chai');
 const config = require('../../../config');
 const uuid = require('../../../test-helpers/uuid');
 const mocking = require('../../../test-helpers/mocking');
+const diModel = require('../../../models/deficient-items');
+const propertiesModel = require('../../../models/properties');
+const inspectionsModel = require('../../../models/inspections');
 const { cleanDb } = require('../../../test-helpers/firebase');
 const {
   db,
@@ -387,5 +390,125 @@ describe('Deficient Items Property Meta Sync', () => {
 
     // Cleanup
     unsubscribe();
+  });
+
+  it('should create a Firestore Deficient Item when it does not exist', async () => {
+    const itemId = uuid();
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const deficientItemId = uuid();
+    const beforeData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: propertyId,
+      template: {
+        trackDeficientItems: true,
+        items: {
+          // Create single deficient item on inspection
+          [itemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true
+          ),
+        },
+      },
+    });
+    const deficientItemBefore = {
+      state: 'requires-action',
+      inspection: inspectionId,
+      item: itemId,
+    };
+
+    // Setup database
+    await propertiesModel.realtimeUpsertRecord(db, propertyId, {
+      name: 'test',
+    });
+    await inspectionsModel.realtimeUpsertRecord(db, inspectionId, beforeData); // Add inspection
+    const diPath = `/propertyInspectionDeficientItems/${propertyId}/${deficientItemId}`;
+    const diRef = db.ref(diPath);
+    await diRef.set(deficientItemBefore);
+    const beforeSnap = await db.ref(`${diPath}/state`).once('value'); // Create before
+    await diRef.update({ state: 'closed' });
+    const afterSnap = await db.ref(`${diPath}/state`).once('value'); // Create after
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.deficientItemsPropertyMetaSync);
+    await wrapped(changeSnap, {
+      params: { propertyId, itemId: deficientItemId },
+    });
+
+    // Test result
+    const result = await diModel.firestoreFindRecord(fs, deficientItemId);
+    const actual = Boolean(result && result.exists);
+
+    // Assertions
+    const expected = true;
+    expect(actual).to.equal(expected);
+  });
+
+  it('should update an existing Firestore Deficient Item with latest data', async () => {
+    const itemId = uuid();
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const deficientItemId = uuid();
+    const beforeData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: propertyId,
+      template: {
+        trackDeficientItems: true,
+        items: {
+          // Create single deficient item on inspection
+          [itemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true
+          ),
+        },
+      },
+    });
+    const deficientItemBefore = {
+      state: 'requires-action',
+      createdAt: Math.round(Date.now() / 1000),
+      inspection: inspectionId,
+      item: itemId,
+    };
+    const expected = {
+      ...deficientItemBefore,
+      ...{
+        state: 'closed',
+        property: propertyId,
+        updatedAt: Math.round(Date.now() / 1000),
+      },
+    };
+
+    // Setup database
+    await propertiesModel.realtimeUpsertRecord(db, propertyId, {
+      name: 'test',
+    });
+    await inspectionsModel.realtimeUpsertRecord(db, inspectionId, beforeData); // Add inspection
+    await diModel.firestoreCreateRecord(fs, deficientItemId, {
+      property: propertyId,
+      ...deficientItemBefore,
+    });
+    const diPath = `/propertyInspectionDeficientItems/${propertyId}/${deficientItemId}`;
+    const diRef = db.ref(diPath);
+    await diRef.set(deficientItemBefore);
+    const beforeSnap = await db.ref(`${diPath}/state`).once('value'); // Create before
+    await diRef.update(expected);
+    const afterSnap = await db.ref(`${diPath}/state`).once('value'); // Create after
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.deficientItemsPropertyMetaSync);
+    await wrapped(changeSnap, {
+      params: { propertyId, itemId: deficientItemId },
+    });
+
+    // Test result
+    const result = await diModel.firestoreFindRecord(fs, deficientItemId);
+    const actual = result.data();
+
+    // Assertions
+    expect(actual).to.deep.equal(expected);
   });
 });
