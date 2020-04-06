@@ -25,6 +25,22 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
       })
       .catch(done);
   });
+
+  it('rejects when property is missing a yardi code', done => {
+    // Stup requests
+    sinon.stub(propertiesModel, 'firestoreFindRecord').resolves(createDoc({}));
+
+    request(createApp())
+      .get('/t/123')
+      .send()
+      .expect('Content-Type', /json/)
+      .expect(403)
+      .then(res => {
+        expect(res.body.errors[0].detail).to.contain('code not set for Yardi');
+        done();
+      })
+      .catch(done);
+  });
 });
 
 function createApp() {
@@ -40,4 +56,8 @@ function stubAuth(req, res, next) {
 
 function createEmptyDoc() {
   return { data: () => null, exists: false };
+}
+
+function createDoc(data = {}) {
+  return { data: () => data, exists: true };
 }
