@@ -2,6 +2,7 @@ const cors = require('cors');
 const assert = require('assert');
 const express = require('express');
 const bodyParser = require('body-parser');
+const properties = require('./properties');
 const inspections = require('./inspections');
 const authUser = require('./utils/auth-firebase-user');
 
@@ -34,6 +35,13 @@ module.exports = (db, auth, settings) => {
     '/v0/inspections/:inspection/pdf-report',
     authUser(db, auth),
     inspections.api.createGetInspectionPDF(db, inspectionUrl)
+  );
+
+  // Request Property's residents from Yardi
+  app.get(
+    '/v0/properties/:propertyId/yardi/residents',
+    authUser(db, auth),
+    properties.api.getPropertyYardiResidents
   );
 
   return app;
