@@ -42,7 +42,7 @@ module.exports = (db, fs, auth, settings) => {
   app.get(
     '/v0/properties/:propertyId/yardi/residents',
     authUser(db, auth),
-    properties.api.getPropertyYardiResidents(fs)
+    properties.api.getPropertyYardiResidents(db, fs)
   );
 
   return app;

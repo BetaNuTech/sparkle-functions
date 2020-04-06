@@ -2,6 +2,7 @@ const request = require('supertest');
 const { expect } = require('chai');
 const sinon = require('sinon');
 const express = require('express');
+const systemModel = require('../../../models/system');
 const propertiesModel = require('../../../models/properties');
 const getPropertyResidents = require('../../../properties/api/get-property-yardi-residents');
 
@@ -41,11 +42,32 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
       })
       .catch(done);
   });
+
+  it('rejects when yardi credentials not set for organization', done => {
+    // Stup requests
+    sinon
+      .stub(propertiesModel, 'firestoreFindRecord')
+      .resolves(createDoc({ code: 'test' }));
+    sinon.stub(systemModel, 'findYardiCredentials').resolves(createEmptySnap());
+
+    request(createApp())
+      .get('/t/123')
+      .send()
+      .expect('Content-Type', /json/)
+      .expect(403)
+      .then(res => {
+        expect(res.body.errors[0].detail).to.contain(
+          'Organization not configured for Yardi'
+        );
+        done();
+      })
+      .catch(done);
+  });
 });
 
 function createApp() {
   const app = express();
-  app.get('/t/:propertyId', stubAuth, getPropertyResidents({}));
+  app.get('/t/:propertyId', stubAuth, getPropertyResidents({}, {}));
   return app;
 }
 
@@ -56,6 +78,10 @@ function stubAuth(req, res, next) {
 
 function createEmptyDoc() {
   return { data: () => null, exists: false };
+}
+
+function createEmptySnap() {
+  return { val: () => null, exists: () => false };
 }
 
 function createDoc(data = {}) {
