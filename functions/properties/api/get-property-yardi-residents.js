@@ -2,17 +2,20 @@ const assert = require('assert');
 const log = require('../../utils/logger');
 // const create500ErrHandler = require('../../utils/unexpected-api-error');
 const propertiesModel = require('../../models/properties');
+const systemModel = require('../../models/system');
 
 const PREFIX = 'properties: api: get-property-yardi-residents:';
 
 /**
  * Factory for creating a GET endpoint
  * that fetches a properties Yardi residents
+ * @param {admin.database} db
  * @param {admin.firestore} fs
  * @return {Function} - onRequest handler
  */
-module.exports = function createGetYardiResidents(fs) {
-  assert(Boolean(fs), 'has firebase database');
+module.exports = function createGetYardiResidents(db, fs) {
+  assert(Boolean(db), 'has firebase database');
+  assert(Boolean(fs), 'has firestore database');
 
   /**
    * Handle GET request
@@ -59,17 +62,24 @@ module.exports = function createGetYardiResidents(fs) {
       });
     }
 
-    // TODO: Lookup company config
-    // Yardi not configured for the company
-    // if (hasYardiConfig) {
-    //   return res.status(403).send({
-    //     errors: [
-    //       {
-    //         detail: 'Yardi not configured for company'
-    //       },
-    //     ],
-    //   });
-    // }
+    let yardiConfig = null;
+
+    // Lookup Yardi Integration
+    try {
+      const yardiSnap = await systemModel.findYardiCredentials(db);
+      yardiConfig = yardiSnap.val();
+      if (!yardiConfig) throw Error('Yardi not configured for organization');
+    } catch (err) {
+      log.error(`${PREFIX} | ${err}`);
+      return res.status(403).send({
+        errors: [
+          {
+            detail: 'Organization not configured for Yardi',
+            source: { pointer: 'code' },
+          },
+        ],
+      });
+    }
 
     // TODO convert JSON to XML request payload
     // TODO make yardi request
