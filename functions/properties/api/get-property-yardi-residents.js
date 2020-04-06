@@ -47,19 +47,19 @@ module.exports = function createGetYardiResidents(fs) {
       });
     }
 
-    // if (!property.code) {
-    //   return res.status(403).send({
-    //     errors: [
-    //       {
-    //         detail: 'Property Code not set for Yardi request',
-    //         source: { pointer: 'code' },
-    //       },
-    //     ],
-    //   });
-    // }
+    // Reject property /wo Yardi code
+    if (!property.code) {
+      return res.status(403).send({
+        errors: [
+          {
+            detail: 'Property code not set for Yardi request',
+            source: { pointer: 'code' },
+          },
+        ],
+      });
+    }
 
     // TODO: Lookup company config
-
     // Yardi not configured for the company
     // if (hasYardiConfig) {
     //   return res.status(403).send({
