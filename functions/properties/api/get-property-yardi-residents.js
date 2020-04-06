@@ -1,10 +1,9 @@
 const assert = require('assert');
-// const log = require('../../utils/logger');
-// const create500ErrHandler = require('../../utils/unexpected-error-handler');
-// const propertiesModel = require('../../models/properties');
-// const usersModel = require('../../models/users');
+const log = require('../../utils/logger');
+// const create500ErrHandler = require('../../utils/unexpected-api-error');
+const propertiesModel = require('../../models/properties');
 
-// const PREFIX = 'properties: api: get-property-yardi-residents:';
+const PREFIX = 'properties: api: get-property-yardi-residents:';
 
 /**
  * Factory for creating a GET endpoint
@@ -22,12 +21,31 @@ module.exports = function createGetYardiResidents(fs) {
    * @return {Promise}
    */
   return async (req, res) => {
-    // const { params } = req;
-    // const { propertyId } = params;
+    const { params } = req;
+    const { propertyId } = params;
     // const send500Error = create500ErrHandler(PREFIX, res);
 
-    // TODO: Lookup property
-    // TODO: property 404
+    let property = null;
+
+    // Lookup requested property
+    try {
+      if (!propertyId) throw Error('no property ID provided');
+      const propertyDoc = await propertiesModel.firestoreFindRecord(
+        fs,
+        propertyId
+      );
+      if (!propertyDoc.exists) throw Error('property does not exist');
+      property = propertyDoc.data();
+    } catch (err) {
+      log.error(`${PREFIX} ${err}`);
+      return res.status(404).send({
+        errors: [
+          {
+            detail: 'property does not exist',
+          },
+        ],
+      });
+    }
 
     // if (!property.code) {
     //   return res.status(403).send({
