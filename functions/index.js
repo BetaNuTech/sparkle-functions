@@ -341,7 +341,7 @@ exports.trelloDiCardClose = trello.pubsub.createCloseDiCard(
 // API
 
 exports.api = functions.https.onRequest(
-  createRouter(db, auth, {
+  createRouter(db, fs, auth, {
     inspectionUrl: config.clientApps.web.inspectionURL,
   })
 );

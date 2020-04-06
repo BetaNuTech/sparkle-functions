@@ -14,8 +14,9 @@ const authUser = require('./utils/auth-firebase-user');
  * @param  {Object} settings
  * @return {Express}
  */
-module.exports = (db, auth, settings) => {
+module.exports = (db, fs, auth, settings) => {
   assert(Boolean(db), 'has firebase database instance');
+  assert(Boolean(fs), 'has firestore database instance');
   assert(Boolean(auth), 'has firebase auth instance');
 
   const app = express();
@@ -41,7 +42,7 @@ module.exports = (db, auth, settings) => {
   app.get(
     '/v0/properties/:propertyId/yardi/residents',
     authUser(db, auth),
-    properties.api.getPropertyYardiResidents
+    properties.api.getPropertyYardiResidents(fs)
   );
 
   return app;
