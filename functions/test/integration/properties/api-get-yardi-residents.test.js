@@ -1,0 +1,43 @@
+const request = require('supertest');
+const { expect } = require('chai');
+const sinon = require('sinon');
+const express = require('express');
+const propertiesModel = require('../../../models/properties');
+const getPropertyResidents = require('../../../properties/api/get-property-yardi-residents');
+
+describe("Properties | API | GET Property's Yardi Residents", () => {
+  afterEach(() => sinon.restore());
+
+  it('rejects request to non-existent property', done => {
+    // Stup requests
+    sinon
+      .stub(propertiesModel, 'firestoreFindRecord')
+      .resolves(createEmptyDoc());
+
+    request(createApp())
+      .get('/t/123')
+      .send()
+      .expect('Content-Type', /json/)
+      .expect(404)
+      .then(res => {
+        expect(res.body.errors[0].detail).to.contain('property does not exist');
+        done();
+      })
+      .catch(done);
+  });
+});
+
+function createApp() {
+  const app = express();
+  app.get('/t/:propertyId', stubAuth, getPropertyResidents({}));
+  return app;
+}
+
+function stubAuth(req, res, next) {
+  req.user = { id: '123' };
+  next();
+}
+
+function createEmptyDoc() {
+  return { data: () => null, exists: false };
+}
