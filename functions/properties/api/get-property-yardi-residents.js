@@ -1,5 +1,6 @@
 const assert = require('assert');
 const log = require('../../utils/logger');
+const yardi = require('../../services/yardi');
 // const create500ErrHandler = require('../../utils/unexpected-api-error');
 const propertiesModel = require('../../models/properties');
 const systemModel = require('../../models/system');
@@ -81,8 +82,17 @@ module.exports = function createGetYardiResidents(db, fs) {
       });
     }
 
-    // TODO convert JSON to XML request payload
-    // TODO make yardi request
+    // Make Yardi API request
+    try {
+      const result = await yardi.getYardiPropertyResidents(
+        property.code,
+        yardiConfig
+      );
+      console.log('>>>', result);
+    } catch (err) {
+      log.error(`${PREFIX} Yardi request failed | ${err}`);
+    }
+
     // TODO munge yardi XML response to JSON
     // TODO cleanup phone number formatting & remove duplicates
     // TODO Send JSON API response w/ side loaded occupants
