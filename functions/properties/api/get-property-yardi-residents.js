@@ -1,7 +1,7 @@
 const assert = require('assert');
 const log = require('../../utils/logger');
 const yardi = require('../../services/yardi');
-// const create500ErrHandler = require('../../utils/unexpected-api-error');
+const create500ErrHandler = require('../../utils/unexpected-api-error');
 const propertiesModel = require('../../models/properties');
 const systemModel = require('../../models/system');
 
@@ -27,7 +27,7 @@ module.exports = function createGetYardiResidents(db, fs) {
   return async (req, res) => {
     const { params } = req;
     const { propertyId } = params;
-    // const send500Error = create500ErrHandler(PREFIX, res);
+    const send500Error = create500ErrHandler(PREFIX, res);
 
     let property = null;
 
@@ -83,21 +83,75 @@ module.exports = function createGetYardiResidents(db, fs) {
     }
 
     // Make Yardi API request
+    let residents = null;
+    let occupants = null;
     try {
       const result = await yardi.getYardiPropertyResidents(
         property.code,
         yardiConfig
       );
-      console.log('>>>', result);
+      residents = result.residents;
+      occupants = result.occupants;
     } catch (err) {
-      log.error(`${PREFIX} Yardi request failed | ${err}`);
+      return send500Error(
+        err,
+        'Yard request failed',
+        'Unexpected error fetching residents, please try again'
+      );
     }
 
-    // TODO munge yardi XML response to JSON
-    // TODO cleanup phone number formatting & remove duplicates
-    // TODO Send JSON API response w/ side loaded occupants
+    const json = {
+      data: [],
+      included: [],
+    };
+
+    // Add occupant records
+    residents.forEach(src => {
+      const attributes = { ...src }; // clone
+      const { id, occupants: occupantsRefs } = attributes;
+      delete attributes.id;
+      delete attributes.occupants;
+
+      const record = {
+        id,
+        type: 'resident',
+        attributes,
+      };
+
+      if (occupantsRefs && occupantsRefs.length) {
+        record.relationships = {
+          occupants: {
+            data: occupantsRefs.map(occId => ({ id: occId, type: 'occupant' })),
+          },
+        };
+      }
+
+      json.data.push(record);
+    });
+
+    // Add side loaded occupant records
+    occupants.forEach(src => {
+      const attributes = { ...src }; // clone
+      const { id, resident: residentRef } = attributes;
+      delete attributes.id;
+      delete attributes.resident;
+
+      const record = {
+        id,
+        type: 'occupant',
+        attributes,
+      };
+
+      record.relationships = {
+        resident: {
+          data: { id: residentRef, type: 'resident' },
+        },
+      };
+
+      json.included.push(record);
+    });
 
     // Success
-    res.status(200).send();
+    res.status(200).send(json);
   };
 };
