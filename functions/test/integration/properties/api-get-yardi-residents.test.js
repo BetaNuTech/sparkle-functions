@@ -4,7 +4,7 @@ const sinon = require('sinon');
 const express = require('express');
 const systemModel = require('../../../models/system');
 const propertiesModel = require('../../../models/properties');
-// const yardi = require('../../../services/yardi');
+const yardi = require('../../../services/yardi');
 const getPropertyResidents = require('../../../properties/api/get-property-yardi-residents');
 
 describe("Properties | API | GET Property's Yardi Residents", () => {
@@ -78,21 +78,84 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
         database: 'test_db',
         entity: 'sparkle',
         license: 'abc-123',
-        createdAt: Math.round(Date.now() / 1000),
-        updatedAt: Math.round(Date.now() / 1000),
       })
     );
-    // sinon.stub(yardi, 'getYardiPropertyResidents').rejects();
+    sinon
+      .stub(yardi, 'getYardiPropertyResidents')
+      .rejects(Error('request timeout'));
 
     request(createApp())
       .get('/t/123')
       .send()
       .expect('Content-Type', /json/)
-      .expect(403)
+      .expect(500)
       .then(res => {
         expect(res.body.errors[0].detail).to.contain(
-          'Organization not configured for Yardi'
+          'Unexpected error fetching residents'
         );
+        done();
+      })
+      .catch(done);
+  });
+
+  it('returns all discovered residents as JSON/API formatted records', done => {
+    const resident = {
+      id: '100',
+      type: 'resident',
+      attributes: {
+        firstName: 'test',
+        middleName: 'this',
+        lastName: 'user',
+        email: 'test@gmail.com',
+        mobileNumber: '15126657412',
+        officeNumber: '',
+        homeNumber: '',
+        status: 'current resident',
+        yardiStatus: 'current',
+        leaseUnit: '1926',
+        leaseSqFt: '910',
+        leaseFrom: '2020-01-01T00:00:00',
+        leaseTo: '2020-12-31T00:00:00',
+        moveIn: '2019-02-27T00:00:00',
+      },
+    };
+    const expected = {
+      data: [resident],
+      included: [],
+    };
+
+    // Stup requests
+    sinon
+      .stub(propertiesModel, 'firestoreFindRecord')
+      .resolves(createDoc({ code: 'test' }));
+    sinon.stub(systemModel, 'findYardiCredentials').resolves(
+      createSnap({
+        userName: 'yardi',
+        password: 'yardi',
+        serverName: 'test',
+        database: 'test_db',
+        entity: 'sparkle',
+        license: 'abc-123',
+      })
+    );
+    sinon.stub(yardi, 'getYardiPropertyResidents').resolves({
+      residents: [
+        {
+          id: resident.id,
+          occupants: [],
+          ...resident.attributes,
+        },
+      ],
+      occupants: [],
+    });
+
+    request(createApp())
+      .get('/t/123')
+      .send()
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .then(res => {
+        expect(res.body).to.deep.equal(expected);
         done();
       })
       .catch(done);
