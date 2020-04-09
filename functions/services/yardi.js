@@ -73,15 +73,51 @@ module.exports = {
     }
 
     let parsed = null;
+    let errorMsg = '';
     try {
       parsed = await parseYardyResponse(response.body);
-      parsed =
-        parsed.GetResident_SearchResponse[0].GetResident_SearchResult[0]
-          .CustomerSearch[0].Response[0].Customers[0].Customer;
+
+      if (
+        !parsed ||
+        !parsed.GetResident_SearchResponse ||
+        !parsed.GetResident_SearchResponse[0] ||
+        !parsed.GetResident_SearchResponse[0].GetResident_SearchResult ||
+        !parsed.GetResident_SearchResponse[0].GetResident_SearchResult[0]
+      ) {
+        // Unpopulated body fields is Yardi
+        // version of an unauthorized resopnse
+        errorMsg = 'invalid credentials';
+      } else {
+        parsed =
+          parsed.GetResident_SearchResponse[0].GetResident_SearchResult[0]
+            .CustomerSearch[0].Response[0].Customers[0].Customer;
+        errorMsg =
+          (parsed[0] &&
+            parsed[0].ErrorMessages &&
+            parsed[0].ErrorMessages[0] &&
+            parsed[0].ErrorMessages[0].Error &&
+            parsed[0].ErrorMessages[0].Error[0]) ||
+          '';
+      }
     } catch (err) {
       throw Error(
         `${PREFIX} getYardiPropertyResidents: XML Parsing failed: ${err}`
       );
+    }
+
+    // Abandon when error discovered
+    // within response body
+    if (errorMsg) {
+      const err = Error(
+        `${PREFIX} getYardiPropertyResidents: bad request: ${errorMsg}`
+      );
+      if (errorMsg.search('Could not find') > -1) {
+        err.code = 'ERR_NO_YARDI_PROPERTY';
+      }
+      if (errorMsg.search('invalid credentials')) {
+        err.code = 'ERR_BAD_YARDI_CREDENTIALS';
+      }
+      throw err;
     }
 
     const result = {
