@@ -2,6 +2,7 @@ const request = require('supertest');
 const { expect } = require('chai');
 const sinon = require('sinon');
 const express = require('express');
+const uuid = require('../../../test-helpers/uuid');
 const systemModel = require('../../../models/system');
 const propertiesModel = require('../../../models/properties');
 const yardi = require('../../../services/yardi');
@@ -99,28 +100,10 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
   });
 
   it('returns all discovered residents as JSON/API formatted records', done => {
-    const resident = {
-      id: '100',
-      type: 'resident',
-      attributes: {
-        firstName: 'test',
-        middleName: 'this',
-        lastName: 'user',
-        email: 'test@gmail.com',
-        mobileNumber: '15126657412',
-        officeNumber: '',
-        homeNumber: '',
-        status: 'current resident',
-        yardiStatus: 'current',
-        leaseUnit: '1926',
-        leaseSqFt: '910',
-        leaseFrom: '2020-01-01T00:00:00',
-        leaseTo: '2020-12-31T00:00:00',
-        moveIn: '2019-02-27T00:00:00',
-      },
-    };
+    const resident = createResident();
+    const residentJsonApi = createResidentJsonApi(resident);
     const expected = {
-      data: [resident],
+      data: [residentJsonApi],
       included: [],
     };
 
@@ -128,25 +111,48 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
     sinon
       .stub(propertiesModel, 'firestoreFindRecord')
       .resolves(createDoc({ code: 'test' }));
-    sinon.stub(systemModel, 'findYardiCredentials').resolves(
-      createSnap({
-        userName: 'yardi',
-        password: 'yardi',
-        serverName: 'test',
-        database: 'test_db',
-        entity: 'sparkle',
-        license: 'abc-123',
-      })
-    );
+    sinon.stub(systemModel, 'findYardiCredentials').resolves(createSnap({}));
     sinon.stub(yardi, 'getYardiPropertyResidents').resolves({
-      residents: [
-        {
-          id: resident.id,
-          occupants: [],
-          ...resident.attributes,
-        },
-      ],
+      residents: [resident],
       occupants: [],
+    });
+
+    request(createApp())
+      .get('/t/123')
+      .send()
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .then(res => {
+        expect(res.body).to.deep.equal(expected);
+        done();
+      })
+      .catch(done);
+  });
+
+  it('returns all discovered occupants & their relationships as JSON/API formatted records', done => {
+    const occupantId1 = uuid();
+    const occupantId2 = uuid();
+    const resident = createResident('100', {
+      occupants: [occupantId1, occupantId2],
+    });
+    const residentJsonApi = createResidentJsonApi(resident);
+    const occupant1 = createOccupant(resident.id, occupantId1);
+    const occupant1JsonApi = createIncludedOccupantJsonApi(occupant1);
+    const occupant2 = createOccupant(resident.id, occupantId2);
+    const occupant2JsonApi = createIncludedOccupantJsonApi(occupant2);
+    const expected = {
+      data: [residentJsonApi],
+      included: [occupant1JsonApi, occupant2JsonApi],
+    };
+
+    // Stup requests
+    sinon
+      .stub(propertiesModel, 'firestoreFindRecord')
+      .resolves(createDoc({ code: 'test' }));
+    sinon.stub(systemModel, 'findYardiCredentials').resolves(createSnap({}));
+    sinon.stub(yardi, 'getYardiPropertyResidents').resolves({
+      residents: [resident],
+      occupants: [occupant1, occupant2],
     });
 
     request(createApp())
@@ -187,4 +193,81 @@ function createDoc(data = {}) {
 
 function createSnap(data = {}) {
   return { val: () => data, exists: () => true };
+}
+
+function createResident(id = '', config = {}) {
+  const now = new Date().toISOString();
+  return {
+    id: id || uuid(),
+    firstName: 'first',
+    middleName: 'middle',
+    lastName: 'last',
+    email: 'test@email.com',
+    mobileNumber: '12345678910',
+    homeNumber: '12345678911',
+    officeNumber: '12345678912',
+    status: 'current resident',
+    yardiStatus: 'current',
+    leaseUnit: '1235',
+    leaseSqFt: '123',
+    leaseFrom: now,
+    leaseTo: now,
+    moveIn: now,
+    occupants: [],
+    ...config,
+  };
+}
+
+function createOccupant(residentId, id = '', config = {}) {
+  return {
+    id: id || uuid(),
+    resident: residentId, // relationship
+    firstName: 'first',
+    middleName: 'middle',
+    lastName: 'last',
+    email: 'test-occupant@email.com',
+    mobileNumber: '12345678910',
+    homeNumber: '12345678911',
+    officeNumber: '12345678912',
+    relationship: '',
+    responsibleForLease: false,
+    ...config,
+  };
+}
+
+function createResidentJsonApi(resident) {
+  const result = {
+    id: resident.id,
+    type: 'resident',
+    attributes: { ...resident },
+  };
+  delete result.attributes.id;
+  delete result.attributes.occupants;
+  if (resident.occupants && resident.occupants.length) {
+    result.relationships = {
+      occupants: {
+        data: resident.occupants.map(id => ({ id, type: 'occupant' })),
+      },
+    };
+  }
+  return result;
+}
+
+function createIncludedOccupantJsonApi(occupant) {
+  const result = {
+    id: occupant.id,
+    type: 'occupant',
+    attributes: { ...occupant },
+  };
+
+  delete result.attributes.id;
+  delete result.attributes.resident;
+
+  result.relationships = {
+    resident: {
+      data: { id: occupant.resident, type: 'resident' },
+    },
+  };
+
+  return result;
 }
