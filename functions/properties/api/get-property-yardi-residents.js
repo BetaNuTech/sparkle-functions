@@ -93,6 +93,31 @@ module.exports = function createGetYardiResidents(db, fs) {
       residents = result.residents;
       occupants = result.occupants;
     } catch (err) {
+      if (err.code) log.error(`${PREFIX} | ${err}`);
+
+      // Bad property code
+      if (err.code === 'ERR_NO_YARDI_PROPERTY') {
+        return res.status(404).send({
+          errors: [
+            {
+              detail: 'Configured yardi code for property returned no results',
+              source: { pointer: 'code' },
+            },
+          ],
+        });
+      }
+
+      // Bad system integration credentials
+      if (err.code === 'ERR_BAD_YARDI_CREDENTIALS') {
+        return res.status(401).send({
+          errors: [
+            {
+              detail: 'Yardi integration credentials not accepted',
+            },
+          ],
+        });
+      }
+
       return send500Error(
         err,
         'Yard request failed',

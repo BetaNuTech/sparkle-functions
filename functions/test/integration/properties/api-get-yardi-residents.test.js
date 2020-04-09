@@ -71,16 +71,7 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
     sinon
       .stub(propertiesModel, 'firestoreFindRecord')
       .resolves(createDoc({ code: 'test' }));
-    sinon.stub(systemModel, 'findYardiCredentials').resolves(
-      createSnap({
-        userName: 'yardi',
-        password: 'yardi',
-        serverName: 'test',
-        database: 'test_db',
-        entity: 'sparkle',
-        license: 'abc-123',
-      })
-    );
+    sinon.stub(systemModel, 'findYardiCredentials').resolves(createSnap({}));
     sinon
       .stub(yardi, 'getYardiPropertyResidents')
       .rejects(Error('request timeout'));
@@ -93,6 +84,54 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
       .then(res => {
         expect(res.body.errors[0].detail).to.contain(
           'Unexpected error fetching residents'
+        );
+        done();
+      })
+      .catch(done);
+  });
+
+  it('returns a helpful error when Yardi rejected property code', done => {
+    const invalidCodeErr = Error('bad code');
+    invalidCodeErr.code = 'ERR_NO_YARDI_PROPERTY';
+
+    // Stup requests
+    sinon
+      .stub(propertiesModel, 'firestoreFindRecord')
+      .resolves(createDoc({ code: 'test' }));
+    sinon.stub(systemModel, 'findYardiCredentials').resolves(createSnap({}));
+    sinon.stub(yardi, 'getYardiPropertyResidents').rejects(invalidCodeErr);
+
+    request(createApp())
+      .get('/t/123')
+      .send()
+      .expect('Content-Type', /json/)
+      .expect(404)
+      .then(res => {
+        expect(res.body.errors[0].detail).to.contain('yardi code for property');
+        done();
+      })
+      .catch(done);
+  });
+
+  it('returns a helpful error when Yardi credentials rejected', done => {
+    const invalidCodeErr = Error('bad credentials');
+    invalidCodeErr.code = 'ERR_BAD_YARDI_CREDENTIALS';
+
+    // Stup requests
+    sinon
+      .stub(propertiesModel, 'firestoreFindRecord')
+      .resolves(createDoc({ code: 'test' }));
+    sinon.stub(systemModel, 'findYardiCredentials').resolves(createSnap({}));
+    sinon.stub(yardi, 'getYardiPropertyResidents').rejects(invalidCodeErr);
+
+    request(createApp())
+      .get('/t/123')
+      .send()
+      .expect('Content-Type', /json/)
+      .expect(401)
+      .then(res => {
+        expect(res.body.errors[0].detail).to.contain(
+          'credentials not accepted'
         );
         done();
       })
