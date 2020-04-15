@@ -54,7 +54,8 @@ FIREBASE_PROJECT=sapphire
 FIREBASE_DB_URL=https://...
 FIREBASE_STORAGE_BUCKET=*.appspot.com
 
-YARDI_DOMAIN=https://..
+// Optional:
+COBALT_DOMAIN=https://..
 ```
 
 8. Add environment variables to production for HTTP endpoints:

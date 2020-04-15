@@ -4,6 +4,7 @@ const deficientItems = require('./deficient-items');
 const firebaseConfig = require('./firebase');
 const slackApp = require('./slack-app');
 const clientApps = require('./client-apps');
+const cobalt = require('./cobalt');
 
 const env = process.env.NODE_ENV || 'production';
 
@@ -22,5 +23,6 @@ module.exports = Object.assign(
   { deficientItems },
   { slackApp },
   { firebase: firebaseConfig },
-  { clientApps }
+  { clientApps },
+  { cobalt }
 );
