@@ -26,8 +26,9 @@ module.exports = {
 
     let token = '';
 
+    // Lookup Cobalt credentials
     try {
-      const credentialsSnap = await systemModel.findCobaltOrganization(db);
+      const credentialsSnap = await systemModel.findCobaltCredentials(db);
       const credentials = credentialsSnap.val();
 
       if (!credentials || !credentials.token) {
@@ -39,6 +40,7 @@ module.exports = {
       throw Error(`${PREFIX} Cobalt Integration not setup: ${err}`);
     }
 
+    // GET Cobalt Tenant data
     let response = null;
     try {
       response = await got(
@@ -58,6 +60,7 @@ module.exports = {
 
     let result = null;
 
+    // Parse JSON response
     try {
       result = JSON.parse(response.body);
     } catch (err) {

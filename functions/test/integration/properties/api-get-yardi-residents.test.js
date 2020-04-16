@@ -6,6 +6,7 @@ const uuid = require('../../../test-helpers/uuid');
 const systemModel = require('../../../models/system');
 const propertiesModel = require('../../../models/properties');
 const yardi = require('../../../services/yardi');
+const cobalt = require('../../../services/cobalt');
 const getPropertyResidents = require('../../../properties/api/get-property-yardi-residents');
 
 describe("Properties | API | GET Property's Yardi Residents", () => {
@@ -72,6 +73,7 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
       .stub(propertiesModel, 'firestoreFindRecord')
       .resolves(createDoc({ code: 'test' }));
     sinon.stub(systemModel, 'findYardiCredentials').resolves(createSnap({}));
+    sinon.stub(cobalt, 'getPropertyTenants').rejects(Error('ignore'));
     sinon
       .stub(yardi, 'getYardiPropertyResidents')
       .rejects(Error('request timeout'));
@@ -98,6 +100,7 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
     sinon
       .stub(propertiesModel, 'firestoreFindRecord')
       .resolves(createDoc({ code: 'test' }));
+    sinon.stub(cobalt, 'getPropertyTenants').rejects(Error('ignore'));
     sinon.stub(systemModel, 'findYardiCredentials').resolves(createSnap({}));
     sinon.stub(yardi, 'getYardiPropertyResidents').rejects(invalidCodeErr);
 
@@ -121,6 +124,7 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
     sinon
       .stub(propertiesModel, 'firestoreFindRecord')
       .resolves(createDoc({ code: 'test' }));
+    sinon.stub(cobalt, 'getPropertyTenants').rejects(Error('ignore'));
     sinon.stub(systemModel, 'findYardiCredentials').resolves(createSnap({}));
     sinon.stub(yardi, 'getYardiPropertyResidents').rejects(invalidCodeErr);
 
@@ -142,6 +146,7 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
     const resident = createResident();
     const residentJsonApi = createResidentJsonApi(resident);
     const expected = {
+      meta: {},
       data: [residentJsonApi],
       included: [],
     };
@@ -150,6 +155,7 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
     sinon
       .stub(propertiesModel, 'firestoreFindRecord')
       .resolves(createDoc({ code: 'test' }));
+    sinon.stub(cobalt, 'getPropertyTenants').rejects(Error('ignore'));
     sinon.stub(systemModel, 'findYardiCredentials').resolves(createSnap({}));
     sinon.stub(yardi, 'getYardiPropertyResidents').resolves({
       residents: [resident],
@@ -180,8 +186,46 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
     const occupant2 = createOccupant(resident.id, occupantId2);
     const occupant2JsonApi = createIncludedOccupantJsonApi(occupant2);
     const expected = {
+      meta: {},
       data: [residentJsonApi],
       included: [occupant1JsonApi, occupant2JsonApi],
+    };
+
+    // Stup requests
+    sinon
+      .stub(propertiesModel, 'firestoreFindRecord')
+      .resolves(createDoc({ code: 'test' }));
+    sinon.stub(cobalt, 'getPropertyTenants').rejects(Error('ignore'));
+    sinon.stub(systemModel, 'findYardiCredentials').resolves(createSnap({}));
+    sinon.stub(yardi, 'getYardiPropertyResidents').resolves({
+      residents: [resident],
+      occupants: [occupant1, occupant2],
+    });
+
+    request(createApp())
+      .get('/t/123')
+      .send()
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .then(res => {
+        expect(res.body).to.deep.equal(expected);
+        done();
+      })
+      .catch(done);
+  });
+
+  it('layers on any successfully discovered Cobalt data to JSON/API formatted residents', done => {
+    const resident = createResident();
+    const cobaltResident = createCobaltTenant(resident.id);
+    const residentJsonApi = createResidentJsonApi(resident);
+    Object.assign(
+      residentJsonApi.attributes,
+      createCobaltTenantJsonApiAttrs(cobaltResident)
+    );
+    const expected = {
+      meta: { cobaltTimestamp: 1 },
+      data: [residentJsonApi],
+      included: [],
     };
 
     // Stup requests
@@ -191,7 +235,11 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
     sinon.stub(systemModel, 'findYardiCredentials').resolves(createSnap({}));
     sinon.stub(yardi, 'getYardiPropertyResidents').resolves({
       residents: [resident],
-      occupants: [occupant1, occupant2],
+      occupants: [],
+    });
+    sinon.stub(cobalt, 'getPropertyTenants').resolves({
+      timestamp: expected.meta.cobaltTimestamp,
+      data: [cobaltResident],
     });
 
     request(createApp())
@@ -257,6 +305,20 @@ function createResident(id = '', config = {}) {
   };
 }
 
+function createCobaltTenant(id, config = {}) {
+  return {
+    tenant_code: id,
+    total_charges: '1555.74',
+    total_owed: '1555.74',
+    payment_plan: true,
+    eviction: false,
+    last_note: '...',
+    payment_plan_delinquent: false,
+    last_note_updated_at: '2020-04-08T13:26:26.000-05:00',
+    ...config,
+  };
+}
+
 function createOccupant(residentId, id = '', config = {}) {
   return {
     id: id || uuid(),
@@ -289,6 +351,18 @@ function createResidentJsonApi(resident) {
       },
     };
   }
+  return result;
+}
+
+function createCobaltTenantJsonApiAttrs(tenant) {
+  const result = {};
+  if (tenant.total_owed) result.totalOwed = parseFloat(tenant.total_owed);
+  if (tenant.total_charges)
+    result.totalCharges = parseFloat(tenant.total_charges);
+  if (tenant.payment_plan) result.paymentPlan = tenant.payment_plan;
+  if (tenant.payment_plan_delinquent)
+    result.paymentPlanDelinquent = tenant.payment_plan_delinquent;
+  if (tenant.last_note) result.lastNote = tenant.last_note;
   return result;
 }
 

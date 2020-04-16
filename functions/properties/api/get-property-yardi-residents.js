@@ -1,6 +1,7 @@
 const assert = require('assert');
 const log = require('../../utils/logger');
 const yardi = require('../../services/yardi');
+const cobalt = require('../../services/cobalt');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
 const propertiesModel = require('../../models/properties');
 const systemModel = require('../../models/system');
@@ -82,16 +83,20 @@ module.exports = function createGetYardiResidents(db, fs) {
       });
     }
 
-    // Make Yardi API request
+    // Make Yardi & Cobalt API request
     let residents = null;
     let occupants = null;
+    let findCobaltTenant = () => ({});
+    let cobaltTimestamp = 0;
     try {
-      const result = await yardi.getYardiPropertyResidents(
-        property.code,
-        yardiConfig
-      );
+      const [result, cobaltData] = await Promise.all([
+        yardi.getYardiPropertyResidents(property.code, yardiConfig),
+        requestCobaltTenants(db, property.code),
+      ]);
       residents = result.residents;
       occupants = result.occupants;
+      findCobaltTenant = getCobaltTenant(cobaltData.data);
+      if (cobaltData.timestamp) cobaltTimestamp = cobaltData.timestamp;
     } catch (err) {
       if (err.code) log.error(`${PREFIX} | ${err}`);
 
@@ -126,9 +131,16 @@ module.exports = function createGetYardiResidents(db, fs) {
     }
 
     const json = {
+      meta: {},
       data: [],
       included: [],
     };
+
+    // Add Cobalt timestamp
+    // to response metadata
+    if (cobaltTimestamp) {
+      json.meta.cobaltTimestamp = cobaltTimestamp;
+    }
 
     // Add occupant records
     residents.forEach(src => {
@@ -136,6 +148,7 @@ module.exports = function createGetYardiResidents(db, fs) {
       const { id, occupants: occupantsRefs } = attributes;
       delete attributes.id;
       delete attributes.occupants;
+      Object.assign(attributes, findCobaltTenant(id)); // Merge in any Cobalt data
 
       const record = {
         id,
@@ -180,3 +193,44 @@ module.exports = function createGetYardiResidents(db, fs) {
     res.status(200).send(json);
   };
 };
+
+/**
+ * Request Cobalt Tenant data
+ * allowing for request to fail
+ * @param {admin.database} db
+ * @param  {String} propertyCode
+ * @return {Promise} - resolves {Object}
+ */
+function requestCobaltTenants(db, propertyCode) {
+  return cobalt.getPropertyTenants(db, propertyCode).catch(err => {
+    log.error(`${PREFIX} Cobalt tenant request failed: ${err}`);
+    return { data: [] }; // ignore failure
+  });
+}
+
+function getCobaltTenant(data) {
+  assert(Array.isArray(data), 'has data array');
+
+  /**
+   * Lookup and munge any
+   * found tenant data into
+   * camel casing
+   * @param  {String} id
+   * @return {Object}
+   */
+  return id => {
+    assert(id && typeof id === 'string', 'has string');
+    const result = {};
+
+    // Find & replace w/ camelcase
+    const found = data.find(({ tenant_code }) => tenant_code === id) || {}; // eslint-disable-line camelcase
+    if (found.total_owed) result.totalOwed = parseFloat(found.total_owed);
+    if (found.total_charges)
+      result.totalCharges = parseFloat(found.total_charges);
+    if (found.payment_plan) result.paymentPlan = found.payment_plan;
+    if (found.payment_plan_delinquent)
+      result.paymentPlanDelinquent = found.payment_plan_delinquent;
+    if (found.last_note) result.lastNote = found.last_note;
+    return result;
+  };
+}
