@@ -8,6 +8,8 @@ const SERVICE_ACCOUNT_CLIENT_ID =
   config.firebase.databaseAuthVariableOverride.uid;
 const DI_DATABASE_PATH = config.deficientItems.dbPath;
 const TRELLO_ORG_PATH = `/system/integrations/${SERVICE_ACCOUNT_CLIENT_ID}/trello/organization`;
+const YARDI_ORG_PATH = `/system/integrations/${SERVICE_ACCOUNT_CLIENT_ID}/yardi/organization`;
+const COBALT_ORG_PATH = `/system/integrations/${SERVICE_ACCOUNT_CLIENT_ID}/cobalt/organization`;
 const TRELLO_PROPERTIES_PATH = `/system/integrations/${SERVICE_ACCOUNT_CLIENT_ID}/trello/properties`;
 const SLACK_ORG_PATH = `/system/integrations/${SERVICE_ACCOUNT_CLIENT_ID}/slack/organization`;
 
@@ -28,6 +30,24 @@ module.exports = modelSetup({
    */
   destroyTrelloCredentials(db) {
     return db.ref(TRELLO_ORG_PATH).remove();
+  },
+
+  /**
+   * Lookup Yardi credentials
+   * @param  {firebaseAdmin.database} db - firbase database
+   * @return {Promise} - resolves {DataSnapshot}
+   */
+  findYardiCredentials(db) {
+    return db.ref(YARDI_ORG_PATH).once('value');
+  },
+
+  /**
+   * Lookup Cobalt credentials
+   * @param  {firebaseAdmin.database} db - firbase database
+   * @return {Promise} - resolves {DataSnapshot}
+   */
+  findCobaltCredentials(db) {
+    return db.ref(COBALT_ORG_PATH).once('value');
   },
 
   /**
