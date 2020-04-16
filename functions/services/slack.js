@@ -1,9 +1,9 @@
 const got = require('got');
 const assert = require('assert');
-
-const PREFIX = 'services: slack:';
 const integrationsModel = require('../models/integrations');
 const systemModel = require('../models/system');
+
+const PREFIX = 'services: slack:';
 
 module.exports = {
   /**
