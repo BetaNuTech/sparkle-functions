@@ -46,7 +46,7 @@ module.exports = modelSetup({
    * @param  {firebaseAdmin.database} db - firbase database
    * @return {Promise} - resolves {DataSnapshot}
    */
-  findCobaltOrganization(db) {
+  findCobaltCredentials(db) {
     return db.ref(COBALT_ORG_PATH).once('value');
   },
 
