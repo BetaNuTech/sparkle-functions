@@ -27,7 +27,7 @@ const pubsubClient = new PubSub({
 
 // Send API version
 exports.latestVersion = functions.https.onRequest((request, response) =>
-  response.status(200).send({ ios: '1.5.9' })
+  response.status(200).send({ ios: '1.6.0' })
 );
 
 // Latest Completed Inspections
@@ -341,7 +341,7 @@ exports.trelloDiCardClose = trello.pubsub.createCloseDiCard(
 // API
 
 exports.api = functions.https.onRequest(
-  createRouter(db, auth, {
+  createRouter(db, fs, auth, {
     inspectionUrl: config.clientApps.web.inspectionURL,
   })
 );

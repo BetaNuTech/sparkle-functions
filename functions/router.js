@@ -2,6 +2,7 @@ const cors = require('cors');
 const assert = require('assert');
 const express = require('express');
 const bodyParser = require('body-parser');
+const properties = require('./properties');
 const inspections = require('./inspections');
 const authUser = require('./utils/auth-firebase-user');
 
@@ -13,8 +14,9 @@ const authUser = require('./utils/auth-firebase-user');
  * @param  {Object} settings
  * @return {Express}
  */
-module.exports = (db, auth, settings) => {
+module.exports = (db, fs, auth, settings) => {
   assert(Boolean(db), 'has firebase database instance');
+  assert(Boolean(fs), 'has firestore database instance');
   assert(Boolean(auth), 'has firebase auth instance');
 
   const app = express();
@@ -34,6 +36,13 @@ module.exports = (db, auth, settings) => {
     '/v0/inspections/:inspection/pdf-report',
     authUser(db, auth),
     inspections.api.createGetInspectionPDF(db, inspectionUrl)
+  );
+
+  // Request Property's residents from Yardi
+  app.get(
+    '/v0/properties/:propertyId/yardi/residents',
+    authUser(db, auth),
+    properties.api.getPropertyYardiResidents(db, fs)
   );
 
   return app;
