@@ -149,6 +149,15 @@ module.exports = {
 
     return result;
   },
+
+  /**
+   * POST to Yardi for all a property's work orders
+   * @param  {String} propertyCode
+   * @param  {Object} yardiConfig
+   * @return {Promise} - resolves {Object}
+   */
+  // async function getYardiWorkOrders(propertyCode, yardiConfig) {
+  // }
 };
 
 /**
