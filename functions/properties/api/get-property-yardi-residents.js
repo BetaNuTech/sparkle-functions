@@ -3,7 +3,6 @@ const log = require('../../utils/logger');
 const yardi = require('../../services/yardi');
 const cobalt = require('../../services/cobalt');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
-const propertiesModel = require('../../models/properties');
 const systemModel = require('../../models/system');
 
 const PREFIX = 'properties: api: get-property-yardi-residents:';
@@ -12,12 +11,10 @@ const PREFIX = 'properties: api: get-property-yardi-residents:';
  * Factory for creating a GET endpoint
  * that fetches a properties Yardi residents
  * @param {admin.database} db
- * @param {admin.firestore} fs
  * @return {Function} - onRequest handler
  */
-module.exports = function createGetYardiResidents(db, fs) {
+module.exports = function createGetYardiResidents(db) {
   assert(Boolean(db), 'has firebase database');
-  assert(Boolean(fs), 'has firestore database');
 
   /**
    * Handle GET request
@@ -26,43 +23,9 @@ module.exports = function createGetYardiResidents(db, fs) {
    * @return {Promise}
    */
   return async (req, res) => {
-    const { params } = req;
-    const { propertyId } = params;
+    assert(req.property, 'has property set by middleware');
+    const property = req.property;
     const send500Error = create500ErrHandler(PREFIX, res);
-
-    let property = null;
-
-    // Lookup requested property
-    try {
-      if (!propertyId) throw Error('no property ID provided');
-      const propertyDoc = await propertiesModel.firestoreFindRecord(
-        fs,
-        propertyId
-      );
-      if (!propertyDoc.exists) throw Error('property does not exist');
-      property = propertyDoc.data();
-    } catch (err) {
-      log.error(`${PREFIX} ${err}`);
-      return res.status(404).send({
-        errors: [
-          {
-            detail: 'property does not exist',
-          },
-        ],
-      });
-    }
-
-    // Reject property /wo Yardi code
-    if (!property.code) {
-      return res.status(403).send({
-        errors: [
-          {
-            detail: 'Property code not set for Yardi request',
-            source: { pointer: 'code' },
-          },
-        ],
-      });
-    }
 
     let yardiConfig = null;
 

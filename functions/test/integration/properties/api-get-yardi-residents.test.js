@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const express = require('express');
 const uuid = require('../../../test-helpers/uuid');
 const systemModel = require('../../../models/system');
-const propertiesModel = require('../../../models/properties');
 const yardi = require('../../../services/yardi');
 const cobalt = require('../../../services/cobalt');
 const getPropertyResidents = require('../../../properties/api/get-property-yardi-residents');
@@ -12,48 +11,12 @@ const getPropertyResidents = require('../../../properties/api/get-property-yardi
 describe("Properties | API | GET Property's Yardi Residents", () => {
   afterEach(() => sinon.restore());
 
-  it('rejects request to non-existent property', done => {
-    // Stup requests
-    sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
-      .resolves(createEmptyDoc());
-
-    request(createApp())
-      .get('/t/123')
-      .send()
-      .expect('Content-Type', /json/)
-      .expect(404)
-      .then(res => {
-        expect(res.body.errors[0].detail).to.contain('property does not exist');
-        done();
-      })
-      .catch(done);
-  });
-
-  it('rejects when property is missing a yardi code', done => {
-    // Stup requests
-    sinon.stub(propertiesModel, 'firestoreFindRecord').resolves(createDoc({}));
-
-    request(createApp())
-      .get('/t/123')
-      .send()
-      .expect('Content-Type', /json/)
-      .expect(403)
-      .then(res => {
-        expect(res.body.errors[0].detail).to.contain('code not set for Yardi');
-        done();
-      })
-      .catch(done);
-  });
-
   it('rejects when yardi credentials not set for organization', done => {
     // Stup requests
-    sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
-      .resolves(createDoc({ code: 'test' }));
+    const property = { code: 'test' };
     sinon.stub(systemModel, 'findYardiCredentials').resolves(createEmptySnap());
 
-    request(createApp())
+    request(createApp(property))
       .get('/t/123')
       .send()
       .expect('Content-Type', /json/)
@@ -69,16 +32,14 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
 
   it('returns a helpful error when Yardi request fails', done => {
     // Stup requests
-    sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
-      .resolves(createDoc({ code: 'test' }));
+    const property = { code: 'test' };
     sinon.stub(systemModel, 'findYardiCredentials').resolves(createSnap({}));
     sinon.stub(cobalt, 'getPropertyTenants').rejects(Error('ignore'));
     sinon
       .stub(yardi, 'getYardiPropertyResidents')
       .rejects(Error('request timeout'));
 
-    request(createApp())
+    request(createApp(property))
       .get('/t/123')
       .send()
       .expect('Content-Type', /json/)
@@ -93,18 +54,16 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
   });
 
   it('returns a helpful error when Yardi rejected property code', done => {
+    const property = { code: 'test' };
     const invalidCodeErr = Error('bad code');
     invalidCodeErr.code = 'ERR_NO_YARDI_PROPERTY';
 
     // Stup requests
-    sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
-      .resolves(createDoc({ code: 'test' }));
     sinon.stub(cobalt, 'getPropertyTenants').rejects(Error('ignore'));
     sinon.stub(systemModel, 'findYardiCredentials').resolves(createSnap({}));
     sinon.stub(yardi, 'getYardiPropertyResidents').rejects(invalidCodeErr);
 
-    request(createApp())
+    request(createApp(property))
       .get('/t/123')
       .send()
       .expect('Content-Type', /json/)
@@ -117,18 +76,16 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
   });
 
   it('returns a helpful error when Yardi credentials rejected', done => {
+    const property = { code: 'test' };
     const invalidCodeErr = Error('bad credentials');
     invalidCodeErr.code = 'ERR_BAD_YARDI_CREDENTIALS';
 
     // Stup requests
-    sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
-      .resolves(createDoc({ code: 'test' }));
     sinon.stub(cobalt, 'getPropertyTenants').rejects(Error('ignore'));
     sinon.stub(systemModel, 'findYardiCredentials').resolves(createSnap({}));
     sinon.stub(yardi, 'getYardiPropertyResidents').rejects(invalidCodeErr);
 
-    request(createApp())
+    request(createApp(property))
       .get('/t/123')
       .send()
       .expect('Content-Type', /json/)
@@ -143,6 +100,7 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
   });
 
   it('returns all discovered residents as JSON/API formatted records', done => {
+    const property = { code: 'test' };
     const resident = createResident();
     const residentJsonApi = createResidentJsonApi(resident);
     const expected = {
@@ -152,9 +110,6 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
     };
 
     // Stup requests
-    sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
-      .resolves(createDoc({ code: 'test' }));
     sinon.stub(cobalt, 'getPropertyTenants').rejects(Error('ignore'));
     sinon.stub(systemModel, 'findYardiCredentials').resolves(createSnap({}));
     sinon.stub(yardi, 'getYardiPropertyResidents').resolves({
@@ -162,7 +117,7 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
       occupants: [],
     });
 
-    request(createApp())
+    request(createApp(property))
       .get('/t/123')
       .send()
       .expect('Content-Type', /json/)
@@ -175,6 +130,7 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
   });
 
   it('returns all discovered occupants & their relationships as JSON/API formatted records', done => {
+    const property = { code: 'test' };
     const occupantId1 = uuid();
     const occupantId2 = uuid();
     const resident = createResident('100', {
@@ -192,9 +148,6 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
     };
 
     // Stup requests
-    sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
-      .resolves(createDoc({ code: 'test' }));
     sinon.stub(cobalt, 'getPropertyTenants').rejects(Error('ignore'));
     sinon.stub(systemModel, 'findYardiCredentials').resolves(createSnap({}));
     sinon.stub(yardi, 'getYardiPropertyResidents').resolves({
@@ -202,7 +155,7 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
       occupants: [occupant1, occupant2],
     });
 
-    request(createApp())
+    request(createApp(property))
       .get('/t/123')
       .send()
       .expect('Content-Type', /json/)
@@ -215,6 +168,7 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
   });
 
   it('layers on any successfully discovered Cobalt data to JSON/API formatted residents', done => {
+    const property = { code: 'test' };
     const resident = createResident();
     const cobaltResident = createCobaltTenant(resident.id);
     const residentJsonApi = createResidentJsonApi(resident);
@@ -229,9 +183,6 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
     };
 
     // Stup requests
-    sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
-      .resolves(createDoc({ code: 'test' }));
     sinon.stub(systemModel, 'findYardiCredentials').resolves(createSnap({}));
     sinon.stub(yardi, 'getYardiPropertyResidents').resolves({
       residents: [resident],
@@ -242,7 +193,7 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
       data: [cobaltResident],
     });
 
-    request(createApp())
+    request(createApp(property))
       .get('/t/123')
       .send()
       .expect('Content-Type', /json/)
@@ -255,9 +206,14 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
   });
 });
 
-function createApp() {
+function createApp(property) {
   const app = express();
-  app.get('/t/:propertyId', stubAuth, getPropertyResidents({}, {}));
+  app.get(
+    '/t/:propertyId',
+    stubAuth,
+    stubPropertyCode(property),
+    getPropertyResidents({})
+  );
   return app;
 }
 
@@ -266,16 +222,15 @@ function stubAuth(req, res, next) {
   next();
 }
 
-function createEmptyDoc() {
-  return { data: () => null, exists: false };
+function stubPropertyCode(property) {
+  return (req, res, next) => {
+    req.property = property;
+    next();
+  };
 }
 
 function createEmptySnap() {
   return { val: () => null, exists: () => false };
-}
-
-function createDoc(data = {}) {
-  return { data: () => data, exists: true };
 }
 
 function createSnap(data = {}) {
