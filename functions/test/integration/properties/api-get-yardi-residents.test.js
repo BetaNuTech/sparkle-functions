@@ -11,25 +11,6 @@ const getPropertyResidents = require('../../../properties/api/get-property-yardi
 describe("Properties | API | GET Property's Yardi Residents", () => {
   afterEach(() => sinon.restore());
 
-  it('rejects when yardi credentials not set for organization', done => {
-    // Stup requests
-    const property = { code: 'test' };
-    sinon.stub(systemModel, 'findYardiCredentials').resolves(createEmptySnap());
-
-    request(createApp(property))
-      .get('/t/123')
-      .send()
-      .expect('Content-Type', /json/)
-      .expect(403)
-      .then(res => {
-        expect(res.body.errors[0].detail).to.contain(
-          'Organization not configured for Yardi'
-        );
-        done();
-      })
-      .catch(done);
-  });
-
   it('returns a helpful error when Yardi request fails', done => {
     // Stup requests
     const property = { code: 'test' };
@@ -212,6 +193,7 @@ function createApp(property) {
     '/t/:propertyId',
     stubAuth,
     stubPropertyCode(property),
+    stubYardiConfig(),
     getPropertyResidents({})
   );
   return app;
@@ -229,8 +211,11 @@ function stubPropertyCode(property) {
   };
 }
 
-function createEmptySnap() {
-  return { val: () => null, exists: () => false };
+function stubYardiConfig(config = {}) {
+  return (req, res, next) => {
+    req.yardiConfig = config;
+    next();
+  };
 }
 
 function createSnap(data = {}) {

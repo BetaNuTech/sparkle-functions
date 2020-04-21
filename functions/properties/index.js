@@ -6,6 +6,7 @@ const getPropertyYardiResidents = require('./api/get-property-yardi-residents');
 const getPropertyYardiWorkOrders = require('./api/get-property-yardi-work-orders');
 const createSyncMeta = require('./pubsub/sync-meta');
 const propertyCode = require('./middleware/property-code');
+const yardiIntegration = require('./middleware/property-code');
 
 module.exports = {
   createOnDeleteWatcher,
@@ -14,5 +15,5 @@ module.exports = {
   createOnWriteTeamsWatcher,
   pubsub: { createSyncMeta },
   api: { getPropertyYardiResidents, getPropertyYardiWorkOrders },
-  middleware: { propertyCode },
+  middleware: { propertyCode, yardiIntegration },
 };
