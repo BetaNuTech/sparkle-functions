@@ -42,7 +42,18 @@ module.exports = (db, fs, auth, settings) => {
   app.get(
     '/v0/properties/:propertyId/yardi/residents',
     authUser(db, auth),
-    properties.api.getPropertyYardiResidents(db, fs)
+    properties.middleware.propertyCode(fs),
+    properties.middleware.yardiIntegration(db),
+    properties.api.getPropertyYardiResidents(db)
+  );
+
+  // Request Property's work orders from Yardi
+  app.get(
+    '/v0/properties/:propertyId/yardi/work-orders',
+    authUser(db, auth),
+    properties.middleware.propertyCode(fs),
+    properties.middleware.yardiIntegration(db),
+    properties.api.getPropertyYardiWorkOrders(db)
   );
 
   return app;

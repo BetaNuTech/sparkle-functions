@@ -18,7 +18,7 @@ const YARDI_ENVELOPE = Object.freeze({
     'soap:Body': {},
   },
 });
-const YARDI_QUERY_XMLNS =
+const YARDI_XMLNS_ATTR =
   'http://tempuri.org/YSI.Interfaces.WebServices/ItfServiceRequests';
 const YARDI_SEARCH_CONFIG_BOILERPLATE = Object.freeze({
   UserName: '',
@@ -49,7 +49,7 @@ module.exports = {
     const soapEnvelope = { ...YARDI_ENVELOPE };
     soapEnvelope['soap:Envelope']['soap:Body'].GetResident_Search = {
       $: {
-        xmlns: YARDI_QUERY_XMLNS,
+        xmlns: YARDI_XMLNS_ATTR,
       },
       ...createYardyBody(propertyCode, yardiConfig),
     };
@@ -148,6 +148,105 @@ module.exports = {
     });
 
     return result;
+  },
+
+  /**
+   * POST to Yardi for all a property's work orders
+   * @param  {String} propertyCode
+   * @param  {Object} yardiConfig
+   * @return {Promise} - resolves {Object}
+   */
+  async getYardiPropertyWorkOrders(propertyCode, yardiConfig) {
+    assert(
+      propertyCode && typeof propertyCode === 'string',
+      'has property Yardi code'
+    );
+    assertYardiConfig(yardiConfig);
+
+    const soapEnvelope = { ...YARDI_ENVELOPE };
+    soapEnvelope['soap:Envelope']['soap:Body'].GetServiceRequest_Search = {
+      $: {
+        xmlns: YARDI_XMLNS_ATTR,
+      },
+      OpenOrClosed: 'Open',
+      ...createYardyBody(propertyCode, yardiConfig),
+    };
+
+    const body = createYardXMLBody(soapEnvelope);
+    let response = null;
+    try {
+      response = await got.post(YARDI_URL, {
+        headers: {
+          'Content-Type': 'text/xml; charset=utf-8',
+          'Content-Length': body.length,
+          SOAPAction:
+            'http://tempuri.org/YSI.Interfaces.WebServices/ItfServiceRequests/GetServiceRequest_Search',
+        },
+        body,
+      });
+    } catch (err) {
+      throw Error(
+        `${PREFIX} getYardiPropertyWorkOrders: Yardi request failed: ${err}`
+      );
+    }
+
+    let parsed = null;
+    let errorMsg = '';
+    try {
+      parsed = await parseYardyResponse(response.body);
+
+      if (
+        !parsed ||
+        !parsed.GetServiceRequest_SearchResponse ||
+        !parsed.GetServiceRequest_SearchResponse[0] ||
+        !parsed.GetServiceRequest_SearchResponse[0]
+          .GetServiceRequest_SearchResult ||
+        !parsed.GetServiceRequest_SearchResponse[0]
+          .GetServiceRequest_SearchResult[0]
+      ) {
+        // Unpopulated body fields is Yardi
+        // version of an unauthorized resopnse
+        errorMsg = 'invalid credentials';
+      } else {
+        parsed =
+          parsed.GetServiceRequest_SearchResponse[0]
+            .GetServiceRequest_SearchResult[0].ServiceRequests[0]
+            .ServiceRequest;
+        errorMsg =
+          (parsed[0] &&
+            parsed[0].ErrorMessages &&
+            parsed[0].ErrorMessages[0] &&
+            parsed[0].ErrorMessages[0].Error &&
+            parsed[0].ErrorMessages[0].Error[0]) ||
+          '';
+      }
+    } catch (err) {
+      throw Error(
+        `${PREFIX} getYardiPropertyWorkOrders: XML Parsing failed: ${err}`
+      );
+    }
+
+    // Abandon when error discovered
+    // within response body
+    if (errorMsg) {
+      const err = Error(
+        `${PREFIX} getYardiPropertyWorkOrders: bad request: ${errorMsg}`
+      );
+      if (errorMsg.search('Could not find') > -1) {
+        err.code = 'ERR_NO_YARDI_PROPERTY';
+      }
+      if (errorMsg.search('invalid credentials')) {
+        err.code = 'ERR_BAD_YARDI_CREDENTIALS';
+      }
+      throw err;
+    }
+
+    // Map parsed into usable JSON
+    return {
+      workOrders: parsed
+        .filter(helpers.isValidYardiWorkOrder)
+        .map(helpers.createWorkOrderFromYardi),
+    };
   },
 };
 

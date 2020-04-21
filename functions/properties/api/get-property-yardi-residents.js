@@ -3,8 +3,6 @@ const log = require('../../utils/logger');
 const yardi = require('../../services/yardi');
 const cobalt = require('../../services/cobalt');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
-const propertiesModel = require('../../models/properties');
-const systemModel = require('../../models/system');
 
 const PREFIX = 'properties: api: get-property-yardi-residents:';
 
@@ -12,12 +10,10 @@ const PREFIX = 'properties: api: get-property-yardi-residents:';
  * Factory for creating a GET endpoint
  * that fetches a properties Yardi residents
  * @param {admin.database} db
- * @param {admin.firestore} fs
  * @return {Function} - onRequest handler
  */
-module.exports = function createGetYardiResidents(db, fs) {
+module.exports = function createGetYardiResidents(db) {
   assert(Boolean(db), 'has firebase database');
-  assert(Boolean(fs), 'has firestore database');
 
   /**
    * Handle GET request
@@ -26,62 +22,11 @@ module.exports = function createGetYardiResidents(db, fs) {
    * @return {Promise}
    */
   return async (req, res) => {
-    const { params } = req;
-    const { propertyId } = params;
+    assert(req.property, 'has property set by middleware');
+    assert(req.yardiConfig, 'has yardi config set by middleware');
+    const property = req.property;
+    const yardiConfig = req.yardiConfig;
     const send500Error = create500ErrHandler(PREFIX, res);
-
-    let property = null;
-
-    // Lookup requested property
-    try {
-      if (!propertyId) throw Error('no property ID provided');
-      const propertyDoc = await propertiesModel.firestoreFindRecord(
-        fs,
-        propertyId
-      );
-      if (!propertyDoc.exists) throw Error('property does not exist');
-      property = propertyDoc.data();
-    } catch (err) {
-      log.error(`${PREFIX} ${err}`);
-      return res.status(404).send({
-        errors: [
-          {
-            detail: 'property does not exist',
-          },
-        ],
-      });
-    }
-
-    // Reject property /wo Yardi code
-    if (!property.code) {
-      return res.status(403).send({
-        errors: [
-          {
-            detail: 'Property code not set for Yardi request',
-            source: { pointer: 'code' },
-          },
-        ],
-      });
-    }
-
-    let yardiConfig = null;
-
-    // Lookup Yardi Integration
-    try {
-      const yardiSnap = await systemModel.findYardiCredentials(db);
-      yardiConfig = yardiSnap.val();
-      if (!yardiConfig) throw Error('Yardi not configured for organization');
-    } catch (err) {
-      log.error(`${PREFIX} | ${err}`);
-      return res.status(403).send({
-        errors: [
-          {
-            detail: 'Organization not configured for Yardi',
-            source: { pointer: 'code' },
-          },
-        ],
-      });
-    }
 
     // Make Yardi & Cobalt API request
     let residents = null;
@@ -188,6 +133,9 @@ module.exports = function createGetYardiResidents(db, fs) {
 
       json.included.push(record);
     });
+
+    // Configure JSON API response
+    res.set('Content-Type', 'application/vnd.api+json');
 
     // Success
     res.status(200).send(json);
