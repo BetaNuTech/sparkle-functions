@@ -3,6 +3,8 @@ const {
   isValidYardiResidentOccupant,
   createResidentFromYardiCustomer,
   createOccupantFromYardiOccupant,
+  isValidYardiWorkOrder,
+  createWorkOrderFromYardi,
   _getYardiPhoneNumbers: getYardiPhoneNumbers,
 } = require('./yardi-helpers');
 
@@ -339,6 +341,176 @@ describe('Service | Utils | Yardi Helpers', () => {
     });
   });
 
+  describe('Work Order Validation & Creation', () => {
+    it('rejects when required attributes can not be found', () => {
+      const invalidReqId = createWorkOrder({});
+      delete invalidReqId.ServiceRequestId;
+
+      const invalidId = createWorkOrder({});
+      delete invalidId.ServiceRequestId[0];
+
+      const invalidTenant = createWorkOrder({});
+      delete invalidTenant.TenantCode;
+
+      const invalidUnit = createWorkOrder({});
+      delete invalidUnit.UnitCode;
+
+      [
+        {
+          actual: isValidYardiWorkOrder(invalidReqId),
+          expected: false,
+          msg: 'rejects missing "ServiceRequestId"',
+        },
+        {
+          actual: isValidYardiWorkOrder(invalidId),
+          expected: false,
+          msg: 'rejects empty "ServiceRequestId"',
+        },
+        {
+          actual: isValidYardiWorkOrder(invalidTenant),
+          expected: false,
+          msg: 'rejects missing tenant/resident reference',
+        },
+        {
+          actual: isValidYardiWorkOrder(invalidUnit),
+          expected: false,
+          msg: 'rejects missing "UnitCode"',
+        },
+      ].forEach(({ actual, expected, msg }) => {
+        expect(actual).to.equal(expected, msg);
+      });
+    });
+
+    it('copies over all yardi values', () => {
+      [
+        {
+          actual: createWorkOrderFromYardi(createWorkOrder({ id: 'abc' })).id,
+          expected: 'abc',
+          msg: 'Copies over id',
+        },
+        {
+          actual: createWorkOrderFromYardi(
+            createWorkOrder({ status: 'Progress' })
+          ).status,
+          expected: 'progress',
+          msg: 'Copies over status',
+        },
+        {
+          actual: createWorkOrderFromYardi(
+            createWorkOrder({ category: 'Misc' })
+          ).category,
+          expected: 'misc',
+          msg: 'Copies over category',
+        },
+        {
+          actual: createWorkOrderFromYardi(createWorkOrder({ origin: 'OL' }))
+            .origin,
+          expected: 'OL',
+          msg: 'Copies over origin',
+        },
+        {
+          actual: createWorkOrderFromYardi(
+            createWorkOrder({ priority: 'High' })
+          ).priority,
+          expected: 'high',
+          msg: 'Copies over priority',
+        },
+        {
+          actual: createWorkOrderFromYardi(createWorkOrder({ unit: '01-0123' }))
+            .unit,
+          expected: '01-0123',
+          msg: 'Copies over unit',
+        },
+        {
+          actual: createWorkOrderFromYardi(
+            createWorkOrder({ resident: '10123' })
+          ).resident,
+          expected: '10123',
+          msg: 'Copies over resident',
+        },
+        {
+          actual: createWorkOrderFromYardi(
+            createWorkOrder({ updatedBy: 'Testor' })
+          ).updatedBy,
+          expected: 'Testor',
+          msg: 'Copies over updated by',
+        },
+        {
+          actual: createWorkOrderFromYardi(
+            createWorkOrder({ requestDate: '2020-01-01' })
+          ).requestDate,
+          expected: '2020-01-01',
+          msg: 'Copies over request date',
+        },
+        {
+          actual: createWorkOrderFromYardi(
+            createWorkOrder({ permissionToEnter: 'True' })
+          ).permissionToEnter,
+          expected: true,
+          msg: 'Copies over permission to enter',
+        },
+        {
+          actual: createWorkOrderFromYardi(
+            createWorkOrder({ tenantCaused: 'False' })
+          ).tenantCaused,
+          expected: false,
+          msg: 'Copies over tenant caused',
+        },
+        {
+          actual: createWorkOrderFromYardi(
+            createWorkOrder({ technicianNotes: 'Notes' })
+          ).technicianNotes,
+          expected: 'Notes',
+          msg: 'Copies over tenant caused',
+        },
+        {
+          actual: createWorkOrderFromYardi(
+            createWorkOrder({ problemNotes: 'Notes' })
+          ).problemNotes,
+          expected: 'Notes',
+          msg: 'Copies over problem notes',
+        },
+        {
+          actual: createWorkOrderFromYardi(
+            createWorkOrder({ requestorName: 'Bob Smith' })
+          ).requestorName,
+          expected: 'Bob Smith',
+          msg: 'Copies over requestors name',
+        },
+        {
+          actual: createWorkOrderFromYardi(
+            createWorkOrder({ requestorEmail: 'test@gmail.com' })
+          ).requestorEmail,
+          expected: 'test@gmail.com',
+          msg: 'Copies over requestors email',
+        },
+      ].forEach(({ actual, expected, msg }) => {
+        expect(actual).to.equal(expected, msg);
+      });
+    });
+
+    it('parses a requestors number', () => {
+      const expected = '1234567890';
+      const workOrder = createWorkOrder({ requestorPhone: '(123) 456-7890' });
+      const { requestorPhone: actual } = createWorkOrderFromYardi(workOrder);
+      expect(actual).to.equal(expected);
+    });
+
+    it('parses an updated at timestamp to unix', () => {
+      const expected = 1584638500;
+      const workOrder = createWorkOrder({ updatedAt: '2020-03-19T17:21:40' });
+      const { updatedAt: actual } = createWorkOrderFromYardi(workOrder);
+      expect(actual).to.equal(expected);
+    });
+
+    it('parses a created at timestamp to unix', () => {
+      const expected = 1584638500;
+      const workOrder = createWorkOrder({ createdAt: '2020-03-19T17:21:40' });
+      const { createdAt: actual } = createWorkOrderFromYardi(workOrder);
+      expect(actual).to.equal(expected);
+    });
+  });
+
   describe('Phone Numbers', () => {
     it('removes all formatting from phone numbers', () => {
       [
@@ -506,6 +678,79 @@ function createOccupant({
     if (officeNumber) phone.OfficeNumber = [officeNumber];
     if (homeNumber) phone.HomeNumber = [homeNumber];
     if (mobileNumber) phone.MobileNumber = [mobileNumber];
+  }
+
+  return result;
+}
+
+function createWorkOrder({
+  id,
+  status,
+  category,
+  origin,
+  priority,
+  unit,
+  resident,
+  updatedAt,
+  createdAt,
+  updatedBy,
+  requestDate,
+  permissionToEnter,
+  tenantCaused,
+  technicianNotes,
+  problemNotes,
+  requestorName,
+  requestorPhone,
+  requestorEmail,
+}) {
+  const result = {};
+
+  result.ServiceRequestId = [id || '123902'];
+  result.Origin = [origin || 'OL'];
+  result.CurrentStatus = [status || 'In Progress'];
+  result.UnitCode = [unit || '1234'];
+  result.TenantCode = [resident || `t0123112`];
+  result.Priority = [priority || 'High'];
+  result.Category = [category || 'Miscellaneous'];
+  result.HasPermissionToEnter = [`${permissionToEnter || false}`];
+  result.ProblemDescriptionNotes = [problemNotes || 'notes'];
+  result.TechnicianNotes = [technicianNotes || 'notes'];
+  result.TenantCaused = [`${tenantCaused || false}`];
+  result.RequestorName = [requestorName || 'Bob Smith'];
+  result.RequestorPhoneNumber = [requestorPhone || '1234567890'];
+  result.RequestorEmail = [requestorEmail || 'test@email.com'];
+  result.ServiceRequestDate = [requestDate || '2020-01-01'];
+  result.UpdatedBy = [updatedBy || 'Bob Smith II'];
+
+  if (updatedAt && typeof updatedAt === 'number') {
+    const updateIso = new Date(updatedAt).toISOString().replace(/Z$/, '');
+    result.UpdateDate = [updateIso];
+  } else {
+    result.UpdateDate = ['2020-03-19T17:21:40'];
+  }
+
+  result.StatusHistory = [
+    {
+      Status: [
+        {
+          $: {
+            Type: '',
+            TimeStamp: '2020-03-19T17:21:40',
+          },
+        },
+        {
+          $: {
+            Type: status || 'In Progress',
+            TimeStamp: '2020-03-19T17:21:40',
+          },
+        },
+      ],
+    },
+  ];
+
+  if (createdAt && typeof createdAt === 'number') {
+    const createdIso = new Date(updatedAt).toISOString().replace(/Z$/, '');
+    result.StatusHistory[0].Status[0].$.TimeStamp = createdIso;
   }
 
   return result;

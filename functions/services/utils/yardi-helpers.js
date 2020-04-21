@@ -33,13 +33,32 @@ const OCCUPANT_ATTRS = {
   responsibleForLease: false,
 };
 
+const WORK_ORDER_ATTRS = {
+  status: '',
+  category: '',
+  origin: '',
+  priority: '',
+  unit: '',
+  resident: '',
+  updatedAt: '',
+  createdAt: '',
+  updatedBy: '',
+  requestDate: '',
+  permissionToEnter: '',
+  tenantCaused: '',
+  technicianNotes: '',
+  problemNotes: '',
+  requestorName: '',
+  requestorPhone: '',
+  requestorEmail: '',
+};
+
 module.exports = {
   /**
    * Yardi Resident/Occupant record has
    * required attributes to be considered
    * usable by consuming clients
-   * @param  {Object}  Identification
-   * @param  {Object}  Name
+   * @param  {Object} record
    * @return {Boolean}
    */
   isValidYardiResidentOccupant(record = {}) {
@@ -161,6 +180,118 @@ module.exports = {
     return occupant;
   },
 
+  /**
+   * Yardi Resident/Occupant record has
+   * required attributes to be considered
+   * usable by consuming clients
+   * @param  {Object} record
+   * @return {Boolean}
+   */
+  isValidYardiWorkOrder(record = {}) {
+    const { ServiceRequestId: id, TenantCode: tenant, UnitCode: unit } = record;
+    return (
+      Boolean(id && id[0]) &&
+      Boolean(tenant && tenant[0]) &&
+      Boolean(unit && unit[0])
+    );
+  },
+
+  /**
+   * Create a Work Order from a Yardi Service Request
+   * @param  {Object} src
+   * @return {Object}
+   */
+  createWorkOrderFromYardi(src) {
+    const result = { ...WORK_ORDER_ATTRS };
+
+    result.id = src.ServiceRequestId[0];
+
+    if (isYardiValue(src.CurrentStatus)) {
+      result.status = `${src.CurrentStatus[0]}`.toLowerCase();
+    }
+
+    if (isYardiValue(src.Category)) {
+      result.category = `${src.Category[0]}`.toLowerCase();
+    }
+
+    if (isYardiValue(src.Origin)) {
+      result.origin = `${src.Origin[0]}`;
+    }
+
+    if (isYardiValue(src.Origin)) {
+      result.priority = `${src.Priority[0]}`.toLowerCase();
+    }
+
+    if (isYardiValue(src.UnitCode)) {
+      result.unit = `${src.UnitCode[0]}`;
+    }
+
+    if (isYardiValue(src.TenantCode)) {
+      result.resident = `${src.TenantCode[0]}`;
+    }
+
+    if (isYardiValue(src.UpdatedBy)) {
+      result.updatedBy = src.UpdatedBy[0];
+    }
+
+    if (isYardiValue(src.ServiceRequestDate)) {
+      result.requestDate = src.ServiceRequestDate[0];
+    }
+
+    if (isYardiValue(src.HasPermissionToEnter)) {
+      result.permissionToEnter =
+        `${src.HasPermissionToEnter[0]}`.toLowerCase() === 'true';
+    }
+
+    if (isYardiValue(src.TenantCaused)) {
+      result.tenantCaused = `${src.TenantCaused[0]}`.toLowerCase() === 'true';
+    }
+
+    if (isYardiValue(src.TechnicianNotes)) {
+      result.technicianNotes = src.TechnicianNotes[0];
+    }
+
+    if (isYardiValue(src.ProblemDescriptionNotes)) {
+      result.problemNotes = src.ProblemDescriptionNotes[0];
+    }
+
+    if (isYardiValue(src.RequestorName)) {
+      result.requestorName = src.RequestorName[0];
+    }
+
+    if (isYardiValue(src.RequestorName)) {
+      result.requestorName = src.RequestorName[0];
+    }
+
+    if (isYardiValue(src.RequestorPhoneNumber)) {
+      result.requestorPhone = parsePhoneNumber(src.RequestorPhoneNumber[0]);
+    }
+
+    if (isYardiValue(src.RequestorEmail)) {
+      result.requestorEmail = src.RequestorEmail[0];
+    }
+
+    if (isYardiValue(src.UpdateDate)) {
+      const updateAtDateIso = `${src.UpdateDate[0].replace(/Z$/, '')}Z`;
+      result.updatedAt = Math.round(new Date(updateAtDateIso).getTime() / 1000);
+    }
+
+    if (
+      src.StatusHistory &&
+      src.StatusHistory[0] &&
+      src.StatusHistory[0].Status &&
+      src.StatusHistory[0].Status[0] &&
+      src.StatusHistory[0].Status[0].$ &&
+      src.StatusHistory[0].Status[0].$.TimeStamp
+    ) {
+      const createdIso = src.StatusHistory[0].Status[0].$.TimeStamp;
+      const createdDateIso = `${createdIso.replace(/Z$/, '')}Z`;
+      result.createdAt = Math.round(new Date(createdDateIso).getTime() / 1000);
+    }
+
+    return result;
+  },
+
   _getYardiPhoneNumbers: getYardiPhoneNumbers,
 };
 
@@ -225,4 +356,13 @@ function isYardiEntry(entry) {
   return Boolean(
     entry && isArray(entry) && entry[0] && typeof entry[0] === 'object'
   );
+}
+
+/**
+ * Value is an acceptable Yardi value
+ * @param  {Any} value
+ * @return {Boolean}
+ */
+function isYardiValue(value) {
+  return Boolean(value && isArray(value) && typeof value[0] !== 'undefined');
 }
