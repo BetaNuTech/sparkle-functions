@@ -3,7 +3,6 @@ const { expect } = require('chai');
 const sinon = require('sinon');
 const express = require('express');
 const uuid = require('../../../test-helpers/uuid');
-const systemModel = require('../../../models/system');
 const yardi = require('../../../services/yardi');
 const cobalt = require('../../../services/cobalt');
 const getPropertyResidents = require('../../../properties/api/get-property-yardi-residents');
@@ -14,7 +13,6 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
   it('returns a helpful error when Yardi request fails', done => {
     // Stup requests
     const property = { code: 'test' };
-    sinon.stub(systemModel, 'findYardiCredentials').resolves(createSnap({}));
     sinon.stub(cobalt, 'getPropertyTenants').rejects(Error('ignore'));
     sinon
       .stub(yardi, 'getYardiPropertyResidents')
@@ -41,7 +39,6 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
 
     // Stup requests
     sinon.stub(cobalt, 'getPropertyTenants').rejects(Error('ignore'));
-    sinon.stub(systemModel, 'findYardiCredentials').resolves(createSnap({}));
     sinon.stub(yardi, 'getYardiPropertyResidents').rejects(invalidCodeErr);
 
     request(createApp(property))
@@ -63,7 +60,6 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
 
     // Stup requests
     sinon.stub(cobalt, 'getPropertyTenants').rejects(Error('ignore'));
-    sinon.stub(systemModel, 'findYardiCredentials').resolves(createSnap({}));
     sinon.stub(yardi, 'getYardiPropertyResidents').rejects(invalidCodeErr);
 
     request(createApp(property))
@@ -92,7 +88,6 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
 
     // Stup requests
     sinon.stub(cobalt, 'getPropertyTenants').rejects(Error('ignore'));
-    sinon.stub(systemModel, 'findYardiCredentials').resolves(createSnap({}));
     sinon.stub(yardi, 'getYardiPropertyResidents').resolves({
       residents: [resident],
       occupants: [],
@@ -130,7 +125,6 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
 
     // Stup requests
     sinon.stub(cobalt, 'getPropertyTenants').rejects(Error('ignore'));
-    sinon.stub(systemModel, 'findYardiCredentials').resolves(createSnap({}));
     sinon.stub(yardi, 'getYardiPropertyResidents').resolves({
       residents: [resident],
       occupants: [occupant1, occupant2],
@@ -164,7 +158,6 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
     };
 
     // Stup requests
-    sinon.stub(systemModel, 'findYardiCredentials').resolves(createSnap({}));
     sinon.stub(yardi, 'getYardiPropertyResidents').resolves({
       residents: [resident],
       occupants: [],
@@ -216,10 +209,6 @@ function stubYardiConfig(config = {}) {
     req.yardiConfig = config;
     next();
   };
-}
-
-function createSnap(data = {}) {
-  return { val: () => data, exists: () => true };
 }
 
 function createResident(id = '', config = {}) {
