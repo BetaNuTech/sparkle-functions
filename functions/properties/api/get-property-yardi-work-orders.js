@@ -83,7 +83,7 @@ module.exports = function createGetYardiResidents(db) {
       if (workOrder.resident) {
         result.relationships = {
           resident: {
-            data: workOrder.resident,
+            data: { id: workOrder.resident, type: 'resident' },
           },
         };
       }

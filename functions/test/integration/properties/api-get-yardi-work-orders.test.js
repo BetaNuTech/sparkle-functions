@@ -80,6 +80,8 @@ describe("Properties | API | GET Property's Yardi Work Orders", () => {
       data: [residentJsonApi],
     };
 
+    console.log(expected.data[0].relationships.resident.data);
+
     // Stup requests
     sinon.stub(yardi, 'getYardiPropertyWorkOrders').resolves({
       workOrders: [workOrder],
@@ -164,7 +166,7 @@ function createWorkOrderJsonApi(workOrder) {
   if (workOrder.resident) {
     result.relationships = {
       resident: {
-        data: workOrder.resident,
+        data: { id: workOrder.resident, type: 'resident' },
       },
     };
   }
