@@ -3,7 +3,6 @@ const log = require('../../utils/logger');
 const yardi = require('../../services/yardi');
 const cobalt = require('../../services/cobalt');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
-const systemModel = require('../../models/system');
 
 const PREFIX = 'properties: api: get-property-yardi-residents:';
 
@@ -24,27 +23,10 @@ module.exports = function createGetYardiResidents(db) {
    */
   return async (req, res) => {
     assert(req.property, 'has property set by middleware');
+    assert(req.yardiConfig, 'has yardi config set by middleware');
     const property = req.property;
+    const yardiConfig = req.yardiConfig;
     const send500Error = create500ErrHandler(PREFIX, res);
-
-    let yardiConfig = null;
-
-    // Lookup Yardi Integration
-    try {
-      const yardiSnap = await systemModel.findYardiCredentials(db);
-      yardiConfig = yardiSnap.val();
-      if (!yardiConfig) throw Error('Yardi not configured for organization');
-    } catch (err) {
-      log.error(`${PREFIX} | ${err}`);
-      return res.status(403).send({
-        errors: [
-          {
-            detail: 'Organization not configured for Yardi',
-            source: { pointer: 'code' },
-          },
-        ],
-      });
-    }
 
     // Make Yardi & Cobalt API request
     let residents = null;

@@ -1,3 +1,4 @@
+const assert = require('assert');
 const log = require('../../utils/logger');
 const propertiesModel = require('../../models/properties');
 
@@ -10,46 +11,49 @@ const PREFIX = 'properties: middleware: property-code:';
  * @param {admin.firestore} fs
  * @return {Function} - onRequest handler
  */
+module.exports = fs => {
+  assert(Boolean(fs), 'has Firestore DB instance');
 
-module.exports = fs => async (req, res, next) => {
-  const { params } = req;
-  const { propertyId } = params;
-  let property = null;
+  return async (req, res, next) => {
+    const { params } = req;
+    const { propertyId } = params;
+    let property = null;
 
-  // Lookup requested property
-  try {
-    if (!propertyId) throw Error('no property ID provided');
-    const propertyDoc = await propertiesModel.firestoreFindRecord(
-      fs,
-      propertyId
-    );
-    if (!propertyDoc.exists) throw Error('property does not exist');
-    property = propertyDoc.data();
-  } catch (err) {
-    log.error(`${PREFIX} ${err}`);
-    next(err);
-    return res.status(404).send({
-      errors: [
-        {
-          detail: 'property does not exist',
-        },
-      ],
-    });
-  }
+    // Lookup requested property
+    try {
+      if (!propertyId) throw Error('no property ID provided');
+      const propertyDoc = await propertiesModel.firestoreFindRecord(
+        fs,
+        propertyId
+      );
+      if (!propertyDoc.exists) throw Error('property does not exist');
+      property = propertyDoc.data();
+    } catch (err) {
+      log.error(`${PREFIX} ${err}`);
+      next(err);
+      return res.status(404).send({
+        errors: [
+          {
+            detail: 'property does not exist',
+          },
+        ],
+      });
+    }
 
-  // Reject property /wo Yardi code
-  if (!property.code) {
-    next(Error('Property missing code'));
-    return res.status(403).send({
-      errors: [
-        {
-          detail: 'Property code not set for Yardi request',
-          source: { pointer: 'code' },
-        },
-      ],
-    });
-  }
+    // Reject property /wo Yardi code
+    if (!property.code) {
+      next(Error('Property missing code'));
+      return res.status(403).send({
+        errors: [
+          {
+            detail: 'Property code not set for Yardi request',
+            source: { pointer: 'code' },
+          },
+        ],
+      });
+    }
 
-  req.property = property;
-  next();
+    req.property = property;
+    next();
+  };
 };
