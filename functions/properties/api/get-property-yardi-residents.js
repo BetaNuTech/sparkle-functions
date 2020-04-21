@@ -134,6 +134,9 @@ module.exports = function createGetYardiResidents(db) {
       json.included.push(record);
     });
 
+    // Configure JSON API response
+    res.set('Content-Type', 'application/vnd.api+json');
+
     // Success
     res.status(200).send(json);
   };
