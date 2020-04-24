@@ -206,12 +206,14 @@ describe('Deficient Items Overdue Sync', () => {
         db.ref(`${diPath}/state`).once('value'),
         db.ref(`${diPath}/stateHistory`).once('value'),
         db.ref(`${diPath}/updatedAt`).once('value'),
+        db.ref(`${diPath}/inspection`).once('value'),
       ]);
       const [
         actualReqActions,
         actualState,
         allStateHistory,
         actualUpdatedAt,
+        actualInspId,
       ] = result.map(r => r.val());
       const actualStateHistory = allStateHistory
         ? allStateHistory[Object.keys(allStateHistory)[0]]
@@ -232,6 +234,10 @@ describe('Deficient Items Overdue Sync', () => {
         'updated property meta'
       );
       expect(actualUpdatedAt).to.be.a('number', 'modified DI updatedAt');
+      expect(actualInspId).to.equal(
+        inspectionId,
+        'did not modified other records attributes'
+      );
     }
   });
 
