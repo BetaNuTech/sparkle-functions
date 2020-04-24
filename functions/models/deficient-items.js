@@ -205,6 +205,23 @@ module.exports = modelSetup({
   },
 
   /**
+   * Create a new realtime
+   * Deficient Item record
+   * NOTE: ignores archive
+   * @param  {firebaseAdmin.database} db - Realtime DB Instance
+   * @param  {String} propertyId
+   * @param  {String} defItemId
+   * @param  {Object} data
+   * @return {Promise} - resolves {Reference}
+   */
+  realtimeUpdateRecord(db, propertyId, defItemId, data) {
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    assert(defItemId && typeof defItemId === 'string', 'has deficient item id');
+    assert(data && typeof data === 'object', 'has data');
+    return db.ref(`${DATABASE_PATH}/${propertyId}/${defItemId}`).update(data);
+  },
+
+  /**
    * Update Deficient Item
    * @param  {firebaseAdmin.database} db - Realtime DB Instance
    * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
@@ -220,7 +237,7 @@ module.exports = modelSetup({
     assert(data && typeof data === 'object', 'has upsert data');
 
     try {
-      await db.ref(`${DATABASE_PATH}/${propertyId}/${defItemId}`).update(data);
+      await this.realtimeUpdateRecord(db, propertyId, defItemId, data);
     } catch (err) {
       throw Error(
         `${PREFIX} updateRecord: realtime "${defItemId}" update failed: ${err}`
@@ -280,7 +297,7 @@ module.exports = modelSetup({
     };
 
     try {
-      await db.ref(path).set(updateData);
+      await db.ref(path).update(updateData);
     } catch (err) {
       throw Error(`${PREFIX} updateState: realtime updated DI failed: ${err}`);
     }
