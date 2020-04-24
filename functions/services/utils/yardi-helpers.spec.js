@@ -465,6 +465,13 @@ describe('Service | Utils | Yardi Helpers', () => {
         },
         {
           actual: createWorkOrderFromYardi(
+            createWorkOrder({ description: 'Desc' })
+          ).description,
+          expected: 'Desc',
+          msg: 'Copies over description',
+        },
+        {
+          actual: createWorkOrderFromYardi(
             createWorkOrder({ problemNotes: 'Notes' })
           ).problemNotes,
           expected: 'Notes',
@@ -698,6 +705,7 @@ function createWorkOrder({
   permissionToEnter,
   tenantCaused,
   technicianNotes,
+  description,
   problemNotes,
   requestorName,
   requestorPhone,
@@ -713,7 +721,8 @@ function createWorkOrder({
   result.Priority = [priority || 'High'];
   result.Category = [category || 'Miscellaneous'];
   result.HasPermissionToEnter = [`${permissionToEnter || false}`];
-  result.ProblemDescriptionNotes = [problemNotes || 'notes'];
+  result.ServiceRequestFullDescription = [description || 'desc!'];
+  result.ProblemDescriptionNotes = [problemNotes || 'notes!'];
   result.TechnicianNotes = [technicianNotes || 'notes'];
   result.TenantCaused = [`${tenantCaused || false}`];
   result.RequestorName = [requestorName || 'Bob Smith'];
