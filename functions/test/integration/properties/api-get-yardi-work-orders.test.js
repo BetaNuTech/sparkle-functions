@@ -80,8 +80,6 @@ describe("Properties | API | GET Property's Yardi Work Orders", () => {
       data: [residentJsonApi],
     };
 
-    console.log(expected.data[0].relationships.resident.data);
-
     // Stup requests
     sinon.stub(yardi, 'getYardiPropertyWorkOrders').resolves({
       workOrders: [workOrder],
@@ -147,6 +145,7 @@ function createWorkOrder(config = {}) {
     permissionToEnter: true,
     tenantCaused: false,
     technicianNotes: 'notes',
+    description: 'desc',
     problemNotes: 'notes',
     requestorName: 'Testor',
     requestorPhone: '1234567890',

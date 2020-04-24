@@ -47,6 +47,7 @@ const WORK_ORDER_ATTRS = {
   permissionToEnter: '',
   tenantCaused: '',
   technicianNotes: '',
+  description: '',
   problemNotes: '',
   requestorName: '',
   requestorPhone: '',
@@ -249,6 +250,10 @@ module.exports = {
 
     if (isYardiValue(src.TechnicianNotes)) {
       result.technicianNotes = src.TechnicianNotes[0];
+    }
+
+    if (isYardiValue(src.ServiceRequestFullDescription)) {
+      result.description = src.ServiceRequestFullDescription[0];
     }
 
     if (isYardiValue(src.ProblemDescriptionNotes)) {

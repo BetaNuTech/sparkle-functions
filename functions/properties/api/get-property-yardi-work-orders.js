@@ -11,7 +11,7 @@ const PREFIX = 'properties: api: get-property-yardi-work-orders:';
  * @param {admin.firestore} db
  * @return {Function} - onRequest handler
  */
-module.exports = function createGetYardiResidents(db) {
+module.exports = function createGetYardiWorkOrders(db) {
   assert(Boolean(db), 'has firebase database');
 
   /**
