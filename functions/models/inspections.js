@@ -523,7 +523,11 @@ module.exports = modelSetup({
     }
 
     const { exists } = docSnap;
-    const upsert = { ...data };
+    const upsert = {
+      ...data,
+      score: getScore(data),
+      templateName: getTemplateName(data),
+    };
 
     try {
       if (exists) {
