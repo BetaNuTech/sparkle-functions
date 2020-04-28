@@ -6,7 +6,7 @@ const inspectionsModel = require('../models/inspections');
 const PREFIX = 'inspections: on-write:';
 
 /**
- * Factory for inspection onWrite handler
+ * DEPRECATED: Factory for inspection onWrite handler
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
  * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
  * @return {Function} - inspection onWrite handler
