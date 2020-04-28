@@ -17,6 +17,13 @@ const RESIDENT_ATTRS = {
   officeNumber: '',
   mobileNumber: '',
   homeNumber: '',
+  eviction: false,
+  paymentPlan: false,
+  paymentPlanDelinquent: false,
+  lastNote: '',
+  lastNoteUpdatedAt: 0,
+  totalOwed: 0,
+  totalCharges: 0,
   occupants: [],
 };
 
