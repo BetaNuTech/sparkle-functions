@@ -1,5 +1,6 @@
 const assert = require('assert');
 const modelSetup = require('./utils/model-setup');
+const diModel = require('./deficient-items');
 
 const PREFIX = 'models: inspections:';
 const INSPECTIONS_PATH = '/inspections';
@@ -445,9 +446,23 @@ module.exports = modelSetup({
         if (!inspection) throw Error('not found');
       } catch (err) {
         throw Error(
-          `${PREFIX} reassignProperty: could not find inspection | ${err}`
+          `${PREFIX} reassignProperty: could not find inspection: ${err}`
         ); // wrap error
       }
+    }
+
+    const deficientItems = {};
+
+    // Lookup DI's and copy current state
+    try {
+      const diSnapshots = await diModel.findAllByInspection(db, inspectionId);
+      diSnapshots.forEach(di => {
+        deficientItems[di.ref.path.toString()] = di.val();
+      });
+    } catch (err) {
+      throw Error(
+        `${PREFIX} reassignProperty: Deficient Item lookup failed: ${err}`
+      ); // wrap error
     }
 
     // Construct inspection
@@ -459,9 +474,7 @@ module.exports = modelSetup({
       });
       Object.assign(updates, archiveUpdates);
     } catch (err) {
-      throw Error(
-        `${PREFIX} reassignProperty: failed call to archive | ${err}`
-      );
+      throw Error(`${PREFIX} reassignProperty: failed call to archive: ${err}`);
     }
 
     // Construct inspection
@@ -484,6 +497,15 @@ module.exports = modelSetup({
         `${PREFIX} reassignProperty: failed call to archive | ${err}`
       );
     }
+
+    // Add new Deficient Item paths
+    // Remove old Deficient Item paths
+    Object.keys(deficientItems).forEach(currentPath => {
+      const currentPropertyId = currentPath.split('/')[2];
+      const targetPath = currentPath.replace(currentPropertyId, destPropertyId);
+      updates[currentPath] = null;
+      updates[targetPath] = deficientItems[currentPath];
+    });
 
     if (!dryRun) {
       try {

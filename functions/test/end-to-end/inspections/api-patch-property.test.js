@@ -5,8 +5,9 @@ const bodyParser = require('body-parser');
 const handler = require('../../../inspections/api/patch-property');
 const uuid = require('../../../test-helpers/uuid');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { db } = require('../../setup');
+const { db, fs } = require('../../setup');
 const mocking = require('../../../test-helpers/mocking');
+const deficientItemsModel = require('../../../models/deficient-items');
 
 const PROPERTY_ID = uuid();
 const INSPECTION_ID = uuid();
@@ -23,9 +24,17 @@ const INSPECTION_DATA = mocking.createInspection({
   property: PROPERTY_ID,
   inspectionCompleted: true,
 });
+const DEFICIENT_ITEM_ONE_DATA = mocking.createDeficientItem(
+  INSPECTION_ID,
+  uuid()
+);
+const DEFICIENT_ITEM_TWO_DATA = mocking.createDeficientItem(
+  INSPECTION_ID,
+  uuid()
+);
 
 describe('Inspections | API | Patch Property', () => {
-  afterEach(() => cleanDb(db));
+  afterEach(() => cleanDb(db, fs));
 
   it('rejects request missing a payload', async () => {
     const expected = 'body missing property';
@@ -165,10 +174,96 @@ describe('Inspections | API | Patch Property', () => {
       expect(actual).to.equal(expected, msg);
     });
   });
+
+  it("successfully reassigns an inspection's realtime deficient items under new property", async () => {
+    // setup database
+    await db.ref(PROPERTY_PATH).set(PROPERTY_DATA);
+    await db.ref(DEST_PROPERTY_PATH).set(DEST_PROPERTY_DATA);
+    await db.ref(INSPECTION_PATH).set(INSPECTION_DATA);
+    const diOne = await deficientItemsModel.realtimeCreateRecord(
+      db,
+      PROPERTY_ID,
+      DEFICIENT_ITEM_ONE_DATA
+    );
+    const diTwo = await deficientItemsModel.realtimeCreateRecord(
+      db,
+      PROPERTY_ID,
+      DEFICIENT_ITEM_TWO_DATA
+    );
+
+    // Execute
+    const app = createApp();
+    await request(app)
+      .patch(`/t/${INSPECTION_ID}`)
+      .send({ property: DEST_PROPERTY_ID })
+      .expect('Content-Type', /json/)
+      .expect(201);
+
+    // Get Results
+    const diOneId = getRefId(diOne);
+    const diTwoId = getRefId(diTwo);
+    const oldDiOneSnap = await deficientItemsModel.find(
+      db,
+      PROPERTY_ID,
+      diOneId
+    );
+    const oldDiTwoSnap = await deficientItemsModel.find(
+      db,
+      PROPERTY_ID,
+      diTwoId
+    );
+    const newDiOneSnap = await deficientItemsModel.find(
+      db,
+      DEST_PROPERTY_ID,
+      diOneId
+    );
+    const newDiTwoSnap = await deficientItemsModel.find(
+      db,
+      DEST_PROPERTY_ID,
+      diTwoId
+    );
+
+    // Assertions
+    [
+      {
+        actual: oldDiOneSnap.val(),
+        expected: null,
+        msg: 'removed first DI from old property',
+      },
+      {
+        actual: oldDiTwoSnap.val(),
+        expected: null,
+        msg: 'removed second DI from old property',
+      },
+      {
+        actual: newDiOneSnap.val(),
+        expected: DEFICIENT_ITEM_ONE_DATA,
+        msg: "reassiged inspection's first DI to new property",
+      },
+      {
+        actual: newDiTwoSnap.val(),
+        expected: DEFICIENT_ITEM_TWO_DATA,
+        msg: "reassiged inspection's seconde DI to new property",
+      },
+    ].forEach(({ actual, expected, msg }) => {
+      if (!expected) {
+        expect(actual).to.equal(expected, msg);
+      } else {
+        expect(actual).to.deep.equal(expected, msg);
+      }
+    });
+  });
 });
 
 function createApp() {
   const app = express();
   app.patch('/t/:inspectionId', bodyParser.json(), handler(db));
   return app;
+}
+
+function getRefId(ref) {
+  return ref.path
+    .toString()
+    .split('/')
+    .pop();
 }
