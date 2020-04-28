@@ -145,12 +145,26 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
   it('layers on any successfully discovered Cobalt data to JSON/API formatted residents', done => {
     const property = { code: 'test' };
     const resident = createResident();
-    const cobaltResident = createCobaltTenant(resident.id);
+    const cobaltResident = {
+      tenant_code: resident.id,
+      eviction: true,
+      total_charges: '1555.74',
+      total_owed: '1555.74',
+      payment_plan: true,
+      payment_plan_delinquent: true,
+      last_note: 'note',
+      last_note_updated_at: '2020-04-28T21:48:27.570Z',
+    };
     const residentJsonApi = createResidentJsonApi(resident);
-    Object.assign(
-      residentJsonApi.attributes,
-      createCobaltTenantJsonApiAttrs(cobaltResident)
-    );
+    Object.assign(residentJsonApi.attributes, {
+      eviction: true,
+      totalCharges: 1555.74,
+      totalOwed: 1555.74,
+      paymentPlan: true,
+      paymentPlanDelinquent: true,
+      lastNote: 'note',
+      lastNoteUpdatedAt: 1588110508,
+    });
     const expected = {
       meta: { cobaltTimestamp: 1 },
       data: [residentJsonApi],
@@ -229,21 +243,14 @@ function createResident(id = '', config = {}) {
     leaseFrom: now,
     leaseTo: now,
     moveIn: now,
-    occupants: [],
-    ...config,
-  };
-}
-
-function createCobaltTenant(id, config = {}) {
-  return {
-    tenant_code: id,
-    total_charges: '1555.74',
-    total_owed: '1555.74',
-    payment_plan: true,
     eviction: false,
-    last_note: '...',
-    payment_plan_delinquent: false,
-    last_note_updated_at: '2020-04-08T13:26:26.000-05:00',
+    paymentPlan: false,
+    paymentPlanDelinquent: false,
+    lastNote: '',
+    lastNoteUpdatedAt: 0,
+    totalOwed: 0,
+    totalCharges: 0,
+    occupants: [],
     ...config,
   };
 }
@@ -280,18 +287,6 @@ function createResidentJsonApi(resident) {
       },
     };
   }
-  return result;
-}
-
-function createCobaltTenantJsonApiAttrs(tenant) {
-  const result = {};
-  if (tenant.total_owed) result.totalOwed = parseFloat(tenant.total_owed);
-  if (tenant.total_charges)
-    result.totalCharges = parseFloat(tenant.total_charges);
-  if (tenant.payment_plan) result.paymentPlan = tenant.payment_plan;
-  if (tenant.payment_plan_delinquent)
-    result.paymentPlanDelinquent = tenant.payment_plan_delinquent;
-  if (tenant.last_note) result.lastNote = tenant.last_note;
   return result;
 }
 
