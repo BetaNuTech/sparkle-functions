@@ -16,7 +16,6 @@ module.exports = function createOnWriteWatcher(db, fs) {
   assert(Boolean(fs), 'has firestore DB instance');
 
   return async (change, event) => {
-    const updates = {};
     const { templateId } = event.params;
 
     if (!templateId) {
@@ -35,24 +34,24 @@ module.exports = function createOnWriteWatcher(db, fs) {
 
     // Delete template proxies
     if (beforeData && !afterData) {
-      const proTmplUpdates = await propertyTemplates.remove(db, templateId);
-      log.info(`${PREFIX} template ${templateId} removed`);
-      Object.assign(updates, proTmplUpdates);
+      try {
+        await propertyTemplates.remove(db, templateId);
+        log.info(`${PREFIX} template ${templateId} removed`);
+      } catch (err) {
+        log.error(`${PREFIX} property template proxy remove failed | ${err}`);
+      }
     }
 
     // Create or update template proxies
     if (afterData) {
-      const proTmplUpdates = await propertyTemplates.upsert(
-        db,
-        templateId,
-        afterData
-      );
-      log.info(
-        `${PREFIX} template ${templateId} ${beforeData ? 'updated' : 'added'}`
-      );
-      Object.assign(updates, proTmplUpdates);
+      try {
+        await propertyTemplates.upsert(db, templateId, afterData);
+        log.info(
+          `${PREFIX} template ${templateId} ${beforeData ? 'updated' : 'added'}`
+        );
+      } catch (err) {
+        log.error(`${PREFIX} property template proxy upsert failed | ${err}`);
+      }
     }
-
-    return updates;
   };
 };
