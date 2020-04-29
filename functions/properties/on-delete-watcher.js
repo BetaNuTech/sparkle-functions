@@ -4,6 +4,7 @@ const inspections = require('../inspections');
 const teams = require('../teams');
 const propertyTemplates = require('../property-templates');
 const propertiesModel = require('../models/properties');
+const templatesModel = require('../models/templates');
 
 const PREFIX = 'properties: on-delete:';
 const PROPERTY_BUCKET_NAME = `propertyImages${
@@ -35,39 +36,31 @@ module.exports = function createOnDeleteHandler(
   );
 
   return async (propertySnap, event) => {
-    const updates = {};
     const { propertyId } = event.params;
 
-    log.info(`${PREFIX} property ${propertyId} deleted`);
+    log.info(`${PREFIX} property "${propertyId}" deleted`);
 
     try {
-      const inspUpdates = await inspections.removeForProperty(
-        db,
-        storage,
-        propertyId
-      );
-      Object.assign(updates, inspUpdates);
+      await inspections.removeForProperty(db, storage, propertyId);
     } catch (err) {
-      log.error(`${PREFIX} ${err}`);
+      log.error(`${PREFIX} | ${err}`);
     }
 
     try {
-      const teamUpdates = await teams.removeForProperty(
+      await teams.removeForProperty(
         db,
         propertyId,
         pubsubClient,
         userTeamsTopic
       );
-      Object.assign(updates, teamUpdates);
     } catch (err) {
-      log.error(`${PREFIX} ${err}`);
+      log.error(`${PREFIX} | ${err}`);
     }
 
     try {
       await propertyTemplates.removeForProperty(db, propertyId);
-      updates[`/propertyTemplatesList/${propertyId}`] = 'removed';
     } catch (err) {
-      log.error(`${PREFIX} ${err}`);
+      log.error(`${PREFIX} | ${err}`);
     }
 
     // Cleanup deleted property's images
@@ -109,6 +102,19 @@ module.exports = function createOnDeleteHandler(
       );
     }
 
-    return updates;
+    // Remove Firestore templates
+    // relationships with property
+    try {
+      await templatesModel.updatePropertyRelationships(
+        fs,
+        propertyId,
+        Object.keys(property.templates || {}),
+        []
+      );
+    } catch (err) {
+      log.error(
+        `${PREFIX} failed to update Firestore templates relationship to property "${propertyId}" | ${err}`
+      );
+    }
   };
 };
