@@ -327,14 +327,18 @@ module.exports = modelSetup({
     // add to batch
     added.forEach(id => {
       const templateDoc = templatesRef.doc(id);
-      batch.update(templateDoc, { properties: FieldValue.arrayUnion(id) });
+      batch.update(templateDoc, {
+        properties: FieldValue.arrayUnion(propertyId),
+      });
     });
 
     // Append each old relationship
     // remove to batch
     removed.forEach(id => {
       const templateDoc = templatesRef.doc(id);
-      batch.update(templateDoc, { properties: FieldValue.arrayRemove(id) });
+      batch.update(templateDoc, {
+        properties: FieldValue.arrayRemove(propertyId),
+      });
     });
 
     return batch.commit();

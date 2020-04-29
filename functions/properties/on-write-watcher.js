@@ -2,6 +2,7 @@ const assert = require('assert');
 const log = require('../utils/logger');
 const propertyTemplates = require('../property-templates');
 const propertiesModel = require('../models/properties');
+const templatesModel = require('../models/templates');
 
 const PREFIX = 'properties: on-write:';
 
@@ -23,17 +24,20 @@ module.exports = function createOnWriteHandler(db, fs) {
       return;
     }
 
-    // Property deleted
+    // Property deleted, exit
     if (!change.after.exists()) {
       return;
     }
+
+    const beforeData = change.before.val();
+    const afterData = change.after.val();
 
     // Sync property updates to property template proxies
     try {
       const updates = await propertyTemplates.processWrite(
         db,
         propertyId,
-        change.after.val().templates
+        afterData.templates
       );
       if (updates && Object.keys(updates).length) {
         log.info(`${PREFIX} property "${propertyId}" template list updated`);
@@ -46,15 +50,26 @@ module.exports = function createOnWriteHandler(db, fs) {
 
     // Sync property updates to Firestore
     try {
-      await propertiesModel.firestoreUpsertRecord(
-        fs,
-        propertyId,
-        change.after.val()
-      );
+      await propertiesModel.firestoreUpsertRecord(fs, propertyId, afterData);
     } catch (err) {
       const updateType = change.before.exists() ? 'update' : 'create';
       log.error(
         `${PREFIX} failed to ${updateType} Firestore property "${propertyId}" | ${err}`
+      );
+    }
+
+    // Sync Firestore templates with
+    // latest property relationships
+    try {
+      await templatesModel.updatePropertyRelationships(
+        fs,
+        propertyId,
+        beforeData ? Object.keys(beforeData.templates || {}) : [],
+        afterData ? Object.keys(afterData.templates || {}) : []
+      );
+    } catch (err) {
+      log.error(
+        `${PREFIX} failed to update Firestore templates relationship to property "${propertyId}" | ${err}`
       );
     }
   };
