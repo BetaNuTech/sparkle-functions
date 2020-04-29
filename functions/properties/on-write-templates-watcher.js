@@ -13,7 +13,6 @@ module.exports = function createOnTemplatesWriteHandler(db) {
   assert(Boolean(db), 'has firebase admin database instance');
 
   return async (change, event) => {
-    const updates = {};
     const { propertyId } = event.params;
 
     if (!propertyId) {
@@ -26,8 +25,7 @@ module.exports = function createOnTemplatesWriteHandler(db) {
       try {
         await propertyTemplates.removeForProperty(db, propertyId);
         log.info(`${PREFIX} all /properties/${propertyId} templates removed`);
-        updates[`/propertyTemplatesList/${propertyId}`] = 'removed';
-        return updates;
+        return;
       } catch (err) {
         log.error(`${PREFIX} property template proxy removal failed | ${err}`);
         throw err;
