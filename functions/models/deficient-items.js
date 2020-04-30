@@ -554,6 +554,20 @@ module.exports = modelSetup({
   },
 
   /**
+   * Lookup Firestore Deficiency Item's
+   * belonging to a single inspection
+   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {String} inspectionId
+   * @return {Promise} - resolves {DocumentSnapshot[]}
+   */
+  firestoreQueryByInspection(fs, inspectionId) {
+    assert(inspectionId && typeof inspectionId === 'string', 'has property id');
+    const colRef = fs.collection(DEFICIENT_COLLECTION);
+    colRef.where('inspection', '==', inspectionId);
+    return colRef.get();
+  },
+
+  /**
    * Lookup Firestore Deficiency Item query
    * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
    * @param  {String} propertyId

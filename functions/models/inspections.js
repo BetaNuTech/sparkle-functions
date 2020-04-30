@@ -1,10 +1,12 @@
 const assert = require('assert');
+const FieldValue = require('firebase-admin').firestore.FieldValue;
 const modelSetup = require('./utils/model-setup');
 const diModel = require('./deficient-items');
 
 const PREFIX = 'models: inspections:';
 const INSPECTIONS_PATH = '/inspections';
 const INSPECTION_COLLECTION = 'inspections';
+const PROPERTY_COLLECTION = 'properties';
 const INSPECTION_REPORT_STATUSES = [
   'generating',
   'completed_success',
@@ -520,6 +522,103 @@ module.exports = modelSetup({
   },
 
   /**
+   * Updates to reassign a
+   * Firestore inspection to a new
+   * property.  Move inspection's DIs
+   * to new property as well.
+   * @param {firebaseAdmin.firestore} fs - Firebase Admin DB instance
+   * @param  {String} inspectionId
+   * @param  {String} srcPropertyId
+   * @param  {String} destPropertyId
+   * @return {Promise}
+   */
+  async firestoreReassignProperty(
+    fs,
+    inspectionId,
+    srcPropertyId,
+    destPropertyId
+  ) {
+    assert(
+      inspectionId && typeof inspectionId === 'string',
+      'has inspection id'
+    );
+    assert(
+      srcPropertyId && typeof srcPropertyId === 'string',
+      'has source property id'
+    );
+    assert(
+      destPropertyId && typeof destPropertyId === 'string',
+      'has destination property id'
+    );
+
+    const batch = fs.batch();
+    const inspectionsRef = fs.collection(INSPECTION_COLLECTION);
+    const propertiesRef = fs.collection(PROPERTY_COLLECTION);
+
+    // Add inspection reassign
+    // to batched updates
+    const inspectionDoc = inspectionsRef.doc(inspectionId);
+    batch.update(inspectionDoc, { property: destPropertyId });
+
+    // Remove inspection from source property
+    // TODO: Make property inspections array
+    //       and add to batch update
+    try {
+      await propertiesRef.doc(srcPropertyId).set(
+        {
+          inspections: {
+            [inspectionId]: FieldValue.delete(),
+          },
+        },
+        { merge: true }
+      );
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreReassignProperty: failed to update source property: ${err}`
+      );
+    }
+
+    // Add inspection to destination property
+    // TODO: Make property inspections array
+    //       and add to batch update
+    try {
+      await propertiesRef.doc(destPropertyId).set(
+        {
+          inspections: {
+            [inspectionId]: true,
+          },
+        },
+        { merge: true }
+      );
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreReassignProperty: failed to update dest property: ${err}`
+      );
+    }
+
+    let deficientItemSnap = null;
+
+    try {
+      deficientItemSnap = await diModel.firestoreQueryByInspection(
+        fs,
+        inspectionId
+      );
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreReassignProperty: failed to lookup DIs: ${err}`
+      );
+    }
+
+    // Add each deficient item property
+    // relationship updates to batch
+    deficientItemSnap.docs.forEach(diDoc =>
+      batch.update(diDoc.ref, { property: destPropertyId })
+    );
+
+    return batch.commit();
+  },
+
+  /**
    * Create or update a Firestore inspection
    * @param  {firebaseAdmin.firestore} fs
    * @param  {String}  inspectionId
@@ -609,7 +708,9 @@ module.exports = modelSetup({
  * @return {String} - templateName
  */
 function getTemplateName(inspection) {
-  return inspection.templateName || inspection.template.name;
+  return inspection.templateName || inspection.template
+    ? inspection.template.name
+    : '';
 }
 
 /**
