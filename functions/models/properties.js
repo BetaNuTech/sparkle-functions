@@ -118,7 +118,7 @@ module.exports = modelSetup({
           upsert.inspections = FieldValue.delete();
         }
 
-        await docRef.update(upsert);
+        await docRef.update(upsert, { merge: true });
       } else {
         // Ensure optional falsey values
         // do not exist on created Firestore
