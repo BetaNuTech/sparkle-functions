@@ -9,10 +9,12 @@ const PREFIX = 'inspections: api: patch property:';
  * Factory for creating a PATCH endpoint for
  * reassigning an inspection's property
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+ * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
  * @return {Function} - onRequest handler
  */
-module.exports = function createPatchProperty(db) {
+module.exports = function createPatchProperty(db, fs) {
   assert(Boolean(db), 'has firebase database instance');
+  assert(Boolean(fs), 'has firestore database instance');
 
   /**
    * Handle PATCH request for reassigning
@@ -22,15 +24,9 @@ module.exports = function createPatchProperty(db) {
    * @return {Promise}
    */
   return async (req, res) => {
-    const { params, body } = req;
+    const { params, body = {} } = req;
     const { inspectionId } = params;
     const { property: propertyId } = body;
-
-    if (!inspectionId) {
-      return res
-        .status(400)
-        .send({ message: 'request URL missing inspection reference' });
-    }
 
     if (!propertyId) {
       return res.status(400).send({ message: 'body missing property' });
@@ -62,12 +58,29 @@ module.exports = function createPatchProperty(db) {
       });
     }
 
-    // Perform reassign
+    const srcPropertyId = inspection.property;
+
+    // Perform reassign on Realtime DB
     try {
       await inspectionsModel.reassignProperty(db, inspectionId, propertyId);
     } catch (err) {
       log.error(`${PREFIX} inspection property reassignment failed | ${err}`);
       return res.status(500).send({ message: 'unexpected error' });
+    }
+
+    // Perform reassign on Firestore
+    try {
+      await inspectionsModel.firestoreReassignProperty(
+        fs,
+        inspectionId,
+        srcPropertyId,
+        propertyId
+      );
+    } catch (err) {
+      log.error(
+        `${PREFIX} firestore inspection property reassignment failed | ${err}`
+      );
+      // return res.status(500).send({ message: 'unexpected error' });
     }
 
     res.status(201).send({ message: 'successful' });

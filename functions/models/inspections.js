@@ -1,9 +1,12 @@
 const assert = require('assert');
+const FieldValue = require('firebase-admin').firestore.FieldValue;
 const modelSetup = require('./utils/model-setup');
+const diModel = require('./deficient-items');
 
 const PREFIX = 'models: inspections:';
 const INSPECTIONS_PATH = '/inspections';
 const INSPECTION_COLLECTION = 'inspections';
+const PROPERTY_COLLECTION = 'properties';
 const INSPECTION_REPORT_STATUSES = [
   'generating',
   'completed_success',
@@ -445,9 +448,23 @@ module.exports = modelSetup({
         if (!inspection) throw Error('not found');
       } catch (err) {
         throw Error(
-          `${PREFIX} reassignProperty: could not find inspection | ${err}`
+          `${PREFIX} reassignProperty: could not find inspection: ${err}`
         ); // wrap error
       }
+    }
+
+    const deficientItems = {};
+
+    // Lookup DI's and copy current state
+    try {
+      const diSnapshots = await diModel.findAllByInspection(db, inspectionId);
+      diSnapshots.forEach(di => {
+        deficientItems[di.ref.path.toString()] = di.val();
+      });
+    } catch (err) {
+      throw Error(
+        `${PREFIX} reassignProperty: Deficient Item lookup failed: ${err}`
+      ); // wrap error
     }
 
     // Construct inspection
@@ -459,9 +476,7 @@ module.exports = modelSetup({
       });
       Object.assign(updates, archiveUpdates);
     } catch (err) {
-      throw Error(
-        `${PREFIX} reassignProperty: failed call to archive | ${err}`
-      );
+      throw Error(`${PREFIX} reassignProperty: failed call to archive: ${err}`);
     }
 
     // Construct inspection
@@ -485,6 +500,15 @@ module.exports = modelSetup({
       );
     }
 
+    // Add new Deficient Item paths
+    // Remove old Deficient Item paths
+    Object.keys(deficientItems).forEach(currentPath => {
+      const currentPropertyId = currentPath.split('/')[2];
+      const targetPath = currentPath.replace(currentPropertyId, destPropertyId);
+      updates[currentPath] = null;
+      updates[targetPath] = deficientItems[currentPath];
+    });
+
     if (!dryRun) {
       try {
         // Perform atomic update
@@ -495,6 +519,103 @@ module.exports = modelSetup({
     }
 
     return updates;
+  },
+
+  /**
+   * Updates to reassign a
+   * Firestore inspection to a new
+   * property.  Move inspection's DIs
+   * to new property as well.
+   * @param {firebaseAdmin.firestore} fs - Firebase Admin DB instance
+   * @param  {String} inspectionId
+   * @param  {String} srcPropertyId
+   * @param  {String} destPropertyId
+   * @return {Promise}
+   */
+  async firestoreReassignProperty(
+    fs,
+    inspectionId,
+    srcPropertyId,
+    destPropertyId
+  ) {
+    assert(
+      inspectionId && typeof inspectionId === 'string',
+      'has inspection id'
+    );
+    assert(
+      srcPropertyId && typeof srcPropertyId === 'string',
+      'has source property id'
+    );
+    assert(
+      destPropertyId && typeof destPropertyId === 'string',
+      'has destination property id'
+    );
+
+    const batch = fs.batch();
+    const inspectionsRef = fs.collection(INSPECTION_COLLECTION);
+    const propertiesRef = fs.collection(PROPERTY_COLLECTION);
+
+    // Add inspection reassign
+    // to batched updates
+    const inspectionDoc = inspectionsRef.doc(inspectionId);
+    batch.update(inspectionDoc, { property: destPropertyId });
+
+    // Remove inspection from source property
+    // TODO: Make property inspections array
+    //       and add to batch update
+    try {
+      await propertiesRef.doc(srcPropertyId).set(
+        {
+          inspections: {
+            [inspectionId]: FieldValue.delete(),
+          },
+        },
+        { merge: true }
+      );
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreReassignProperty: failed to update source property: ${err}`
+      );
+    }
+
+    // Add inspection to destination property
+    // TODO: Make property inspections array
+    //       and add to batch update
+    try {
+      await propertiesRef.doc(destPropertyId).set(
+        {
+          inspections: {
+            [inspectionId]: true,
+          },
+        },
+        { merge: true }
+      );
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreReassignProperty: failed to update dest property: ${err}`
+      );
+    }
+
+    let deficientItemSnap = null;
+
+    try {
+      deficientItemSnap = await diModel.firestoreQueryByInspection(
+        fs,
+        inspectionId
+      );
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreReassignProperty: failed to lookup DIs: ${err}`
+      );
+    }
+
+    // Add each deficient item property
+    // relationship updates to batch
+    deficientItemSnap.docs.forEach(diDoc =>
+      batch.update(diDoc.ref, { property: destPropertyId })
+    );
+
+    return batch.commit();
   },
 
   /**

@@ -5,8 +5,11 @@ const bodyParser = require('body-parser');
 const handler = require('../../../inspections/api/patch-property');
 const uuid = require('../../../test-helpers/uuid');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { db } = require('../../setup');
+const { db, fs } = require('../../setup');
 const mocking = require('../../../test-helpers/mocking');
+const deficientItemsModel = require('../../../models/deficient-items');
+const inspectionsModel = require('../../../models/inspections');
+const propertiesModel = require('../../../models/properties');
 
 const PROPERTY_ID = uuid();
 const INSPECTION_ID = uuid();
@@ -16,78 +19,39 @@ const INSPECTION_PATH = `/inspections/${INSPECTION_ID}`;
 const DEST_PROPERTY_PATH = `/properties/${DEST_PROPERTY_ID}`;
 const PROPERTY_DATA = {
   name: 'src',
-  inspections: { [INSPECTION_ID]: true },
+  inspections: { [INSPECTION_ID]: true, [uuid()]: true },
 };
 const DEST_PROPERTY_DATA = { name: 'dest' };
 const INSPECTION_DATA = mocking.createInspection({
   property: PROPERTY_ID,
   inspectionCompleted: true,
 });
+const DEFICIENT_ITEM_ONE_DATA = mocking.createDeficientItem(
+  INSPECTION_ID,
+  uuid()
+);
+const DEFICIENT_ITEM_TWO_DATA = mocking.createDeficientItem(
+  INSPECTION_ID,
+  uuid()
+);
 
 describe('Inspections | API | Patch Property', () => {
-  afterEach(() => cleanDb(db));
-
-  it('rejects request missing a payload', async () => {
-    const expected = 'body missing property';
-
-    // Execute & Get Result
-    const app = createApp();
-    const result = await request(app)
-      .patch(`/t/${INSPECTION_ID}`)
-      .send()
-      .expect('Content-Type', /json/)
-      .expect(400);
-
-    // Assertions
-    const actual = result.body.message;
-    expect(actual).to.equal(expected);
-  });
-
-  it('rejects request to reassign non-existent property', async () => {
-    const expected = 'body contains bad property';
-
-    // setup database
-    await db.ref(PROPERTY_PATH).set(PROPERTY_DATA);
-
-    // Execute & Get Result
-    const app = createApp();
-    const result = await request(app)
-      .patch(`/t/${INSPECTION_ID}`)
-      .send({ property: '-invalid' })
-      .expect('Content-Type', /json/)
-      .expect(400);
-
-    // Assertions
-    const actual = result.body.message;
-    expect(actual).to.equal(expected);
-  });
-
-  it('rejects request to reassign non-existent inspection', async () => {
-    const expected = 'requested inspection not found';
-
-    // setup database
-    await db.ref(PROPERTY_PATH).set(PROPERTY_DATA);
-    await db.ref(DEST_PROPERTY_PATH).set(DEST_PROPERTY_DATA);
-    await db.ref(INSPECTION_PATH).set(INSPECTION_DATA);
-
-    // Execute & Get Result
-    const app = createApp();
-    const result = await request(app)
-      .patch('/t/-invalid')
-      .send({ property: DEST_PROPERTY_ID })
-      .expect('Content-Type', /json/)
-      .expect(409);
-
-    // Assertions
-    const actual = result.body.message;
-    expect(actual).to.equal(expected);
-  });
+  afterEach(() => cleanDb(db, fs));
 
   it('successfully reassigns an inspection to a new property', async () => {
     // setup database
     await db.ref(PROPERTY_PATH).set(PROPERTY_DATA);
     await db.ref(DEST_PROPERTY_PATH).set(DEST_PROPERTY_DATA);
-    await db.ref(INSPECTION_PATH).set(INSPECTION_DATA);
+    await inspectionsModel.realtimeUpsertRecord(
+      db,
+      INSPECTION_ID,
+      INSPECTION_DATA
+    );
+    await inspectionsModel.firestoreUpsertRecord(
+      fs,
+      INSPECTION_ID,
+      INSPECTION_DATA
+    );
 
     // Execute
     const app = createApp();
@@ -110,6 +74,10 @@ describe('Inspections | API | Patch Property', () => {
     const destPropInspRelSnap = await db
       .ref(`${DEST_PROPERTY_PATH}/inspections/${INSPECTION_ID}`)
       .once('value');
+    const firestoreInspection = await inspectionsModel.firestoreFindRecord(
+      fs,
+      INSPECTION_ID
+    );
     const srcPropInspProxySnap = await db
       .ref(
         `/propertyInspectionsList/${PROPERTY_ID}/inspections/${INSPECTION_ID}`
@@ -161,14 +129,154 @@ describe('Inspections | API | Patch Property', () => {
         expected: DEST_PROPERTY_ID,
         msg: "reassigned completed inspection proxy's property",
       },
+      {
+        actual: (firestoreInspection.data() || {}).property,
+        expected: DEST_PROPERTY_ID,
+        msg: 'reassigned firestore inspection to new property',
+      },
     ].forEach(({ actual, expected, msg }) => {
       expect(actual).to.equal(expected, msg);
+    });
+  });
+
+  it("successfully reassigns an inspection's realtime deficient items under new property", async () => {
+    // setup database
+    await db.ref(PROPERTY_PATH).set(PROPERTY_DATA);
+    await propertiesModel.firestoreUpsertRecord(fs, PROPERTY_ID, PROPERTY_DATA);
+    await db.ref(DEST_PROPERTY_PATH).set(DEST_PROPERTY_DATA);
+    await propertiesModel.firestoreUpsertRecord(
+      fs,
+      DEST_PROPERTY_ID,
+      DEST_PROPERTY_DATA
+    );
+    await db.ref(INSPECTION_PATH).set(INSPECTION_DATA);
+    await inspectionsModel.firestoreUpsertRecord(
+      fs,
+      INSPECTION_ID,
+      INSPECTION_DATA
+    );
+    const diOne = await deficientItemsModel.realtimeCreateRecord(
+      db,
+      PROPERTY_ID,
+      DEFICIENT_ITEM_ONE_DATA
+    );
+    const diTwo = await deficientItemsModel.realtimeCreateRecord(
+      db,
+      PROPERTY_ID,
+      DEFICIENT_ITEM_TWO_DATA
+    );
+    const diOneId = getRefId(diOne);
+    const diTwoId = getRefId(diTwo);
+    await deficientItemsModel.firestoreCreateRecord(fs, diOneId, {
+      ...DEFICIENT_ITEM_ONE_DATA,
+      property: PROPERTY_ID,
+    });
+    await deficientItemsModel.firestoreCreateRecord(fs, diTwoId, {
+      ...DEFICIENT_ITEM_TWO_DATA,
+      property: PROPERTY_ID,
+    });
+
+    // Execute
+    const app = createApp();
+    await request(app)
+      .patch(`/t/${INSPECTION_ID}`)
+      .send({ property: DEST_PROPERTY_ID })
+      .expect('Content-Type', /json/)
+      .expect(201);
+
+    // Get Results
+    const oldDiOneSnap = await deficientItemsModel.find(
+      db,
+      PROPERTY_ID,
+      diOneId
+    );
+    const oldDiTwoSnap = await deficientItemsModel.find(
+      db,
+      PROPERTY_ID,
+      diTwoId
+    );
+    const newDiOneSnap = await deficientItemsModel.find(
+      db,
+      DEST_PROPERTY_ID,
+      diOneId
+    );
+    const newDiTwoSnap = await deficientItemsModel.find(
+      db,
+      DEST_PROPERTY_ID,
+      diTwoId
+    );
+    const srcPropDoc = await propertiesModel.firestoreFindRecord(
+      fs,
+      PROPERTY_ID
+    );
+    const destPropDoc = await propertiesModel.firestoreFindRecord(
+      fs,
+      DEST_PROPERTY_ID
+    );
+    const diOneDoc = await deficientItemsModel.firestoreFindRecord(fs, diOneId);
+    const diTwoDoc = await deficientItemsModel.firestoreFindRecord(fs, diTwoId);
+
+    // Assertions
+    [
+      {
+        actual: oldDiOneSnap.val(),
+        expected: null,
+        msg: 'removed first DI from old property',
+      },
+      {
+        actual: oldDiTwoSnap.val(),
+        expected: null,
+        msg: 'removed second DI from old property',
+      },
+      {
+        actual: newDiOneSnap.val(),
+        expected: DEFICIENT_ITEM_ONE_DATA,
+        msg: "reassiged inspection's first DI to new property",
+      },
+      {
+        actual: newDiTwoSnap.val(),
+        expected: DEFICIENT_ITEM_TWO_DATA,
+        msg: "reassiged inspection's seconde DI to new property",
+      },
+      {
+        actual: ((srcPropDoc.data() || {}).inspections || {})[INSPECTION_ID],
+        expected: undefined,
+        msg: 'removed inspection relationship from source firestore property',
+      },
+      {
+        actual: ((destPropDoc.data() || {}).inspections || {})[INSPECTION_ID],
+        expected: true,
+        msg: 'added inspection relationship to target firestore property',
+      },
+      {
+        actual: diOneDoc.data().property,
+        expected: DEST_PROPERTY_ID,
+        msg: "reassiged inspection's first firestore DI to new property",
+      },
+      {
+        actual: diTwoDoc.data().property,
+        expected: DEST_PROPERTY_ID,
+        msg: "reassiged inspection's second firestore DI to new property",
+      },
+    ].forEach(({ actual, expected, msg }) => {
+      if (!expected) {
+        expect(actual).to.equal(expected, msg);
+      } else {
+        expect(actual).to.deep.equal(expected, msg);
+      }
     });
   });
 });
 
 function createApp() {
   const app = express();
-  app.patch('/t/:inspectionId', bodyParser.json(), handler(db));
+  app.patch('/t/:inspectionId', bodyParser.json(), handler(db, fs));
   return app;
+}
+
+function getRefId(ref) {
+  return ref.path
+    .toString()
+    .split('/')
+    .pop();
 }
