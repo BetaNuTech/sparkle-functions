@@ -708,9 +708,7 @@ module.exports = modelSetup({
  * @return {String} - templateName
  */
 function getTemplateName(inspection) {
-  return inspection.templateName || inspection.template
-    ? inspection.template.name
-    : '';
+  return inspection.templateName || inspection.template.name;
 }
 
 /**
