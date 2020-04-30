@@ -69,12 +69,14 @@ module.exports = {
       const fsUpsertData = { ...after };
 
       // Ensure category removed if not found
-      if (before.category && !after.category) {
-        fsUpsertData.category = null;
-      }
+      if (before) {
+        if (before.category && !after.category) {
+          fsUpsertData.category = null;
+        }
 
-      if (before.description && !after.description) {
-        fsUpsertData.description = null;
+        if (before.description && !after.description) {
+          fsUpsertData.description = null;
+        }
       }
 
       await templatesModel.firestoreUpsertRecord(fs, templateId, fsUpsertData);
