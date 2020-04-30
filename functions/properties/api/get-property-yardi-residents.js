@@ -175,10 +175,19 @@ function getCobaltTenant(data) {
     if (found.total_owed) result.totalOwed = parseFloat(found.total_owed);
     if (found.total_charges)
       result.totalCharges = parseFloat(found.total_charges);
-    if (found.payment_plan) result.paymentPlan = found.payment_plan;
-    if (found.payment_plan_delinquent)
-      result.paymentPlanDelinquent = found.payment_plan_delinquent;
+    result.eviction = Boolean(found.eviction) || false;
+    result.paymentPlan = Boolean(found.payment_plan) || false;
+    result.paymentPlanDelinquent =
+      Boolean(found.payment_plan_delinquent) || false;
     if (found.last_note) result.lastNote = found.last_note;
+    try {
+      // Convert any note
+      // update timestamp to unix
+      if (found.last_note_updated_at)
+        result.lastNoteUpdatedAt = Math.round(
+          new Date(found.last_note_updated_at).getTime() / 1000
+        );
+    } catch (err) {} // eslint-disable-line no-empty
     return result;
   };
 }
