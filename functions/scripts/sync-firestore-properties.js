@@ -2,6 +2,7 @@ const log = require('../utils/logger');
 const { db, fs } = require('./setup'); // eslint-disable-line
 const utils = require('../utils/firebase-admin');
 const propertiesModel = require('../models/properties');
+const templatesModel = require('../models/templates');
 
 (async () => {
   await utils.forEachChild(db, '/properties', async (id, data) => {
@@ -10,7 +11,18 @@ const propertiesModel = require('../models/properties');
     try {
       await propertiesModel.firestoreUpsertRecord(fs, id, data);
     } catch (err) {
-      log.error(`Failed to sync property "${id}" to Firestore`);
+      log.error(`Failed to sync property "${id}" to Firestore | ${err}`);
+    }
+
+    try {
+      const templates = Object.keys(data.templates || {}) || [];
+      if (templates.length) {
+        await templatesModel.updatePropertyRelationships(fs, id, [], templates);
+      }
+    } catch (err) {
+      log.error(
+        `Failed to sync property "${id}" template relationships to Firestore | ${err}`
+      );
     }
   });
 
