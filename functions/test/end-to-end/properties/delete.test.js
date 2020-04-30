@@ -3,6 +3,7 @@ const { expect } = require('chai');
 const uuid = require('../../../test-helpers/uuid');
 const { cleanDb, findStorageFile } = require('../../../test-helpers/firebase');
 const propertiesModel = require('../../../models/properties');
+const templatesModel = require('../../../models/templates');
 const { db, fs, test, storage, cloudFunctions } = require('../../setup');
 
 const SRC_PROFILE_IMG = 'test-image.jpg';
@@ -305,12 +306,12 @@ describe('Properties | Delete', () => {
     // Setup database
     await propertiesModel.realtimeUpsertRecord(db, propertyId, data); // Create realtime
     await propertiesModel.firestoreUpsertRecord(fs, propertyId, data); // Create firestore
+    const propertySnap = await propertiesModel.findRecord(db, propertyId);
     await propertiesModel.realtimeRemoveRecord(db, propertyId); // Remove realtime
-    const propertyAfterSnap = await propertiesModel.findRecord(db, propertyId);
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.propertyDelete);
-    await wrapped(propertyAfterSnap, { params: { propertyId } });
+    await wrapped(propertySnap, { params: { propertyId } });
 
     // Test results
     const result = await propertiesModel.firestoreFindRecord(fs, propertyId);
@@ -318,5 +319,49 @@ describe('Properties | Delete', () => {
 
     // Assertions
     expect(actual).to.deep.equal(expected);
+  });
+
+  it('should remove all properties relationships from firestore templates', async () => {
+    const propertyId = uuid();
+    const tmplOneId = uuid();
+    const tmplTwoId = uuid();
+    const data = {
+      name: 'test',
+      templates: { [tmplOneId]: true, [tmplTwoId]: true },
+    };
+    const tmplBefore = { name: 'test', properties: [propertyId] };
+
+    // Setup database
+    await propertiesModel.realtimeUpsertRecord(db, propertyId, data); // Create
+    await templatesModel.firestoreUpsertRecord(fs, tmplOneId, tmplBefore);
+    await templatesModel.firestoreUpsertRecord(fs, tmplTwoId, tmplBefore);
+    const propertySnap = await propertiesModel.findRecord(db, propertyId);
+    await propertiesModel.realtimeRemoveRecord(db, propertyId); // Remove
+
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.propertyDelete);
+    await wrapped(propertySnap, { params: { propertyId } });
+
+    // Test results
+    const results = await Promise.all([
+      templatesModel.firestoreFindRecord(fs, tmplOneId),
+      templatesModel.firestoreFindRecord(fs, tmplTwoId),
+    ]);
+
+    // Assertions
+    [
+      {
+        actual: results[0].data(),
+        expected: { ...tmplBefore, properties: [] },
+        msg: 'Removed template one property association',
+      },
+      {
+        actual: results[1].data(),
+        expected: { ...tmplBefore, properties: [] },
+        msg: 'Removed template two property association',
+      },
+    ].forEach(({ actual, expected, msg }) => {
+      expect(actual).to.deep.equal(expected, msg);
+    });
   });
 });

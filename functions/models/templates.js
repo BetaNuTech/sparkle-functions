@@ -6,6 +6,7 @@ const PREFIX = 'models: templates:';
 const LIST_DB = '/templatesList';
 const TEMPLATES_DB = '/templates';
 const TEMPLATE_COLLECTION = 'templates';
+const { isArray } = Array;
 
 module.exports = modelSetup({
   /**
@@ -290,5 +291,56 @@ module.exports = modelSetup({
 
         return result;
       });
+  },
+
+  /**
+   * Perform a batch updates on
+   * Firestore templates properties
+   * relationships. Removes old and
+   * adds new property relationships
+   * @param  {firebaseAdmin.firestore} fs
+   * @param  {String} propertyId
+   * @param  {String[]} beforeTemplates
+   * @param  {String[]} afterTemplates
+   * @return {Promise}
+   */
+  updatePropertyRelationships(fs, propertyId, beforeTemplates, afterTemplates) {
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    assert(
+      isArray(beforeTemplates) &&
+        beforeTemplates.every(t => t && typeof t === 'string'),
+      'has before templates id list'
+    );
+    assert(
+      isArray(afterTemplates) &&
+        afterTemplates.every(t => t && typeof t === 'string'),
+      'has after templates id list'
+    );
+
+    const added = afterTemplates.filter(t => !beforeTemplates.includes(t));
+    const removed = beforeTemplates.filter(t => !afterTemplates.includes(t));
+
+    const batch = fs.batch();
+    const templatesRef = fs.collection(TEMPLATE_COLLECTION);
+
+    // Append each new relationship
+    // add to batch
+    added.forEach(id => {
+      const templateDoc = templatesRef.doc(id);
+      batch.update(templateDoc, {
+        properties: FieldValue.arrayUnion(propertyId),
+      });
+    });
+
+    // Append each old relationship
+    // remove to batch
+    removed.forEach(id => {
+      const templateDoc = templatesRef.doc(id);
+      batch.update(templateDoc, {
+        properties: FieldValue.arrayRemove(propertyId),
+      });
+    });
+
+    return batch.commit();
   },
 });
