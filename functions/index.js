@@ -12,6 +12,7 @@ const slack = require('./slack');
 const notifications = require('./notifications');
 const regTokens = require('./reg-tokens');
 const config = require('./config');
+const versions = require('./versions');
 const createRouter = require('./router');
 
 const { firebase: firebaseConfig } = config;
@@ -26,9 +27,12 @@ const pubsubClient = new PubSub({
 });
 
 // Send API version
-exports.latestVersion = functions.https.onRequest((request, response) =>
-  response.status(200).send({ ios: '1.6.0' })
+exports.latestVersion = functions.https.onRequest(
+  versions.api.getClientAppVersions(fs)
 );
+// (request, response) =>
+//   response.status(200).send({ ios: '1.6.0' })
+// );
 
 // Latest Completed Inspections
 exports.latestCompleteInspection = functions.https.onRequest(

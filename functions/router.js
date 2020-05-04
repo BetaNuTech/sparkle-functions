@@ -4,6 +4,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const properties = require('./properties');
 const inspections = require('./inspections');
+const versions = require('./versions');
 const authUser = require('./utils/auth-firebase-user');
 
 /**
@@ -22,6 +23,12 @@ module.exports = (db, fs, auth, settings) => {
   const app = express();
   const { inspectionUrl } = settings;
   app.use(bodyParser.json(), cors({ origin: true, credentials: true }));
+
+  app.get(
+    '/v0/versions',
+    authUser(db, auth),
+    versions.api.getClientAppVersions(fs)
+  );
 
   // Inspection property
   // reassignment endpoint
