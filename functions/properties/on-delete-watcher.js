@@ -1,10 +1,10 @@
 const assert = require('assert');
 const log = require('../utils/logger');
-const inspections = require('../inspections');
 const teams = require('../teams');
 const propertyTemplates = require('../property-templates');
 const propertiesModel = require('../models/properties');
 const templatesModel = require('../models/templates');
+const inspectionsModel = require('../models/inspections');
 
 const PREFIX = 'properties: on-delete:';
 const PROPERTY_BUCKET_NAME = `propertyImages${
@@ -39,12 +39,6 @@ module.exports = function createOnDeleteHandler(
     const { propertyId } = event.params;
 
     log.info(`${PREFIX} property "${propertyId}" deleted`);
-
-    try {
-      await inspections.removeForProperty(db, storage, propertyId);
-    } catch (err) {
-      log.error(`${PREFIX} | ${err}`);
-    }
 
     try {
       await teams.removeForProperty(
@@ -100,6 +94,13 @@ module.exports = function createOnDeleteHandler(
       log.error(
         `${PREFIX} failed to remove Firestore property "${propertyId}"`
       );
+    }
+
+    // Remove property's inspections
+    try {
+      await inspectionsModel.removeForProperty(db, fs, storage, propertyId);
+    } catch (err) {
+      log.error(`${PREFIX} | ${err}`);
     }
 
     // Remove Firestore templates

@@ -2,6 +2,8 @@ const assert = require('assert');
 const log = require('../../utils/logger');
 const inspectionsModel = require('../../models/inspections');
 const propertiesModel = require('../../models/properties');
+const properties = require('../../properties');
+const create500ErrHandler = require('../../utils/unexpected-api-error');
 
 const PREFIX = 'inspections: api: patch property:';
 
@@ -27,6 +29,7 @@ module.exports = function createPatchProperty(db, fs) {
     const { params, body = {} } = req;
     const { inspectionId } = params;
     const { property: propertyId } = body;
+    const send500Error = create500ErrHandler(PREFIX, res);
 
     if (!propertyId) {
       return res.status(400).send({ message: 'body missing property' });
@@ -64,8 +67,11 @@ module.exports = function createPatchProperty(db, fs) {
     try {
       await inspectionsModel.reassignProperty(db, inspectionId, propertyId);
     } catch (err) {
-      log.error(`${PREFIX} inspection property reassignment failed | ${err}`);
-      return res.status(500).send({ message: 'unexpected error' });
+      return send500Error(
+        err,
+        'inspection property reassignment failed',
+        'unexpected error'
+      );
     }
 
     // Perform reassign on Firestore
@@ -77,10 +83,33 @@ module.exports = function createPatchProperty(db, fs) {
         propertyId
       );
     } catch (err) {
-      log.error(
-        `${PREFIX} firestore inspection property reassignment failed | ${err}`
+      return send500Error(
+        err,
+        'firestore inspection property reassignment failed',
+        'unexpected error'
       );
-      // return res.status(500).send({ message: 'unexpected error' });
+    }
+
+    // Update source property meta data
+    try {
+      await properties.utils.processMeta(db, fs, srcPropertyId);
+    } catch (err) {
+      return send500Error(
+        err,
+        'source property metadata update failed',
+        'unexpected error'
+      );
+    }
+
+    // Update destination property meta data
+    try {
+      await properties.utils.processMeta(db, fs, propertyId);
+    } catch (err) {
+      return send500Error(
+        err,
+        'destination property metadata update failed',
+        'unexpected error'
+      );
     }
 
     res.status(201).send({ message: 'successful' });
