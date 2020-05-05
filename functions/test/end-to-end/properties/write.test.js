@@ -102,27 +102,27 @@ describe('Properties | Write', () => {
   //   // Assertions
   //   expect(actual).to.deep.equal(expected);
   // });
-  //
-  // it('should create a firestore property when a property is created', async () => {
-  //   const propertyId = uuid();
-  //   const expected = JSON.parse(JSON.stringify(propertyData));
-  //
-  //   const beforeSnap = await propertiesModel.findRecord(db, propertyId);
-  //   await propertiesModel.realtimeUpsertRecord(db, propertyId, expected); // Create
-  //   const afterSnap = await propertiesModel.findRecord(db, propertyId);
-  //
-  //   // Execute
-  //   const changeSnap = test.makeChange(beforeSnap, afterSnap);
-  //   const wrapped = test.wrap(cloudFunctions.propertyWrite);
-  //   await wrapped(changeSnap, { params: { propertyId } });
-  //
-  //   // Test results
-  //   const result = await propertiesModel.firestoreFindRecord(fs, propertyId);
-  //   const actual = result.data();
-  //
-  //   // Assertions
-  //   expect(actual).to.deep.equal(expected);
-  // });
+
+  it('should create a firestore property when a property is created', async () => {
+    const propertyId = uuid();
+    const expected = JSON.parse(JSON.stringify(propertyData));
+
+    const beforeSnap = await propertiesModel.findRecord(db, propertyId);
+    await propertiesModel.realtimeUpsertRecord(db, propertyId, expected); // Create
+    const afterSnap = await propertiesModel.findRecord(db, propertyId);
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.propertyWrite);
+    await wrapped(changeSnap, { params: { propertyId } });
+
+    // Test results
+    const result = await propertiesModel.firestoreFindRecord(fs, propertyId);
+    const actual = result.data();
+
+    // Assertions
+    expect(actual).to.deep.equal(expected);
+  });
 
   it('should update a firestore property when a property is created', async () => {
     const propertyId = uuid();
