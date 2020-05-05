@@ -2,6 +2,7 @@ const assert = require('assert');
 const FieldValue = require('firebase-admin').firestore.FieldValue;
 const modelSetup = require('./utils/model-setup');
 const diModel = require('./deficient-items');
+const deleteUploads = require('../inspections/utils/delete-uploads');
 
 const PREFIX = 'models: inspections:';
 const INSPECTIONS_PATH = '/inspections';
@@ -265,6 +266,94 @@ module.exports = modelSetup({
       } catch (err) {
         throw Error(`${PREFIX} set property inspection proxy failed | ${err}`);
       }
+    }
+
+    return updates;
+  },
+
+  /**
+   * Remove all inspections and inspection proxies for a property
+   * @param  {firebaseAdmin.database} db
+   * @param  {firebaseAdmin.firestore} fs
+   * @param  {firebaseAdmin.storage} storage
+   * @param  {String} propertyId
+   * @return {Promise} - resolves {Object} hash of updates
+   */
+  async removeForProperty(db, fs, storage, propertyId) {
+    assert(Boolean(fs), 'has firestore db instance');
+    assert(Boolean(storage), 'has storage instance');
+    assert(
+      propertyId && typeof propertyId === 'string',
+      'has property reference'
+    );
+    const updates = {};
+    let inspectionIds = [];
+
+    // Lookup all inspection ID's
+    try {
+      const inspectionsSnap = await this.queryByProperty(db, propertyId);
+      const inspections = inspectionsSnap.val();
+      inspectionIds = Object.keys(inspections || {});
+    } catch (err) {
+      // wrap error
+      throw Error(
+        `${PREFIX} removeForProperty: query inspections failed | ${err}`
+      );
+    }
+
+    // Remove each inspections' items' uploads
+    for (let i = 0; i < inspectionIds.length; i++) {
+      const inspId = inspectionIds[i];
+
+      try {
+        await deleteUploads(db, storage, inspId);
+      } catch (err) {
+        // wrap error
+        throw Error(
+          `${PREFIX} removeForProperty: upload storage delete failed | ${err}`
+        );
+      }
+    }
+
+    // Collect inspections to delete in `updates`
+    inspectionIds.forEach(inspectionId => {
+      updates[`/inspections/${inspectionId}`] = null;
+    });
+
+    // Remove all `/propertyInspectionsList`
+    updates[`/propertyInspectionsList/${propertyId}`] = null;
+
+    try {
+      await db.ref().update(updates);
+    } catch (err) {
+      // wrap error
+      throw Error(`${PREFIX} update inspection failed | ${err}`);
+    }
+
+    const batch = fs.batch();
+    let inspectionsSnap = null;
+
+    try {
+      inspectionsSnap = await this.firestoreQueryByCategory(fs, propertyId);
+    } catch (err) {
+      // wrap error
+      throw Error(
+        `${PREFIX} removeForProperty: query inspections failed | ${err}`
+      );
+    }
+
+    // Add all inspections to batch remove
+    inspectionsSnap.docs.forEach(inspectionDoc =>
+      batch.delete(inspectionDoc.ref)
+    );
+
+    try {
+      await batch.commit();
+    } catch (err) {
+      // wrap error
+      throw Error(
+        `${PREFIX} removeForProperty: firestore inspection removal failed | ${err}`
+      );
     }
 
     return updates;
@@ -699,6 +788,23 @@ module.exports = modelSetup({
       .collection(INSPECTION_COLLECTION)
       .doc(inspectionId)
       .delete();
+  },
+
+  /**
+   * Lookup all inspections associated with a property
+   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {String} propertyId
+   * @return {Promise} - resolves {QuerySnapshot}
+   */
+  firestoreQueryByCategory(fs, propertyId) {
+    assert(
+      propertyId && typeof propertyId === 'string',
+      `${PREFIX} has property id`
+    );
+    return fs
+      .collection(INSPECTION_COLLECTION)
+      .where('property', '==', propertyId)
+      .get();
   },
 });
 

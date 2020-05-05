@@ -111,10 +111,10 @@ module.exports = modelSetup({
       if (exists) {
         // Replace optional field nulls
         // with Firestore delete values
-        if (current.templates && !upsert.templates) {
+        if (current.templates && data.templates === null) {
           upsert.templates = FieldValue.delete();
         }
-        if (current.inspections && !upsert.inspections) {
+        if (current.inspections && data.inspections === null) {
           upsert.inspections = FieldValue.delete();
         }
 

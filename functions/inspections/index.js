@@ -1,5 +1,4 @@
 const processWrite = require('./process-write');
-const removeForProperty = require('./utils/remove-for-property');
 const createOnWriteAttributeWatcher = require('./on-write-attribute-watcher');
 const createOnDeleteWatcher = require('./on-delete-watcher');
 const onCreateWatcher = require('./on-create-watcher');
@@ -13,7 +12,6 @@ const createAPIGetInspectionPDF = require('./on-get-pdf-report/get-pdf-handler')
 
 module.exports = {
   processWrite,
-  removeForProperty,
   getLatestCompleted,
   onCreateWatcher,
   createOnWriteAttributeWatcher,
