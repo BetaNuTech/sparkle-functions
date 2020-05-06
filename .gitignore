@@ -61,7 +61,7 @@ typings/
 .env*
 
 # gcloud files
-auth.json
+auth*.json
 .config
 .gsutil
 .boto
