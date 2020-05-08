@@ -12,6 +12,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {Object} hash of all teams/properties to be used as a source of truth
    */
   async getPropertyRelationships(db) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     const propertyAndTeam = {};
 
     try {
@@ -35,17 +36,31 @@ module.exports = modelSetup({
   },
 
   /**
-   * This function will retrieve all properties that belong to the requested team
-   * @param {firebaseAdmin.database} db firbase database
-   * @param {number} teamId this is the id of the team we are looking for
-   * @returns this will return an firebase snapshot containing all properties that belong to the requested team
+   * Get all properties belonging to a team
+   * @param  {admin.database} db
+   * @param  {String} teamId
+   * @return {Promise} - resolves {DataSnapshot} teams snapshot
    */
   getPropertiesByTeamId(db, teamId) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(teamId && typeof teamId === 'string', 'has team id');
     return db
       .ref('properties')
       .orderByChild('team')
       .equalTo(teamId)
       .once('value');
+  },
+
+  /**
+   * Find realtime team record
+   * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+   * @param  {String} teamId
+   * @return {Promise} - resolves {DataSnapshot} team snapshot
+   */
+  realtimeFindRecord(db, teamId) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(teamId && typeof teamId === 'string', 'has team id');
+    return db.ref(`${TEAMS_DB}/${teamId}`).once('value');
   },
 
   /**
