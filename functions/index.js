@@ -145,7 +145,7 @@ exports.userTeamWrite = functions.database
 // teams onDelete
 exports.teamDelete = functions.database
   .ref('/teams/{teamId}')
-  .onDelete(teams.createOnDeleteWatcher(db));
+  .onDelete(teams.createOnDeleteWatcher(db, fs));
 
 // Deficient Items
 exports.deficientItemsWrite = functions.database

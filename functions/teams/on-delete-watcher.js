@@ -1,27 +1,30 @@
+const assert = require('assert');
 const log = require('../utils/logger');
 const usersModel = require('../models/users');
-const teamsModel = require('../models/teams');
+const propertiesModel = require('../models/properties');
 
 const PREFIX = 'teams: team-delete:';
 
 /**
- * Factory for /teams/{teamId} on delete handler
- * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
- * @return {Function} - /teams/{teamId} onDelete handler
+ * Factory team delete handlers
+ * @param  {admin.database} db - Firebase Admin DB instance
+ * @param  {admin.firestore} fs - Firestore Admin DB instance
+ * @return {Function} - team delete handler
  */
-module.exports = function teamDeleteHandler(db) {
+module.exports = function teamDeleteHandler(db, fs) {
+  assert(db && typeof db.ref === 'function', 'has realime db');
+  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+
   return async (teamSnap, context) => {
-    const updates = {};
     const { teamId } = context.params;
 
     if (!teamId) {
-      log.warn(`${PREFIX} incorrectly defined event parameter "teamId"`);
-      return;
+      throw Error(`${PREFIX} incorrectly defined event parameter "teamId"`);
     }
 
     log.info(`${PREFIX} team deleted: ${teamId}`);
 
-    const allPropertiesAffectedSnap = await teamsModel.getPropertiesByTeamId(
+    const allPropertiesAffectedSnap = await propertiesModel.getPropertiesByTeamId(
       db,
       teamId
     );
@@ -34,12 +37,7 @@ module.exports = function teamDeleteHandler(db) {
       const propertyIds = Object.keys(properties);
 
       try {
-        await Promise.all(
-          propertyIds.map(propertyId => {
-            updates[`/properties/${propertyId}/team`] = 'removed';
-            return db.ref(`/properties/${propertyId}/team`).remove();
-          })
-        );
+        await propertiesModel.realtimeBatchRemoveTeam(db, propertyIds);
       } catch (err) {
         log.error(
           `${PREFIX} error when trying to remove properties' team ${err}`
@@ -52,17 +50,11 @@ module.exports = function teamDeleteHandler(db) {
 
     if (userIds) {
       try {
-        const batchDelete = {};
-        userIds.forEach(userId => {
-          batchDelete[`/users/${userId}/teams/${teamId}`] = null;
-        });
-        await db.ref().update(batchDelete);
+        usersModel.realtimeBatchRemoveTeam(db, userIds, teamId);
       } catch (err) {
         log.error(`${PREFIX} error when trying to remove users' teams ${err}`);
         throw err;
       }
     }
-
-    return updates;
   };
 };

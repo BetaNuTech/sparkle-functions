@@ -38,22 +38,6 @@ module.exports = modelSetup({
   },
 
   /**
-   * Get all properties belonging to a team
-   * @param  {admin.database} db
-   * @param  {String} teamId
-   * @return {Promise} - resolves {DataSnapshot} teams snapshot
-   */
-  getPropertiesByTeamId(db, teamId) {
-    assert(db && typeof db.ref === 'function', 'has realtime db');
-    assert(teamId && typeof teamId === 'string', 'has team id');
-    return db
-      .ref('properties')
-      .orderByChild('team')
-      .equalTo(teamId)
-      .once('value');
-  },
-
-  /**
    * Find realtime team record
    * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
    * @param  {String} teamId
