@@ -60,10 +60,8 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   firestoreFindRecord(fs, propertyId) {
-    assert(
-      propertyId && typeof propertyId === 'string',
-      `${PREFIX} has property id`
-    );
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
     return fs
       .collection(PROPERTY_COLLECTION)
       .doc(propertyId)

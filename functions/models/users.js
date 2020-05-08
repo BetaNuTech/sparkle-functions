@@ -80,13 +80,13 @@ module.exports = modelSetup({
   /**
    * Create or update a Firestore user
    * @param  {firebaseAdmin.firestore} fs
-   * @param  {String}  propertyId
-   * @param  {Object}  data
+   * @param  {String} userId
+   * @param  {Object} data
    * @return {Promise} - resolves {DocumentReference}
    */
   async firestoreUpsertRecord(fs, userId, data) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
-    assert(userId && typeof userId === 'string', `${PREFIX} has user id`);
+    assert(userId && typeof userId === 'string', 'has user id');
     assert(data && typeof data === 'object', 'has upsert data');
 
     const docRef = fs.collection(USERS_COLLECTION).doc(userId);
