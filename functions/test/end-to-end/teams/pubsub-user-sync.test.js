@@ -1,10 +1,13 @@
 const { expect } = require('chai');
 const uuid = require('../../../test-helpers/uuid');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { db, test, cloudFunctions } = require('../../setup');
+const usersModel = require('../../../models/users');
+const teamsModel = require('../../../models/teams');
+const propertiesModel = require('../../../models/properties');
+const { fs, db, test, cloudFunctions } = require('../../setup');
 
 describe('Teams | Pubsub | User Sync', () => {
-  afterEach(() => cleanDb(db));
+  afterEach(() => cleanDb(db, fs));
 
   it('should add all missing teams and property associations to all users', async () => {
     const team1Id = uuid();
@@ -14,45 +17,62 @@ describe('Teams | Pubsub | User Sync', () => {
     const property2Id = uuid();
     const property3Id = uuid();
     const property4Id = uuid();
-    const expectedPayload = {
+    const userData = {
+      firstName: 'Fred',
+      teams: {
+        [team1Id]: { [property1Id]: true },
+        [team2Id]: { [property3Id]: true },
+      },
+    };
+    const final = {
       [team1Id]: { [property1Id]: true, [property2Id]: true },
       [team2Id]: { [property3Id]: true, [property4Id]: true },
     };
     const pubSubMessage = { data: Buffer.from(userId) };
 
     // Setup database
-    await db
-      .ref(`/properties/${property1Id}`)
-      .set({ name: 'Condo', team: team1Id }); // Add property and team
-    await db
-      .ref(`/properties/${property2Id}`)
-      .set({ name: 'Tree House', team: team1Id }); // Add property 2 and team
-    await db
-      .ref(`/properties/${property3Id}`)
-      .set({ name: 'Mansion', team: team2Id }); // Add property 3 and team 2
-    await db
-      .ref(`/properties/${property4Id}`)
-      .set({ name: 'Apartment', team: team2Id }); // Add property 4 and team 2
-
-    await db.ref(`/users/${userId}`).set({
-      firstName: 'Fred',
-      teams: {
-        [team1Id]: { [property1Id]: true },
-        [team2Id]: { [property3Id]: true },
-      },
-    }); // Add user
+    await propertiesModel.realtimeUpsertRecord(db, property1Id, {
+      name: 'Condo',
+      team: team1Id,
+    }); // Add property and team
+    await propertiesModel.realtimeUpsertRecord(db, property2Id, {
+      name: 'Tree House',
+      team: team1Id,
+    }); // Add property 2 and team
+    await propertiesModel.realtimeUpsertRecord(db, property3Id, {
+      name: 'Mansion',
+      team: team2Id,
+    }); // Add property 3 and team 2
+    await propertiesModel.realtimeUpsertRecord(db, property4Id, {
+      name: 'Apartment',
+      team: team2Id,
+    }); // Add property 4 and team 2
+    await usersModel.realtimeUpsertRecord(db, userId, userData); // Add user
 
     // Execute
     await test.wrap(cloudFunctions.userTeamsSync)(pubSubMessage);
 
     // Test result
-    const actual = await db.ref(`/users/${userId}/teams`).once('value');
+    const resultRt = await usersModel.getUser(db, userId);
+    const resultFs = await usersModel.firestoreFindRecord(fs, userId);
+    const actualRt = (resultRt.val() || {}).teams || null;
+    const actualFs = resultFs.data() || null;
 
     // Assertions
-    expect(actual.val()).to.deep.equal(
-      expectedPayload,
-      `synced /users/${userId}/teams by adding missing`
-    );
+    [
+      {
+        actual: actualRt,
+        expected: final,
+        msg: 'added realtime db user associations',
+      },
+      {
+        actual: actualFs,
+        expected: { ...userData, teams: final },
+        msg: 'created new firestore record with latest user associations',
+      },
+    ].forEach(({ actual, expected, msg }) => {
+      expect(actual).to.deep.equal(expected, msg);
+    });
   });
 
   it('should remove all invalid team property associations from user', async () => {
@@ -60,35 +80,51 @@ describe('Teams | Pubsub | User Sync', () => {
     const user1Id = uuid();
     const property1Id = uuid();
     const property2Id = uuid();
-    const expected = {
+    const final = {
       [teamId]: { [property1Id]: true },
     };
     const pubSubMessage = { data: Buffer.from(user1Id) };
-
-    // Setup database
-    await db.ref(`/properties/${property1Id}`).set({ team: teamId }); // Add property /w team
-
-    await db.ref(`/users/${user1Id}`).set({
+    const userData = {
+      firstName: 'test',
       teams: {
         [teamId]: {
           [property1Id]: true, // valid
           [property2Id]: true, // invalid
         },
       },
-    });
+    };
+
+    // Setup database
+    await propertiesModel.realtimeUpsertRecord(db, property1Id, {
+      team: teamId,
+    }); // Add property /w team
+    await usersModel.realtimeUpsertRecord(db, user1Id, userData);
+    await usersModel.firestoreUpsertRecord(fs, user1Id, userData);
 
     // Execute
     await test.wrap(cloudFunctions.userTeamsSync)(pubSubMessage);
 
     // Test result
-    const resultSnap = await db.ref(`/users/${user1Id}/teams`).once('value');
-    const actual = resultSnap.val();
+    const resultRt = await usersModel.getUser(db, user1Id);
+    const resultFs = await usersModel.firestoreFindRecord(fs, user1Id);
+    const actualRt = (resultRt.val() || {}).teams || null;
+    const actualFs = resultFs.data() || null;
 
     // Assertions
-    expect(actual).to.deep.equal(
-      expected,
-      `removed property ${property2Id} from teams`
-    );
+    [
+      {
+        actual: actualRt,
+        expected: final,
+        msg: `removed property "${property2Id}" from realtime user's teams`,
+      },
+      {
+        actual: actualFs,
+        expected: { ...userData, teams: final },
+        msg: 'updated existing firestore user by removing property from teams',
+      },
+    ].forEach(({ actual, expected, msg }) => {
+      expect(actual).to.deep.equal(expected, msg);
+    });
   });
 
   it("should remove all invalid properties from a users' teams, keeping their team membership intact", async () => {
@@ -96,34 +132,51 @@ describe('Teams | Pubsub | User Sync', () => {
     const teamId = uuid();
     const propertyId = uuid();
     const pubSubMessage = { data: Buffer.from(userId) };
-    const expected = {
+    const final = {
       [teamId]: true,
+    };
+    const userData = {
+      teams: {
+        [teamId]: { [propertyId]: true }, // outdated team association
+      },
     };
 
     // Setup database
     // NOTE: additionlly tests important edge case for all
     // property/team associations to be removed and user
     // to still get updated
-    await db.ref(`/properties/${propertyId}`).set({ name: 'Condo' }); // Add property /wo team
-    await db.ref(`/teams/${teamId}`).set({ name: 'Team1' }); // Add team /wo property
-    await db.ref(`/users/${userId}`).set({
-      teams: {
-        [teamId]: { [propertyId]: true }, // outdated team association
-      },
-    });
+    await propertiesModel.realtimeUpsertRecord(db, propertyId, {
+      name: 'Condo',
+    }); // Add property /wo team
+    await teamsModel.realtimeUpsertRecord(db, teamId, { name: 'Team1' }); // Add team /wo property
+    await usersModel.realtimeUpsertRecord(db, userId, userData);
+    await usersModel.firestoreUpsertRecord(fs, userId, userData);
 
     // Execute
     await test.wrap(cloudFunctions.userTeamsSync)(pubSubMessage);
 
     // Test result
-    const actualSnap = await db.ref(`/users/${userId}/teams`).once('value');
-    const actual = actualSnap.val();
+    const resultRt = await usersModel.getUser(db, userId);
+    const resultFs = await usersModel.firestoreFindRecord(fs, userId);
+    const actualRt = (resultRt.val() || {}).teams || null;
+    const actualFs = resultFs.data() || null;
 
     // Assertions
-    expect(actual).to.deep.equal(
-      expected,
-      `synced removed property from /users/${userId}/teams by removing invalid`
-    );
+    [
+      {
+        actual: actualRt,
+        expected: final,
+        msg: `removed property from user's teams assocations`,
+      },
+      {
+        actual: actualFs,
+        expected: { ...userData, teams: final },
+        msg:
+          'updated existing firestore user by removing property users from teams',
+      },
+    ].forEach(({ actual, expected, msg }) => {
+      expect(actual).to.deep.equal(expected, msg);
+    });
   });
 
   it("should add property association to user of team that just associated its' first property", async () => {
@@ -131,33 +184,47 @@ describe('Teams | Pubsub | User Sync', () => {
     const teamId = uuid();
     const propertyId = uuid();
     const pubSubMessage = { data: Buffer.from(userId) };
-    const expected = {
+    const final = {
       [teamId]: {
         [propertyId]: true,
       },
     };
-
-    // Setup database
-    await db.ref(`/properties/${propertyId}`).set({}); // Add property /wo team
-    await db.ref(`/teams/${teamId}`).set({}); // Add team /wo property
-    await db.ref(`/users/${userId}`).set({
+    const userData = {
       teams: {
         [teamId]: true, // add user to team /wo properties
       },
-    });
-    await db.ref(`/properties/${propertyId}/team`).set(teamId); // Add property to team
+    };
+
+    // Setup database
+    await propertiesModel.realtimeUpsertRecord(db, propertyId, {
+      team: teamId,
+    }); // Add property /w team
+    await teamsModel.realtimeUpsertRecord(db, teamId, {}); // Add team /wo property
+    await usersModel.realtimeUpsertRecord(db, userId, userData);
 
     // Execute
     await test.wrap(cloudFunctions.userTeamsSync)(pubSubMessage);
 
     // Test result
-    const actualSnap = await db.ref(`/users/${userId}/teams`).once('value');
-    const actual = actualSnap.val();
+    const resultRt = await usersModel.getUser(db, userId);
+    const resultFs = await usersModel.firestoreFindRecord(fs, userId);
+    const actualRt = (resultRt.val() || {}).teams || null;
+    const actualFs = resultFs.data() || null;
 
     // Assertions
-    expect(actual).to.deep.equal(
-      expected,
-      'users team membership contains first property association'
-    );
+    [
+      {
+        actual: actualRt,
+        expected: final,
+        msg: 'user team membership contains first property association',
+      },
+      {
+        actual: actualFs,
+        expected: { ...userData, teams: final },
+        msg: 'updated existing firestore user with teams property association',
+      },
+    ].forEach(({ actual, expected, msg }) => {
+      expect(actual).to.deep.equal(expected, msg);
+    });
   });
 });

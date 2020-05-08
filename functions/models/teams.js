@@ -1,7 +1,9 @@
+const assert = require('assert');
 const modelSetup = require('./utils/model-setup');
 const adminUtils = require('../utils/firebase-admin');
 
-const LOG_PREFIX = 'models: teams:';
+const PREFIX = 'models: teams:';
+const TEAMS_DB = '/teams';
 
 module.exports = modelSetup({
   /**
@@ -26,7 +28,7 @@ module.exports = modelSetup({
         }
       );
     } catch (err) {
-      throw Error(`${LOG_PREFIX} getPropertyRelationships: ${err}`); // wrap error
+      throw Error(`${PREFIX} getPropertyRelationships: ${err}`); // wrap error
     }
 
     return propertyAndTeam;
@@ -44,5 +46,19 @@ module.exports = modelSetup({
       .orderByChild('team')
       .equalTo(teamId)
       .once('value');
+  },
+
+  /**
+   * Add/update realtime team
+   * @param  {firebaseAdmin.database} db - Realtime DB Instance
+   * @param  {String} teamId
+   * @param  {Object} data
+   * @return {Promise}
+   */
+  realtimeUpsertRecord(db, teamId, data) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(teamId && typeof teamId === 'string', 'has property id');
+    assert(data && typeof data === 'object', 'has upsert data');
+    return db.ref(`${TEAMS_DB}/${teamId}`).update(data);
   },
 });

@@ -296,7 +296,8 @@ exports.teamsSync = teams.pubsub.createSyncTeam(
 exports.userTeamsSync = teams.pubsub.createSyncUserTeam(
   'user-teams-sync',
   functions.pubsub,
-  db
+  db,
+  fs
 );
 
 exports.publishSlackNotifications = notifications.pubsub.createPublishSlack(
