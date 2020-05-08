@@ -63,6 +63,33 @@ module.exports = modelSetup({
   },
 
   /**
+   * Batch remove all users relationships
+   * to a deleted team
+   * @param  {admin.database} db
+   * @param  {String[]} userIds
+   * @param  {String} teamId
+   * @return {Promise}
+   */
+  realtimeBatchRemoveTeam(db, userIds, teamId) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(userIds && Array.isArray(userIds), 'has user ids is an array');
+    assert(
+      userIds.every(id => id && typeof id === 'string'),
+      'user ids is an array of strings'
+    );
+    assert(teamId && typeof teamId === 'string', 'has team id');
+
+    const batchRemove = {};
+
+    // Collect batch updates to users
+    userIds.forEach(userId => {
+      batchRemove[`${USERS_DB}/${userId}/teams/${teamId}`] = null;
+    });
+
+    return db.ref().update(batchRemove);
+  },
+
+  /**
    * Lookup Firestore user
    * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
    * @param  {String} userId

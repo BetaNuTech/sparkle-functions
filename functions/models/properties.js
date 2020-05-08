@@ -54,6 +54,49 @@ module.exports = modelSetup({
   },
 
   /**
+   * Get all properties belonging to a team
+   * @param  {admin.database} db
+   * @param  {String} teamId
+   * @return {Promise} - resolves {DataSnapshot} teams snapshot
+   */
+  getPropertiesByTeamId(db, teamId) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(teamId && typeof teamId === 'string', 'has team id');
+    return db
+      .ref('properties')
+      .orderByChild('team')
+      .equalTo(teamId)
+      .once('value');
+  },
+
+  /**
+   * Batch remove all property relationships
+   * to a deleted team
+   * @param  {admin.database} db
+   * @param  {String[]} propertyIds
+   * @return {Promise}
+   */
+  realtimeBatchRemoveTeam(db, propertyIds) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(
+      propertyIds && Array.isArray(propertyIds),
+      'has property ids is an array'
+    );
+    assert(
+      propertyIds.every(id => id && typeof id === 'string'),
+      'property ids is an array of strings'
+    );
+    const batchRemove = {};
+
+    // Collect all updates to properties
+    propertyIds.forEach(propertyId => {
+      batchRemove[`${PROPERTIES_DB}/${propertyId}/team`] = null;
+    });
+
+    return db.ref().update(batchRemove);
+  },
+
+  /**
    * Lookup Firestore Property
    * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
    * @param  {String} propertyId
