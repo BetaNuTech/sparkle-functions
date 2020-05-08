@@ -1,10 +1,12 @@
 const { expect } = require('chai');
 const uuid = require('../../../test-helpers/uuid');
+const teamsModel = require('../../../models/teams');
+const propertiesModel = require('../../../models/properties');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { db, test, cloudFunctions } = require('../../setup');
+const { db, fs, test, cloudFunctions } = require('../../setup');
 
 describe('Teams | Pubsub | Sync', () => {
-  afterEach(() => cleanDb(db));
+  afterEach(() => cleanDb(db, fs));
 
   it('should add all missing property associations to all teams', async () => {
     const team1Id = uuid();
@@ -13,44 +15,49 @@ describe('Teams | Pubsub | Sync', () => {
     const property1Id = uuid();
     const property2Id = uuid();
     const property3Id = uuid();
-    const expectedPayloadTeam1 = { [property1Id]: true, [property2Id]: true };
-    const expectedPayloadTeam2 = { [property3Id]: true };
+    const finalTeam1 = { [property1Id]: true, [property2Id]: true };
+    const finalTeam2 = { [property3Id]: true };
 
     // Setup database
-    await db
-      .ref(`/properties/${property1Id}`)
-      .set({ name: 'Condo', team: team1Id }); // Add property and team
-    await db
-      .ref(`/properties/${property2Id}`)
-      .set({ name: 'Tree House', team: team1Id }); // Add property 2 and team
-    await db
-      .ref(`/properties/${property3Id}`)
-      .set({ name: 'Mansion', team: team2Id }); // Add property 3 to team 2
+    await propertiesModel.realtimeUpsertRecord(db, property1Id, {
+      name: 'Test',
+      team: team1Id,
+    }); // Add property and team
+    await propertiesModel.realtimeUpsertRecord(db, property2Id, {
+      name: 'Test 2',
+      team: team1Id,
+    }); // Add property 2 and team
+    await propertiesModel.realtimeUpsertRecord(db, property3Id, {
+      name: 'Test 3',
+      team: team2Id,
+    }); // Add property 3 to team 2
 
-    await db.ref(`/teams/${team1Id}`).set({ name: 'Team1' }); // Add team
-    await db.ref(`/teams/${team2Id}`).set({ name: 'Team2' }); // Add team
-    await db.ref(`/teams/${team3Id}`).set({ name: 'Team3' }); // Regression check for team /wo properties
+    await teamsModel.realtimeUpsertRecord(db, team1Id, { name: 'Team1' }); // Add team
+    await teamsModel.realtimeUpsertRecord(db, team2Id, { name: 'Team2' }); // Add team
+    await teamsModel.realtimeUpsertRecord(db, team3Id, { name: 'Team3' }); // Regression check for team /wo properties
 
     // Execute
     await test.wrap(cloudFunctions.teamsSync)();
 
     // Test result
-    const actualTeam1 = await db
-      .ref(`/teams/${team1Id}/properties`)
-      .once('value');
-    const actualTeam2 = await db
-      .ref(`/teams/${team2Id}/properties`)
-      .once('value');
+    const team1Rt = await teamsModel.realtimeFindRecord(db, team1Id);
+    const team2Rt = await teamsModel.realtimeFindRecord(db, team2Id);
 
     // Assertions
-    expect(actualTeam1.val()).to.deep.equal(
-      expectedPayloadTeam1,
-      `synced /teams/${team1Id}/properties by adding missing`
-    );
-    expect(actualTeam2.val()).to.deep.equal(
-      expectedPayloadTeam2,
-      `synced /teams/${team2Id}/properties by adding missing`
-    );
+    [
+      {
+        actual: (team1Rt.val() || {}).properties || null,
+        expected: finalTeam1,
+        msg: "synced team one's properties",
+      },
+      {
+        actual: (team2Rt.val() || {}).properties || null,
+        expected: finalTeam2,
+        msg: "synced team two's missing properties",
+      },
+    ].forEach(({ actual, expected, msg }) => {
+      expect(actual).to.deep.equal(expected, msg);
+    });
   });
 
   it('should remove all invalid property associates to all teams', async () => {
@@ -60,11 +67,11 @@ describe('Teams | Pubsub | Sync', () => {
     const expectedPayload = { [property1Id]: true };
 
     // Setup database
-    await db
-      .ref(`/properties/${property1Id}`)
-      .set({ name: 'Condo', team: team1Id }); // Add property and team
-
-    await db.ref(`/teams/${team1Id}`).set({
+    await propertiesModel.realtimeUpsertRecord(db, property1Id, {
+      name: 'Test',
+      team: team1Id,
+    }); // Add property and team
+    await teamsModel.realtimeUpsertRecord(db, team1Id, {
       name: 'Team1',
       properties: { [property1Id]: true, [property2Id]: true },
     }); // Add team
@@ -73,35 +80,41 @@ describe('Teams | Pubsub | Sync', () => {
     await test.wrap(cloudFunctions.teamsSync)();
 
     // Test result
-    const actual = await db.ref(`/teams/${team1Id}/properties`).once('value');
+    const resulRt = await teamsModel.realtimeFindRecord(db, team1Id);
+    const actual = (resulRt.val() || {}).properties || null;
 
     // Assertions
-    expect(actual.val()).to.deep.equal(
+    expect(actual).to.deep.equal(
       expectedPayload,
-      `synced /teams/${team1Id}/properties by removing invalid`
+      'removed non-existent property from team'
     );
   });
 
   it('should remove all invalid team/properties associations when all properties have no team associations', async () => {
     const team1Id = uuid();
     const property1Id = uuid();
+    const expected = false;
 
     // Setup database
-    await db.ref(`/properties/${property1Id}`).set({ name: 'Condo' }); // Add property /wo team
-    await db
-      .ref(`/teams/${team1Id}`)
-      .set({ name: 'Team1', properties: { [property1Id]: true } }); // Add team /w property
+    await propertiesModel.realtimeUpsertRecord(db, property1Id, {
+      name: 'Test',
+    }); // Add property /wo team
+    await teamsModel.realtimeUpsertRecord(db, team1Id, {
+      name: 'Team1',
+      properties: { [property1Id]: true },
+    }); // Add team /w property
 
     // Execute
     await test.wrap(cloudFunctions.teamsSync)();
 
     // Test result
-    const actual = await db.ref(`/teams/${team1Id}/properties`).once('value');
+    const resulRt = await teamsModel.realtimeFindRecord(db, team1Id);
+    const actual = Boolean((resulRt.val() || {}).properties || null);
 
     // Assertions
-    expect(actual.exists()).to.equal(
-      false,
-      `synced /teams/${team1Id}/properties by removing invalid`
+    expect(actual).to.equal(
+      expected,
+      'removed property from team no longer associated with it'
     );
   });
 });

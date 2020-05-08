@@ -20,6 +20,8 @@ module.exports = function createSyncUserTeamHandler(
   db,
   fs
 ) {
+  assert(topic && typeof topic === 'string', 'has pubsub topic');
+  assert(Boolean(pubsub), 'has pubsub client');
   assert(db && typeof db.ref === 'function', 'has realime db');
   assert(fs && typeof fs.collection === 'function', 'has firestore db');
 

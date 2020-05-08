@@ -11,7 +11,7 @@ module.exports = modelSetup({
    * Find property by ID
    * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
    * @param  {String} propertyId
-   * @return {Promise} - resolves {DataSnapshot} deficient item snapshot
+   * @return {Promise} - resolves {DataSnapshot} snapshot
    */
   findRecord(db, propertyId) {
     assert(

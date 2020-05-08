@@ -290,7 +290,8 @@ exports.deficientItemsOverdueSync = deficientItems.pubsub.createSyncOverdue(
 exports.teamsSync = teams.pubsub.createSyncTeam(
   'teams-sync',
   functions.pubsub,
-  db
+  db,
+  fs
 );
 
 exports.userTeamsSync = teams.pubsub.createSyncUserTeam(
