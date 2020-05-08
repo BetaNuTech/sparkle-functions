@@ -1,3 +1,4 @@
+const assert = require('assert');
 const log = require('../../utils/logger');
 const usersModel = require('../../models/users');
 const teamsModel = require('../../models/teams');
@@ -9,10 +10,19 @@ const PREFIX = 'teams: pubsub: user-team-sync:';
  * source of truth
  * @param  {string} topic
  * @param  {functions.pubsub} pubsub
- * @param  {firebaseadmin.database} db
+ * @param  {admin.database} db
+ * @param  {admin.firestore} fs
  * @return {functions.cloudfunction}
  */
-module.exports = function createSyncUserTeamHandler(topic = '', pubsub, db) {
+module.exports = function createSyncUserTeamHandler(
+  topic = '',
+  pubsub,
+  db,
+  fs
+) {
+  assert(db && typeof db.ref === 'function', 'has realime db');
+  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+
   return pubsub
     .topic(topic)
     .onPublish(async function syncUserTeamHandler(message /* , context */) {
@@ -62,16 +72,25 @@ module.exports = function createSyncUserTeamHandler(topic = '', pubsub, db) {
           {}
         );
 
-        // Replace users teams with current
+        // Replace realtime users teams with current
         try {
           await usersModel.realtimeUpsertRecord(db, userId, {
             teams: usersUpdatedTeams,
           });
         } catch (err) {
-          // wrap error
-          throw Error(
-            `${PREFIX} ${topic}: error syncing user "${userId}" teams | ${err}`
-          );
+          log.error(`${PREFIX} error syncing user "${userId}" teams | ${err}`);
+          throw err;
+        }
+
+        // Upsert firestore users with latest data
+        try {
+          await usersModel.firestoreUpsertRecord(fs, userId, {
+            ...currentUser,
+            teams: usersUpdatedTeams,
+          });
+        } catch (err) {
+          log.error(`${PREFIX} error syncing user "${userId}" teams | ${err}`);
+          throw err;
         }
       }
     });
