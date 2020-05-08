@@ -2,6 +2,7 @@ const assert = require('assert');
 const modelSetup = require('./utils/model-setup');
 
 const PREFIX = 'models: user:';
+const USERS_DB = '/users';
 
 module.exports = modelSetup({
   /**
@@ -13,7 +14,7 @@ module.exports = modelSetup({
   async findByTeam(db, teamId) {
     assert(teamId && typeof teamId === 'string', `${PREFIX} has team id`);
 
-    const allUsers = await db.ref('/users').once('value');
+    const allUsers = await db.ref(USERS_DB).once('value');
     const allUserVals = allUsers.val() || {};
     const userIds = Object.keys(allUserVals);
 
@@ -34,7 +35,7 @@ module.exports = modelSetup({
    */
   getUser(db, userId) {
     assert(userId && typeof userId === 'string', `${PREFIX} has user id`);
-    return db.ref(`/users/${userId}`).once('value');
+    return db.ref(`${USERS_DB}/${userId}`).once('value');
   },
 
   /**
@@ -43,6 +44,19 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {DataSnapshot}
    */
   findAll(db) {
-    return db.ref('/users').once('value');
+    return db.ref(USERS_DB).once('value');
+  },
+
+  /**
+   * Add/update realtime user
+   * @param  {firebaseAdmin.database} db - Realtime DB Instance
+   * @param  {String} userId
+   * @param  {Object} data
+   * @return {Promise}
+   */
+  realtimeUpsertRecord(db, userId, data) {
+    assert(userId && typeof userId === 'string', `${PREFIX} has user id`);
+    assert(data && typeof data === 'object', `${PREFIX} has upsert data`);
+    return db.ref(`${USERS_DB}/${userId}`).update(data);
   },
 });

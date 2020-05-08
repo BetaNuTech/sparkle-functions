@@ -1,4 +1,5 @@
 const log = require('../../utils/logger');
+const usersModel = require('../../models/users');
 const teamsModel = require('../../models/teams');
 
 const PREFIX = 'teams: pubsub: user-team-sync:';
@@ -15,7 +16,6 @@ module.exports = function createSyncUserTeamHandler(topic = '', pubsub, db) {
   return pubsub
     .topic(topic)
     .onPublish(async function syncUserTeamHandler(message /* , context */) {
-      const updates = {};
       let userId = null;
       let propertyAndTeam = {};
 
@@ -43,7 +43,7 @@ module.exports = function createSyncUserTeamHandler(topic = '', pubsub, db) {
         throw err;
       }
 
-      const currentUserSnap = await db.ref(`/users/${userId}`).once('value');
+      const currentUserSnap = await usersModel.getUser(db, userId);
       const currentUser = currentUserSnap.val();
 
       if (currentUser.teams) {
@@ -62,9 +62,11 @@ module.exports = function createSyncUserTeamHandler(topic = '', pubsub, db) {
           {}
         );
 
+        // Replace users teams with current
         try {
-          await db.ref(`/users/${userId}/teams`).set(usersUpdatedTeams);
-          updates[`/users/${userId}/teams`] = 'synced';
+          await usersModel.realtimeUpsertRecord(db, userId, {
+            teams: usersUpdatedTeams,
+          });
         } catch (err) {
           // wrap error
           throw Error(
@@ -72,7 +74,5 @@ module.exports = function createSyncUserTeamHandler(topic = '', pubsub, db) {
           );
         }
       }
-
-      return updates;
     });
 };
