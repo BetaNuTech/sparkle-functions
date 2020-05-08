@@ -34,19 +34,56 @@ module.exports = function createSyncTeamHandler(topic = '', pubsub, db, fs) {
     try {
       // loop through all teams and async up with the properties (source of truth)
       await adminUtils.forEachChild(db, '/teams', async function teamWrite(
-        teamId
+        teamId,
+        team
       ) {
         const currentTeamsActualProperties = propertyAndTeam[teamId];
         if (currentTeamsActualProperties) {
-          // Upsert team with properties
-          await teamsModel.realtimeUpsertRecord(db, teamId, {
-            properties: currentTeamsActualProperties,
-          });
+          // Upsert realtime team with properties
+          try {
+            await teamsModel.realtimeUpsertRecord(db, teamId, {
+              properties: currentTeamsActualProperties,
+            });
+          } catch (err) {
+            throw Error(
+              `${PREFIX} realtime team properties update failed: ${err}`
+            ); // wrap
+          }
+
+          // Upsert firestore team with latest data
+          try {
+            await teamsModel.firestoreUpsertRecord(fs, teamId, {
+              ...team,
+              properties: currentTeamsActualProperties,
+            });
+          } catch (err) {
+            throw Error(
+              `${PREFIX} firestore team properties update failed: ${err}`
+            ); // wrap
+          }
         } else {
-          // Ensure teams properties does not exist
-          await teamsModel.realtimeUpsertRecord(db, teamId, {
-            properties: null,
-          });
+          // Ensure teams properties removed
+          try {
+            await teamsModel.realtimeUpsertRecord(db, teamId, {
+              properties: null,
+            });
+          } catch (err) {
+            throw Error(
+              `${PREFIX} realtime team properties remove failed: ${err}`
+            ); // wrap
+          }
+
+          // Upsert & ensure firestore teams properties removed
+          try {
+            await teamsModel.firestoreUpsertRecord(fs, teamId, {
+              ...team,
+              properties: null,
+            });
+          } catch (err) {
+            throw Error(
+              `${PREFIX} firestore team properties remove failed: ${err}`
+            ); // wrap
+          }
         }
       });
     } catch (err) {
