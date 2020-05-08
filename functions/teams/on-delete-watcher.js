@@ -52,12 +52,11 @@ module.exports = function teamDeleteHandler(db) {
 
     if (userIds) {
       try {
-        await Promise.all(
-          userIds.map(userId => {
-            updates[`/users/${userId}/teams/${teamId}`] = 'removed';
-            return db.ref(`/users/${userId}/teams/${teamId}`).remove();
-          })
-        );
+        const batchDelete = {};
+        userIds.forEach(userId => {
+          batchDelete[`/users/${userId}/teams/${teamId}`] = null;
+        });
+        await db.ref().update(batchDelete);
       } catch (err) {
         log.error(`${PREFIX} error when trying to remove users' teams ${err}`);
         throw err;

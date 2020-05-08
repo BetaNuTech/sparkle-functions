@@ -1,9 +1,9 @@
 const { expect } = require('chai');
-const uuid = require('../../test-helpers/uuid');
-const { cleanDb } = require('../../test-helpers/firebase');
-const { db, test, cloudFunctions } = require('../setup');
+const uuid = require('../../../test-helpers/uuid');
+const { cleanDb } = require('../../../test-helpers/firebase');
+const { db, test, cloudFunctions } = require('../../setup');
 
-describe('Teams Sync', () => {
+describe('Teams | Pubsub | Sync', () => {
   afterEach(() => cleanDb(db));
 
   it('should add all missing property associations to all teams', async () => {
