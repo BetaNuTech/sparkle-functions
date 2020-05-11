@@ -1,10 +1,13 @@
 const { expect } = require('chai');
 const uuid = require('../../../test-helpers/uuid');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { db, test, cloudFunctions } = require('../../setup');
+const { db, fs, test, cloudFunctions } = require('../../setup');
+const propertiesModel = require('../../../models/properties');
+const teamsModel = require('../../../models/teams');
+const usersModel = require('../../../models/users');
 
 describe('Teams | Delete Handler', () => {
-  afterEach(() => cleanDb(db));
+  afterEach(() => cleanDb(db, fs));
 
   it("should disassociate all team's associated properties", async () => {
     const team1Id = uuid();
@@ -13,11 +16,26 @@ describe('Teams | Delete Handler', () => {
     const property2Id = uuid();
     const property3Id = uuid();
     const property4Id = uuid();
-
-    const expectedProperty1Payload = { name: 'Tree House' };
-    const expectedProperty2Payload = { name: 'Mansion' };
+    const property1Data = {
+      name: 'Prop 1',
+      team: team1Id,
+    };
+    const property2Data = {
+      name: 'Prop 2',
+      team: team1Id,
+    };
+    const team1Data = {
+      name: 'Team 1',
+      properties: { [property1Id]: true, [property2Id]: true },
+    };
+    const team2Data = {
+      name: 'Team 2',
+      properties: { [property3Id]: true, [property4Id]: true },
+    };
+    const expectedProperty1Payload = { name: property1Data.name };
+    const expectedProperty2Payload = { name: property2Data.name };
     const expectedTeam2Payload = {
-      name: 'Team2',
+      name: team2Data.name,
       properties: {
         [property3Id]: true,
         [property4Id]: true,
@@ -25,54 +43,81 @@ describe('Teams | Delete Handler', () => {
     };
 
     // Setup database
-    await db
-      .ref(`/properties/${property1Id}`)
-      .set({ name: 'Tree House', team: team1Id }); // Add property with team 1
-    await db
-      .ref(`/properties/${property2Id}`)
-      .set({ name: 'Mansion', team: team1Id }); // Add property with team 1
+    await propertiesModel.realtimeUpsertRecord(db, property1Id, property1Data); // Add property with team 1
+    await propertiesModel.firestoreUpsertRecord(fs, property1Id, property1Data);
+    await propertiesModel.realtimeUpsertRecord(db, property2Id, property2Data); // Add property with team 1
+    await propertiesModel.firestoreUpsertRecord(fs, property2Id, property2Data);
+    await teamsModel.realtimeUpsertRecord(db, team1Id, team1Data); // Add team
+    await teamsModel.firestoreUpsertRecord(fs, team1Id, team1Data); // Add team
+    await teamsModel.realtimeUpsertRecord(db, team2Id, team2Data); // Add team
+    await teamsModel.firestoreUpsertRecord(fs, team2Id, team2Data); // Add team
 
-    await db.ref(`/teams/${team1Id}`).set({
-      name: 'Team1',
-      properties: { [property1Id]: true, [property2Id]: true },
-    }); // Add team
-    await db.ref(`/teams/${team2Id}`).set({
-      name: 'Team2',
-      properties: { [property3Id]: true, [property4Id]: true },
-    }); // Add team
-
-    const teamSnap = await db.ref(`/teams/${team1Id}`).once('value'); // Get team snap before removal
-
-    await db.ref(`/teams/${team1Id}`).remove(); // remove team
+    const teamSnap = await teamsModel.realtimeFindRecord(db, team1Id); // Get team snap before removal
+    await teamsModel.realtimeRemoveRecord(db, team1Id); // remove team
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.teamDelete);
     await wrapped(teamSnap, { params: { teamId: team1Id } });
 
     // Test result
-    const actualTeam1 = await db.ref(`/teams/${team1Id}`).once('value');
-    const actualTeam2 = await db.ref(`/teams/${team2Id}`).once('value');
-    const actualProperty1 = await db
-      .ref(`/properties/${property1Id}`)
-      .once('value');
-    const actualProperty2 = await db
-      .ref(`/properties/${property2Id}`)
-      .once('value');
+    const team1Rt = await teamsModel.realtimeFindRecord(db, team1Id);
+    const team1Fs = await teamsModel.firestoreFindRecord(fs, team1Id);
+    const team2Rt = await teamsModel.realtimeFindRecord(db, team2Id);
+    const team2Fs = await teamsModel.firestoreFindRecord(fs, team2Id);
+    const prop1Rt = await propertiesModel.findRecord(db, property1Id);
+    const prop1Fs = await propertiesModel.firestoreFindRecord(fs, property1Id);
+    const prop2Rt = await propertiesModel.findRecord(db, property2Id);
+    const prop2Fs = await propertiesModel.firestoreFindRecord(fs, property2Id);
 
     // Assertions
-    expect(actualTeam1.exists()).to.equal(false, `removed /teams/${team1Id}`);
-    expect(actualTeam2.val()).to.deep.equal(
-      expectedTeam2Payload,
-      `has not changed /teams/${team2Id}`
-    );
-    expect(actualProperty1.val()).to.deep.equal(
-      expectedProperty1Payload,
-      `removed /properties/${property1Id}/team`
-    );
-    expect(actualProperty2.val()).to.deep.equal(
-      expectedProperty2Payload,
-      `removed /properties/${property2Id}/team`
-    );
+    [
+      {
+        actual: team1Rt.exists(),
+        expected: false,
+        msg: 'removed team 1',
+      },
+      {
+        actual: team1Fs.exists,
+        expected: false,
+        msg: 'removed firestore team 1',
+      },
+      {
+        actual: team2Rt.val(),
+        expected: expectedTeam2Payload,
+        msg: 'team 2 is unchanged',
+      },
+      {
+        actual: team2Fs.data(),
+        expected: expectedTeam2Payload,
+        msg: 'firestore team 2 is unchanged',
+      },
+      {
+        actual: prop1Rt.val(),
+        expected: expectedProperty1Payload,
+        msg: 'removed property 1 team association',
+      },
+      {
+        actual: prop1Fs.data(),
+        expected: expectedProperty1Payload,
+        msg: 'removed firestore property 1 team association',
+      },
+      {
+        actual: prop2Rt.val(),
+        expected: expectedProperty2Payload,
+        msg: 'removed property 2 team association',
+      },
+      {
+        actual: prop2Fs.data(),
+        expected: expectedProperty2Payload,
+        msg: 'removed firestore property 2 team association',
+      },
+    ].forEach(({ actual, expected, msg }) => {
+      if (typeof expected === 'boolean') {
+        expect(actual).to.equal(expected, msg);
+      } else {
+        expect(actual).to.deep.equal(expected, msg);
+      }
+    });
   });
 
   it("should disassociate all team's users", async () => {
@@ -82,69 +127,130 @@ describe('Teams | Delete Handler', () => {
     const user2Id = uuid();
     const property1Id = uuid();
     const property2Id = uuid();
-
+    const team1Data = { name: 'Team 1' };
+    const team2Data = { name: 'Team 2' };
+    const user1Data = {
+      firstName: 'User 1',
+      teams: { [team1Id]: { [property2Id]: true } },
+    };
+    const user2Data = {
+      firstName: 'User 2',
+      teams: {
+        [team1Id]: { [property2Id]: true },
+        [team2Id]: { [property1Id]: true },
+      },
+    };
     const expectedTeam2Payload = {
-      name: 'Team2',
+      name: team2Data.name,
     };
-
     const expectedUser1Payload = {
-      firstName: 'Fred',
-      lastName: 'Flintstone',
+      firstName: user1Data.firstName,
     };
-
     const expectedUser2Payload = {
-      firstName: 'Barney',
-      lastName: 'Rubble',
+      firstName: user2Data.firstName,
       teams: {
         [team2Id]: { [property1Id]: true },
       },
     };
 
     // Setup database
-    await db.ref(`/teams/${team1Id}`).set({ name: 'Team1' }); // Add team
-    await db.ref(`/teams/${team2Id}`).set({ name: 'Team2' }); // Add team
-    await db.ref(`/users/${user1Id}`).set({
-      firstName: 'Fred',
-      lastName: 'Flintstone',
-      teams: { [team1Id]: { [property2Id]: true } },
-    }); // Add user 1 with teamID
+    await teamsModel.realtimeUpsertRecord(db, team1Id, team1Data); // Add team
+    await teamsModel.firestoreUpsertRecord(fs, team1Id, team1Data); // Add team
+    await teamsModel.realtimeUpsertRecord(db, team2Id, team2Data); // Add team
+    await teamsModel.firestoreUpsertRecord(fs, team2Id, team2Data); // Add team
+    await usersModel.realtimeUpsertRecord(db, user1Id, user1Data); // Add user 1 with teamID
+    await usersModel.firestoreUpsertRecord(fs, user1Id, user1Data); // Add user 1 with teamID
+    await usersModel.realtimeUpsertRecord(db, user2Id, user2Data); // Add user 2 with teamID
+    await usersModel.firestoreUpsertRecord(fs, user2Id, user2Data); // Add user 2 with teamID
 
-    await db.ref(`/users/${user2Id}`).set({
-      firstName: 'Barney',
-      lastName: 'Rubble',
-      teams: {
-        [team1Id]: { [property2Id]: true },
-        [team2Id]: { [property1Id]: true },
-      },
-    }); // Add user 2 with teamID
-
-    const teamSnap = await db.ref(`/teams/${team1Id}`).once('value'); // Get team snap before removal
-
-    await db.ref(`/teams/${team1Id}`).remove(); // remove team
+    const teamSnap = await teamsModel.realtimeFindRecord(db, team1Id); // Get team snap before removal
+    await teamsModel.realtimeRemoveRecord(db, team1Id); // remove team
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.teamDelete);
     await wrapped(teamSnap, { params: { teamId: team1Id } });
 
     // Test result
-    const actualTeam1 = await db.ref(`/teams/${team1Id}`).once('value');
-    const actualTeam2 = await db.ref(`/teams/${team2Id}`).once('value');
-    const actualUser1 = await db.ref(`/users/${user1Id}`).once('value');
-    const actualUser2 = await db.ref(`/users/${user2Id}`).once('value');
+    const team1Rt = await teamsModel.realtimeFindRecord(db, team1Id);
+    const team1Fs = await teamsModel.firestoreFindRecord(fs, team1Id);
+    const team2Rt = await teamsModel.realtimeFindRecord(db, team2Id);
+    const team2Fs = await teamsModel.firestoreFindRecord(fs, team2Id);
+    const user1Rt = await usersModel.getUser(db, user1Id);
+    const user1Fs = await usersModel.firestoreFindRecord(fs, user1Id);
+    const user2Rt = await usersModel.getUser(db, user2Id);
+    const user2Fs = await usersModel.firestoreFindRecord(fs, user2Id);
 
     // Assertions
-    expect(actualTeam1.exists()).to.equal(false, `removed /teams/${team1Id}`);
-    expect(actualTeam2.val()).to.deep.equal(
-      expectedTeam2Payload,
-      `has not changed /teams/${team2Id}`
-    );
-    expect(actualUser1.val()).to.deep.equal(
-      expectedUser1Payload,
-      `removed /users/${user1Id}/teams/${team1Id}`
-    );
-    expect(actualUser2.val()).to.deep.equal(
-      expectedUser2Payload,
-      `removed /users/${user2Id}/teams/${team1Id}`
-    );
+    [
+      {
+        actual: team1Rt.exists(),
+        expected: false,
+        msg: 'removed team 1',
+      },
+      {
+        actual: team1Fs.exists,
+        expected: false,
+        msg: 'removed firestore team 1',
+      },
+      {
+        actual: team2Rt.val(),
+        expected: expectedTeam2Payload,
+        msg: 'team 2 unchanged',
+      },
+      {
+        actual: team2Fs.data(),
+        expected: expectedTeam2Payload,
+        msg: 'firestore team 2 unchanged',
+      },
+      {
+        actual: user1Rt.val(),
+        expected: expectedUser1Payload,
+        msg: 'removed user 1 team association',
+      },
+      {
+        actual: user1Fs.data(),
+        expected: { ...expectedUser1Payload, teams: {} }, // Allow empty teams
+        msg: 'removed firestore user 1 team association',
+      },
+      {
+        actual: user2Rt.val(),
+        expected: expectedUser2Payload,
+        msg: 'removed user 2 team association',
+      },
+      {
+        actual: user2Fs.data(),
+        expected: expectedUser2Payload,
+        msg: 'removed firestore user 2 team association',
+      },
+    ].forEach(({ actual, expected, msg }) => {
+      if (typeof expected === 'boolean') {
+        expect(actual).to.equal(expected, msg);
+      } else {
+        expect(actual).to.deep.equal(expected, msg);
+      }
+    });
+  });
+
+  it('should delete the firestore team', async () => {
+    const teamId = uuid();
+    const expected = false;
+    const teamData = { name: 'Team 1' };
+
+    await teamsModel.realtimeUpsertRecord(db, teamId, teamData); // Add team
+    await teamsModel.firestoreUpsertRecord(fs, teamId, teamData); // Add team
+
+    const teamSnap = await teamsModel.realtimeFindRecord(db, teamId); // Get team snap before removal
+    await teamsModel.realtimeRemoveRecord(db, teamId); // remove team
+
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.teamDelete);
+    await wrapped(teamSnap, { params: { teamId } });
+
+    // Results
+    const teamDoc = await teamsModel.firestoreFindRecord(fs, teamId);
+    const actual = teamDoc.exists;
+
+    // Assertions
+    expect(actual).to.equal(expected);
   });
 });

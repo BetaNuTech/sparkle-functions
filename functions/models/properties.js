@@ -29,11 +29,7 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   realtimeRemoveRecord(db, propertyId) {
-    assert(
-      propertyId && typeof propertyId === 'string',
-      `${PREFIX} has property id`
-    );
-
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
     return db.ref(`${PROPERTIES_DB}/${propertyId}`).remove();
   },
 
@@ -94,6 +90,36 @@ module.exports = modelSetup({
     });
 
     return db.ref().update(batchRemove);
+  },
+
+  /**
+   * Batch remove all firestore property
+   * relationships to a deleted team
+   * @param  {admin.firestore} fs
+   * @param  {String[]} propertyIds
+   * @return {Promise}
+   */
+  firestoreBatchRemoveTeam(fs, propertyIds) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(
+      propertyIds && Array.isArray(propertyIds),
+      'has property ids is an array'
+    );
+    assert(
+      propertyIds.every(id => id && typeof id === 'string'),
+      'property ids is an array of strings'
+    );
+
+    const batch = fs.batch();
+    const collection = fs.collection(PROPERTY_COLLECTION);
+
+    // Remove each properties team
+    propertyIds.forEach(id => {
+      const propertyDoc = collection.doc(id);
+      batch.update(propertyDoc, { team: FieldValue.delete() });
+    });
+
+    return batch.commit();
   },
 
   /**
@@ -185,10 +211,7 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   firestoreRemoveRecord(fs, propertyId) {
-    assert(
-      propertyId && typeof propertyId === 'string',
-      `${PREFIX} has property id`
-    );
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
     return fs
       .collection(PROPERTY_COLLECTION)
       .doc(propertyId)
