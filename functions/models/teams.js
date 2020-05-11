@@ -50,6 +50,18 @@ module.exports = modelSetup({
   },
 
   /**
+   * Remove team by ID
+   * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+   * @param  {String} teamId
+   * @return {Promise}
+   */
+  realtimeRemoveRecord(db, teamId) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(teamId && typeof teamId === 'string', 'has team id');
+    return db.ref(`${TEAMS_DB}/${teamId}`).remove();
+  },
+
+  /**
    * Add/update realtime team
    * @param  {firebaseAdmin.database} db - Realtime DB Instance
    * @param  {String} teamId
@@ -128,5 +140,20 @@ module.exports = modelSetup({
     }
 
     return docRef;
+  },
+
+  /**
+   * Remove Firestore Team
+   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {String} teamId
+   * @return {Promise}
+   */
+  firestoreRemoveRecord(fs, teamId) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(teamId && typeof teamId === 'string', 'has team id');
+    return fs
+      .collection(TEAMS_COLLECTION)
+      .doc(teamId)
+      .delete();
   },
 });

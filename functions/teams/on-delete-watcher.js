@@ -1,6 +1,7 @@
 const assert = require('assert');
 const log = require('../utils/logger');
 const usersModel = require('../models/users');
+const teamsModel = require('../models/teams');
 const propertiesModel = require('../models/properties');
 
 const PREFIX = 'teams: team-delete:';
@@ -24,6 +25,14 @@ module.exports = function teamDeleteHandler(db, fs) {
 
     log.info(`${PREFIX} team deleted: ${teamId}`);
 
+    // Remove firestore team
+    try {
+      await teamsModel.firestoreRemoveRecord(fs, teamId);
+    } catch (err) {
+      log.error(`${PREFIX} error when trying to remove firestore team: ${err}`);
+      throw err;
+    }
+
     const allPropertiesAffectedSnap = await propertiesModel.getPropertiesByTeamId(
       db,
       teamId
@@ -36,11 +45,21 @@ module.exports = function teamDeleteHandler(db, fs) {
     if (properties) {
       const propertyIds = Object.keys(properties);
 
+      // Cleanup realtime properties
       try {
         await propertiesModel.realtimeBatchRemoveTeam(db, propertyIds);
       } catch (err) {
         log.error(
-          `${PREFIX} error when trying to remove properties' team ${err}`
+          `${PREFIX} error when trying to remove properties' team | ${err}`
+        );
+      }
+
+      // Cleanup firestore properties
+      try {
+        await propertiesModel.firestoreBatchRemoveTeam(fs, propertyIds);
+      } catch (err) {
+        log.error(
+          `${PREFIX} error when trying to remove firestore properties' team | ${err}`
         );
       }
     }
@@ -49,10 +68,23 @@ module.exports = function teamDeleteHandler(db, fs) {
     const userIds = usersInRemovedTeam.length > 0 ? usersInRemovedTeam : null;
 
     if (userIds) {
+      // Cleanup realtime users
       try {
         usersModel.realtimeBatchRemoveTeam(db, userIds, teamId);
       } catch (err) {
-        log.error(`${PREFIX} error when trying to remove users' teams ${err}`);
+        log.error(
+          `${PREFIX} error when trying to remove users' teams | ${err}`
+        );
+        throw err;
+      }
+
+      // Cleanup firestore users
+      try {
+        usersModel.firestoreBatchRemoveTeam(fs, userIds, teamId);
+      } catch (err) {
+        log.error(
+          `${PREFIX} error when trying to remove firestore users' teams | ${err}`
+        );
         throw err;
       }
     }

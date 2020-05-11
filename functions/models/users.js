@@ -90,6 +90,35 @@ module.exports = modelSetup({
   },
 
   /**
+   * Batch remove all firestore users
+   * relationships to a deleted team
+   * @param  {admin.database} db
+   * @param  {String[]} userIds
+   * @param  {String} teamId
+   * @return {Promise}
+   */
+  firestoreBatchRemoveTeam(fs, userIds, teamId) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(userIds && Array.isArray(userIds), 'has user ids is an array');
+    assert(
+      userIds.every(id => id && typeof id === 'string'),
+      'user ids is an array of strings'
+    );
+    assert(teamId && typeof teamId === 'string', 'has team id');
+
+    const batch = fs.batch();
+    const collection = fs.collection(USERS_COLLECTION);
+
+    // Remove each users team
+    userIds.forEach(id => {
+      const userDoc = collection.doc(id);
+      batch.update(userDoc, { [`teams.${teamId}`]: FieldValue.delete() });
+    });
+
+    return batch.commit();
+  },
+
+  /**
    * Lookup Firestore user
    * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
    * @param  {String} userId
