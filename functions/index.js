@@ -135,6 +135,11 @@ exports.propertyTeamWrite = functions.database
     properties.createOnWriteTeamsWatcher(db, pubsubClient, 'user-teams-sync')
   );
 
+// Teams on write
+exports.teamWrite = functions.database
+  .ref('/teams/{teamId}')
+  .onWrite(teams.onWrite(fs));
+
 // Users teams onWrite
 exports.userTeamWrite = functions.database
   .ref('/users/{userId}/teams/{teamId}')
