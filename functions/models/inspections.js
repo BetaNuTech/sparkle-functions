@@ -650,40 +650,18 @@ module.exports = modelSetup({
     batch.update(inspectionDoc, { property: destPropertyId });
 
     // Remove inspection from source property
-    // TODO: Make property inspections array
-    //       and add to batch update
-    try {
-      await propertiesRef.doc(srcPropertyId).set(
-        {
-          inspections: {
-            [inspectionId]: FieldValue.delete(),
-          },
-        },
-        { merge: true }
-      );
-    } catch (err) {
-      throw Error(
-        `${PREFIX} firestoreReassignProperty: failed to update source property: ${err}`
-      );
-    }
+    batch.update(
+      propertiesRef.doc(srcPropertyId),
+      { [`inspections.${inspectionId}`]: FieldValue.delete() },
+      { merge: true }
+    );
 
     // Add inspection to destination property
-    // TODO: Make property inspections array
-    //       and add to batch update
-    try {
-      await propertiesRef.doc(destPropertyId).set(
-        {
-          inspections: {
-            [inspectionId]: true,
-          },
-        },
-        { merge: true }
-      );
-    } catch (err) {
-      throw Error(
-        `${PREFIX} firestoreReassignProperty: failed to update dest property: ${err}`
-      );
-    }
+    batch.update(
+      propertiesRef.doc(destPropertyId),
+      { [`inspections.${inspectionId}`]: true },
+      { merge: true }
+    );
 
     let deficientItemSnap = null;
 
