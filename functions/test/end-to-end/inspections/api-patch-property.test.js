@@ -7,6 +7,7 @@ const uuid = require('../../../test-helpers/uuid');
 const { cleanDb } = require('../../../test-helpers/firebase');
 const { db, fs } = require('../../setup');
 const mocking = require('../../../test-helpers/mocking');
+const archiveModel = require('../../../models/_internal/archive');
 const deficientItemsModel = require('../../../models/deficient-items');
 const inspectionsModel = require('../../../models/inspections');
 const propertiesModel = require('../../../models/properties');
@@ -341,22 +342,32 @@ describe('Inspections | API | Patch Property', () => {
     );
   });
 
-  it("successfully reassigns an inspection's realtime deficient items under new property", async () => {
+  it('reassigns active deficient items under new property', async () => {
     // setup database
-    await db.ref(PROPERTY_PATH).set(PROPERTY_DATA);
+    await propertiesModel.realtimeUpsertRecord(db, PROPERTY_ID, PROPERTY_DATA);
     await propertiesModel.firestoreUpsertRecord(fs, PROPERTY_ID, PROPERTY_DATA);
-    await db.ref(DEST_PROPERTY_PATH).set(DEST_PROPERTY_DATA);
+    await propertiesModel.realtimeUpsertRecord(
+      db,
+      DEST_PROPERTY_ID,
+      DEST_PROPERTY_DATA
+    );
     await propertiesModel.firestoreUpsertRecord(
       fs,
       DEST_PROPERTY_ID,
       DEST_PROPERTY_DATA
     );
-    await db.ref(INSPECTION_PATH).set(INSPECTION_DATA);
+    await inspectionsModel.realtimeUpsertRecord(
+      db,
+      INSPECTION_ID,
+      INSPECTION_DATA
+    );
     await inspectionsModel.firestoreUpsertRecord(
       fs,
       INSPECTION_ID,
       INSPECTION_DATA
     );
+
+    // Stup active DI database
     const diOne = await deficientItemsModel.realtimeCreateRecord(
       db,
       PROPERTY_ID,
@@ -459,6 +470,137 @@ describe('Inspections | API | Patch Property', () => {
         actual: diTwoDoc.data().property,
         expected: DEST_PROPERTY_ID,
         msg: "reassiged inspection's second firestore DI to new property",
+      },
+    ].forEach(({ actual, expected, msg }) => {
+      if (!expected) {
+        expect(actual).to.equal(expected, msg);
+      } else {
+        expect(actual).to.deep.equal(expected, msg);
+      }
+    });
+  });
+
+  it('reassigns archived deficient items under new property', async () => {
+    const diOneId = uuid();
+    const diTwoId = uuid();
+
+    // setup database
+    await propertiesModel.realtimeUpsertRecord(db, PROPERTY_ID, PROPERTY_DATA);
+    await propertiesModel.firestoreUpsertRecord(fs, PROPERTY_ID, PROPERTY_DATA);
+    await propertiesModel.realtimeUpsertRecord(
+      db,
+      DEST_PROPERTY_ID,
+      DEST_PROPERTY_DATA
+    );
+    await propertiesModel.firestoreUpsertRecord(
+      fs,
+      DEST_PROPERTY_ID,
+      DEST_PROPERTY_DATA
+    );
+    await inspectionsModel.realtimeUpsertRecord(
+      db,
+      INSPECTION_ID,
+      INSPECTION_DATA
+    );
+    await inspectionsModel.firestoreUpsertRecord(
+      fs,
+      INSPECTION_ID,
+      INSPECTION_DATA
+    );
+
+    // Stup archive DI database
+    await archiveModel.deficientItem.realtimeCreateRecord(
+      db,
+      PROPERTY_ID,
+      diOneId,
+      DEFICIENT_ITEM_ONE_DATA
+    );
+    await archiveModel.deficientItem.realtimeCreateRecord(
+      db,
+      PROPERTY_ID,
+      diTwoId,
+      DEFICIENT_ITEM_TWO_DATA
+    );
+    await archiveModel.deficientItem.firestoreCreateRecord(fs, diOneId, {
+      ...DEFICIENT_ITEM_ONE_DATA,
+      property: PROPERTY_ID,
+    });
+    await archiveModel.deficientItem.firestoreCreateRecord(fs, diTwoId, {
+      ...DEFICIENT_ITEM_TWO_DATA,
+      property: PROPERTY_ID,
+    });
+
+    // Execute
+    const app = createApp();
+    await request(app)
+      .patch(`/t/${INSPECTION_ID}`)
+      .send({ property: DEST_PROPERTY_ID })
+      .expect('Content-Type', /json/)
+      .expect(201);
+
+    // Get Results
+    const oldDiOneSnap = await archiveModel.deficientItem.findRecord(
+      db,
+      PROPERTY_ID,
+      diOneId
+    );
+    const oldDiTwoSnap = await archiveModel.deficientItem.findRecord(
+      db,
+      PROPERTY_ID,
+      diTwoId
+    );
+    const newDiOneSnap = await archiveModel.deficientItem.findRecord(
+      db,
+      DEST_PROPERTY_ID,
+      diOneId
+    );
+    const newDiTwoSnap = await archiveModel.deficientItem.findRecord(
+      db,
+      DEST_PROPERTY_ID,
+      diTwoId
+    );
+    const diOneDoc = await archiveModel.deficientItem.firestoreFindRecord(
+      fs,
+      diOneId
+    );
+    const diTwoDoc = await archiveModel.deficientItem.firestoreFindRecord(
+      fs,
+      diTwoId
+    );
+
+    // Assertions
+    [
+      {
+        actual: oldDiOneSnap.val(),
+        expected: null,
+        msg: 'removed first archive DI from old property',
+      },
+      {
+        actual: oldDiTwoSnap.val(),
+        expected: null,
+        msg: 'removed second archive DI from old property',
+      },
+      {
+        actual: newDiOneSnap.val(),
+        expected: DEFICIENT_ITEM_ONE_DATA,
+        msg: "reassiged inspection's first archive DI to new property",
+      },
+      {
+        actual: newDiTwoSnap.val(),
+        expected: DEFICIENT_ITEM_TWO_DATA,
+        msg: "reassiged inspection's second archive DI to new property",
+      },
+      {
+        actual: diOneDoc.data().property,
+        expected: DEST_PROPERTY_ID,
+        msg:
+          "reassiged inspection's first archive firestore DI to new property",
+      },
+      {
+        actual: diTwoDoc.data().property,
+        expected: DEST_PROPERTY_ID,
+        msg:
+          "reassiged inspection's second archive firestore DI to new property",
       },
     ].forEach(({ actual, expected, msg }) => {
       if (!expected) {
