@@ -19,13 +19,11 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {DataSnapshot} deficient item snapshot
    */
   find(db, propertyId, deficientItemId) {
-    assert(
-      propertyId && typeof propertyId === 'string',
-      `${PREFIX} has property id`
-    );
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
-      `${PREFIX} has deficient item id`
+      'has deficient item id'
     );
 
     return db
@@ -40,6 +38,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {DeficientItemsSnapshot[]}
    */
   async findAllByInspection(db, inspectionId) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
@@ -71,6 +70,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {DataSnapshot}
    */
   findAllByProperty(db, propertyId) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     const path = `${DATABASE_PATH}/${propertyId}`;
     return db.ref(path).once('value');
@@ -85,11 +85,13 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {Object} JSON of path and update
    */
   async createRecord(db, fs, propertyId, recordData) {
-    assert(Boolean(fs), 'has firestore db');
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(recordData && typeof recordData === 'object', 'has record data');
     assert(Boolean(recordData.inspection), 'has inspection reference');
     assert(Boolean(recordData.item), 'has item reference');
+
     const archiveQuery = {
       propertyId,
       inspectionId: recordData.inspection,
@@ -203,6 +205,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {Reference}
    */
   realtimeCreateRecord(db, propertyId, data) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(data && typeof data === 'object', 'has data');
     const ref = db.ref(`${DATABASE_PATH}/${propertyId}`).push();
@@ -220,6 +223,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {Reference}
    */
   realtimeUpdateRecord(db, propertyId, defItemId, data) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(defItemId && typeof defItemId === 'string', 'has deficient item id');
     assert(data && typeof data === 'object', 'has data');
@@ -236,6 +240,8 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   async updateRecord(db, fs, propertyId, defItemId, data) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(Boolean(fs), 'has firestore db insatance');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(defItemId && typeof defItemId === 'string', 'has inspection id');
@@ -271,7 +277,8 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {Object} updates hash
    */
   async updateState(db, fs, diSnap, newState) {
-    assert(Boolean(fs), 'has firebase db instance');
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       diSnap &&
         typeof diSnap.ref === 'object' &&
@@ -338,6 +345,7 @@ module.exports = modelSetup({
     completedPhotoId,
     trelloAttachmentId
   ) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
@@ -374,7 +382,8 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {Object} updates hash
    */
   async toggleArchive(db, fs, diSnap, archiving = true) {
-    assert(Boolean(fs), 'has firebase db instance');
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(Boolean(diSnap), 'has snapshot');
     assert(typeof archiving === 'boolean', 'has archiving boolean');
 
@@ -507,6 +516,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {WriteResult}
    */
   firestoreCreateRecord(fs, deficientItemId, data) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
       'has deficient item id'
@@ -534,6 +544,7 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   firestoreFindRecord(fs, deficientItemId) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
       `${PREFIX} has deficient item id`
@@ -552,6 +563,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {DocumentSnapshot[]}
    */
   firestoreQueryByProperty(fs, propertyId) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     const colRef = fs.collection(DEFICIENT_COLLECTION);
     colRef.where('property', '==', propertyId);
@@ -566,6 +578,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {DocumentSnapshot[]}
    */
   firestoreQueryByInspection(fs, inspectionId) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(inspectionId && typeof inspectionId === 'string', 'has property id');
     const colRef = fs.collection(DEFICIENT_COLLECTION);
     colRef.where('inspection', '==', inspectionId);
@@ -580,6 +593,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {DocumentSnapshot[]}
    */
   firestoreQuery(fs, query) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(query && typeof query === 'object', 'has query hash');
     const colRef = fs.collection(DEFICIENT_COLLECTION);
     Object.keys(query).forEach(attr => colRef.where(attr, '==', query[attr]));
@@ -593,6 +607,7 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   firestoreRemoveRecord(fs, deficientItemId) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
       'has deficient item id'
@@ -611,6 +626,7 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   firestoreUpdateRecord(fs, deficientItemId, data) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
       'has deficient item id'
@@ -630,6 +646,7 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   async firestoreUpsertRecord(fs, deficientItemId, data) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
       'has deficient item id'
@@ -674,6 +691,7 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   async _firestoreCleanupDeletedTrelloCard(fs, deficientItemId) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
       'has deficient item ID'

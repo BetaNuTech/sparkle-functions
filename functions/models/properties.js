@@ -14,11 +14,8 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {DataSnapshot} snapshot
    */
   findRecord(db, propertyId) {
-    assert(
-      propertyId && typeof propertyId === 'string',
-      `${PREFIX} has property id`
-    );
-
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
     return db.ref(`${PROPERTIES_DB}/${propertyId}`).once('value');
   },
 
@@ -29,6 +26,7 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   realtimeRemoveRecord(db, propertyId) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     return db.ref(`${PROPERTIES_DB}/${propertyId}`).remove();
   },
@@ -41,10 +39,8 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   realtimeUpsertRecord(db, propertyId, data) {
-    assert(
-      propertyId && typeof propertyId === 'string',
-      `${PREFIX} has property id`
-    );
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(data && typeof data === 'object', `${PREFIX} has upsert data`);
     return db.ref(`${PROPERTIES_DB}/${propertyId}`).update(data);
   },
@@ -145,6 +141,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {DocumentReference}
    */
   async firestoreUpsertRecord(fs, propertyId, data) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       propertyId && typeof propertyId === 'string',
       `${PREFIX} has property id`
@@ -211,6 +208,7 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   firestoreRemoveRecord(fs, propertyId) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     return fs
       .collection(PROPERTY_COLLECTION)
