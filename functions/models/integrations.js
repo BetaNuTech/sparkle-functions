@@ -7,6 +7,7 @@ const TRELLO_PROPERTIES_PATH = '/integrations/trello/properties';
 const TRELLO_ORG_PATH = '/integrations/trello/organization';
 const SLACK_ORG_PATH = '/integrations/slack/organization';
 const SLACK_NOTIFICATION_PATH = '/notifications/slack';
+const CLIENT_APPS_COLLECTION = '/clients';
 
 module.exports = modelSetup({
   /**
@@ -298,5 +299,14 @@ module.exports = modelSetup({
     }
 
     return result;
+  },
+
+  /**
+   * Get all client app documents
+   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @return {Promise} - resolves {DocumentSnapshot[]}
+   */
+  getClientApps(fs) {
+    return fs.collection(CLIENT_APPS_COLLECTION).get();
   },
 });

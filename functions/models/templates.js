@@ -181,11 +181,9 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {DocumentReference}
    */
   async firestoreUpsertRecord(fs, templateId, data) {
-    assert(
-      templateId && typeof templateId === 'string',
-      `${PREFIX} has template id`
-    );
-    assert(data && typeof data === 'object', `${PREFIX} has upsert data`);
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(templateId && typeof templateId === 'string', 'has template id');
+    assert(data && typeof data === 'object', 'has upsert data');
 
     const docRef = fs.collection(TEMPLATE_COLLECTION).doc(templateId);
     let docSnap = null;

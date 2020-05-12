@@ -50,7 +50,10 @@ module.exports = function createOnWriteHandler(db, fs) {
 
     // Sync property updates to Firestore
     try {
-      await propertiesModel.firestoreUpsertRecord(fs, propertyId, afterData);
+      const upsertData = { ...afterData };
+      if (!afterData.templates) upsertData.templates = null;
+      if (!afterData.inspections) upsertData.inspections = null;
+      await propertiesModel.firestoreUpsertRecord(fs, propertyId, upsertData);
     } catch (err) {
       const updateType = change.before.exists() ? 'update' : 'create';
       log.error(

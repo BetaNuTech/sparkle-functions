@@ -4,6 +4,7 @@ const uuid = require('../../../test-helpers/uuid');
 const { cleanDb, findStorageFile } = require('../../../test-helpers/firebase');
 const propertiesModel = require('../../../models/properties');
 const templatesModel = require('../../../models/templates');
+const inspectionsModel = require('../../../models/inspections');
 const { db, fs, test, storage, cloudFunctions } = require('../../setup');
 
 const SRC_PROFILE_IMG = 'test-image.jpg';
@@ -113,6 +114,39 @@ describe('Properties | Delete', () => {
 
     // Assertions
     expect(actual.map(snap => snap.exists())).to.deep.equal([false, false]);
+  });
+
+  it("should remove all a property's firestore inspections", async () => {
+    const expected = false;
+    const insp1Id = uuid();
+    const propertyId = uuid();
+    const propertyData = {
+      name: 'test',
+      inspections: { [insp1Id]: true },
+    };
+    const inspData = {
+      name: `name${insp1Id}`,
+      templateName: 'test',
+      property: propertyId,
+    };
+
+    // Setup database
+    await propertiesModel.realtimeUpsertRecord(db, propertyId, propertyData);
+    const propertySnap = await propertiesModel.findRecord(db, propertyId);
+    await propertiesModel.firestoreUpsertRecord(fs, propertyId, propertyData);
+    await inspectionsModel.firestoreUpsertRecord(fs, insp1Id, inspData);
+    await propertiesModel.realtimeRemoveRecord(db, propertyId); // Remove property
+
+    // Execute
+    const wrapped = test.wrap(cloudFunctions.propertyDelete);
+    await wrapped(propertySnap, { params: { propertyId } });
+
+    // Results
+    const inspDoc = await inspectionsModel.firestoreFindRecord(fs, insp1Id);
+    const actual = inspDoc.exists;
+
+    // Assertions
+    expect(actual).to.equal(expected);
   });
 
   it("should remove all its' inspection's uploaded images from storage", async () => {

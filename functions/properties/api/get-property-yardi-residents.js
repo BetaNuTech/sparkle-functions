@@ -70,7 +70,7 @@ module.exports = function createGetYardiResidents(db) {
 
       return send500Error(
         err,
-        'Yard request failed',
+        'Yardi request failed',
         'Unexpected error fetching residents, please try again'
       );
     }
