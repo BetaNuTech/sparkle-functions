@@ -15,8 +15,8 @@ const PREFIX = 'inspections: api: patch property:';
  * @return {Function} - onRequest handler
  */
 module.exports = function createPatchProperty(db, fs) {
-  assert(Boolean(db), 'has firebase database instance');
-  assert(Boolean(fs), 'has firestore database instance');
+  assert(db && typeof db.ref === 'function', 'has realtime db');
+  assert(fs && typeof fs.collection === 'function', 'has firestore db');
 
   /**
    * Handle PATCH request for reassigning

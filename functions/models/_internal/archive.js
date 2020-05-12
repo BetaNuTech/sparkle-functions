@@ -11,6 +11,27 @@ const DEFICIENT_COLLECTION = config.deficientItems.collection;
 module.exports = modelSetup({
   deficientItem: {
     /**
+     * Find a realtime archived Deficient Item (by ID)
+     * @param  {firebaseadmin.database} db
+     * @param  {String} propertyId
+     * @param  {String} deficientItemId
+     * @return {Promise} - resolves {DatabaseRef}
+     */
+    findRecord(db, propertyId, deficientItemId) {
+      assert(db && typeof db.ref === 'function', 'has realtime db');
+      assert(propertyId && typeof propertyId === 'string', 'has property id');
+      assert(
+        deficientItemId && typeof deficientItemId === 'string',
+        'has deficient item id'
+      );
+      return db
+        .ref(
+          `${ARCHIVE_PATH}${DEFICIENT_ITEM_PATH}/${propertyId}/${deficientItemId}`
+        )
+        .once('value');
+    },
+
+    /**
      * Recover any deficient item from archive
      * matching a property's inspection item
      * @param  {firebaseadmin.database} db
@@ -20,6 +41,7 @@ module.exports = modelSetup({
      * @return {Promise} - resolve {DataSnapshot|Object}
      */
     async realtimeFindRecord(db, { propertyId, inspectionId, itemId }) {
+      assert(db && typeof db.ref === 'function', 'has realtime db');
       assert(
         propertyId && typeof propertyId === 'string',
         'has property reference'
@@ -59,6 +81,7 @@ module.exports = modelSetup({
      * @return {Promise} - resolves {DatabaseRef}
      */
     realtimeCreateRecord(db, propertyId, deficientItemId, data) {
+      assert(db && typeof db.ref === 'function', 'has realtime db');
       assert(
         propertyId && typeof propertyId === 'string',
         'has property reference'
@@ -82,6 +105,7 @@ module.exports = modelSetup({
      * @return {Promise}
      */
     realtimeRemoveRecord(db, propertyId, deficientItemId) {
+      assert(db && typeof db.ref === 'function', 'has realtime db');
       assert(propertyId && typeof propertyId === 'string', 'has property id');
       assert(
         deficientItemId && typeof deficientItemId === 'string',
@@ -96,6 +120,39 @@ module.exports = modelSetup({
     },
 
     /**
+     * Find all archived deficient items
+     * associated with an inspection
+     * @param  {admin.database}  db
+     * @param  {String}  inspectionId
+     * @return {Promise} - resolves {Object}
+     */
+    async findAllByInspection(db, inspectionId) {
+      assert(db && typeof db.ref === 'function', 'has realtime db');
+      assert(
+        inspectionId && typeof inspectionId === 'string',
+        'has inspection id'
+      );
+
+      const result = [];
+      const deficientItemsByPropertySnap = await db
+        .ref(`${ARCHIVE_PATH}${DEFICIENT_ITEM_PATH}`)
+        .once('value');
+
+      // Add each DI belonging to an inspection to result
+      deficientItemsByPropertySnap.forEach(propertyDeficientItemsSnap => {
+        propertyDeficientItemsSnap.forEach(deficientItemsSnap => {
+          try {
+            if (deficientItemsSnap.val().inspection === inspectionId) {
+              result.push(deficientItemsSnap);
+            }
+          } catch (e) {} // eslint-disable-line no-empty
+        });
+      });
+
+      return result;
+    },
+
+    /**
      * Recover any Firestore deficiency from archive
      * @param  {firebaseadmin.firestore} fs
      * @param  {String}  propertyId
@@ -104,6 +161,7 @@ module.exports = modelSetup({
      * @return {Promise} - resolve {Document|Object}
      */
     async firestoreFindRecord(fs, query) {
+      assert(fs && typeof fs.collection === 'function', 'has firestore db');
       assert(Boolean(query), 'has string/object query');
       let propertyId = '';
       let inspectionId = '';
@@ -152,11 +210,12 @@ module.exports = modelSetup({
 
     /**
      * Remove Firestore Inspection
-     * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+     * @param  {admin.firestore} fs - Firestore DB instance
      * @param  {String} deficientItemId
      * @return {Promise}
      */
     firestoreRemoveRecord(fs, deficientItemId) {
+      assert(fs && typeof fs.collection === 'function', 'has firestore db');
       assert(
         deficientItemId && typeof deficientItemId === 'string',
         'has deficient item id'
@@ -169,12 +228,13 @@ module.exports = modelSetup({
 
     /**
      * Create Firestore Inspection
-     * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+     * @param  {admin.firestore} fs - Firestore DB instance
      * @param  {String} deficientItemId
      * @param  {Object} data
      * @return {Promise}
      */
     firestoreCreateRecord(fs, deficientItemId, data) {
+      assert(fs && typeof fs.collection === 'function', 'has firestore db');
       assert(
         deficientItemId && typeof deficientItemId === 'string',
         'has deficient item id'
@@ -200,12 +260,13 @@ module.exports = modelSetup({
 
     /**
      * Update Archived Firestore Deficient Item
-     * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+     * @param  {admin.firestore} fs - Firestore DB instance
      * @param  {String} deficientItemId
      * @param  {Object} data
      * @return {Promise}
      */
     firestoreUpdateRecord(fs, deficientItemId, data) {
+      assert(fs && typeof fs.collection === 'function', 'has firestore db');
       assert(
         deficientItemId && typeof deficientItemId === 'string',
         'has deficient item id'
@@ -215,6 +276,25 @@ module.exports = modelSetup({
         .collection(ARCHIVE_COLLECTION)
         .doc(deficientItemId)
         .update(data);
+    },
+
+    /**
+     * Lookup all archived inspections
+     * belonging to an inspection
+     * @param  {admin.firestore} fs - Firestore DB instance
+     * @param  {String} inspectionId
+     * @return {Promise} - resolve {Document|Object}
+     */
+    firestoreQueryByInspection(fs, inspectionId) {
+      assert(fs && typeof fs.collection === 'function', 'has firestore db');
+      assert(
+        inspectionId && typeof inspectionId === 'string',
+        'has deficient item id'
+      );
+      const colRef = fs.collection(ARCHIVE_COLLECTION);
+      colRef.where('inspection', '==', inspectionId);
+      colRef.where('_collection', '==', DEFICIENT_COLLECTION);
+      return colRef.get();
     },
   },
 });

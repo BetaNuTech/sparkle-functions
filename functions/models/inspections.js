@@ -2,6 +2,7 @@ const assert = require('assert');
 const FieldValue = require('firebase-admin').firestore.FieldValue;
 const modelSetup = require('./utils/model-setup');
 const diModel = require('./deficient-items');
+const archiveModel = require('./_internal/archive');
 const deleteUploads = require('../inspections/utils/delete-uploads');
 
 const PREFIX = 'models: inspections:';
@@ -22,6 +23,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {DataSnapshot} deficient item snapshot
    */
   findRecord(db, inspectionId) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
@@ -38,9 +40,10 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   realtimeUpsertRecord(db, inspectionId, data) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(
       inspectionId && typeof inspectionId === 'string',
-      `${PREFIX} has inspection id`
+      'has inspection id'
     );
     assert(data && typeof data === 'object', `${PREFIX} has upsert data`);
     return db.ref(`${INSPECTIONS_PATH}/${inspectionId}`).update(data);
@@ -53,11 +56,8 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   realtimeRemoveRecord(db, inspectionId) {
-    assert(
-      inspectionId && typeof inspectionId === 'string',
-      `${PREFIX} has property id`
-    );
-
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(inspectionId && typeof inspectionId === 'string', 'has property id');
     return db.ref(`${INSPECTIONS_PATH}/${inspectionId}`).remove();
   },
 
@@ -69,6 +69,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {DataSnapshot} deficient item snapshot
    */
   findItem(db, inspectionId, itemId) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
@@ -86,6 +87,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {DataSnapshot} inspections snapshot
    */
   queryByProperty(db, propertyId) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     return db
       .ref(INSPECTIONS_PATH)
@@ -102,6 +104,7 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   setPDFReportStatus(db, inspectionId, status) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
@@ -124,11 +127,12 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   setReportURL(db, inspectionId, url) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
     );
-    assert(url && typeof url === 'string', `${PREFIX} has report url`);
+    assert(url && typeof url === 'string', 'has report url');
     return db
       .ref(`${INSPECTIONS_PATH}/${inspectionId}/inspectionReportURL`)
       .set(url);
@@ -141,6 +145,7 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   updatePDFReportTimestamp(db, inspectionId) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
@@ -165,6 +170,7 @@ module.exports = modelSetup({
     inspection,
     options = {}
   ) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection ID'
@@ -229,6 +235,7 @@ module.exports = modelSetup({
     inspection,
     options = {}
   ) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection ID'
@@ -280,7 +287,8 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {Object} hash of updates
    */
   async removeForProperty(db, fs, storage, propertyId) {
-    assert(Boolean(fs), 'has firestore db instance');
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(Boolean(storage), 'has storage instance');
     assert(
       propertyId && typeof propertyId === 'string',
@@ -368,6 +376,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {Object} updates hash
    */
   async archive(db, inspectionId, options = {}) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
@@ -428,6 +437,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {Object} updates
    */
   async unarchive(db, inspectionId, options = {}) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
@@ -516,6 +526,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {Object} updates
    */
   async reassignProperty(db, inspectionId, destPropertyId, options = {}) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
@@ -544,7 +555,7 @@ module.exports = modelSetup({
 
     const deficientItems = {};
 
-    // Lookup DI's and copy current state
+    // Lookup active DI's and copy current state
     try {
       const diSnapshots = await diModel.findAllByInspection(db, inspectionId);
       diSnapshots.forEach(di => {
@@ -553,6 +564,22 @@ module.exports = modelSetup({
     } catch (err) {
       throw Error(
         `${PREFIX} reassignProperty: Deficient Item lookup failed: ${err}`
+      ); // wrap error
+    }
+
+    // Lookup archived DI's and copy current
+    // state to active deficient items
+    try {
+      const archiveSnap = await archiveModel.deficientItem.findAllByInspection(
+        db,
+        inspectionId
+      );
+      archiveSnap.forEach(di => {
+        deficientItems[di.ref.path.toString()] = di.val();
+      });
+    } catch (err) {
+      throw Error(
+        `${PREFIX} reassignProperty: Archived Deficient Item lookup failed: ${err}`
       ); // wrap error
     }
 
@@ -592,7 +619,8 @@ module.exports = modelSetup({
     // Add new Deficient Item paths
     // Remove old Deficient Item paths
     Object.keys(deficientItems).forEach(currentPath => {
-      const currentPropertyId = currentPath.split('/')[2];
+      const isArchive = currentPath.indexOf('/archive') === 0;
+      const currentPropertyId = currentPath.split('/')[isArchive ? 3 : 2];
       const targetPath = currentPath.replace(currentPropertyId, destPropertyId);
       updates[currentPath] = null;
       updates[targetPath] = deficientItems[currentPath];
@@ -627,6 +655,7 @@ module.exports = modelSetup({
     srcPropertyId,
     destPropertyId
   ) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
@@ -663,12 +692,16 @@ module.exports = modelSetup({
       { merge: true }
     );
 
-    let deficientItemSnap = null;
-
+    // Add each active deficient item
+    // property relationship updates to batch
     try {
-      deficientItemSnap = await diModel.firestoreQueryByInspection(
+      const deficientItemSnap = await diModel.firestoreQueryByInspection(
         fs,
         inspectionId
+      );
+
+      deficientItemSnap.docs.forEach(diDoc =>
+        batch.update(diDoc.ref, { property: destPropertyId })
       );
     } catch (err) {
       throw Error(
@@ -676,11 +709,21 @@ module.exports = modelSetup({
       );
     }
 
-    // Add each deficient item property
-    // relationship updates to batch
-    deficientItemSnap.docs.forEach(diDoc =>
-      batch.update(diDoc.ref, { property: destPropertyId })
-    );
+    // Add each archived deficient item
+    // property relationship updates to batch
+    try {
+      const archivedDefItemSnap = await archiveModel.deficientItem.firestoreQueryByInspection(
+        fs,
+        inspectionId
+      );
+      archivedDefItemSnap.docs.forEach(diDoc =>
+        batch.update(diDoc.ref, { property: destPropertyId })
+      );
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreReassignProperty: failed to lookup DIs: ${err}`
+      );
+    }
 
     return batch.commit();
   },
@@ -693,11 +736,12 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {DocumentReference}
    */
   async firestoreUpsertRecord(fs, inspectionId, data) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
-      `${PREFIX} has inspection id`
+      'has inspection id'
     );
-    assert(data && typeof data === 'object', `${PREFIX} has upsert data`);
+    assert(data && typeof data === 'object', 'has upsert data');
 
     const docRef = fs.collection(INSPECTION_COLLECTION).doc(inspectionId);
     let docSnap = null;
@@ -741,9 +785,10 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   firestoreFindRecord(fs, inspectionId) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
-      `${PREFIX} has inspection id`
+      'has inspection id'
     );
     return fs
       .collection(INSPECTION_COLLECTION)
@@ -758,9 +803,10 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   firestoreRemoveRecord(fs, inspectionId) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
-      `${PREFIX} has inspection id`
+      'has inspection id'
     );
     return fs
       .collection(INSPECTION_COLLECTION)
@@ -775,10 +821,8 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {QuerySnapshot}
    */
   firestoreQueryByCategory(fs, propertyId) {
-    assert(
-      propertyId && typeof propertyId === 'string',
-      `${PREFIX} has property id`
-    );
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
     return fs
       .collection(INSPECTION_COLLECTION)
       .where('property', '==', propertyId)
