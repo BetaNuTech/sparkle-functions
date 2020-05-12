@@ -188,19 +188,19 @@ module.exports = modelSetup({
 
       const deficienciesRef = fs.collection(ARCHIVE_COLLECTION);
 
-      if (hasDiIdentifier) {
-        deficienciesRef.doc(deficientItemId);
-      } else {
-        deficienciesRef.where('_collection', '==', DEFICIENT_COLLECTION);
-        deficienciesRef.where('property', '==', propertyId);
-        deficienciesRef.where('inspection', '==', inspectionId);
-        deficienciesRef.where('item', '==', itemId);
-      }
-
       let deficiency = null;
       try {
-        const deficienciesSnap = await deficienciesRef.get();
-        if (deficienciesSnap.size) deficiency = deficienciesSnap.docs[0];
+        if (hasDiIdentifier) {
+          deficiency = await deficienciesRef.doc(deficientItemId).get();
+        } else {
+          const deficienciesSnap = await deficienciesRef
+            .where('_collection', '==', DEFICIENT_COLLECTION)
+            .where('property', '==', propertyId)
+            .where('inspection', '==', inspectionId)
+            .where('item', '==', itemId)
+            .get();
+          if (deficienciesSnap.size) deficiency = deficienciesSnap.docs[0];
+        }
       } catch (err) {
         throw Error(`${PREFIX}: firestoreFindRecord: Lookup failed: ${err}`);
       }
@@ -292,9 +292,10 @@ module.exports = modelSetup({
         'has deficient item id'
       );
       const colRef = fs.collection(ARCHIVE_COLLECTION);
-      colRef.where('inspection', '==', inspectionId);
-      colRef.where('_collection', '==', DEFICIENT_COLLECTION);
-      return colRef.get();
+      return colRef
+        .where('_collection', '==', DEFICIENT_COLLECTION)
+        .where('inspection', '==', inspectionId)
+        .get();
     },
   },
 });

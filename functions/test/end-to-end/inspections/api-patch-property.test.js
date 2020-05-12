@@ -18,6 +18,7 @@ const INSPECTION_TWO_ID = uuid();
 const ITEM_ID = uuid();
 const ITEM_TWO_ID = uuid();
 const DEST_PROPERTY_ID = uuid();
+const RAND_PROP_ID = uuid();
 const PROPERTY_PATH = `/properties/${PROPERTY_ID}`;
 const INSPECTION_PATH = `/inspections/${INSPECTION_ID}`;
 const INSPECTION_TWO_PATH = `/inspections/${INSPECTION_TWO_ID}`;
@@ -60,6 +61,11 @@ const DEFICIENT_ITEM_ONE_DATA = mocking.createDeficientItem(
 );
 const DEFICIENT_ITEM_TWO_DATA = mocking.createDeficientItem(
   INSPECTION_ID,
+  ITEM_TWO_ID,
+  ITEM_TWO_DATA
+);
+const RAND_DEF_ITEM_DATA = mocking.createDeficientItem(
+  uuid(),
   ITEM_TWO_ID,
   ITEM_TWO_DATA
 );
@@ -378,8 +384,14 @@ describe('Inspections | API | Patch Property', () => {
       PROPERTY_ID,
       DEFICIENT_ITEM_TWO_DATA
     );
+    const diThree = await deficientItemsModel.realtimeCreateRecord(
+      db,
+      RAND_PROP_ID,
+      RAND_DEF_ITEM_DATA
+    ); // unrelated DI
     const diOneId = getRefId(diOne);
     const diTwoId = getRefId(diTwo);
+    const diThreeId = getRefId(diThree);
     await deficientItemsModel.firestoreCreateRecord(fs, diOneId, {
       ...DEFICIENT_ITEM_ONE_DATA,
       property: PROPERTY_ID,
@@ -387,6 +399,10 @@ describe('Inspections | API | Patch Property', () => {
     await deficientItemsModel.firestoreCreateRecord(fs, diTwoId, {
       ...DEFICIENT_ITEM_TWO_DATA,
       property: PROPERTY_ID,
+    });
+    await deficientItemsModel.firestoreCreateRecord(fs, diThreeId, {
+      ...RAND_DEF_ITEM_DATA,
+      property: RAND_PROP_ID,
     });
 
     // Execute
@@ -408,6 +424,11 @@ describe('Inspections | API | Patch Property', () => {
       PROPERTY_ID,
       diTwoId
     );
+    const oldDiThreeSnap = await deficientItemsModel.find(
+      db,
+      RAND_PROP_ID,
+      diThreeId
+    );
     const newDiOneSnap = await deficientItemsModel.find(
       db,
       DEST_PROPERTY_ID,
@@ -417,6 +438,11 @@ describe('Inspections | API | Patch Property', () => {
       db,
       DEST_PROPERTY_ID,
       diTwoId
+    );
+    const newDiThreeSnap = await deficientItemsModel.find(
+      db,
+      DEST_PROPERTY_ID,
+      diThreeId
     );
     const srcPropDoc = await propertiesModel.firestoreFindRecord(
       fs,
@@ -428,6 +454,10 @@ describe('Inspections | API | Patch Property', () => {
     );
     const diOneDoc = await deficientItemsModel.firestoreFindRecord(fs, diOneId);
     const diTwoDoc = await deficientItemsModel.firestoreFindRecord(fs, diTwoId);
+    const diThreeDoc = await deficientItemsModel.firestoreFindRecord(
+      fs,
+      diThreeId
+    );
 
     // Assertions
     [
@@ -442,6 +472,11 @@ describe('Inspections | API | Patch Property', () => {
         msg: 'removed second DI from old property',
       },
       {
+        actual: oldDiThreeSnap.val(),
+        expected: RAND_DEF_ITEM_DATA,
+        msg: 'unrelated realtime deficient item is uncahanged',
+      },
+      {
         actual: newDiOneSnap.val(),
         expected: DEFICIENT_ITEM_ONE_DATA,
         msg: "reassiged inspection's first DI to new property",
@@ -450,6 +485,11 @@ describe('Inspections | API | Patch Property', () => {
         actual: newDiTwoSnap.val(),
         expected: DEFICIENT_ITEM_TWO_DATA,
         msg: "reassiged inspection's seconde DI to new property",
+      },
+      {
+        actual: newDiThreeSnap.val(),
+        expected: null,
+        msg: 'does not move unrelated realtime record under new property',
       },
       {
         actual: ((srcPropDoc.data() || {}).inspections || {})[INSPECTION_ID],
@@ -471,6 +511,11 @@ describe('Inspections | API | Patch Property', () => {
         expected: DEST_PROPERTY_ID,
         msg: "reassiged inspection's second firestore DI to new property",
       },
+      {
+        actual: diThreeDoc.data().property,
+        expected: RAND_PROP_ID,
+        msg: 'has no effect on unrelated firestore deficient item',
+      },
     ].forEach(({ actual, expected, msg }) => {
       if (!expected) {
         expect(actual).to.equal(expected, msg);
@@ -483,6 +528,7 @@ describe('Inspections | API | Patch Property', () => {
   it('reassigns archived deficient items under new property', async () => {
     const diOneId = uuid();
     const diTwoId = uuid();
+    const diThreeId = uuid();
 
     // setup database
     await propertiesModel.realtimeUpsertRecord(db, PROPERTY_ID, PROPERTY_DATA);
@@ -521,6 +567,12 @@ describe('Inspections | API | Patch Property', () => {
       diTwoId,
       DEFICIENT_ITEM_TWO_DATA
     );
+    await archiveModel.deficientItem.realtimeCreateRecord(
+      db,
+      RAND_PROP_ID,
+      diThreeId,
+      RAND_DEF_ITEM_DATA
+    );
     await archiveModel.deficientItem.firestoreCreateRecord(fs, diOneId, {
       ...DEFICIENT_ITEM_ONE_DATA,
       property: PROPERTY_ID,
@@ -528,6 +580,10 @@ describe('Inspections | API | Patch Property', () => {
     await archiveModel.deficientItem.firestoreCreateRecord(fs, diTwoId, {
       ...DEFICIENT_ITEM_TWO_DATA,
       property: PROPERTY_ID,
+    });
+    await archiveModel.deficientItem.firestoreCreateRecord(fs, diThreeId, {
+      ...RAND_DEF_ITEM_DATA,
+      property: RAND_PROP_ID,
     });
 
     // Execute
@@ -549,6 +605,11 @@ describe('Inspections | API | Patch Property', () => {
       PROPERTY_ID,
       diTwoId
     );
+    const oldDiThreeSnap = await archiveModel.deficientItem.findRecord(
+      db,
+      RAND_PROP_ID,
+      diThreeId
+    );
     const newDiOneSnap = await archiveModel.deficientItem.findRecord(
       db,
       DEST_PROPERTY_ID,
@@ -559,6 +620,11 @@ describe('Inspections | API | Patch Property', () => {
       DEST_PROPERTY_ID,
       diTwoId
     );
+    const newDiThreeSnap = await archiveModel.deficientItem.findRecord(
+      db,
+      DEST_PROPERTY_ID,
+      diThreeId
+    );
     const diOneDoc = await archiveModel.deficientItem.firestoreFindRecord(
       fs,
       diOneId
@@ -566,6 +632,10 @@ describe('Inspections | API | Patch Property', () => {
     const diTwoDoc = await archiveModel.deficientItem.firestoreFindRecord(
       fs,
       diTwoId
+    );
+    const diThreeDoc = await archiveModel.deficientItem.firestoreFindRecord(
+      fs,
+      diThreeId
     );
 
     // Assertions
@@ -581,6 +651,11 @@ describe('Inspections | API | Patch Property', () => {
         msg: 'removed second archive DI from old property',
       },
       {
+        actual: oldDiThreeSnap.val(),
+        expected: RAND_DEF_ITEM_DATA,
+        msg: 'has no effect on unrelated realtime deficient item',
+      },
+      {
         actual: newDiOneSnap.val(),
         expected: DEFICIENT_ITEM_ONE_DATA,
         msg: "reassiged inspection's first archive DI to new property",
@@ -589,6 +664,11 @@ describe('Inspections | API | Patch Property', () => {
         actual: newDiTwoSnap.val(),
         expected: DEFICIENT_ITEM_TWO_DATA,
         msg: "reassiged inspection's second archive DI to new property",
+      },
+      {
+        actual: newDiThreeSnap.val(),
+        expected: null,
+        msg: 'did not create new realtime archive for unrelated deficient item',
       },
       {
         actual: diOneDoc.data().property,
@@ -601,6 +681,11 @@ describe('Inspections | API | Patch Property', () => {
         expected: DEST_PROPERTY_ID,
         msg:
           "reassiged inspection's second archive firestore DI to new property",
+      },
+      {
+        actual: diThreeDoc.data().property,
+        expected: RAND_PROP_ID,
+        msg: 'had no affected on unrelated archived firestore DI property',
       },
     ].forEach(({ actual, expected, msg }) => {
       if (!expected) {
