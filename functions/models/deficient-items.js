@@ -123,7 +123,10 @@ module.exports = modelSetup({
           archiveQuery
         );
         archived = archivedDoc ? archivedDoc.data() : null;
-        if (archived) archivedId = archivedDoc.id;
+        if (archived) {
+          archivedId = archivedDoc.id;
+          delete archived._collection; // Remove arhive only attibute
+        }
       } catch (err) {
         throw Error(
           `${PREFIX} createRecord: firestore archive lookup failed: ${err}`
@@ -151,7 +154,9 @@ module.exports = modelSetup({
     Object.assign(data, recordData, archived);
 
     try {
-      await ref.set(data);
+      const realtimeData = { ...data };
+      delete realtimeData.property; // Remove firstore only attr
+      await ref.set(realtimeData);
     } catch (err) {
       throw Error(`${PREFIX} createRecord: realtime record set: ${err}`);
     }
