@@ -135,6 +135,11 @@ exports.propertyTeamWrite = functions.database
     properties.createOnWriteTeamsWatcher(db, pubsubClient, 'user-teams-sync')
   );
 
+// Teams on write
+exports.teamWrite = functions.database
+  .ref('/teams/{teamId}')
+  .onWrite(teams.onWrite(fs));
+
 // Users teams onWrite
 exports.userTeamWrite = functions.database
   .ref('/users/{userId}/teams/{teamId}')
@@ -145,7 +150,7 @@ exports.userTeamWrite = functions.database
 // teams onDelete
 exports.teamDelete = functions.database
   .ref('/teams/{teamId}')
-  .onDelete(teams.createOnDeleteWatcher(db));
+  .onDelete(teams.createOnDeleteWatcher(db, fs));
 
 // Deficient Items
 exports.deficientItemsWrite = functions.database
@@ -290,13 +295,15 @@ exports.deficientItemsOverdueSync = deficientItems.pubsub.createSyncOverdue(
 exports.teamsSync = teams.pubsub.createSyncTeam(
   'teams-sync',
   functions.pubsub,
-  db
+  db,
+  fs
 );
 
 exports.userTeamsSync = teams.pubsub.createSyncUserTeam(
   'user-teams-sync',
   functions.pubsub,
-  db
+  db,
+  fs
 );
 
 exports.publishSlackNotifications = notifications.pubsub.createPublishSlack(

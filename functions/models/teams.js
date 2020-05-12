@@ -1,7 +1,11 @@
+const assert = require('assert');
+const FieldValue = require('firebase-admin').firestore.FieldValue;
 const modelSetup = require('./utils/model-setup');
 const adminUtils = require('../utils/firebase-admin');
 
-const LOG_PREFIX = 'models: teams:';
+const PREFIX = 'models: teams:';
+const TEAMS_DB = '/teams';
+const TEAMS_COLLECTION = 'teams';
 
 module.exports = modelSetup({
   /**
@@ -10,6 +14,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {Object} hash of all teams/properties to be used as a source of truth
    */
   async getPropertyRelationships(db) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     const propertyAndTeam = {};
 
     try {
@@ -26,23 +31,129 @@ module.exports = modelSetup({
         }
       );
     } catch (err) {
-      throw Error(`${LOG_PREFIX} getPropertyRelationships: ${err}`); // wrap error
+      throw Error(`${PREFIX} getPropertyRelationships: ${err}`); // wrap error
     }
 
     return propertyAndTeam;
   },
 
   /**
-   * This function will retrieve all properties that belong to the requested team
-   * @param {firebaseAdmin.database} db firbase database
-   * @param {number} teamId this is the id of the team we are looking for
-   * @returns this will return an firebase snapshot containing all properties that belong to the requested team
+   * Find realtime team record
+   * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+   * @param  {String} teamId
+   * @return {Promise} - resolves {DataSnapshot} team snapshot
    */
-  getPropertiesByTeamId(db, teamId) {
-    return db
-      .ref('properties')
-      .orderByChild('team')
-      .equalTo(teamId)
-      .once('value');
+  realtimeFindRecord(db, teamId) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(teamId && typeof teamId === 'string', 'has team id');
+    return db.ref(`${TEAMS_DB}/${teamId}`).once('value');
+  },
+
+  /**
+   * Remove team by ID
+   * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+   * @param  {String} teamId
+   * @return {Promise}
+   */
+  realtimeRemoveRecord(db, teamId) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(teamId && typeof teamId === 'string', 'has team id');
+    return db.ref(`${TEAMS_DB}/${teamId}`).remove();
+  },
+
+  /**
+   * Add/update realtime team
+   * @param  {firebaseAdmin.database} db - Realtime DB Instance
+   * @param  {String} teamId
+   * @param  {Object} data
+   * @return {Promise}
+   */
+  realtimeUpsertRecord(db, teamId, data) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(teamId && typeof teamId === 'string', 'has property id');
+    assert(data && typeof data === 'object', 'has upsert data');
+    return db.ref(`${TEAMS_DB}/${teamId}`).update(data);
+  },
+
+  /**
+   * Lookup Firestore Property
+   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {String} teamId
+   * @return {Promise}
+   */
+  firestoreFindRecord(fs, teamId) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(teamId && typeof teamId === 'string', 'has team id');
+    return fs
+      .collection(TEAMS_COLLECTION)
+      .doc(teamId)
+      .get();
+  },
+
+  /**
+   * Create or update a Firestore team
+   * @param  {firebaseAdmin.firestore} fs
+   * @param  {String}  teamId
+   * @param  {Object}  data
+   * @return {Promise} - resolves {DocumentReference}
+   */
+  async firestoreUpsertRecord(fs, teamId, data) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(teamId && typeof teamId === 'string', 'has team id');
+    assert(data && typeof data === 'object', 'has upsert data');
+
+    const docRef = fs.collection(TEAMS_COLLECTION).doc(teamId);
+    let docSnap = null;
+
+    try {
+      docSnap = await docRef.get();
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreUpsertRecord: Failed to get document: ${err}`
+      );
+    }
+
+    const { exists } = docSnap;
+    const upsert = { ...data };
+
+    try {
+      if (exists) {
+        // Replace optional field nulls
+        // with Firestore delete values
+        if (upsert.properties === null) {
+          upsert.properties = FieldValue.delete();
+        }
+
+        await docRef.update(upsert);
+      } else {
+        // Ensure optional falsey values
+        // do not exist on created Firestore
+        if (!upsert.properties) delete upsert.properties;
+        await docRef.create(upsert);
+      }
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreUpsertRecord: ${
+          exists ? 'updating' : 'creating'
+        } document: ${err}`
+      );
+    }
+
+    return docRef;
+  },
+
+  /**
+   * Remove Firestore Team
+   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {String} teamId
+   * @return {Promise}
+   */
+  firestoreRemoveRecord(fs, teamId) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(teamId && typeof teamId === 'string', 'has team id');
+    return fs
+      .collection(TEAMS_COLLECTION)
+      .doc(teamId)
+      .delete();
   },
 });

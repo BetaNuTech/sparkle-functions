@@ -11,7 +11,7 @@ module.exports = modelSetup({
    * Find property by ID
    * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
    * @param  {String} propertyId
-   * @return {Promise} - resolves {DataSnapshot} deficient item snapshot
+   * @return {Promise} - resolves {DataSnapshot} snapshot
    */
   findRecord(db, propertyId) {
     assert(
@@ -29,11 +29,7 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   realtimeRemoveRecord(db, propertyId) {
-    assert(
-      propertyId && typeof propertyId === 'string',
-      `${PREFIX} has property id`
-    );
-
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
     return db.ref(`${PROPERTIES_DB}/${propertyId}`).remove();
   },
 
@@ -54,16 +50,87 @@ module.exports = modelSetup({
   },
 
   /**
+   * Get all properties belonging to a team
+   * @param  {admin.database} db
+   * @param  {String} teamId
+   * @return {Promise} - resolves {DataSnapshot} teams snapshot
+   */
+  getPropertiesByTeamId(db, teamId) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(teamId && typeof teamId === 'string', 'has team id');
+    return db
+      .ref('properties')
+      .orderByChild('team')
+      .equalTo(teamId)
+      .once('value');
+  },
+
+  /**
+   * Batch remove all property relationships
+   * to a deleted team
+   * @param  {admin.database} db
+   * @param  {String[]} propertyIds
+   * @return {Promise}
+   */
+  realtimeBatchRemoveTeam(db, propertyIds) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(
+      propertyIds && Array.isArray(propertyIds),
+      'has property ids is an array'
+    );
+    assert(
+      propertyIds.every(id => id && typeof id === 'string'),
+      'property ids is an array of strings'
+    );
+    const batchRemove = {};
+
+    // Collect all updates to properties
+    propertyIds.forEach(propertyId => {
+      batchRemove[`${PROPERTIES_DB}/${propertyId}/team`] = null;
+    });
+
+    return db.ref().update(batchRemove);
+  },
+
+  /**
+   * Batch remove all firestore property
+   * relationships to a deleted team
+   * @param  {admin.firestore} fs
+   * @param  {String[]} propertyIds
+   * @return {Promise}
+   */
+  firestoreBatchRemoveTeam(fs, propertyIds) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(
+      propertyIds && Array.isArray(propertyIds),
+      'has property ids is an array'
+    );
+    assert(
+      propertyIds.every(id => id && typeof id === 'string'),
+      'property ids is an array of strings'
+    );
+
+    const batch = fs.batch();
+    const collection = fs.collection(PROPERTY_COLLECTION);
+
+    // Remove each properties team
+    propertyIds.forEach(id => {
+      const propertyDoc = collection.doc(id);
+      batch.update(propertyDoc, { team: FieldValue.delete() });
+    });
+
+    return batch.commit();
+  },
+
+  /**
    * Lookup Firestore Property
    * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
    * @param  {String} propertyId
    * @return {Promise}
    */
   firestoreFindRecord(fs, propertyId) {
-    assert(
-      propertyId && typeof propertyId === 'string',
-      `${PREFIX} has property id`
-    );
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
     return fs
       .collection(PROPERTY_COLLECTION)
       .doc(propertyId)
@@ -144,10 +211,7 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   firestoreRemoveRecord(fs, propertyId) {
-    assert(
-      propertyId && typeof propertyId === 'string',
-      `${PREFIX} has property id`
-    );
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
     return fs
       .collection(PROPERTY_COLLECTION)
       .doc(propertyId)
