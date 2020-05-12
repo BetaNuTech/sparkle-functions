@@ -72,7 +72,7 @@ function createApp() {
     '/t/:inspectionId',
     bodyParser.json(),
     stubAuth,
-    patchInspProperty({}, {})
+    patchInspProperty({ ref: () => {} }, { collection: () => {} })
   );
   return app;
 }
