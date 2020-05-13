@@ -136,6 +136,8 @@ module.exports = {
           'inspections',
           'deficiencies',
           'archives',
+          'users',
+          'teams',
         ].map(col => deleteFirestoreCollection(fs, col))
       );
     }

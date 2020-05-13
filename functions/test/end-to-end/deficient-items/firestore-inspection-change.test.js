@@ -327,7 +327,7 @@ describe('Deficient Items | Firestore Inspection Change', () => {
       ({ id }) => id !== deficientItemId
     );
     const newRecord = newRecordDoc ? newRecordDoc.data() : null;
-    const archive = await archiveModel.deficientItem.firestoreFindRecord(
+    const archiveDoc = await archiveModel.deficientItem.firestoreFindRecord(
       fs,
       deficientItemId
     );
@@ -342,7 +342,10 @@ describe('Deficient Items | Firestore Inspection Change', () => {
       expected,
       'repeated DI merged with archive'
     );
-    expect(archive).to.equal(null, 'removed deficient item from archive');
+    expect(archiveDoc.exists).to.equal(
+      false,
+      'removed deficient item from archive'
+    );
   });
 
   it("should update deficient item proxy attributes that are out of sync with its' inspection item", async () => {
