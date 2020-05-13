@@ -566,8 +566,7 @@ module.exports = modelSetup({
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     const colRef = fs.collection(DEFICIENT_COLLECTION);
-    colRef.where('property', '==', propertyId);
-    return colRef.get();
+    return colRef.where('property', '==', propertyId).get();
   },
 
   /**
