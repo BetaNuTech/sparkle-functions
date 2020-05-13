@@ -209,8 +209,9 @@ module.exports = modelSetup({
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(data && typeof data === 'object', 'has data');
     const ref = db.ref(`${DATABASE_PATH}/${propertyId}`).push();
-    delete data.property; // remove property attribute
-    return ref.set(data).then(() => ref);
+    const recordData = JSON.parse(JSON.stringify(data)); // clone
+    delete recordData.property; // remove property attribute
+    return ref.set(recordData).then(() => ref);
   },
 
   /**
@@ -228,8 +229,11 @@ module.exports = modelSetup({
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(defItemId && typeof defItemId === 'string', 'has deficient item id');
     assert(data && typeof data === 'object', 'has data');
-    delete data.property; // remove property attribute
-    return db.ref(`${DATABASE_PATH}/${propertyId}/${defItemId}`).update(data);
+    const recordData = JSON.parse(JSON.stringify(data)); // clone
+    delete recordData.property; // remove property attribute
+    return db
+      .ref(`${DATABASE_PATH}/${propertyId}/${defItemId}`)
+      .update(recordData);
   },
 
   /**
