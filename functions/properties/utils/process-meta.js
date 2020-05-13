@@ -2,14 +2,9 @@ const pipe = require('lodash/fp/flow');
 const defItemsModel = require('../../models/deficient-items');
 const propertiesModel = require('../../models/properties');
 const inspectionsModel = require('../../models/inspections');
-const { deficientItems } = require('../../config');
-const createDeficientItems = require('../../deficient-items/utils/create-deficient-items');
+const updateDeficientItemsAttrs = require('./update-deficient-items-attrs');
 
 const PREFIX = 'properties: utils: process-meta:';
-const REQUIRED_ACTIONS_VALUES = deficientItems.requiredActionStates;
-const FOLLOW_UP_ACTION_VALUES = deficientItems.followUpActionStates;
-const EXCLUDED_DI_COUNTER_VALUES =
-  deficientItems.excludedPropertyNumOfDeficientItemsStates;
 
 // Pipeline of steps to update metadata
 const propertyMetaUpdates = pipe([
@@ -146,82 +141,6 @@ function updateLastInspectionAttrs(
     config.updates.lastInspectionScore = latestInspection.score;
     config.updates.lastInspectionDate = latestInspection.creationDate;
   }
-
-  return config;
-}
-
-/**
- * Configure update for a property's
- * inspection's deficient items attrs
- *
- * NOTE: property's deficient items are first calculated from
- * inspections to mitigate race conditions with `/propertyInspectionDeficientItems`,
- * which is also used if available
- *
- * @param  {String} propertyId
- * @param  {Object[]} inspections
- * @param  {Object[]} deficientItems
- * @param  {Object} updates
- * @return {Object} - configuration
- */
-function updateDeficientItemsAttrs(
-  config = {
-    propertyId: '',
-    inspections: [],
-    deficientItems: [],
-    updates: {},
-  }
-) {
-  const deficientItemsLatest = [].concat(
-    ...config.inspections // flatten
-      .filter(
-        ({ inspectionCompleted, template }) =>
-          inspectionCompleted &&
-          Boolean(template) &&
-          Boolean(template.trackDeficientItems) &&
-          Boolean(template.items)
-      ) // only completed, DI enabled, /w items
-      .map(inspection => createDeficientItems(inspection)) // create inspection's deficient items
-      .filter(calcDeficientItems => Object.keys(calcDeficientItems).length) // remove non-deficient inspections
-      .map(defItems => {
-        // Merge latest state from:
-        // `/propertyInspectionDeficientItems/...` into
-        // deficient items calculated from inspections
-        Object.keys(defItems).forEach(id => {
-          const itemId = defItems[id].item;
-          const inspId = defItems[id].inspection;
-          const [existingDefItem] = config.deficientItems.filter(
-            ({ item, inspection }) => item === itemId && inspection === inspId
-          );
-          Object.assign(defItems[id], existingDefItem || {}); // merge existingDefItem state
-        });
-        return defItems;
-      })
-      .map(defItems => {
-        // Convert nested objects of inspections DI's
-        // into grouped array's of inspection DI's
-        const defItemsArr = [];
-        Object.keys(defItems).forEach(defItemId =>
-          defItemsArr.push(defItems[defItemId])
-        );
-        return defItemsArr;
-      })
-  );
-
-  // Count all deficient items
-  config.updates.numOfDeficientItems = deficientItemsLatest.filter(
-    ({ state }) => !EXCLUDED_DI_COUNTER_VALUES.includes(state)
-  ).length;
-
-  // Count all deficient items where state requires action
-  config.updates.numOfRequiredActionsForDeficientItems = deficientItemsLatest.filter(
-    ({ state }) => REQUIRED_ACTIONS_VALUES.includes(state)
-  ).length;
-
-  // Count all deficient items where state requires follow up
-  config.updates.numOfFollowUpActionsForDeficientItems = deficientItemsLatest.filter(
-    ({ state }) => FOLLOW_UP_ACTION_VALUES.includes(state)
-  ).length;
 
   return config;
 }

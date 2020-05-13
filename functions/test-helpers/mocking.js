@@ -14,7 +14,7 @@ module.exports = {
   createInspection(inspConfig) {
     assert(Boolean(inspConfig.property, 'config has `property` id'));
 
-    const now = Date.now() / 1000;
+    const now = Math.round(Date.now() / 1000);
     const offset = Math.floor(Math.random() * 100);
     const items = Math.floor(Math.random() * 100);
     const completed = inspConfig.inspectionCompleted || false;
