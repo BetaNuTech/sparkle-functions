@@ -7,7 +7,6 @@ const properties = require('../properties');
 
 (async () => {
   await utils.forEachChild(db, '/properties', async (id, data) => {
-    if (id !== '-LzNJq6Qj5QfodyxlWxy') return; // TODO: remove
     log.info(`Syning property "${id}"`);
 
     try {

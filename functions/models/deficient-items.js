@@ -209,6 +209,7 @@ module.exports = modelSetup({
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(data && typeof data === 'object', 'has data');
     const ref = db.ref(`${DATABASE_PATH}/${propertyId}`).push();
+    delete data.property; // remove property attribute
     return ref.set(data).then(() => ref);
   },
 
@@ -227,6 +228,7 @@ module.exports = modelSetup({
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(defItemId && typeof defItemId === 'string', 'has deficient item id');
     assert(data && typeof data === 'object', 'has data');
+    delete data.property; // remove property attribute
     return db.ref(`${DATABASE_PATH}/${propertyId}/${defItemId}`).update(data);
   },
 
