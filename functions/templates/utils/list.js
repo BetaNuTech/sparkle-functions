@@ -69,7 +69,7 @@ module.exports = {
       const fsUpsertData = { ...after };
 
       // Ensure category removed if not found
-      if (before) {
+      if (before && after) {
         if (before.category && !after.category) {
           fsUpsertData.category = null;
         }
@@ -82,7 +82,7 @@ module.exports = {
       await templatesModel.firestoreUpsertRecord(fs, templateId, fsUpsertData);
     } catch (err) {
       throw Error(
-        `${PREFIX} write: failed template list ${
+        `${PREFIX} write: failed firestore upsert ${
           isUpdate ? 'update' : 'create'
         }: ${err}`
       );

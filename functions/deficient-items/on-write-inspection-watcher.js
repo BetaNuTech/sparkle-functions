@@ -18,8 +18,8 @@ const DEFICIENT_ITEM_PROXY_ATTRS = Object.keys(
  * @return {Function} - property onWrite handler
  */
 module.exports = function createOnInspectionWriteHandler(db, fs) {
-  assert(Boolean(db), 'has firebase admin database reference');
-  assert(Boolean(fs), 'has firestore DB instance');
+  assert(db && typeof db.ref === 'function', 'has realtime db');
+  assert(fs && typeof fs.collection === 'function', 'has firestore db');
 
   return async (change, event) => {
     const { inspectionId } = event.params;

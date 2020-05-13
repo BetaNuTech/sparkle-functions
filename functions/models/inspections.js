@@ -1,9 +1,14 @@
 const assert = require('assert');
+const FieldValue = require('firebase-admin').firestore.FieldValue;
 const modelSetup = require('./utils/model-setup');
+const diModel = require('./deficient-items');
+const archiveModel = require('./_internal/archive');
+const deleteUploads = require('../inspections/utils/delete-uploads');
 
 const PREFIX = 'models: inspections:';
 const INSPECTIONS_PATH = '/inspections';
 const INSPECTION_COLLECTION = 'inspections';
+const PROPERTY_COLLECTION = 'properties';
 const INSPECTION_REPORT_STATUSES = [
   'generating',
   'completed_success',
@@ -18,6 +23,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {DataSnapshot} deficient item snapshot
    */
   findRecord(db, inspectionId) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
@@ -34,9 +40,10 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   realtimeUpsertRecord(db, inspectionId, data) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(
       inspectionId && typeof inspectionId === 'string',
-      `${PREFIX} has inspection id`
+      'has inspection id'
     );
     assert(data && typeof data === 'object', `${PREFIX} has upsert data`);
     return db.ref(`${INSPECTIONS_PATH}/${inspectionId}`).update(data);
@@ -49,11 +56,8 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   realtimeRemoveRecord(db, inspectionId) {
-    assert(
-      inspectionId && typeof inspectionId === 'string',
-      `${PREFIX} has property id`
-    );
-
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(inspectionId && typeof inspectionId === 'string', 'has property id');
     return db.ref(`${INSPECTIONS_PATH}/${inspectionId}`).remove();
   },
 
@@ -65,6 +69,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {DataSnapshot} deficient item snapshot
    */
   findItem(db, inspectionId, itemId) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
@@ -82,6 +87,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {DataSnapshot} inspections snapshot
    */
   queryByProperty(db, propertyId) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     return db
       .ref(INSPECTIONS_PATH)
@@ -98,6 +104,7 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   setPDFReportStatus(db, inspectionId, status) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
@@ -120,11 +127,12 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   setReportURL(db, inspectionId, url) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
     );
-    assert(url && typeof url === 'string', `${PREFIX} has report url`);
+    assert(url && typeof url === 'string', 'has report url');
     return db
       .ref(`${INSPECTIONS_PATH}/${inspectionId}/inspectionReportURL`)
       .set(url);
@@ -137,6 +145,7 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   updatePDFReportTimestamp(db, inspectionId) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
@@ -161,6 +170,7 @@ module.exports = modelSetup({
     inspection,
     options = {}
   ) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection ID'
@@ -225,6 +235,7 @@ module.exports = modelSetup({
     inspection,
     options = {}
   ) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection ID'
@@ -268,6 +279,95 @@ module.exports = modelSetup({
   },
 
   /**
+   * Remove all inspections and inspection proxies for a property
+   * @param  {firebaseAdmin.database} db
+   * @param  {firebaseAdmin.firestore} fs
+   * @param  {firebaseAdmin.storage} storage
+   * @param  {String} propertyId
+   * @return {Promise} - resolves {Object} hash of updates
+   */
+  async removeForProperty(db, fs, storage, propertyId) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(Boolean(storage), 'has storage instance');
+    assert(
+      propertyId && typeof propertyId === 'string',
+      'has property reference'
+    );
+    const updates = {};
+    let inspectionIds = [];
+
+    // Lookup all inspection ID's
+    try {
+      const inspectionsSnap = await this.queryByProperty(db, propertyId);
+      const inspections = inspectionsSnap.val();
+      inspectionIds = Object.keys(inspections || {});
+    } catch (err) {
+      // wrap error
+      throw Error(
+        `${PREFIX} removeForProperty: query inspections failed | ${err}`
+      );
+    }
+
+    // Remove each inspections' items' uploads
+    for (let i = 0; i < inspectionIds.length; i++) {
+      const inspId = inspectionIds[i];
+
+      try {
+        await deleteUploads(db, storage, inspId);
+      } catch (err) {
+        // wrap error
+        throw Error(
+          `${PREFIX} removeForProperty: upload storage delete failed | ${err}`
+        );
+      }
+    }
+
+    // Collect inspections to delete in `updates`
+    inspectionIds.forEach(inspectionId => {
+      updates[`/inspections/${inspectionId}`] = null;
+    });
+
+    // Remove all `/propertyInspectionsList`
+    updates[`/propertyInspectionsList/${propertyId}`] = null;
+
+    try {
+      await db.ref().update(updates);
+    } catch (err) {
+      // wrap error
+      throw Error(`${PREFIX} update inspection failed | ${err}`);
+    }
+
+    const batch = fs.batch();
+    let inspectionsSnap = null;
+
+    try {
+      inspectionsSnap = await this.firestoreQueryByCategory(fs, propertyId);
+    } catch (err) {
+      // wrap error
+      throw Error(
+        `${PREFIX} removeForProperty: query inspections failed | ${err}`
+      );
+    }
+
+    // Add all inspections to batch remove
+    inspectionsSnap.docs.forEach(inspectionDoc =>
+      batch.delete(inspectionDoc.ref)
+    );
+
+    try {
+      await batch.commit();
+    } catch (err) {
+      // wrap error
+      throw Error(
+        `${PREFIX} removeForProperty: firestore inspection removal failed | ${err}`
+      );
+    }
+
+    return updates;
+  },
+
+  /**
    * Move an active inspection to /archive
    * removing up all proxy records for inspection
    * @param {firebaseAdmin.database} db - Firebase Admin DB instance
@@ -276,6 +376,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {Object} updates hash
    */
   async archive(db, inspectionId, options = {}) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
@@ -336,6 +437,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {Object} updates
    */
   async unarchive(db, inspectionId, options = {}) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
@@ -424,6 +526,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {Object} updates
    */
   async reassignProperty(db, inspectionId, destPropertyId, options = {}) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
@@ -445,9 +548,39 @@ module.exports = modelSetup({
         if (!inspection) throw Error('not found');
       } catch (err) {
         throw Error(
-          `${PREFIX} reassignProperty: could not find inspection | ${err}`
+          `${PREFIX} reassignProperty: could not find inspection: ${err}`
         ); // wrap error
       }
+    }
+
+    const deficientItems = {};
+
+    // Lookup active DI's and copy current state
+    try {
+      const diSnapshots = await diModel.findAllByInspection(db, inspectionId);
+      diSnapshots.forEach(di => {
+        deficientItems[di.ref.path.toString()] = di.val();
+      });
+    } catch (err) {
+      throw Error(
+        `${PREFIX} reassignProperty: Deficient Item lookup failed: ${err}`
+      ); // wrap error
+    }
+
+    // Lookup archived DI's and copy current
+    // state to active deficient items
+    try {
+      const archiveSnap = await archiveModel.deficientItem.findAllByInspection(
+        db,
+        inspectionId
+      );
+      archiveSnap.forEach(di => {
+        deficientItems[di.ref.path.toString()] = di.val();
+      });
+    } catch (err) {
+      throw Error(
+        `${PREFIX} reassignProperty: Archived Deficient Item lookup failed: ${err}`
+      ); // wrap error
     }
 
     // Construct inspection
@@ -459,9 +592,7 @@ module.exports = modelSetup({
       });
       Object.assign(updates, archiveUpdates);
     } catch (err) {
-      throw Error(
-        `${PREFIX} reassignProperty: failed call to archive | ${err}`
-      );
+      throw Error(`${PREFIX} reassignProperty: failed call to archive: ${err}`);
     }
 
     // Construct inspection
@@ -485,6 +616,16 @@ module.exports = modelSetup({
       );
     }
 
+    // Add new Deficient Item paths
+    // Remove old Deficient Item paths
+    Object.keys(deficientItems).forEach(currentPath => {
+      const isArchive = currentPath.indexOf('/archive') === 0;
+      const currentPropertyId = currentPath.split('/')[isArchive ? 3 : 2];
+      const targetPath = currentPath.replace(currentPropertyId, destPropertyId);
+      updates[currentPath] = null;
+      updates[targetPath] = deficientItems[currentPath];
+    });
+
     if (!dryRun) {
       try {
         // Perform atomic update
@@ -498,6 +639,96 @@ module.exports = modelSetup({
   },
 
   /**
+   * Updates to reassign a
+   * Firestore inspection to a new
+   * property.  Move inspection's DIs
+   * to new property as well.
+   * @param {firebaseAdmin.firestore} fs - Firebase Admin DB instance
+   * @param  {String} inspectionId
+   * @param  {String} srcPropertyId
+   * @param  {String} destPropertyId
+   * @return {Promise}
+   */
+  async firestoreReassignProperty(
+    fs,
+    inspectionId,
+    srcPropertyId,
+    destPropertyId
+  ) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(
+      inspectionId && typeof inspectionId === 'string',
+      'has inspection id'
+    );
+    assert(
+      srcPropertyId && typeof srcPropertyId === 'string',
+      'has source property id'
+    );
+    assert(
+      destPropertyId && typeof destPropertyId === 'string',
+      'has destination property id'
+    );
+
+    const batch = fs.batch();
+    const inspectionsRef = fs.collection(INSPECTION_COLLECTION);
+    const propertiesRef = fs.collection(PROPERTY_COLLECTION);
+
+    // Add inspection reassign
+    // to batched updates
+    const inspectionDoc = inspectionsRef.doc(inspectionId);
+    batch.update(inspectionDoc, { property: destPropertyId });
+
+    // Remove inspection from source property
+    batch.update(
+      propertiesRef.doc(srcPropertyId),
+      { [`inspections.${inspectionId}`]: FieldValue.delete() },
+      { merge: true }
+    );
+
+    // Add inspection to destination property
+    batch.update(
+      propertiesRef.doc(destPropertyId),
+      { [`inspections.${inspectionId}`]: true },
+      { merge: true }
+    );
+
+    // Add each active deficient item
+    // property relationship updates to batch
+    try {
+      const deficientItemSnap = await diModel.firestoreQueryByInspection(
+        fs,
+        inspectionId
+      );
+
+      deficientItemSnap.docs.forEach(diDoc =>
+        batch.update(diDoc.ref, { property: destPropertyId })
+      );
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreReassignProperty: failed to lookup DIs: ${err}`
+      );
+    }
+
+    // Add each archived deficient item
+    // property relationship updates to batch
+    try {
+      const archivedDefItemSnap = await archiveModel.deficientItem.firestoreQueryByInspection(
+        fs,
+        inspectionId
+      );
+      archivedDefItemSnap.docs.forEach(diDoc =>
+        batch.update(diDoc.ref, { property: destPropertyId })
+      );
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreReassignProperty: failed to lookup DIs: ${err}`
+      );
+    }
+
+    return batch.commit();
+  },
+
+  /**
    * Create or update a Firestore inspection
    * @param  {firebaseAdmin.firestore} fs
    * @param  {String}  inspectionId
@@ -505,11 +736,12 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {DocumentReference}
    */
   async firestoreUpsertRecord(fs, inspectionId, data) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
-      `${PREFIX} has inspection id`
+      'has inspection id'
     );
-    assert(data && typeof data === 'object', `${PREFIX} has upsert data`);
+    assert(data && typeof data === 'object', 'has upsert data');
 
     const docRef = fs.collection(INSPECTION_COLLECTION).doc(inspectionId);
     let docSnap = null;
@@ -553,9 +785,10 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   firestoreFindRecord(fs, inspectionId) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
-      `${PREFIX} has inspection id`
+      'has inspection id'
     );
     return fs
       .collection(INSPECTION_COLLECTION)
@@ -570,14 +803,30 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   firestoreRemoveRecord(fs, inspectionId) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
-      `${PREFIX} has inspection id`
+      'has inspection id'
     );
     return fs
       .collection(INSPECTION_COLLECTION)
       .doc(inspectionId)
       .delete();
+  },
+
+  /**
+   * Lookup all inspections associated with a property
+   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {String} propertyId
+   * @return {Promise} - resolves {QuerySnapshot}
+   */
+  firestoreQueryByCategory(fs, propertyId) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    return fs
+      .collection(INSPECTION_COLLECTION)
+      .where('property', '==', propertyId)
+      .get();
   },
 });
 

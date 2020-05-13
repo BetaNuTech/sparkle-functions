@@ -11,7 +11,7 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
   afterEach(() => sinon.restore());
 
   it('returns a helpful error when Yardi request fails', done => {
-    // Stup requests
+    // Setup requests
     const property = { code: 'test' };
     sinon.stub(cobalt, 'getPropertyTenants').rejects(Error('ignore'));
     sinon
