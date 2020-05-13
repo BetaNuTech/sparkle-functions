@@ -59,6 +59,17 @@ module.exports = {
   followUpActionStates: ['completed', 'incomplete'],
   overdueEligibleStates: ['pending', 'requires-progress-update'],
   excludedPropertyNumOfDeficientItemsStates: ['closed'],
+  allStates: [
+    'requires-action',
+    'go-back',
+    'overdue',
+    'completed',
+    'incomplete',
+    'deferred',
+    'pending',
+    'requires-progress-update',
+    'closed',
+  ],
 
   /**
    * DI proxy attributes mapped
