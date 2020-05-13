@@ -36,10 +36,6 @@ module.exports = async function processMeta(db, fs, propertyId) {
     Object.assign({ id: inspId }, inspectionsData[inspId])
   );
 
-  // if (!inspections.length) {
-  //   return {};
-  // }
-
   let propertyInspectionDeficientItemsSnap = null;
 
   // Find any deficient items data for property

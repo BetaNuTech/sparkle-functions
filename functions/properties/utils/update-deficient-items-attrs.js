@@ -30,9 +30,9 @@ module.exports = function updateDeficientItemsAttrs(
     ...config.inspections // flatten
       .filter(hasDiTracking) // only completed, DI enabled, /w items
       .map(inspection => createDeficientItems(inspection)) // create inspection's deficient items
-      .filter(calcDeficientItems => Object.keys(calcDeficientItems).length) // remove non-deficient inspections
-      .map(calculatedDefItems =>
-        mergeExistingDiState(calculatedDefItems, config.deficientItems)
+      .filter(calcDefItems => hasActiveDeficientItems(calcDefItems)) // remove non-deficient inspections
+      .map(calcDefItems =>
+        mergeExistingDiState(calcDefItems, config.deficientItems)
       )
       .map(hashToMatrix)
   );
@@ -68,6 +68,15 @@ function hasDiTracking({ inspectionCompleted, template }) {
     Boolean(template.trackDeficientItems) &&
     Boolean(template.items)
   );
+}
+
+/**
+ * Has any calculated deficient items
+ * @param  {Object} calcDefItems
+ * @return {Boolean}
+ */
+function hasActiveDeficientItems(calcDefItems) {
+  return Boolean(Object.keys(calcDefItems).length);
 }
 
 /**
