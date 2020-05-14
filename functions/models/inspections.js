@@ -798,20 +798,46 @@ module.exports = modelSetup({
 
   /**
    * Remove Firestore Inspection
+   * TODO: Add inspection archiving
    * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
    * @param  {String} inspectionId
    * @return {Promise}
    */
-  firestoreRemoveRecord(fs, inspectionId) {
+  async firestoreRemoveRecord(fs, inspectionId) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
     );
-    return fs
-      .collection(INSPECTION_COLLECTION)
-      .doc(inspectionId)
-      .delete();
+
+    let inspectionDoc = null;
+    let inspection = null;
+
+    try {
+      inspectionDoc = await this.firestoreFindRecord(fs, inspectionId);
+      inspection = inspectionDoc.data();
+    } catch (err) {
+      throw Error(`${PREFIX}: firestoreRemoveRecord: ${err}`);
+    }
+
+    if (!inspection) return; // inspection does not exist
+
+    const batch = fs.batch();
+    batch.delete(inspectionDoc.ref);
+
+    // Add archive updates to transaction
+    await archiveModel.inspection.firestoreCreateRecord(
+      fs,
+      inspectionId,
+      inspection,
+      batch
+    );
+
+    return batch.commit();
+    // return fs
+    //   .collection(INSPECTION_COLLECTION)
+    //   .doc(inspectionId)
+    //   .delete();
   },
 
   /**
