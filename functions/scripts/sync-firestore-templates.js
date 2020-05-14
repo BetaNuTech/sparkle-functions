@@ -5,7 +5,7 @@ const templatesModel = require('../models/templates');
 
 (async () => {
   await utils.forEachChild(db, '/templates', async (id, data) => {
-    log.info(`Syning template "${id}"`);
+    log.info(`Syncing template "${id}"`);
 
     try {
       await templatesModel.firestoreUpsertRecord(fs, id, data);

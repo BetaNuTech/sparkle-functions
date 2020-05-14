@@ -5,7 +5,7 @@ const teamsModel = require('../models/teams');
 
 (async () => {
   await utils.forEachChild(db, '/teams', async (id, data) => {
-    log.info(`Syning team "${id}"`);
+    log.info(`Syncing team "${id}"`);
 
     try {
       await teamsModel.firestoreUpsertRecord(fs, id, data);

@@ -7,7 +7,7 @@ const properties = require('../properties');
 
 (async () => {
   await utils.forEachChild(db, '/properties', async (id, data) => {
-    log.info(`Syning property "${id}"`);
+    log.info(`Syncing property "${id}"`);
 
     try {
       await propertiesModel.firestoreUpsertRecord(fs, id, data);

@@ -70,13 +70,13 @@ module.exports = modelSetup({
    */
   realtimeUpsertRecord(db, teamId, data) {
     assert(db && typeof db.ref === 'function', 'has realtime db');
-    assert(teamId && typeof teamId === 'string', 'has property id');
+    assert(teamId && typeof teamId === 'string', 'has team id');
     assert(data && typeof data === 'object', 'has upsert data');
     return db.ref(`${TEAMS_DB}/${teamId}`).update(data);
   },
 
   /**
-   * Lookup Firestore Property
+   * Lookup Firestore Team
    * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
    * @param  {String} teamId
    * @return {Promise}
