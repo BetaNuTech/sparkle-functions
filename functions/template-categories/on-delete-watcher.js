@@ -18,8 +18,8 @@ const PREFIX = 'template-categories: on-delete:';
  * @return {function}
  */
 module.exports = function createOnDeleteHandler(db, fs) {
-  assert(Boolean(db), 'has realtime DB reference');
-  assert(Boolean(fs), 'has firestore DB reference');
+  assert(db && typeof db.ref === 'function', 'has realtime db');
+  assert(fs && typeof fs.collection === 'function', 'has firestore db');
 
   /**
    * Handler for the deletion of a Template Category

@@ -142,11 +142,8 @@ module.exports = modelSetup({
    */
   async firestoreUpsertRecord(fs, propertyId, data) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
-    assert(
-      propertyId && typeof propertyId === 'string',
-      `${PREFIX} has property id`
-    );
-    assert(data && typeof data === 'object', `${PREFIX} has upsert data`);
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    assert(data && typeof data === 'object', 'has upsert data');
 
     const docRef = fs.collection(PROPERTY_COLLECTION).doc(propertyId);
     let docSnap = null;

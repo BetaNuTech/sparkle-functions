@@ -205,6 +205,11 @@ exports.templateCategoryDelete = functions.database
   .ref('/templateCategories/{categoryId}')
   .onDelete(templateCategories.createOnDeleteWatcher(db, fs));
 
+// Template Category Create/Update
+exports.templateCategoryWrite = functions.database
+  .ref('/templateCategories/{categoryId}')
+  .onWrite(templateCategories.onWrite(fs));
+
 // Create Slack Notifications From Source
 exports.onCreateSourceSlackNotification = functions.database
   .ref('/notifications/src/{notificationId}')
