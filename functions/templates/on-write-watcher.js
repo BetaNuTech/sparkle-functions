@@ -9,7 +9,7 @@ const PREFIX = 'templates: on-write:';
  * Factory for template on write handler
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
  * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
- * @return {Function} - property onWrite handler
+ * @return {Function} - onWrite handler
  */
 module.exports = function createOnWriteWatcher(db, fs) {
   assert(Boolean(db), 'has realtime DB instance');
