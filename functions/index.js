@@ -11,6 +11,7 @@ const trello = require('./trello');
 const slack = require('./slack');
 const notifications = require('./notifications');
 const regTokens = require('./reg-tokens');
+const users = require('./users');
 const config = require('./config');
 const versions = require('./versions');
 const createRouter = require('./router');
@@ -243,6 +244,10 @@ exports.onCreateDeficientItemCompletedPhotoTrelloAttachement = functions.databas
     '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/completedPhotos/{completedPhotoId}'
   )
   .onCreate(trello.createOnCreateDICompletedPhoto(db));
+
+exports.userWrite = functions.database
+  .ref('/users/{userId}')
+  .onWrite(users.onWrite(fs));
 
 // Message Subscribers
 exports.propertyMetaSync = properties.pubsub.createSyncMeta(

@@ -7,7 +7,7 @@ const { db, fs, test, cloudFunctions } = require('../../setup');
 describe('Template Categories | Write', () => {
   afterEach(() => cleanDb(db, fs));
 
-  it('should create a new firestore team', async () => {
+  it('should create a new firestore record', async () => {
     const categoryId = uuid();
     const expected = {
       name: `test ${uuid()}`,
@@ -37,7 +37,7 @@ describe('Template Categories | Write', () => {
     expect(actual).to.deep.equal(expected);
   });
 
-  it('should update an existing firestore team', async () => {
+  it('should update an existing firestore record', async () => {
     const categoryId = uuid();
     const beforeData = {
       name: 'test 1',
@@ -71,7 +71,7 @@ describe('Template Categories | Write', () => {
     expect(actual).to.deep.equal(expected);
   });
 
-  it('should do nothing when a template category is deleted', async () => {
+  it('should do nothing when a record is deleted', async () => {
     const categoryId = uuid();
     const expected = {
       name: `test ${uuid()}`,
