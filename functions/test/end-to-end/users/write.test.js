@@ -105,11 +105,14 @@ describe('Users | Write', () => {
     expect(actual).to.deep.equal(expected);
   });
 
-  it('should remove all firestore property associations of existing record', async () => {
+  it('should remove all firestore property and team associations of existing record', async () => {
     const userId = uuid();
     const beforeData = {
       firstName: 'test',
       properties: {
+        [uuid()]: true,
+      },
+      teams: {
         [uuid()]: true,
       },
     };
@@ -124,6 +127,7 @@ describe('Users | Write', () => {
     await usersModel.realtimeUpsertRecord(db, userId, {
       ...expected,
       properties: null,
+      teams: null,
     }); // Update
     const afterSnap = await usersModel.realtimeFindRecord(db, userId);
 

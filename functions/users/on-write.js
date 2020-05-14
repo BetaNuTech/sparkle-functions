@@ -33,6 +33,10 @@ module.exports = function userOnWrite(fs) {
         writeData.properties = null;
       }
 
+      if (beforeData && beforeData.teams && !afterData.teams) {
+        writeData.teams = null;
+      }
+
       try {
         await usersModel.firestoreUpsertRecord(fs, userId, writeData);
       } catch (err) {
