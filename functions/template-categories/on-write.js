@@ -6,6 +6,7 @@ const PREFIX = 'template-categories: on-write:';
 
 /**
  * Factory for template category on write handler
+ * TODO: Deprecate when realtime db support dropped
  * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
  * @return {Function} - onWrite handler
  */
