@@ -99,9 +99,8 @@ module.exports = {
    * @param  {String} categoryId
    * @return {Promise} - resolves (Object) hash of realtime DB updates
    */
-  async removeCategory(db, fs, categoryId) {
+  async removeCategory(db, categoryId) {
     assert(Boolean(db), 'has realtime DB instance');
-    assert(Boolean(fs), 'has firestore DB instance');
     assert(categoryId && typeof categoryId === 'string', 'has category ID');
 
     const realtimeUpdates = {};
@@ -123,25 +122,6 @@ module.exports = {
       // wrap error
       throw Error(
         `${PREFIX} removeCategory: "${categoryId}" realtime update failed | ${err}`
-      );
-    }
-
-    try {
-      const firestoreUpdates = {};
-      const templatesInCategorySnap = await templatesModel.firestoreQueryByCategory(
-        fs,
-        categoryId
-      );
-
-      // Add all category removals to updates
-      templatesInCategorySnap.docs.forEach(templateSnap => {
-        firestoreUpdates[templateSnap.id] = { category: null };
-      });
-
-      await templatesModel.firestoreBatchUpdate(fs, firestoreUpdates);
-    } catch (err) {
-      throw Error(
-        `${PREFIX} removeCategory: "${categoryId}" firestore update failed | ${err}`
       );
     }
 

@@ -70,7 +70,6 @@ describe('Templates List', () => {
             val: () => ({}),
           }
         ).value(),
-        createFirestoreStub({}, { docs: { forEach: () => {} } }),
         'test'
       );
       expect(actual).to.be.an.instanceof(Promise);
@@ -79,7 +78,6 @@ describe('Templates List', () => {
     it('should resolve an update hash', () =>
       removeCategory(
         createDatabaseStub({}, { exists: () => true, val: () => ({}) }).value(),
-        createFirestoreStub({}, { docs: { forEach: () => {} } }),
         'test'
       ).then(actual => expect(actual).to.be.an('object')));
   });
