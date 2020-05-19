@@ -1,4 +1,5 @@
 const assert = require('assert');
+const templatesModel = require('./templates');
 const modelSetup = require('./utils/model-setup');
 
 const PREFIX = 'models: template-categories:';
@@ -102,5 +103,33 @@ module.exports = modelSetup({
     }
 
     return colRef;
+  },
+
+  /**
+   * Remove Firestore Template Category
+   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {String} categoryId
+   * @return {Promise}
+   */
+  async firestoreRemoveRecord(fs, categoryId) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(categoryId && typeof categoryId === 'string', 'has category id');
+
+    const batch = fs.batch();
+
+    // Delete category from all templates
+    try {
+      await templatesModel.firestoreRemoveCategory(fs, categoryId, batch);
+    } catch (err) {
+      throw Error(`${PREFIX}: ${err}`); // wrap
+    }
+
+    // Delete Template Category
+    const docRef = fs
+      .collection(TEMPLATE_CATEGORIES_COLLECTION)
+      .doc(categoryId);
+    batch.delete(docRef);
+
+    return batch.commit();
   },
 });
