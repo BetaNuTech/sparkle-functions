@@ -21,7 +21,7 @@ describe('Template Categories | On Delete', () => {
       });
 
     try {
-      await onDeleteHandler({}, {})(
+      await onDeleteHandler({ ref: () => {} }, { collection: () => {} })(
         {},
         {
           params: { categoryId: expected },
@@ -57,7 +57,7 @@ describe('Template Categories | On Delete', () => {
     });
 
     try {
-      await onDeleteHandler({}, {})(
+      await onDeleteHandler({ ref: () => {} }, { collection: () => {} })(
         {},
         {
           params: { categoryId },
@@ -80,15 +80,13 @@ describe('Template Categories | On Delete', () => {
     });
     sinon.stub(templatesModel, 'realtimeBatchUpdate').resolves();
     sinon.stub(propertyTemplates, 'remove').resolves();
-    sinon
-      .stub(templateList, 'removeCategory')
-      .callsFake((db, fs, categoryId) => {
-        actual = categoryId;
-        return Promise.resolve();
-      });
+    sinon.stub(templateList, 'removeCategory').callsFake((db, categoryId) => {
+      actual = categoryId;
+      return Promise.resolve();
+    });
 
     try {
-      await onDeleteHandler({}, {})(
+      await onDeleteHandler({ ref: () => {} }, { collection: () => {} })(
         {},
         {
           params: { categoryId: expected },

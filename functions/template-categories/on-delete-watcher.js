@@ -2,6 +2,7 @@ const assert = require('assert');
 const log = require('../utils/logger');
 const templatesList = require('../templates/utils/list');
 const templatesModel = require('../models/templates');
+const templateCategories = require('../models/template-categories');
 const propertyTemplates = require('../property-templates');
 
 const PREFIX = 'template-categories: on-delete:';
@@ -18,8 +19,8 @@ const PREFIX = 'template-categories: on-delete:';
  * @return {function}
  */
 module.exports = function createOnDeleteHandler(db, fs) {
-  assert(Boolean(db), 'has realtime DB reference');
-  assert(Boolean(fs), 'has firestore DB reference');
+  assert(db && typeof db.ref === 'function', 'has realtime db');
+  assert(fs && typeof fs.collection === 'function', 'has firestore db');
 
   /**
    * Handler for the deletion of a Template Category
@@ -34,8 +35,6 @@ module.exports = function createOnDeleteHandler(db, fs) {
       return;
     }
 
-    log.info(`${PREFIX} category ID: ${categoryId}`);
-
     // Lookup associated templates
     let templatesInCategory = null;
     try {
@@ -46,6 +45,15 @@ module.exports = function createOnDeleteHandler(db, fs) {
     } catch (err) {
       log.error(
         `${PREFIX} realtime template lookup by category failed | ${err}`
+      );
+    }
+
+    // Remove Firestore template category
+    try {
+      await templateCategories.firestoreRemoveRecord(fs, categoryId);
+    } catch (err) {
+      log.error(
+        `${PREFIX} Failed to remove firestore template category | ${err}`
       );
     }
 
@@ -79,14 +87,10 @@ module.exports = function createOnDeleteHandler(db, fs) {
     }
 
     // Remove Realtime DB associations in /templatesList
-    // Remove Firestore DB associations in /templates
     try {
-      await templatesList.removeCategory(db, fs, categoryId);
+      await templatesList.removeCategory(db, categoryId);
     } catch (err) {
-      log.error(`${PREFIX} Failed to update template proxies ${err}`);
-      return;
+      log.error(`${PREFIX} Failed to update template proxies | ${err}`);
     }
-
-    log.info(`${PREFIX} template category associations delete successful`);
   };
 };

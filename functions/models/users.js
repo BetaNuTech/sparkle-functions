@@ -14,6 +14,7 @@ module.exports = modelSetup({
    * @return {Object[]} - resolves an array containing all user IDs that belong to this team
    */
   async findByTeam(db, teamId) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(teamId && typeof teamId === 'string', 'has team id');
 
     const allUsers = await db.ref(USERS_DB).once('value');
@@ -36,8 +37,31 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {DataSnapshot}
    */
   getUser(db, userId) {
+    return this.realtimeFindRecord(db, userId);
+  },
+
+  /**
+   * Find realtime user
+   * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+   * @param  {String} userId
+   * @return {Promise} - resolves {DataSnapshot} snapshot
+   */
+  realtimeFindRecord(db, userId) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(userId && typeof userId === 'string', 'has user id');
     return db.ref(`${USERS_DB}/${userId}`).once('value');
+  },
+
+  /**
+   * Remove realtime user
+   * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+   * @param  {String} userId
+   * @return {Promise}
+   */
+  realtimeRemoveRecord(db, userId) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(userId && typeof userId === 'string', 'has user id');
+    return db.ref(`${USERS_DB}/${userId}`).remove();
   },
 
   /**
@@ -46,6 +70,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {DataSnapshot}
    */
   findAll(db) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     return db.ref(USERS_DB).once('value');
   },
 
@@ -57,6 +82,7 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   realtimeUpsertRecord(db, userId, data) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(userId && typeof userId === 'string', 'has user id');
     assert(data && typeof data === 'object', 'has upsert data');
     return db.ref(`${USERS_DB}/${userId}`).update(data);
@@ -187,5 +213,20 @@ module.exports = modelSetup({
     }
 
     return docRef;
+  },
+
+  /**
+   * Remove Firestore User
+   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {String} userId
+   * @return {Promise}
+   */
+  firestoreRemoveRecord(fs, userId) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(userId && typeof userId === 'string', 'has user id');
+    return fs
+      .collection(USERS_COLLECTION)
+      .doc(userId)
+      .delete();
   },
 });

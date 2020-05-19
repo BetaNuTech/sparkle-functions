@@ -135,6 +135,7 @@ module.exports = {
           'properties',
           'inspections',
           'deficiencies',
+          'templateCategories',
           'archives',
           'users',
           'teams',
