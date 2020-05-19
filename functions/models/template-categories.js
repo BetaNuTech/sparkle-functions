@@ -103,4 +103,19 @@ module.exports = modelSetup({
 
     return colRef;
   },
+
+  /**
+   * Remove Firestore Template Category
+   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {String} categoryId
+   * @return {Promise}
+   */
+  firestoreRemoveRecord(fs, categoryId) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(categoryId && typeof categoryId === 'string', 'has category id');
+    return fs
+      .collection(TEMPLATE_CATEGORIES_COLLECTION)
+      .doc(categoryId)
+      .delete();
+  },
 });
