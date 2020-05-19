@@ -87,9 +87,8 @@ module.exports = function createOnDeleteHandler(db, fs) {
     }
 
     // Remove Realtime DB associations in /templatesList
-    // TODO: move to fs remove record: Remove Firestore DB associations in /templates
     try {
-      await templatesList.removeCategory(db, fs, categoryId);
+      await templatesList.removeCategory(db, categoryId);
     } catch (err) {
       log.error(`${PREFIX} Failed to update template proxies | ${err}`);
     }
