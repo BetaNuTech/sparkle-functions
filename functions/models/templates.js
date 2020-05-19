@@ -248,7 +248,7 @@ module.exports = modelSetup({
 
   /**
    * Batch update templates
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} fs - Firestore DB instance
    * @param  {Object} updates - { id: { name: "update" } }
    * @return {Promise}
    */
@@ -269,6 +269,46 @@ module.exports = modelSetup({
     });
 
     return batch.commit();
+  },
+
+  /**
+   * Remove a category from all firestore templates
+   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {String} categoryId
+   * @param  {firestore.batch?} batch
+   * @return {Promise} - resolves {firestore.batch}
+   */
+  async firestoreRemoveCategory(fs, categoryId, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(categoryId && typeof categoryId === 'string', 'has category id');
+
+    const catBatch = batch || fs.batch();
+    const col = fs.collection(TEMPLATE_COLLECTION);
+
+    try {
+      const templatesInCategorySnap = await this.firestoreQueryByCategory(
+        fs,
+        categoryId
+      );
+
+      // Add all category removals to updates
+      templatesInCategorySnap.docs.forEach(templateSnap => {
+        const docRef = col.doc(templateSnap.id);
+        catBatch.update(docRef, { category: null });
+      });
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreRemoveCategory: "${categoryId}" firestore update failed: ${err}`
+      );
+    }
+
+    // Return included batch updates
+    if (batch) {
+      return batch;
+    }
+
+    // Commit created batch updates
+    return catBatch.commit();
   },
 
   /**

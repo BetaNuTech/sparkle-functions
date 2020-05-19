@@ -5,7 +5,7 @@ const inspectionsModel = require('../models/inspections');
 
 (async () => {
   await utils.forEachChild(db, '/inspections', async (id, data) => {
-    log.info(`Syning inspection "${id}"`);
+    log.info(`Syncing inspection "${id}"`);
 
     try {
       await inspectionsModel.firestoreUpsertRecord(fs, id, data);

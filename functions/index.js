@@ -11,6 +11,7 @@ const trello = require('./trello');
 const slack = require('./slack');
 const notifications = require('./notifications');
 const regTokens = require('./reg-tokens');
+const users = require('./users');
 const config = require('./config');
 const versions = require('./versions');
 const createRouter = require('./router');
@@ -205,6 +206,11 @@ exports.templateCategoryDelete = functions.database
   .ref('/templateCategories/{categoryId}')
   .onDelete(templateCategories.createOnDeleteWatcher(db, fs));
 
+// Template Category Create/Update
+exports.templateCategoryWrite = functions.database
+  .ref('/templateCategories/{categoryId}')
+  .onWrite(templateCategories.onWrite(fs));
+
 // Create Slack Notifications From Source
 exports.onCreateSourceSlackNotification = functions.database
   .ref('/notifications/src/{notificationId}')
@@ -238,6 +244,10 @@ exports.onCreateDeficientItemCompletedPhotoTrelloAttachement = functions.databas
     '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/completedPhotos/{completedPhotoId}'
   )
   .onCreate(trello.createOnCreateDICompletedPhoto(db));
+
+exports.userWrite = functions.database
+  .ref('/users/{userId}')
+  .onWrite(users.onWrite(fs));
 
 // Message Subscribers
 exports.propertyMetaSync = properties.pubsub.createSyncMeta(
