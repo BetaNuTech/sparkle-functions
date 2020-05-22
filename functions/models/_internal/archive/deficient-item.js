@@ -93,7 +93,7 @@ module.exports = modelSetup({
     const ref = db.ref(
       `${ARCHIVE_PATH}${DEFICIENT_ITEM_PATH}/${propertyId}/${deficientItemId}`
     );
-    return ref.set(data).then(() => ref);
+    return ref.set({ ...data, archive: true }).then(() => ref);
   },
 
   /**
@@ -250,7 +250,11 @@ module.exports = modelSetup({
     assert(data.item && typeof data.item === 'string', 'data has item id');
 
     // Add collection name to archive record
-    const archiveData = { _collection: DEFICIENT_COLLECTION, ...data };
+    const archiveData = {
+      ...data,
+      _collection: DEFICIENT_COLLECTION,
+      archive: true,
+    };
     return fs
       .collection(ARCHIVE_COLLECTION)
       .doc(deficientItemId)
