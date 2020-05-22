@@ -342,7 +342,7 @@ module.exports = modelSetup({
     let inspectionsSnap = null;
 
     try {
-      inspectionsSnap = await this.firestoreQueryByCategory(fs, propertyId);
+      inspectionsSnap = await this.firestoreQueryByProperty(fs, propertyId);
     } catch (err) {
       // wrap error
       throw Error(
@@ -729,6 +729,26 @@ module.exports = modelSetup({
   },
 
   /**
+   * Create a Firestore inspection
+   * @param  {firebaseAdmin.firestore} fs
+   * @param  {String} inspectionId
+   * @param  {Object} data
+   * @return {Promise} - resolves {WriteResult}
+   */
+  firestoreCreateRecord(fs, inspectionId, data) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(
+      inspectionId && typeof inspectionId === 'string',
+      'has inspection id'
+    );
+    assert(data && typeof data === 'object', 'has data');
+    return fs
+      .collection(INSPECTION_COLLECTION)
+      .doc(inspectionId)
+      .create(data);
+  },
+
+  /**
    * Create or update a Firestore inspection
    * @param  {firebaseAdmin.firestore} fs
    * @param  {String}  inspectionId
@@ -834,10 +854,6 @@ module.exports = modelSetup({
     );
 
     return batch.commit();
-    // return fs
-    //   .collection(INSPECTION_COLLECTION)
-    //   .doc(inspectionId)
-    //   .delete();
   },
 
   /**
@@ -846,7 +862,7 @@ module.exports = modelSetup({
    * @param  {String} propertyId
    * @return {Promise} - resolves {QuerySnapshot}
    */
-  firestoreQueryByCategory(fs, propertyId) {
+  firestoreQueryByProperty(fs, propertyId) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     return fs

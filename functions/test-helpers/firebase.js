@@ -106,24 +106,29 @@ module.exports = {
    * @return {Promise}
    */
   cleanDb(db, fs) {
-    const realtimeDbReq = [
-      'archive',
-      'completedInspectionsList',
-      'inspections',
-      'properties',
-      'propertyInspectionDeficientItems',
-      'propertyInspectionsList',
-      'propertyTemplatesList',
-      'registrationTokens',
-      'teams',
-      'templateCategories',
-      'templates',
-      'templatesList',
-      'users',
-      'sendMessages',
-      'integrations',
-      'notifications',
-    ].map(path => db.ref(path).set(null));
+    const realtimeDbReq = [];
+    if (db) {
+      realtimeDbReq.push(
+        db.ref().update({
+          '/archive': null,
+          '/completedInspectionsList': null,
+          '/inspections': null,
+          '/properties': null,
+          '/propertyInspectionDeficientItems': null,
+          '/propertyInspectionsList': null,
+          '/propertyTemplatesList': null,
+          '/registrationTokens': null,
+          '/teams': null,
+          '/templateCategories': null,
+          '/templates': null,
+          '/templatesList': null,
+          '/users': null,
+          '/sendMessages': null,
+          '/integrations': null,
+          '/notifications': null,
+        })
+      );
+    }
 
     const firestoreDbReq = [];
 
