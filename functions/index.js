@@ -15,6 +15,7 @@ const users = require('./users');
 const config = require('./config');
 const versions = require('./versions');
 const createRouter = require('./router');
+const firestoreWatchers = require('./firestore-watchers');
 
 const { firebase: firebaseConfig } = config;
 const defaultApp = admin.initializeApp(firebaseConfig);
@@ -363,3 +364,10 @@ exports.api = functions.https.onRequest(
     inspectionUrl: config.clientApps.web.inspectionURL,
   })
 );
+
+// Firestore Watchers
+
+const fsWatchers = firestoreWatchers(fs, pubsubClient);
+Object.keys(fsWatchers).forEach(endpoint => {
+  exports[endpoint] = fsWatchers[endpoint];
+});
