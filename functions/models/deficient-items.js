@@ -467,6 +467,7 @@ module.exports = modelSetup({
         ...deficientItem,
       };
       delete diData._collection; // Remove archive only attribute
+      diData.archive = false;
 
       try {
         await this.firestoreCreateRecord(fs, defItemId, diData);

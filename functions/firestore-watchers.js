@@ -12,5 +12,13 @@ module.exports = (fs, pubsubClient) => {
           'deficient-item-status-update'
         )
       ),
+
+    deficientItemsArchivingV2: functions.firestore
+      .document('deficiencies/{deficiencyId}')
+      .onUpdate(deficientItems.createOnUpdateArchiveV2(fs)),
+
+    deficientItemsUnarchivingV2: functions.firestore
+      .document('archives/{deficiencyId}')
+      .onUpdate(deficientItems.createOnUpdateArchiveV2(fs)),
   };
 };
