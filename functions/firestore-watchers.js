@@ -1,7 +1,7 @@
 const functions = require('firebase-functions');
 const deficientItems = require('./deficient-items');
 
-module.exports = (fs, pubsubClient) => {
+module.exports = (db, fs, pubsubClient) => {
   return {
     deficientItemsPropertyMetaSyncV2: functions.firestore
       .document('deficiencies/{deficiencyId}')
@@ -15,10 +15,10 @@ module.exports = (fs, pubsubClient) => {
 
     deficientItemsArchivingV2: functions.firestore
       .document('deficiencies/{deficiencyId}')
-      .onUpdate(deficientItems.createOnUpdateArchiveV2(fs)),
+      .onUpdate(deficientItems.createOnUpdateArchiveV2(db, fs)),
 
     deficientItemsUnarchivingV2: functions.firestore
       .document('archives/{deficiencyId}')
-      .onUpdate(deficientItems.createOnUpdateArchiveV2(fs)),
+      .onUpdate(deficientItems.createOnUpdateArchiveV2(db, fs)),
   };
 };

@@ -211,28 +211,35 @@ module.exports = modelSetup({
    * Remove Firestore Inspection
    * @param  {admin.firestore} fs - Firestore DB instance
    * @param  {String} deficientItemId
+   * @param  {firestore.batch?} batch
    * @return {Promise}
    */
-  firestoreRemoveRecord(fs, deficientItemId) {
+  firestoreRemoveRecord(fs, deficientItemId, batch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
       'has deficient item id'
     );
-    return fs
-      .collection(ARCHIVE_COLLECTION)
-      .doc(deficientItemId)
-      .delete();
+
+    const doc = fs.collection(ARCHIVE_COLLECTION).doc(deficientItemId);
+
+    if (batch) {
+      batch.delete(doc);
+      return Promise.resolve();
+    }
+
+    return doc.delete();
   },
 
   /**
    * Create Firestore Inspection
    * @param  {admin.firestore} fs - Firestore DB instance
    * @param  {String} deficientItemId
-   * @param  {Object} data
+   * @param  {Object} data,
+   * @param  {firestore.batch?} batch
    * @return {Promise}
    */
-  firestoreCreateRecord(fs, deficientItemId, data) {
+  firestoreCreateRecord(fs, deficientItemId, data, batch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
@@ -255,10 +262,15 @@ module.exports = modelSetup({
       _collection: DEFICIENT_COLLECTION,
       archive: true,
     };
-    return fs
-      .collection(ARCHIVE_COLLECTION)
-      .doc(deficientItemId)
-      .create(archiveData);
+    const doc = fs.collection(ARCHIVE_COLLECTION).doc(deficientItemId);
+
+    // Add create to batch write
+    if (batch) {
+      batch.create(doc, archiveData);
+      return Promise.resolve();
+    }
+
+    return doc.create(archiveData);
   },
 
   /**

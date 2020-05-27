@@ -1,3 +1,4 @@
+const assert = require('assert');
 const log = require('../../utils/logger');
 const systemModel = require('../../models/system');
 const defItemModel = require('../../models/deficient-items');
@@ -12,10 +13,16 @@ const PREFIX = 'trello: pubsub: update-update-card-due-date:';
  * Update due dates of previously created Trello cards
  * @param  {string} topic
  * @param  {functions.pubsub} pubsub
- * @param  {firebaseadmin.database} db
+ * @param  {admin.database} db
+ * @param  {admin.firestore} fs
  * @return {functions.cloudfunction}
  */
-module.exports = function createUpdateDueDate(topic = '', pubsub, db) {
+module.exports = function createUpdateDueDate(topic = '', pubsub, db, fs) {
+  assert(topic && typeof topic === 'string', 'has topic string');
+  assert(pubsub && typeof pubsub.topic === 'function', 'has pubsub client');
+  assert(db && typeof db.ref === 'function', 'has realtime db');
+  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+
   return pubsub.topic(topic).onPublish(async message => {
     let propertyId = '';
     let deficientItemId = '';
@@ -103,6 +110,7 @@ module.exports = function createUpdateDueDate(topic = '', pubsub, db) {
       try {
         await systemModel.updateTrelloCard(
           db,
+          fs,
           propertyId,
           deficientItemId,
           trelloCardId,
@@ -130,6 +138,7 @@ module.exports = function createUpdateDueDate(topic = '', pubsub, db) {
       try {
         await systemModel.updateTrelloCard(
           db,
+          fs,
           propertyId,
           deficientItemId,
           trelloCardId,
@@ -156,6 +165,7 @@ module.exports = function createUpdateDueDate(topic = '', pubsub, db) {
       try {
         await systemModel.updateTrelloCard(
           db,
+          fs,
           propertyId,
           deficientItemId,
           trelloCardId,

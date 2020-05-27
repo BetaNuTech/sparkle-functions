@@ -238,13 +238,13 @@ exports.onCreateDeficientItemProgressNoteTrelloComment = functions.database
   .ref(
     '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/progressNotes/{progressNoteId}'
   )
-  .onCreate(trello.createOnCreateDIProgressNote(db));
+  .onCreate(trello.createOnCreateDIProgressNote(db, fs));
 
 exports.onCreateDeficientItemCompletedPhotoTrelloAttachement = functions.database
   .ref(
     '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/completedPhotos/{completedPhotoId}'
   )
-  .onCreate(trello.createOnCreateDICompletedPhoto(db));
+  .onCreate(trello.createOnCreateDICompletedPhoto(db, fs));
 
 exports.userWrite = functions.database
   .ref('/users/{userId}')
@@ -342,19 +342,22 @@ exports.cleanupNotifications = notifications.pubsub.createCleanup(
 exports.trelloCommentsForDefItemStateUpdates = trello.pubsub.createCommentForDiState(
   'deficient-item-status-update',
   functions.pubsub,
-  db
+  db,
+  fs
 );
 
 exports.trelloCardDueDateUpdates = trello.pubsub.createUpdateDueDate(
   'deficient-item-status-update',
   functions.pubsub,
-  db
+  db,
+  fs
 );
 
 exports.trelloDiCardClose = trello.pubsub.createCloseDiCard(
   'deficient-item-status-update',
   functions.pubsub,
-  db
+  db,
+  fs
 );
 
 // API
@@ -367,7 +370,7 @@ exports.api = functions.https.onRequest(
 
 // Firestore Watchers
 
-const fsWatchers = firestoreWatchers(fs, pubsubClient);
+const fsWatchers = firestoreWatchers(db, fs, pubsubClient);
 Object.keys(fsWatchers).forEach(endpoint => {
   exports[endpoint] = fsWatchers[endpoint];
 });
