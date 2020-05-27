@@ -1,5 +1,4 @@
 const assert = require('assert');
-const FieldValue = require('firebase-admin').firestore.FieldValue;
 const modelSetup = require('./utils/model-setup');
 const createStateHistory = require('../deficient-items/utils/create-state-history');
 const systemModel = require('./system');
@@ -381,8 +380,8 @@ module.exports = modelSetup({
   /**
    * Move a deficient item under `/archive`
    * and remove it from its' active location
-   * @param  {firebaseadmin.database} db
-   * @param  {firebaseadmin.firebase} fs
+   * @param  {admin.database} db
+   * @param  {admin.firebase} fs
    * @param  {DataSnapshot} diSnap // TODO: remove requiring
    * @param  {Boolean} archiving is the function either archiving or unarchiving this deficient item?
    * @return {Promise} - resolves {Object} updates hash
@@ -467,6 +466,7 @@ module.exports = modelSetup({
         ...deficientItem,
       };
       delete diData._collection; // Remove archive only attribute
+      diData.archive = false;
 
       try {
         await this.firestoreCreateRecord(fs, defItemId, diData);
@@ -488,21 +488,14 @@ module.exports = modelSetup({
     try {
       const trelloResponse = await systemModel.archiveTrelloCard(
         db,
+        fs,
         propertyId,
         defItemId,
         archiving
       );
       if (trelloResponse) updates.trelloCardChanged = trelloResponse.id;
     } catch (err) {
-      if (err.code === 'ERR_TRELLO_CARD_DELETED') {
-        try {
-          await this._firestoreCleanupDeletedTrelloCard(fs, defItemId);
-        } catch (cleanErr) {
-          throw Error(
-            `${PREFIX} Firestore Trello card detail cleanup failed: ${cleanErr}`
-          );
-        }
-      } else {
+      if (err.code !== 'ERR_TRELLO_CARD_DELETED') {
         const resultErr = Error(
           `${PREFIX} associated Trello card ${toggleType} failed | ${err}`
         );
@@ -516,12 +509,13 @@ module.exports = modelSetup({
 
   /**
    * Create a Firestore Deficient Item
-   * @param  {firebaseAdmin.firestore} fs
+   * @param  {admin.firestore} fs
    * @param  {String} deficientItemId
    * @param  {Object} data
+   * @param  {firestore.batch?} batch
    * @return {Promise} - resolves {WriteResult}
    */
-  firestoreCreateRecord(fs, deficientItemId, data) {
+  firestoreCreateRecord(fs, deficientItemId, data, batch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
@@ -537,10 +531,15 @@ module.exports = modelSetup({
       'data has inspection id'
     );
     assert(data.item && typeof data.item === 'string', 'data has item id');
-    return fs
-      .collection(DEFICIENT_COLLECTION)
-      .doc(deficientItemId)
-      .create(data);
+
+    const doc = fs.collection(DEFICIENT_COLLECTION).doc(deficientItemId);
+
+    if (batch) {
+      batch.create(doc, data);
+      return Promise.resolve();
+    }
+
+    return doc.create(data);
   },
 
   /**
@@ -608,18 +607,23 @@ module.exports = modelSetup({
    * Remove Firestore Deficient Item
    * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
    * @param  {String} deficientItemId
+   * @param  {firestore.batch?} batch
    * @return {Promise}
    */
-  firestoreRemoveRecord(fs, deficientItemId) {
+  firestoreRemoveRecord(fs, deficientItemId, batch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
       'has deficient item id'
     );
-    return fs
-      .collection(DEFICIENT_COLLECTION)
-      .doc(deficientItemId)
-      .delete();
+    const doc = fs.collection(DEFICIENT_COLLECTION).doc(deficientItemId);
+
+    if (batch) {
+      batch.delete(doc);
+      return Promise.resolve();
+    }
+
+    return doc.delete();
   },
 
   /**
@@ -688,99 +692,179 @@ module.exports = modelSetup({
   },
 
   /**
-   * Cleanup Trello Attributes of
-   * Deficient Item or Archived Record
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
-   * @param  {String} deficientItemId
+   * Archive a Firestore deficiency
+   * TODO: Remove `db` once system models migrated
+   * @param  {admin.database} db
+   * @param  {admin.firestore} fs
+   * @param  {String}  deficiencyId
    * @return {Promise}
    */
-  async _firestoreCleanupDeletedTrelloCard(fs, deficientItemId) {
+  async firestoreDeactivateRecord(db, fs, deficiencyId) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
-      deficientItemId && typeof deficientItemId === 'string',
-      'has deficient item ID'
+      deficiencyId && typeof deficiencyId === 'string',
+      'has deficiency id'
     );
 
-    // Lookup Active Record
-    let deficientItem = null;
-    let isActive = false;
-    let isArchived = false;
+    let diDoc = null;
+    const updates = {};
 
     try {
-      const diDoc = await this.firestoreFindRecord(fs, deficientItemId);
-      isActive = Boolean(diDoc && diDoc.exists);
-      if (isActive) deficientItem = diDoc.data();
+      diDoc = await this.firestoreFindRecord(fs, deficiencyId);
     } catch (err) {
       throw Error(
-        `${PREFIX} firestoreCleanupDeletedTrelloCard: firestore DI "${deficientItemId}" lookup failed: ${err}`
+        `${PREFIX} firestoreDeactivateRecord: DI "${deficiencyId}" lookup failed: ${err}`
       );
     }
 
-    // Lookup Archived Record
-    if (!isActive) {
-      try {
-        const diDoc = await archive.deficientItem.firestoreFindRecord(
-          fs,
-          deficientItemId
+    if (!diDoc.exists) {
+      return updates;
+    }
+
+    const batch = fs.batch();
+    const deficientItem = diDoc.data();
+    deficientItem.archive = true;
+
+    try {
+      await archive.deficientItem.firestoreCreateRecord(
+        fs,
+        deficiencyId,
+        deficientItem,
+        batch
+      );
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreDeactivateRecord: archived DI "${deficiencyId}" create failed: ${err}`
+      );
+    }
+
+    try {
+      await this.firestoreRemoveRecord(fs, deficiencyId, batch);
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreDeactivateRecord: DI "${deficiencyId}" remove failed: ${err}`
+      );
+    }
+
+    // Batched write
+    try {
+      await batch.commit();
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreDeactivateRecord: batch commit failed: ${err}`
+      );
+    }
+
+    // Archive Trello Card
+    try {
+      const trelloResponse = await systemModel.archiveTrelloCard(
+        db,
+        fs,
+        deficientItem.property,
+        deficiencyId,
+        false
+      );
+      if (trelloResponse) updates.trelloCardChanged = trelloResponse.id;
+    } catch (err) {
+      if (err.code !== 'ERR_TRELLO_CARD_DELETED') {
+        const resultErr = Error(
+          `${PREFIX} firestoreDeactivateRecord: failed to unarchive trello card | ${err}`
         );
-        isArchived = Boolean(diDoc && diDoc.exists);
-        if (isArchived) deficientItem = diDoc.data();
-      } catch (err) {
-        throw Error(
-          `${PREFIX} firestoreCleanupDeletedTrelloCard: firestore archived DI "${deficientItemId}" lookup failed: ${err}`
-        );
+        resultErr.code = err.code || 'ERR_ARCHIVE_TRELLO_CARD';
+        throw resultErr;
       }
     }
 
-    // Firestore record does not exist
-    if (!isActive && !isArchived) {
-      return;
-    }
+    return updates;
+  },
 
+  /**
+   * Unarchive a previously
+   * archived Firestore deficiency
+   * TODO: Remove `db` once system models migrated
+   * @param  {admin.database} db
+   * @param  {admin.firestore} fs
+   * @param  {String}  deficiencyId
+   * @return {Promise}
+   */
+  async firestoreActivateRecord(db, fs, deficiencyId) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(
+      deficiencyId && typeof deficiencyId === 'string',
+      'has deficiency id'
+    );
+
+    let diDoc = null;
     const updates = {};
 
-    // Remove DI's Trello Card link
-    if (deficientItem.trelloCardURL) {
-      updates.trelloCardURL = FieldValue.delete();
+    try {
+      diDoc = await archive.deficientItem.firestoreFindRecord(fs, deficiencyId);
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreActivateRecord:  DI "${deficiencyId}" lookup failed: ${err}`
+      );
     }
 
-    // Remove any Trello Card Attachment references
-    // from the completed photos of the DI
-    Object.keys(deficientItem.completedPhotos || {}).forEach(id => {
-      const photo = deficientItem.completedPhotos[id];
-      if (photo && photo.trelloCardAttachement) {
-        updates.completedPhotos = updates.completedPhotos || {};
-        updates.completedPhotos[id] = {
-          ...photo,
-          trelloCardAttachement: FieldValue.delete(),
-        };
-      }
-    });
+    if (!diDoc.exists) {
+      return updates;
+    }
 
-    if (isActive) {
-      try {
-        await this.firestoreUpdateRecord(fs, deficientItemId, {
-          ...deficientItem,
-          ...updates,
-        });
-      } catch (err) {
-        throw Error(
-          `${PREFIX} firestoreCleanupDeletedTrelloCard: firestore update DI failed: ${err}`
+    const batch = fs.batch();
+    const deficientItem = diDoc.data();
+    delete deficientItem._collection; // Remove archive only attribute
+    deficientItem.archive = false;
+
+    try {
+      await this.firestoreCreateRecord(fs, deficiencyId, deficientItem, batch);
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreActivateRecord: DI "${deficiencyId}" create failed: ${err}`
+      );
+    }
+
+    try {
+      await archive.deficientItem.firestoreRemoveRecord(
+        fs,
+        deficiencyId,
+        batch
+      );
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreActivateRecord: DI "${deficiencyId}" create failed: ${err}`
+      );
+    }
+
+    // Batched write
+    try {
+      await batch.commit();
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreActivateRecord: batch commit failed: ${err}`
+      );
+    }
+
+    // Archive Trello Card
+    try {
+      const trelloResponse = await systemModel.archiveTrelloCard(
+        db,
+        fs,
+        deficientItem.property,
+        deficiencyId,
+        true
+      );
+      if (trelloResponse) updates.trelloCardChanged = trelloResponse.id;
+    } catch (err) {
+      if (err.code !== 'ERR_TRELLO_CARD_DELETED') {
+        const resultErr = Error(
+          `${PREFIX} firestoreActivateRecord: failed to archive trello card | ${err}`
         );
+        resultErr.code = err.code || 'ERR_ARCHIVE_TRELLO_CARD';
+        throw resultErr;
       }
     }
 
-    if (isArchived) {
-      try {
-        await archive.deficientItem.firestoreUpdateRecord(fs, deficientItemId, {
-          ...deficientItem,
-          ...updates,
-        });
-      } catch (err) {
-        throw Error(
-          `${PREFIX} firestoreCleanupDeletedTrelloCard: firestore archive update DI failed: ${err}`
-        );
-      }
-    }
+    return updates;
   },
 });

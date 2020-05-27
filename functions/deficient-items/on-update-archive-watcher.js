@@ -12,8 +12,11 @@ const PREFIX = 'deficient-items: on-di-toggle-archive-update:';
  * @return {Function} - property onWrite handler
  */
 module.exports = function createOnDiToggleArchiveUpdateHandler(db, fs) {
-  assert(Boolean(db), 'has firebase admin database reference');
-  assert(Boolean(fs), 'has firestore DB instance');
+  assert(db && typeof db.ref === 'function', 'has realtime db');
+  assert(
+    fs && typeof fs.collection === 'function',
+    'has firestore DB instance'
+  );
 
   return async (change, event) => {
     const { propertyId, deficientItemId } = event.params;

@@ -12,11 +12,13 @@ const PREFIX = 'trello: on-di-progress-note-create:';
 /**
  * Factory for creating Trello comments from
  * a new Deficient Item's progress note
- * @param  {firebaseAdmin.database} database - Firebase Admin DB instance
+ * @param  {admin.database} db - Firebase Admin DB instance
+ * @param  {admin.firestore} fs - Firestore Admin DB instance
  * @return {Function} - DI progress note onCreate handler
  */
-module.exports = function createOnDiProgressNote(db) {
-  assert(Boolean(db), 'has firebase admin database reference');
+module.exports = function createOnDiProgressNote(db, fs) {
+  assert(db && typeof db.ref === 'function', 'has realtime db');
+  assert(fs && typeof fs.collection === 'function', 'has firestore db');
 
   // Template for all Progress Note comments
   const progNoteTemplate = hbs.compile(trelloCardDIProgressNoteTemplate);
@@ -100,6 +102,7 @@ module.exports = function createOnDiProgressNote(db) {
     try {
       await systemModel.postTrelloCardComment(
         db,
+        fs,
         propertyId,
         deficientItemId,
         trelloCardId,
