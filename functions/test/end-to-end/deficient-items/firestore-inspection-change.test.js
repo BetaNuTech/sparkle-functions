@@ -42,9 +42,13 @@ describe('Deficient Items | Firestore Inspection Change', () => {
       item: itemId,
       state: 'requires-action',
     };
-    const expected = {
+    const diData = {
       property: propertyId,
       ...realtimeData,
+    };
+    const expected = {
+      ...diData,
+      archive: true,
     };
     const inspectionPath = `/inspections/${inspectionId}`;
 
@@ -55,7 +59,7 @@ describe('Deficient Items | Firestore Inspection Change', () => {
       propertyId,
       realtimeData
     ); // Add realtime DI for item
-    await diModel.firestoreCreateRecord(fs, diRef.key, expected); // Add Firestore DI for item
+    await diModel.firestoreCreateRecord(fs, diRef.key, diData); // Add Firestore DI for item
     const beforeSnap = await db
       .ref(`${inspectionPath}/updatedLastDate`)
       .once('value'); // Create before
@@ -97,7 +101,6 @@ describe('Deficient Items | Firestore Inspection Change', () => {
       deficienciesExist: true,
       inspectionCompleted: true,
       property: propertyId,
-
       // Create two deficient items on inspection
       template: {
         trackDeficientItems: true,
@@ -115,8 +118,7 @@ describe('Deficient Items | Firestore Inspection Change', () => {
         },
       },
     });
-
-    const expected = {
+    const diData = {
       state: 'requires-action',
       property: propertyId,
       inspection: inspectionId,
@@ -130,6 +132,10 @@ describe('Deficient Items | Firestore Inspection Change', () => {
       itemMainInputSelection: 1,
     };
     const inspectionPath = `/inspections/${inspectionId}`;
+    const expected = {
+      ...diData,
+      archive: true,
+    };
 
     // Setup database
     await inspectionsModel.realtimeUpsertRecord(db, inspectionId, beforeData); // Add inspection
@@ -142,7 +148,7 @@ describe('Deficient Items | Firestore Inspection Change', () => {
       property: propertyId,
       ...unchangedDeficientItem,
     });
-    const diTwo = await diModel.realtimeCreateRecord(db, propertyId, expected);
+    const diTwo = await diModel.realtimeCreateRecord(db, propertyId, diData);
     await diModel.firestoreCreateRecord(fs, diTwo.key, {
       property: propertyId,
       ...expected,

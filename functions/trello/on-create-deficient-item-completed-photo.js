@@ -8,16 +8,17 @@ const PREFIX = 'trello: on-create-di-completed-photo:';
 /**
  * Factory for creating Trello image comments from
  * a Deficient Item's completed photos
- * @param  {firebaseAdmin.database} database - Firebase Admin DB instance
+ * @param  {admin.database} database - Firebase Admin DB instance
+ * @param  {admin.firestore} firestore - Firebase Admin DB instance
  * @return {Function} - DI completed photo onCreate handler
  */
-module.exports = function createOnDiCompletedPhotoCreate(db) {
-  assert(Boolean(db), 'has firebase admin database reference');
+module.exports = function createOnDiCompletedPhotoCreate(db, fs) {
+  assert(db && typeof db.ref === 'function', 'has realtime db');
+  assert(fs && typeof fs.collection === 'function', 'has firestore db');
 
   return async (change, event) => {
     const { propertyId, deficientItemId, completedPhotoId } = event.params;
     const completedPhoto = change.val();
-
     assert(
       propertyId && typeof propertyId === 'string',
       'has property ID reference'
@@ -69,6 +70,7 @@ module.exports = function createOnDiCompletedPhotoCreate(db) {
       // Perform post attachment requests
       const trelloResponse = await systemModel.postTrelloCardAttachment(
         db,
+        fs,
         propertyId,
         deficientItemId,
         trelloCardId,

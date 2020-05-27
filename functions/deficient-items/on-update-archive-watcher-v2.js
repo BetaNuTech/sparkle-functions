@@ -9,10 +9,12 @@ const DEFICIENT_COLLECTION = config.deficientItems.collection;
 /**
  * Factory for client requested Deficiency
  * archiving on DI state updates
- * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
+ * @param  {admin.database} db
+ * @param  {admin.firestore} fs
  * @return {Function} - property onWrite handler
  */
-module.exports = function createOnDiToggleArchiveUpdateHandler(fs) {
+module.exports = function createOnDiToggleArchiveUpdateHandler(db, fs) {
+  assert(db && typeof db.ref === 'function', 'has realtime db');
   assert(
     fs && typeof fs.collection === 'function',
     'has firestore DB instance'
@@ -25,28 +27,34 @@ module.exports = function createOnDiToggleArchiveUpdateHandler(fs) {
       'has deficiency id'
     );
 
-    const beforeData = change.after.data();
+    const beforeData = change.before.data();
     const afterData = change.after.data();
 
     if (
       typeof afterData.archive !== 'boolean' ||
-      beforeData.archive === afterData.archive ||
+      Boolean(beforeData.archive) === afterData.archive ||
       (afterData._collection && afterData._collection !== DEFICIENT_COLLECTION)
     ) {
-      return; // non-archive update
+      return; // non-archive update to deficiency
     }
 
     const isArchived = Boolean(afterData._collection);
-    const archiveType = afterData.archive ? 'archived' : 'unarchived';
-
+    const archivePastTense = afterData.archive ? 'archived' : 'unarchived';
     let archiveUpdates = null;
-    try {
-      // archiveUpdates = await model.toggleArchive(db, fs, diSnap, isArchiving);
 
+    try {
       if (isArchived) {
-        archiveUpdates = await model.unarchiveDeficiency(fs, deficiencyId); // TODO write
+        archiveUpdates = await model.firestoreActivateRecord(
+          db,
+          fs,
+          deficiencyId
+        );
       } else {
-        archiveUpdates = await model.archiveDeficiency(fs, deficiencyId); // TODO write
+        archiveUpdates = await model.firestoreDeactivateRecord(
+          db,
+          fs,
+          deficiencyId
+        );
       }
     } catch (err) {
       if (err.code === 'ERR_TRELLO_CARD_DELETED') {
@@ -54,7 +62,9 @@ module.exports = function createOnDiToggleArchiveUpdateHandler(fs) {
           `${PREFIX} Trello API card not found, removed card refrences from DB`
         );
       } else {
-        log.error(`${PREFIX} toggling DI to ${archiveType} failed | ${err}`);
+        log.error(
+          `${PREFIX} toggling DI to ${archivePastTense} failed | ${err}`
+        );
         throw err;
       }
     }
@@ -62,7 +72,7 @@ module.exports = function createOnDiToggleArchiveUpdateHandler(fs) {
     // Log archived Trello card
     if (archiveUpdates.trelloCardChanged) {
       log.info(
-        `${PREFIX} ${archiveType} Trello card ${archiveUpdates.trelloCardChanged}`
+        `${PREFIX} ${archivePastTense} Trello card ${archiveUpdates.trelloCardChanged}`
       );
     }
   };
