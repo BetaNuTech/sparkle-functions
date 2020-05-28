@@ -2,11 +2,13 @@ const nock = require('nock');
 const { expect } = require('chai');
 const uuid = require('../../../test-helpers/uuid');
 const trelloTest = require('../../../test-helpers/trello');
+const diModel = require('../../../models/deficient-items');
 const { cleanDb } = require('../../../test-helpers/firebase');
 const deferredDiData = require('../../../test-helpers/mocks/deferred-deficient-item');
 const TRELLO_POST_ATTACHMENT_CARD_RESPONSE = require('../../../test-helpers/mocks/post-trello-card-attachment');
 const {
   db,
+  fs,
   test,
   cloudFunctions,
   uid: SERVICE_ACCOUNT_ID,
@@ -28,6 +30,7 @@ const DEFICIENT_ITEM_COMPLETED_PHOTO_URL =
 const DEFICIENT_ITEM_DATA = JSON.parse(JSON.stringify(deferredDiData)); // deep clone
 const DEFICIENT_ITEM_PATH = `/propertyInspectionDeficientItems/${PROPERTY_ID}/${DEFICIENT_ITEM_ID}`;
 const COMPLETED_PHOTO_PATH = `${DEFICIENT_ITEM_PATH}/completedPhotos/${COMPLETED_PHOTO_ID}`;
+DEFICIENT_ITEM_DATA.updatedAt = Math.round(Date.now() / 1000);
 DEFICIENT_ITEM_DATA.stateHistory['-current'].user = USER_ID;
 DEFICIENT_ITEM_DATA.dueDates['-current'].user = USER_ID;
 DEFICIENT_ITEM_DATA.dueDates['-previous'].user = USER_ID;
@@ -47,7 +50,7 @@ const TRELLO_SYSTEM_INTEGRATION_DATA = {
 describe('Trello | Create attachment for Deficient Item Completed Photo', () => {
   afterEach(async () => {
     nock.cleanAll();
-    await cleanDb(db);
+    await cleanDb(db, fs);
     return db.ref(`/system/integrations/${SERVICE_ACCOUNT_ID}`).remove();
   });
 
@@ -207,5 +210,70 @@ describe('Trello | Create attachment for Deficient Item Completed Photo', () => 
       attachmentId
     );
     expect(actual).to.equal(false);
+  });
+
+  it('should remove all firestore references to completed photo attachments when trello card is removed', async () => {
+    // Stub Requests
+    nock('https://api.trello.com')
+      .post(
+        `/1/cards/${TRELLO_CARD_ID}/attachments?key=${TRELLO_API_KEY}&token=${TRELLO_AUTH_TOKEN}&url=${encodeURIComponent(
+          DEFICIENT_ITEM_COMPLETED_PHOTO_URL
+        )}`
+      )
+      .reply(200, TRELLO_POST_ATTACHMENT_CARD_RESPONSE);
+
+    // Setup database
+    const diData = JSON.parse(JSON.stringify(DEFICIENT_ITEM_DATA));
+    await db.ref(DEFICIENT_ITEM_PATH).set(diData);
+    await diModel.firestoreCreateRecord(fs, DEFICIENT_ITEM_ID, {
+      ...diData,
+      property: PROPERTY_ID,
+    });
+    await db.ref(TRELLO_CREDENTIAL_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
+    await db.ref(TRELLO_CARDS_PATH).set(TRELLO_CARD_DATA);
+    const changeSnap = await db.ref(COMPLETED_PHOTO_PATH).once('value');
+
+    // Execute
+    const wrapped = test.wrap(
+      cloudFunctions.onCreateDeficientItemCompletedPhotoTrelloAttachement
+    );
+    await wrapped(changeSnap, {
+      params: {
+        propertyId: PROPERTY_ID,
+        deficientItemId: DEFICIENT_ITEM_ID,
+        completedPhotoId: COMPLETED_PHOTO_ID,
+      },
+    });
+
+    // Assertions
+    const result = await diModel.firestoreFindRecord(fs, DEFICIENT_ITEM_ID);
+    const resultData = result.data() || {};
+    const { completedPhotos = {} } = resultData;
+    const expectedCompletedPhotos = {
+      ...DEFICIENT_ITEM_DATA.completedPhotos,
+    };
+    expectedCompletedPhotos[
+      COMPLETED_PHOTO_ID
+    ].trelloCardAttachement = TRELLO_ATTACHMENT_ID;
+
+    [
+      {
+        actual: resultData.updatedAt !== diData.updatedAt,
+        expected: true,
+        msg: 'updated firestore record updated at timestamp',
+      },
+      {
+        actual: completedPhotos,
+        deep: true,
+        expected: expectedCompletedPhotos,
+        msg: 'found completed photo entry with matching attachement id',
+      },
+    ].forEach(({ actual, expected, deep, msg }) => {
+      if (deep) {
+        expect(actual).to.deep.equal(expected, msg);
+      } else {
+        expect(actual).to.equal(expected, msg);
+      }
+    });
   });
 });
