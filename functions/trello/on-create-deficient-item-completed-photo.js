@@ -91,6 +91,7 @@ module.exports = function createOnDiCompletedPhotoCreate(db, fs) {
       // Persist DI completed photo's Trello attachement reference
       await defItemModel.updateCompletedPhotoTrelloCardAttachment(
         db,
+        fs,
         propertyId,
         deficientItemId,
         completedPhotoId,
