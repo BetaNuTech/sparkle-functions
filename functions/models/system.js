@@ -1,5 +1,7 @@
 const assert = require('assert');
+const FieldValue = require('firebase-admin').firestore.FieldValue;
 const got = require('got');
+const archive = require('./_internal/archive');
 const modelSetup = require('./utils/model-setup');
 const config = require('../config');
 
@@ -7,6 +9,7 @@ const PREFIX = 'models: system:';
 const SERVICE_ACCOUNT_CLIENT_ID =
   config.firebase.databaseAuthVariableOverride.uid;
 const DI_DATABASE_PATH = config.deficientItems.dbPath;
+const DEFICIENT_COLLECTION = config.deficientItems.collection;
 const TRELLO_ORG_PATH = `/system/integrations/${SERVICE_ACCOUNT_CLIENT_ID}/trello/organization`;
 const YARDI_ORG_PATH = `/system/integrations/${SERVICE_ACCOUNT_CLIENT_ID}/yardi/organization`;
 const COBALT_ORG_PATH = `/system/integrations/${SERVICE_ACCOUNT_CLIENT_ID}/cobalt/organization`;
@@ -205,13 +208,16 @@ module.exports = modelSetup({
   /**
    * Check trello for deficient item card
    * and archive if exists
-   * @param  {firebaseadmin.database} db
+   * @param  {admin.database} db
+   * @param  {admin.firestore} fs
    * @param  {String} propertyId
    * @param  {String} deficientItemId
    * @param  {Boolean} archiving if the trello card should be archived or unarchived
    * @return {Promise} - resolves {Object} Trello API response
    */
-  async archiveTrelloCard(db, propertyId, deficientItemId, archiving) {
+  async archiveTrelloCard(db, fs, propertyId, deficientItemId, archiving) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
@@ -283,6 +289,8 @@ module.exports = modelSetup({
             deficientItemId,
             trelloCardId
           );
+
+          await this._firestoreCleanupDeletedTrelloCard(fs, deficientItemId);
         } catch (cleanUpErr) {
           resultErr.message += `${cleanUpErr}`; // append to primary error
         }
@@ -381,8 +389,112 @@ module.exports = modelSetup({
   },
 
   /**
+   * Cleanup Trello Attributes of
+   * Deficient Item or Archived Record
+   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {String} deficientItemId
+   * @return {Promise}
+   */
+  async _firestoreCleanupDeletedTrelloCard(fs, deficiencyId) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(
+      deficiencyId && typeof deficiencyId === 'string',
+      'has deficient item ID'
+    );
+
+    // Lookup Active Record
+    let deficientItem = null;
+    let isActive = false;
+    let isArchived = false;
+
+    try {
+      const diDoc = await fs
+        .collection(DEFICIENT_COLLECTION)
+        .doc(deficiencyId)
+        .get();
+      isActive = Boolean(diDoc && diDoc.exists);
+      if (isActive) deficientItem = diDoc.data();
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreCleanupDeletedTrelloCard: firestore DI "${deficiencyId}" lookup failed: ${err}`
+      );
+    }
+
+    // Lookup Archived Record
+    if (!isActive) {
+      try {
+        const diDoc = await archive.deficientItem.firestoreFindRecord(
+          fs,
+          deficiencyId
+        );
+        isArchived = Boolean(diDoc && diDoc.exists);
+        if (isArchived) deficientItem = diDoc.data();
+      } catch (err) {
+        throw Error(
+          `${PREFIX} firestoreCleanupDeletedTrelloCard: firestore archived DI "${deficiencyId}" lookup failed: ${err}`
+        );
+      }
+    }
+
+    // Firestore record does not exist
+    if (!isActive && !isArchived) {
+      return;
+    }
+
+    const updates = {};
+
+    // Remove DI's Trello Card link
+    if (deficientItem.trelloCardURL) {
+      updates.trelloCardURL = FieldValue.delete();
+    }
+
+    // Remove any Trello Card Attachment references
+    // from the completed photos of the DI
+    Object.keys(deficientItem.completedPhotos || {}).forEach(id => {
+      const photo = deficientItem.completedPhotos[id];
+      if (photo && photo.trelloCardAttachement) {
+        updates.completedPhotos = updates.completedPhotos || {};
+        updates.completedPhotos[id] = {
+          ...photo,
+          trelloCardAttachement: FieldValue.delete(),
+        };
+      }
+    });
+
+    if (isActive) {
+      try {
+        await fs
+          .collection(DEFICIENT_COLLECTION)
+          .doc(deficiencyId)
+          .update({
+            ...deficientItem,
+            ...updates,
+          });
+      } catch (err) {
+        throw Error(
+          `${PREFIX} firestoreCleanupDeletedTrelloCard: firestore update DI failed: ${err}`
+        );
+      }
+    }
+
+    if (isArchived) {
+      try {
+        await archive.deficientItem.firestoreUpdateRecord(fs, deficiencyId, {
+          ...deficientItem,
+          ...updates,
+        });
+      } catch (err) {
+        throw Error(
+          `${PREFIX} firestoreCleanupDeletedTrelloCard: firestore archive update DI failed: ${err}`
+        );
+      }
+    }
+  },
+
+  /**
    * POST a Trello card comment
-   * @param  {firebaseadmin.database} db
+   * @param  {admin.database} db
+   * @param  {admin.firebase} fs
    * @param  {String}  propertyId
    * @param  {String}  deficientItemId
    * @param  {String}  trelloCardId
@@ -391,24 +503,24 @@ module.exports = modelSetup({
    */
   async postTrelloCardComment(
     db,
+    fs,
     propertyId,
     deficientItemId,
     trelloCardId,
     text
   ) {
-    assert(
-      propertyId && typeof propertyId === 'string',
-      `${PREFIX} has property id`
-    );
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
-      `${PREFIX} has deficient item ID`
+      'has deficient item ID'
     );
     assert(
       trelloCardId && typeof trelloCardId === 'string',
-      `${PREFIX} has Trello Card id`
+      'has Trello Card id'
     );
-    assert(text && typeof text === 'string', `${PREFIX} has comment text`);
+    assert(text && typeof text === 'string', 'has comment text');
 
     // Lookup Trello credentials
     let apikey = '';
@@ -453,6 +565,8 @@ module.exports = modelSetup({
             deficientItemId,
             trelloCardId
           );
+
+          await this._firestoreCleanupDeletedTrelloCard(fs, deficientItemId);
         } catch (cleanUpErr) {
           resultErr.message += `${cleanUpErr}`; // append to primary error
         }
@@ -466,7 +580,8 @@ module.exports = modelSetup({
 
   /**
    * PUT request to trello API
-   * @param  {firebaseadmin.database} db
+   * @param  {admin.database} db
+   * @param  {admin.firestore} fs
    * @param  {String} propertyId
    * @param  {String} deficientItemId
    * @param  {String} trelloCardId
@@ -475,22 +590,22 @@ module.exports = modelSetup({
    */
   async updateTrelloCard(
     db,
+    fs,
     propertyId,
     deficientItemId,
     trelloCardId,
     updates = {}
   ) {
-    assert(
-      propertyId && typeof propertyId === 'string',
-      `${PREFIX} has property id`
-    );
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
-      `${PREFIX} has deficient item ID`
+      'has deficient item ID'
     );
     assert(
       trelloCardId && typeof trelloCardId === 'string',
-      `${PREFIX} has Trello Card id`
+      'has Trello Card id'
     );
     assert(
       typeof updates === 'object' && Object.keys(updates).length,
@@ -546,6 +661,8 @@ module.exports = modelSetup({
             deficientItemId,
             trelloCardId
           );
+
+          await this._firestoreCleanupDeletedTrelloCard(fs, deficientItemId);
         } catch (cleanUpErr) {
           resultErr.message += `${cleanUpErr}`; // append to primary error
         }
@@ -559,7 +676,8 @@ module.exports = modelSetup({
 
   /**
    * POST a Trello card attachment
-   * @param  {firebaseadmin.database} db
+   * @param  {admin.database} db
+   * @param  {admin.firestore} db
    * @param  {String} propertyId
    * @param  {String} deficientItemId
    * @param  {String} trelloCardId
@@ -568,24 +686,24 @@ module.exports = modelSetup({
    */
   async postTrelloCardAttachment(
     db,
+    fs,
     propertyId,
     deficientItemId,
     trelloCardId,
     url
   ) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       trelloCardId && typeof trelloCardId === 'string',
-      `${PREFIX} has Trello Card id`
+      'has Trello Card id'
     );
-    assert(
-      propertyId && typeof propertyId === 'string',
-      `${PREFIX} has property id`
-    );
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
-      `${PREFIX} has deficient item ID`
+      'has deficient item ID'
     );
-    assert(typeof url === 'string', `${PREFIX} has attachment url`);
+    assert(typeof url === 'string', 'has attachment url');
 
     // Lookup Trello credentials
     let apikey = '';
@@ -631,6 +749,8 @@ module.exports = modelSetup({
             deficientItemId,
             trelloCardId
           );
+
+          await this._firestoreCleanupDeletedTrelloCard(fs, deficientItemId);
         } catch (cleanUpErr) {
           resultErr.message += `${cleanUpErr}`; // append to primary error
         }

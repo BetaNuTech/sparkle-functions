@@ -15,6 +15,7 @@ const users = require('./users');
 const config = require('./config');
 const versions = require('./versions');
 const createRouter = require('./router');
+const firestoreWatchers = require('./firestore-watchers');
 
 const { firebase: firebaseConfig } = config;
 const defaultApp = admin.initializeApp(firebaseConfig);
@@ -181,6 +182,12 @@ exports.deficientItemsUnarchiving = functions.database
   )
   .onUpdate(deficientItems.createOnUpdateArchive(db, fs));
 
+exports.deficientItemsProgressNotesSync = functions.database
+  .ref(
+    '/propertyInspectionDeficientItems/{propertyId}/{deficiencyId}/progressNotes/{progressNoteId}'
+  )
+  .onUpdate(deficientItems.onUpdateProgressNote(fs));
+
 // Template onWrite
 exports.templateWrite = functions.database
   .ref('/templates/{templateId}')
@@ -237,13 +244,13 @@ exports.onCreateDeficientItemProgressNoteTrelloComment = functions.database
   .ref(
     '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/progressNotes/{progressNoteId}'
   )
-  .onCreate(trello.createOnCreateDIProgressNote(db));
+  .onCreate(trello.createOnCreateDIProgressNote(db, fs));
 
 exports.onCreateDeficientItemCompletedPhotoTrelloAttachement = functions.database
   .ref(
     '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/completedPhotos/{completedPhotoId}'
   )
-  .onCreate(trello.createOnCreateDICompletedPhoto(db));
+  .onCreate(trello.createOnCreateDICompletedPhoto(db, fs));
 
 exports.userWrite = functions.database
   .ref('/users/{userId}')
@@ -341,19 +348,22 @@ exports.cleanupNotifications = notifications.pubsub.createCleanup(
 exports.trelloCommentsForDefItemStateUpdates = trello.pubsub.createCommentForDiState(
   'deficient-item-status-update',
   functions.pubsub,
-  db
+  db,
+  fs
 );
 
 exports.trelloCardDueDateUpdates = trello.pubsub.createUpdateDueDate(
   'deficient-item-status-update',
   functions.pubsub,
-  db
+  db,
+  fs
 );
 
 exports.trelloDiCardClose = trello.pubsub.createCloseDiCard(
   'deficient-item-status-update',
   functions.pubsub,
-  db
+  db,
+  fs
 );
 
 // API
@@ -363,3 +373,10 @@ exports.api = functions.https.onRequest(
     inspectionUrl: config.clientApps.web.inspectionURL,
   })
 );
+
+// Firestore Watchers
+
+const fsWatchers = firestoreWatchers(db, fs, pubsubClient);
+Object.keys(fsWatchers).forEach(endpoint => {
+  exports[endpoint] = fsWatchers[endpoint];
+});

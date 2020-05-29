@@ -1,10 +1,21 @@
 const assert = require('assert');
+const pipe = require('lodash/fp/flow');
 const FieldValue = require('firebase-admin').firestore.FieldValue;
 const modelSetup = require('./utils/model-setup');
+const defItemsModel = require('./deficient-items');
+const inspectionsModel = require('./inspections');
+const updateDeficientItemsAttrs = require('../properties/utils/update-deficient-items-attrs');
 
 const PREFIX = 'models: properties:';
 const PROPERTY_COLLECTION = 'properties';
 const PROPERTIES_DB = '/properties';
+
+// Pipeline of steps to update metadata
+const propertyMetaUpdates = pipe([
+  updateNumOfInspections,
+  updateLastInspectionAttrs,
+  updateDeficientItemsAttrs,
+]);
 
 module.exports = modelSetup({
   /**
@@ -134,6 +145,23 @@ module.exports = modelSetup({
   },
 
   /**
+   * Create a Firestore property
+   * @param  {firebaseAdmin.firestore} fs
+   * @param  {String} propertyId
+   * @param  {Object} data
+   * @return {Promise} - resolves {WriteResult}
+   */
+  firestoreCreateRecord(fs, propertyId, data) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    assert(data && typeof data === 'object', 'has data');
+    return fs
+      .collection(PROPERTY_COLLECTION)
+      .doc(propertyId)
+      .create(data);
+  },
+
+  /**
    * Create or update a Firestore property
    * @param  {firebaseAdmin.firestore} fs
    * @param  {String}  propertyId
@@ -212,4 +240,115 @@ module.exports = modelSetup({
       .doc(propertyId)
       .delete();
   },
+
+  /**
+   * Update a property's metadata relating
+   * to inspections and deficiencies
+   * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
+   * @param  {String} propertyId
+   * @return {Promise} - resolves {Object} updates
+   */
+  async updateMetaData(fs, propertyId) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+
+    // Lookup all property's inspections
+    const inspections = [];
+    try {
+      const inspectionsSnap = await inspectionsModel.firestoreQueryByProperty(
+        fs,
+        propertyId
+      );
+      inspectionsSnap.docs.forEach(doc => {
+        inspections.push({ id: doc.id, ...doc.data() });
+      });
+    } catch (err) {
+      throw Error(`${PREFIX} property inspection lookup failed: ${err}`);
+    }
+
+    // Find any deficient items data for property
+    const propertyDeficiencies = [];
+    try {
+      const deficienciesSnap = await defItemsModel.firestoreQueryByProperty(
+        fs,
+        propertyId
+      );
+      deficienciesSnap.docs.forEach(doc => {
+        const data = doc.data();
+        // If deficiency has any state
+        if (data.state) {
+          propertyDeficiencies.push({ ...data, id: data.id });
+        }
+      });
+    } catch (err) {
+      throw Error(
+        `${PREFIX} failed to lookup properties deficicent items: ${err}`
+      );
+    }
+
+    // Collect updates to write to property's metadata attrs
+    const { updates } = propertyMetaUpdates({
+      propertyId,
+      inspections,
+      deficientItems: propertyDeficiencies,
+      updates: {},
+    });
+
+    // Update Firebase Property
+    try {
+      await this.firestoreUpsertRecord(fs, propertyId, updates);
+    } catch (err) {
+      throw Error(`${PREFIX} failed to update property metadata: ${err}`);
+    }
+
+    return updates;
+  },
 });
+
+/**
+ * Configure update for all a property's
+ * completed inspections
+ * @param  {String} propertyId
+ * @param  {Object[]} inspections
+ * @param  {Object} updates
+ * @return {Object} - configuration
+ */
+function updateNumOfInspections(
+  config = { propertyId: '', inspections: [], updates: {} }
+) {
+  config.updates.numOfInspections = config.inspections.reduce(
+    (acc, { inspectionCompleted }) => {
+      if (inspectionCompleted) {
+        acc += 1;
+      }
+
+      return acc;
+    },
+    0
+  );
+
+  return config;
+}
+
+/**
+ * Configure update for a property's
+ * latest inspection attributes
+ * @param  {String} propertyId
+ * @param  {Object[]} inspections
+ * @param  {Object} updates
+ * @return {Object} - configuration
+ */
+function updateLastInspectionAttrs(
+  config = { propertyId: '', inspections: [], updates: {} }
+) {
+  const [latestInspection] = config.inspections.sort(
+    (a, b) => b.creationDate - a.creationDate
+  ); // DESC
+
+  if (latestInspection && latestInspection.inspectionCompleted) {
+    config.updates.lastInspectionScore = latestInspection.score;
+    config.updates.lastInspectionDate = latestInspection.creationDate;
+  }
+
+  return config;
+}

@@ -1,3 +1,4 @@
+const assert = require('assert');
 const moment = require('moment-timezone');
 const hbs = require('handlebars');
 const log = require('../../utils/logger');
@@ -18,12 +19,18 @@ const DEFAULT_TIMEZONE = config.deficientItems.defaultTimezone;
 
 /**
  * Append DI state updates as comments to previously created Trello cards
- * @param  {string} topic
+ * @param  {String} topic
  * @param  {functions.pubsub} pubsub
- * @param  {firebaseadmin.database} db
+ * @param  {admin.database} db
+ * @param  {admin.firestore} fs
  * @return {functions.cloudfunction}
  */
-module.exports = function createCommentForDiState(topic = '', pubsub, db) {
+module.exports = function createCommentForDiState(topic = '', pubsub, db, fs) {
+  assert(topic && typeof topic === 'string', 'has topic string');
+  assert(pubsub && typeof pubsub.topic === 'function', 'has pubsub client');
+  assert(db && typeof db.ref === 'function', 'has realtime db');
+  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+
   return pubsub.topic(topic).onPublish(async message => {
     let propertyId = '';
     let deficientItemId = '';
@@ -160,6 +167,7 @@ module.exports = function createCommentForDiState(topic = '', pubsub, db) {
       const commentText = createCommentText(commentData);
       await systemModel.postTrelloCardComment(
         db,
+        fs,
         propertyId,
         deficientItemId,
         trelloCardId,
