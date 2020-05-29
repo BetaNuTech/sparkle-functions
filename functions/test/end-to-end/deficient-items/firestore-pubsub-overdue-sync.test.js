@@ -64,6 +64,10 @@ describe('Deficient Items | Firestore | Overdue Sync', () => {
     );
     const [diPath] = Object.keys(deficientItemPojo);
     const deficientItemId = diPath.split('/').pop();
+    await diModel.firestoreCreateRecord(fs, deficientItemId, {
+      ...deficientItem,
+      property: propertyId,
+    });
 
     // Execute
     await test.wrap(cloudFunctions.deficientItemsOverdueSync)();
@@ -144,6 +148,10 @@ describe('Deficient Items | Firestore | Overdue Sync', () => {
       );
       const [diPath] = Object.keys(deficientItemPojo);
       const deficientItemId = diPath.split('/').pop();
+      await diModel.firestoreCreateRecord(fs, deficientItemId, {
+        ...deficientItem,
+        property: propertyId,
+      });
 
       // Execute
       await test.wrap(cloudFunctions.deficientItemsOverdueSync)();
@@ -230,6 +238,10 @@ describe('Deficient Items | Firestore | Overdue Sync', () => {
       );
       const [diPath] = Object.keys(deficientItemPojo);
       const deficientItemId = diPath.split('/').pop();
+      await diModel.firestoreCreateRecord(fs, deficientItemId, {
+        ...deficientItem,
+        property: propertyId,
+      });
 
       // Execute
       await test.wrap(cloudFunctions.deficientItemsOverdueSync)();
@@ -322,6 +334,10 @@ describe('Deficient Items | Firestore | Overdue Sync', () => {
     );
     const [diPath] = Object.keys(deficientItemPojo);
     const deficientItemId = diPath.split('/').pop();
+    await diModel.firestoreCreateRecord(fs, deficientItemId, {
+      ...deficientItem,
+      property: propertyId,
+    });
 
     // Execute
     await test.wrap(cloudFunctions.deficientItemsOverdueSync)();
@@ -379,6 +395,10 @@ describe('Deficient Items | Firestore | Overdue Sync', () => {
     );
     const [diPath] = Object.keys(deficientItemPojo);
     const deficientItemId = diPath.split('/').pop();
+    await diModel.firestoreCreateRecord(fs, deficientItemId, {
+      ...deficientItem,
+      property: propertyId,
+    });
 
     // Execute
     await test.wrap(cloudFunctions.deficientItemsOverdueSync)();
@@ -438,6 +458,10 @@ describe('Deficient Items | Firestore | Overdue Sync', () => {
     );
     const [diPath] = Object.keys(deficientItemPojo);
     const deficientItemId = diPath.split('/').pop();
+    await diModel.firestoreCreateRecord(fs, deficientItemId, {
+      ...deficientItem,
+      property: propertyId,
+    });
 
     // Execute
     await test.wrap(cloudFunctions.deficientItemsOverdueSync)();
@@ -496,6 +520,10 @@ describe('Deficient Items | Firestore | Overdue Sync', () => {
     );
     const [diPath] = Object.keys(deficientItemPojo);
     const deficientItemId = diPath.split('/').pop();
+    await diModel.firestoreCreateRecord(fs, deficientItemId, {
+      ...deficientItem,
+      property: propertyId,
+    });
 
     // Execute
     await test.wrap(cloudFunctions.deficientItemsOverdueSync)();

@@ -652,17 +652,17 @@ describe('Inspections | API | Patch Property', () => {
       },
       {
         actual: oldDiThreeSnap.val(),
-        expected: RAND_DEF_ITEM_DATA,
+        expected: { ...RAND_DEF_ITEM_DATA, archive: true },
         msg: 'has no effect on unrelated realtime deficient item',
       },
       {
         actual: newDiOneSnap.val(),
-        expected: DEFICIENT_ITEM_ONE_DATA,
+        expected: { ...DEFICIENT_ITEM_ONE_DATA, archive: true },
         msg: "reassiged inspection's first archive DI to new property",
       },
       {
         actual: newDiTwoSnap.val(),
-        expected: DEFICIENT_ITEM_TWO_DATA,
+        expected: { ...DEFICIENT_ITEM_TWO_DATA, archive: true },
         msg: "reassiged inspection's second archive DI to new property",
       },
       {

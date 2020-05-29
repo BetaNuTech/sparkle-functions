@@ -163,12 +163,14 @@ module.exports = function createOnInspectionWriteHandler(db, fs) {
           inspection.property,
           deficientItemData
         );
-        const addedDeficientItemID = Object.keys(addResult)[0];
-        log.info(
-          `${PREFIX} added new deficient item: ${addedDeficientItemID
-            .split('/')
-            .pop()}`
-        );
+        const addedDeficientItemID = Object.keys(addResult)[0]
+          .split('/')
+          .pop();
+        await model.firestireSafelyCreateRecord(fs, addedDeficientItemID, {
+          ...deficientItemData,
+          property: inspection.property,
+        });
+        log.info(`${PREFIX} added new deficient item: ${addedDeficientItemID}`);
       }
     } catch (err) {
       if (err.code === 'ERR_TRELLO_CARD_DELETED') {
