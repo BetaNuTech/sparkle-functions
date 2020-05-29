@@ -182,6 +182,12 @@ exports.deficientItemsUnarchiving = functions.database
   )
   .onUpdate(deficientItems.createOnUpdateArchive(db, fs));
 
+exports.deficientItemsProgressNotesSync = functions.database
+  .ref(
+    '/propertyInspectionDeficientItems/{propertyId}/{deficiencyId}/progressNotes/{progressNoteId}'
+  )
+  .onUpdate(deficientItems.onUpdateProgressNote(fs));
+
 // Template onWrite
 exports.templateWrite = functions.database
   .ref('/templates/{templateId}')

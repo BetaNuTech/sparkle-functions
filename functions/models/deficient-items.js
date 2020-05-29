@@ -192,6 +192,27 @@ module.exports = modelSetup({
   },
 
   /**
+   * Add/update Realtime Deficient Item
+   * @param  {firebaseAdmin.database} db - Realtime DB Instance
+   * @param  {String} propertyId
+   * @param  {String} deficiencyId
+   * @param  {Object} data
+   * @return {Promise}
+   */
+  realtimeUpsertRecord(db, propertyId, deficiencyId, data) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    assert(
+      deficiencyId && typeof deficiencyId === 'string',
+      'has deficiency id'
+    );
+    assert(data && typeof data === 'object', 'has upsert data');
+    return db
+      .ref(`${DATABASE_PATH}/${propertyId}/${deficiencyId}`)
+      .update(data);
+  },
+
+  /**
    * Create a new realtime
    * Deficient Item record
    * NOTE: ignores archive
@@ -309,6 +330,29 @@ module.exports = modelSetup({
     }
 
     return updates;
+  },
+
+  /**
+   * Find a progress note by its' ID
+   * @param  {admin.database} db
+   * @param  {String} propertyId
+   * @param  {String} deficiencyId
+   * @param  {String} progNoteId
+   * @return {Promise} - resolves {DataSnapshot}
+   */
+  realtimeFindRecordProgressNote(db, propertyId, deficiencyId, progNoteId) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    assert(
+      deficiencyId && typeof deficiencyId === 'string',
+      'has deficiency id'
+    );
+    assert(
+      progNoteId && typeof progNoteId === 'string',
+      'has progress note id'
+    );
+    const path = `${DATABASE_PATH}/${propertyId}/${deficiencyId}/${progNoteId}`;
+    return db.ref(path).once('value');
   },
 
   /**
