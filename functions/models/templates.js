@@ -16,10 +16,8 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   realtimeFindRecord(db, templateId) {
-    assert(
-      templateId && typeof templateId === 'string',
-      `${PREFIX} has template id`
-    );
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(templateId && typeof templateId === 'string', 'has template id');
     return db.ref(`${TEMPLATES_DB}/${templateId}`).once('value');
   },
 
@@ -30,10 +28,8 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   realtimeRemoveListRecord(db, templateId) {
-    assert(
-      templateId && typeof templateId === 'string',
-      `${PREFIX} has template id`
-    );
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(templateId && typeof templateId === 'string', 'has template id');
     return db.ref(`${LIST_DB}/${templateId}`).remove();
   },
 
@@ -45,11 +41,9 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   realtimeUpsertRecord(db, templateId, data) {
-    assert(
-      templateId && typeof templateId === 'string',
-      `${PREFIX} has template id`
-    );
-    assert(data && typeof data === 'object', `${PREFIX} has upsert data`);
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(templateId && typeof templateId === 'string', 'has template id');
+    assert(data && typeof data === 'object', 'has upsert data');
     return db.ref(`${TEMPLATES_DB}/${templateId}`).update(data);
   },
 
@@ -61,11 +55,9 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   realtimeUpsertListRecord(db, templateId, data) {
-    assert(
-      templateId && typeof templateId === 'string',
-      `${PREFIX} has template id`
-    );
-    assert(data && typeof data === 'object', `${PREFIX} has upsert data`);
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(templateId && typeof templateId === 'string', 'has template id');
+    assert(data && typeof data === 'object', 'has upsert data');
     return db.ref(`${LIST_DB}/${templateId}`).update(data);
   },
 
@@ -77,10 +69,8 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   realtimeQueryByCategory(db, categoryId) {
-    assert(
-      categoryId && typeof categoryId === 'string',
-      `${PREFIX} has category id`
-    );
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(categoryId && typeof categoryId === 'string', 'has category id');
     return db
       .ref(TEMPLATES_DB)
       .orderByChild('category')
@@ -96,10 +86,8 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   realtimeQueryListByCategory(db, categoryId) {
-    assert(
-      categoryId && typeof categoryId === 'string',
-      `${PREFIX} has category id`
-    );
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(categoryId && typeof categoryId === 'string', 'has category id');
     return db
       .ref(LIST_DB)
       .orderByChild('category')
@@ -114,6 +102,7 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   realtimeBatchUpdate(db, updates) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(typeof updates === 'object', 'has updates hash');
 
     if (!updates || !Object.keys(updates).length) {
@@ -130,6 +119,7 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   realtimeBatchUpdateList(db, updates) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
     assert(typeof updates === 'object', 'has updates hash');
 
     if (!updates || !Object.keys(updates).length) {
@@ -146,10 +136,8 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   firestoreFindRecord(fs, templateId) {
-    assert(
-      templateId && typeof templateId === 'string',
-      `${PREFIX} has template id`
-    );
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(templateId && typeof templateId === 'string', 'has template id');
     return fs
       .collection(TEMPLATE_COLLECTION)
       .doc(templateId)
@@ -163,10 +151,8 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   firestoreRemoveRecord(fs, templateId) {
-    assert(
-      templateId && typeof templateId === 'string',
-      `${PREFIX} has template id`
-    );
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(templateId && typeof templateId === 'string', 'has template id');
     return fs
       .collection(TEMPLATE_COLLECTION)
       .doc(templateId)
@@ -230,16 +216,31 @@ module.exports = modelSetup({
   },
 
   /**
+   * Create a Firestore template
+   * @param  {firebaseAdmin.firestore} fs
+   * @param  {String} templateId
+   * @param  {Object} data
+   * @return {Promise} - resolves {WriteResult}
+   */
+  firestoreCreateRecord(fs, templateId, data) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(templateId && typeof templateId === 'string', 'has template id');
+    assert(data && typeof data === 'object', 'has data');
+    return fs
+      .collection(TEMPLATE_COLLECTION)
+      .doc(templateId)
+      .create(data);
+  },
+
+  /**
    * Lookup all templates associated with a category
    * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
    * @param  {String} categoryId
    * @return {Promise} - resolves {QuerySnapshot}
    */
   firestoreQueryByCategory(fs, categoryId) {
-    assert(
-      categoryId && typeof categoryId === 'string',
-      `${PREFIX} has category id`
-    );
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(categoryId && typeof categoryId === 'string', 'has category id');
     return fs
       .collection(TEMPLATE_COLLECTION)
       .where('category', '==', categoryId)
@@ -269,46 +270,6 @@ module.exports = modelSetup({
     });
 
     return batch.commit();
-  },
-
-  /**
-   * Remove a category from all firestore templates
-   * @param  {admin.firestore} fs - Firestore DB instance
-   * @param  {String} categoryId
-   * @param  {firestore.batch?} batch
-   * @return {Promise} - resolves {firestore.batch}
-   */
-  async firestoreRemoveCategory(fs, categoryId, batch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
-    assert(categoryId && typeof categoryId === 'string', 'has category id');
-
-    const catBatch = batch || fs.batch();
-    const col = fs.collection(TEMPLATE_COLLECTION);
-
-    try {
-      const templatesInCategorySnap = await this.firestoreQueryByCategory(
-        fs,
-        categoryId
-      );
-
-      // Add all category removals to updates
-      templatesInCategorySnap.docs.forEach(templateSnap => {
-        const docRef = col.doc(templateSnap.id);
-        catBatch.update(docRef, { category: null });
-      });
-    } catch (err) {
-      throw Error(
-        `${PREFIX} firestoreRemoveCategory: "${categoryId}" firestore update failed: ${err}`
-      );
-    }
-
-    // Return included batch updates
-    if (batch) {
-      return batch;
-    }
-
-    // Commit created batch updates
-    return catBatch.commit();
   },
 
   /**
@@ -343,6 +304,7 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   updatePropertyRelationships(fs, propertyId, beforeTemplates, afterTemplates) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(
       isArray(beforeTemplates) &&
@@ -380,5 +342,52 @@ module.exports = modelSetup({
     });
 
     return batch.commit();
+  },
+
+  /**
+   * Remove a category from
+   * all associated templates
+   * @param  {admin.firestore} fs - Firestore Admin DB instance
+   * @param  {String} categoryId
+   * @param  {firestore.batch?} batch
+   * @return {Promise}
+   */
+  firestoreRemoveCategory(fs, categoryId, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(categoryId && typeof categoryId === 'string', 'has category id');
+    if (batch) {
+      assert(typeof batch.update === 'function', 'has firestore batch');
+    }
+
+    return fs
+      .runTransaction(async transaction => {
+        const transOrBatch = batch || transaction;
+        const templateQuery = fs
+          .collection(TEMPLATE_COLLECTION)
+          .where('category', '==', categoryId);
+
+        let templatesSnap = null;
+        try {
+          templatesSnap = await transaction.get(templateQuery);
+        } catch (err) {
+          throw Error(
+            `${PREFIX} firestoreRemoveCategory: template lookup failed: ${err}`
+          );
+        }
+
+        // Remove category from each associated template
+        templatesSnap.docs.forEach(templateDoc => {
+          transOrBatch.update(templateDoc.ref, {
+            category: FieldValue.delete(),
+          });
+        });
+
+        return transOrBatch;
+      })
+      .catch(err => {
+        throw Error(
+          `${PREFIX} firestoreRemoveCategory: transaction failed: ${err}`
+        );
+      });
   },
 });
