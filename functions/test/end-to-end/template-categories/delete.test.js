@@ -193,12 +193,12 @@ describe('Template Categories | Delete', () => {
     [
       {
         value: docSnaps.find(doc => doc.id === tmpl1Id),
-        expected: null,
+        expected: undefined,
         msg: 'removed template 1 category relationship',
       },
       {
         value: docSnaps.find(doc => doc.id === tmpl2Id),
-        expected: null,
+        expected: undefined,
         msg: 'removed template 2 category relationship',
       },
       {
