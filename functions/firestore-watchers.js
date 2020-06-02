@@ -1,5 +1,6 @@
 const functions = require('firebase-functions');
 const deficientItems = require('./deficient-items');
+const templateCategories = require('./template-categories');
 
 module.exports = (db, fs, pubsubClient) => {
   return {
@@ -20,5 +21,9 @@ module.exports = (db, fs, pubsubClient) => {
     deficientItemsUnarchivingV2: functions.firestore
       .document('archives/{deficiencyId}')
       .onUpdate(deficientItems.createOnUpdateArchiveV2(db, fs)),
+
+    templateCategoryDeleteV2: functions.firestore
+      .document('/templateCategories/{categoryId}')
+      .onDelete(templateCategories.createOnDeleteWatcherV2(fs)),
   };
 };
