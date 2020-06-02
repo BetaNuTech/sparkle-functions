@@ -106,6 +106,23 @@ module.exports = modelSetup({
   },
 
   /**
+   * Create a Firestore template category
+   * @param  {firebaseAdmin.firestore} fs
+   * @param  {String} categoryId
+   * @param  {Object} data
+   * @return {Promise} - resolves {WriteResult}
+   */
+  firestoreCreateRecord(fs, categoryId, data) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(categoryId && typeof categoryId === 'string', 'has category id');
+    assert(data && typeof data === 'object', 'has data');
+    return fs
+      .collection(TEMPLATE_CATEGORIES_COLLECTION)
+      .doc(categoryId)
+      .create(data);
+  },
+
+  /**
    * Remove Firestore Template Category
    * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
    * @param  {String} categoryId

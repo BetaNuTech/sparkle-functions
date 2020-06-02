@@ -45,7 +45,7 @@ module.exports = modelSetup({
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
     );
-    assert(data && typeof data === 'object', `${PREFIX} has upsert data`);
+    assert(data && typeof data === 'object', 'has upsert data');
     return db.ref(`${INSPECTIONS_PATH}/${inspectionId}`).update(data);
   },
 
