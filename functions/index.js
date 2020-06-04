@@ -376,7 +376,7 @@ exports.api = functions.https.onRequest(
 
 // Firestore Watchers
 
-const fsWatchers = firestoreWatchers(db, fs, pubsubClient);
+const fsWatchers = firestoreWatchers(db, fs, pubsubClient, storage);
 Object.keys(fsWatchers).forEach(endpoint => {
   exports[endpoint] = fsWatchers[endpoint];
 });

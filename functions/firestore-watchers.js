@@ -1,8 +1,9 @@
 const functions = require('firebase-functions');
+const properties = require('./properties');
 const deficientItems = require('./deficient-items');
 const templateCategories = require('./template-categories');
 
-module.exports = (db, fs, pubsubClient) => {
+module.exports = (db, fs, pubsubClient, storage) => {
   return {
     deficientItemsPropertyMetaSyncV2: functions.firestore
       .document('deficiencies/{deficiencyId}')
@@ -25,5 +26,9 @@ module.exports = (db, fs, pubsubClient) => {
     templateCategoryDeleteV2: functions.firestore
       .document('/templateCategories/{categoryId}')
       .onDelete(templateCategories.createOnDeleteWatcherV2(fs)),
+
+    propertyDeleteV2: functions.firestore
+      .document('/properties/{propertyId}')
+      .onDelete(properties.onDeleteWatcherV2(fs, storage)),
   };
 };

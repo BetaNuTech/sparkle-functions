@@ -301,9 +301,16 @@ module.exports = modelSetup({
    * @param  {String} propertyId
    * @param  {String[]} beforeTemplates
    * @param  {String[]} afterTemplates
+   * @param  {firestore.batch?} parentBatch
    * @return {Promise}
    */
-  updatePropertyRelationships(fs, propertyId, beforeTemplates, afterTemplates) {
+  updatePropertyRelationships(
+    fs,
+    propertyId,
+    beforeTemplates,
+    afterTemplates,
+    parentBatch
+  ) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(
@@ -319,8 +326,8 @@ module.exports = modelSetup({
 
     const added = afterTemplates.filter(t => !beforeTemplates.includes(t));
     const removed = beforeTemplates.filter(t => !afterTemplates.includes(t));
+    const batch = parentBatch || fs.batch();
 
-    const batch = fs.batch();
     const templatesRef = fs.collection(TEMPLATE_COLLECTION);
 
     // Append each new relationship
@@ -340,6 +347,11 @@ module.exports = modelSetup({
         properties: FieldValue.arrayRemove(propertyId),
       });
     });
+
+    // Return without committing
+    if (parentBatch) {
+      return Promise.resolve(parentBatch);
+    }
 
     return batch.commit();
   },
