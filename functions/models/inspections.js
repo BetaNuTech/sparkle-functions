@@ -4,6 +4,7 @@ const modelSetup = require('./utils/model-setup');
 const diModel = require('./deficient-items');
 const archiveModel = require('./_internal/archive');
 const deleteUploads = require('../inspections/utils/delete-uploads');
+const itemUploads = require('../inspections/utils/item-uploads');
 
 const PREFIX = 'models: inspections:';
 const INSPECTIONS_PATH = '/inspections';
@@ -858,7 +859,7 @@ module.exports = modelSetup({
 
   /**
    * Lookup all inspections associated with a property
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} fs - Firestore DB instance
    * @param  {String} propertyId
    * @return {Promise} - resolves {QuerySnapshot}
    */
@@ -869,6 +870,83 @@ module.exports = modelSetup({
       .collection(INSPECTION_COLLECTION)
       .where('property', '==', propertyId)
       .get();
+  },
+
+  /**
+   * Delete all inspections active
+   * and archived, associated with
+   * a property
+   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {String} propertyId
+   * @param  {firestore.batch} batch
+   * @return {Promise} - resolves {QuerySnapshot[]}
+   */
+  firestoreRemoveForProperty(fs, propertyId, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+
+    return fs
+      .runTransaction(async transaction => {
+        const queryActive = fs
+          .collection(INSPECTION_COLLECTION)
+          .where('property', '==', propertyId);
+
+        // Collection references to
+        // all active and archived
+        // inspections for the property
+        let activeInspSnap = null;
+        let archivedInspSnap = null;
+        const inspectionRefs = [];
+        try {
+          [activeInspSnap, archivedInspSnap] = await Promise.all([
+            transaction.get(queryActive),
+            archiveModel.inspection.firestoreQueryByProperty(
+              fs,
+              propertyId,
+              transaction
+            ),
+          ]);
+          activeInspSnap.docs(({ ref }) => inspectionRefs.push(ref));
+          archivedInspSnap.docs(({ ref }) => inspectionRefs.push(ref));
+        } catch (err) {
+          throw Error(
+            `${PREFIX} firestoreRemoveForProperty: inspection lookup failed: ${err}`
+          );
+        }
+
+        // Include all deletes into batch
+        const batchOrTrans = batch || transaction;
+        inspectionRefs.forEach(ref => batchOrTrans.delete(ref));
+
+        // Retuern all active/archived
+        // inspection query snapshots
+        return [activeInspSnap, archivedInspSnap];
+      })
+      .catch(err => {
+        throw Error(
+          `${PREFIX} firestoreRemoveForProperty: inspection deletes failed: ${err}`
+        );
+      });
+  },
+
+  /**
+   * Remove all uploads for an inspection's item
+   * @param  {admin.storage} storage
+   * @param  {Object} item
+   * @return {Promise} - All remove requests grouped together
+   */
+  async removeInspectionItemUploads(storage, item) {
+    assert(storage && typeof storage.bucket === 'function', 'has storage');
+    assert(item && typeof item === 'object', 'has item object');
+
+    const requests = [];
+    const urls = itemUploads.getUploadUrls(item);
+
+    for (let i = 0; i < urls.length; i++) {
+      requests.push(itemUploads.delete(storage, urls[i]));
+    }
+
+    return Promise.all(requests);
   },
 });
 

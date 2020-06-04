@@ -229,4 +229,29 @@ module.exports = modelSetup({
       .doc(userId)
       .delete();
   },
+  /**
+   * Query all users with a team in
+   * their `teams` hash
+   * @param  {admin.firestore} fs
+   * @param  {String} teamId
+   * @param  {firestore.transaction?} transaction
+   * @return {Promise} - resolves {QuerySnapshot}
+   */
+  firestoreFindByTeam(fs, teamId, transaction) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(teamId && typeof teamId === 'string', 'has team id');
+
+    const query = fs
+      .collection(USERS_COLLECTION)
+      .orderBy(`teams.${teamId}`)
+      .startAfter(null)
+      .startAfter(undefined);
+
+    if (transaction) {
+      assert(transaction.get === 'function', 'has firestore transaction');
+      return transaction.get(query);
+    }
+
+    return query.get();
+  },
 });
