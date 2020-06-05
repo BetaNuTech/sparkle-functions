@@ -30,5 +30,9 @@ module.exports = (db, fs, pubsubClient, storage) => {
     propertyDeleteV2: functions.firestore
       .document('/properties/{propertyId}')
       .onDelete(properties.onDeleteWatcherV2(fs, storage)),
+
+    propertyWriteV2: functions.firestore
+      .document('/properties/{propertyId}')
+      .onWrite(properties.onWriteV2(fs)),
   };
 };

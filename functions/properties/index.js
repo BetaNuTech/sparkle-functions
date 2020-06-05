@@ -1,4 +1,5 @@
 const createOnWriteWatcher = require('./on-write-watcher');
+const onWriteV2 = require('./on-write-v2');
 const createOnDeleteWatcher = require('./on-delete-watcher');
 const onDeleteWatcherV2 = require('./on-delete-watcher-v2');
 const createOnWriteTemplatesWatcher = require('./on-write-templates-watcher');
@@ -14,6 +15,7 @@ module.exports = {
   createOnDeleteWatcher,
   onDeleteWatcherV2,
   createOnWriteWatcher,
+  onWriteV2,
   createOnWriteTemplatesWatcher,
   createOnWriteTeamsWatcher,
   pubsub: { createSyncMeta },
