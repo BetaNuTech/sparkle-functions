@@ -91,7 +91,10 @@ module.exports = modelSetup({
       .where('_collection', '==', INSPECTION_COLLECTION);
 
     if (transaction) {
-      assert(transaction.get === 'function', 'has firestore transaction');
+      assert(
+        typeof transaction.get === 'function',
+        'has firestore transaction'
+      );
       return transaction.get(query);
     }
 

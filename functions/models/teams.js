@@ -89,11 +89,31 @@ module.exports = modelSetup({
     const query = fs.collection(TEAMS_COLLECTION).doc(teamId);
 
     if (transaction) {
-      assert(transaction.get === 'function', 'has firestore transaction');
+      assert(
+        typeof transaction.get === 'function',
+        'has firestore transaction'
+      );
       return transaction.get(query);
     }
 
     return query.get();
+  },
+
+  /**
+   * Create a Firestore team
+   * @param  {admin.firestore} fs
+   * @param  {String} teamId
+   * @param  {Object} data
+   * @return {Promise} - resolves {WriteResult}
+   */
+  firestoreCreateRecord(fs, teamId, data) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(teamId && typeof teamId === 'string', 'has team id');
+    assert(data && typeof data === 'object', 'has data');
+    return fs
+      .collection(TEAMS_COLLECTION)
+      .doc(teamId)
+      .create(data);
   },
 
   /**

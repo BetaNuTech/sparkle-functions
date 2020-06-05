@@ -8,6 +8,7 @@ const config = require('../config');
 const PREFIX = 'models: deficient-items:';
 const DATABASE_PATH = config.deficientItems.dbPath;
 const DEFICIENT_COLLECTION = config.deficientItems.collection;
+const STORAGE_PATH_TEMPLATE = config.deficientItems.storagePathTemplate;
 
 module.exports = modelSetup({
   /**
@@ -1018,5 +1019,93 @@ module.exports = modelSetup({
     }
 
     return updates;
+  },
+
+  /**
+   * Delete all inspections active
+   * and archived, associated with
+   * a property
+   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {String} propertyId
+   * @param  {firestore.batch} batch
+   * @return {Promise} - resolves {QuerySnapshot[]}
+   */
+  firestoreRemoveForProperty(fs, propertyId, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+
+    return fs
+      .runTransaction(async transaction => {
+        const queryActive = fs
+          .collection(DEFICIENT_COLLECTION)
+          .where('property', '==', propertyId);
+
+        // Collection references to
+        // all active and archived
+        // deficiencies for the property
+        let activeDiSnap = null;
+        let archivedDiSnap = null;
+        const inspectionRefs = [];
+        try {
+          [activeDiSnap, archivedDiSnap] = await Promise.all([
+            transaction.get(queryActive),
+            archive.deficientItem.firestoreQueryByProperty(
+              fs,
+              propertyId,
+              transaction
+            ),
+          ]);
+          activeDiSnap.forEach(({ ref }) => inspectionRefs.push(ref));
+          archivedDiSnap.forEach(({ ref }) => inspectionRefs.push(ref));
+        } catch (err) {
+          throw Error(
+            `${PREFIX} firestoreRemoveForProperty: deficiency lookup failed: ${err}`
+          );
+        }
+
+        // Include all deletes into batch
+        const batchOrTrans = batch || transaction;
+        inspectionRefs.forEach(ref => batchOrTrans.delete(ref));
+
+        // Retuern all active/archived
+        // deficiency query snapshots
+        return [activeDiSnap, archivedDiSnap];
+      })
+      .catch(err => {
+        throw Error(
+          `${PREFIX} firestoreRemoveForProperty: deficiency deletes failed: ${err}`
+        );
+      });
+  },
+
+  /**
+   * Delete a deficiency's image uploads
+   * @param  {admin.storage} storage
+   * @param  {String} propertyId
+   * @param  {String} deficiencyId
+   * @param  {String} url
+   * @return {Promise}
+   */
+  deleteUpload(storage, propertyId, deficiencyId, url) {
+    assert(storage && typeof storage.bucket === 'function', 'has storage');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    assert(
+      deficiencyId && typeof deficiencyId === 'string',
+      'has deficiency id'
+    );
+    assert(url && typeof url === 'string', 'has url string');
+
+    const fileName = (decodeURIComponent(url).split('?')[0] || '')
+      .split('/')
+      .pop();
+    const filePath = STORAGE_PATH_TEMPLATE.replace('{{propertyId}}', propertyId)
+      .replace('{{deficiencyId}}', deficiencyId)
+      .replace('{{fileName}}', fileName);
+
+    return storage
+      .bucket()
+      .file(filePath)
+      .delete()
+      .catch(err => Promise.reject(Error(`${PREFIX} deleteUpload: ${err}`)));
   },
 });

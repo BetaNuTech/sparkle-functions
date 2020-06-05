@@ -29,12 +29,11 @@ module.exports = modelSetup({
         ]);
 
         let team = null;
-        const teamDocSnap = null;
-        const userRefs = [];
+        let teamDocSnap = null;
+        let usersSnap = null;
         try {
-          let [teamDocSnap, usersSnap] = await queries; // eslint-disable-line
+          [teamDocSnap, usersSnap] = await queries; // eslint-disable-line
           team = teamDocSnap.data() || {};
-          usersSnap.forEach(({ ref }) => userRefs.push(ref));
         } catch (err) {
           throw Error(
             `${PREFIX} firestoreRemoveProperty: team/users lookup failed: ${err}`
@@ -43,7 +42,7 @@ module.exports = modelSetup({
 
         const batchOrTrans = batch || transaction;
         const isRemovingOnlyProperty =
-          Object.keys(team.properties).length === 1;
+          Object.keys(team.properties || {}).length === 1;
         const teamUpdate = {
           [`properties.${propertyId}`]: FieldValue.delete(),
         };
@@ -52,10 +51,14 @@ module.exports = modelSetup({
           : { [`teams.${teamId}.${propertyId}`]: FieldValue.delete() }; // only remove nested property
 
         // Batch team update
-        batchOrTrans.update(teamDocSnap.ref, teamUpdate);
+        if (teamDocSnap.exists) {
+          batchOrTrans.update(teamDocSnap.ref, teamUpdate);
+        }
 
         // Batch each user's update
-        userRefs.forEach(userRef => batchOrTrans.update(userRef, userUpdate));
+        usersSnap.forEach(({ ref: userRef }) =>
+          batchOrTrans.update(userRef, userUpdate)
+        );
       })
       .catch(err => {
         throw Error(

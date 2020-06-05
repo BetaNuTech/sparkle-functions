@@ -216,6 +216,23 @@ module.exports = modelSetup({
   },
 
   /**
+   * Create a Firestore user
+   * @param  {admin.firestore} fs
+   * @param  {String} userId
+   * @param  {Object} data
+   * @return {Promise} - resolves {WriteResult}
+   */
+  firestoreCreateRecord(fs, userId, data) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(userId && typeof userId === 'string', 'has user id');
+    assert(data && typeof data === 'object', 'has data');
+    return fs
+      .collection(USERS_COLLECTION)
+      .doc(userId)
+      .create(data);
+  },
+
+  /**
    * Remove Firestore User
    * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
    * @param  {String} userId
@@ -244,11 +261,13 @@ module.exports = modelSetup({
     const query = fs
       .collection(USERS_COLLECTION)
       .orderBy(`teams.${teamId}`)
-      .startAfter(null)
-      .startAfter(undefined);
+      .startAfter(null);
 
     if (transaction) {
-      assert(transaction.get === 'function', 'has firestore transaction');
+      assert(
+        typeof transaction.get === 'function',
+        'has firestore transaction'
+      );
       return transaction.get(query);
     }
 
