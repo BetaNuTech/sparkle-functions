@@ -52,6 +52,8 @@ const progressNoteTempl = `{{{firstName}}} {{{lastName}}} ({{{email}}}) has adde
 
 module.exports = {
   dbPath: '/propertyInspectionDeficientItems',
+  storagePathTemplate:
+    'deficientItemImages/{{propertyId}}/{{deficiencyId}}/{{fileName}}',
   collection: 'deficiencies',
   initialState: 'requires-action',
   defaultTimezone: 'America/New_York',

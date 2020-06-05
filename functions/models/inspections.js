@@ -906,8 +906,8 @@ module.exports = modelSetup({
               transaction
             ),
           ]);
-          activeInspSnap.docs(({ ref }) => inspectionRefs.push(ref));
-          archivedInspSnap.docs(({ ref }) => inspectionRefs.push(ref));
+          activeInspSnap.forEach(({ ref }) => inspectionRefs.push(ref));
+          archivedInspSnap.forEach(({ ref }) => inspectionRefs.push(ref));
         } catch (err) {
           throw Error(
             `${PREFIX} firestoreRemoveForProperty: inspection lookup failed: ${err}`
@@ -935,7 +935,7 @@ module.exports = modelSetup({
    * @param  {Object} item
    * @return {Promise} - All remove requests grouped together
    */
-  async removeInspectionItemUploads(storage, item) {
+  async deleteItemUploads(storage, item) {
     assert(storage && typeof storage.bucket === 'function', 'has storage');
     assert(item && typeof item === 'object', 'has item object');
 

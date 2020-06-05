@@ -9,6 +9,9 @@ const updateDeficientItemsAttrs = require('../properties/utils/update-deficient-
 const PREFIX = 'models: properties:';
 const PROPERTY_COLLECTION = 'properties';
 const PROPERTIES_DB = '/properties';
+const PROPERTY_BUCKET_NAME = `propertyImages${
+  process.env.NODE_ENV === 'test' ? 'Test' : ''
+}`;
 
 // Pipeline of steps to update metadata
 const propertyMetaUpdates = pipe([
@@ -302,6 +305,27 @@ module.exports = modelSetup({
     }
 
     return updates;
+  },
+
+  /**
+   * Delete a property's image uploads
+   * @param  {admin.storage} storage
+   * @param  {String} url
+   * @return {Promise}
+   */
+  deleteUpload(storage, url) {
+    assert(storage && typeof storage.bucket === 'function', 'has storage');
+    assert(url && typeof url === 'string', 'has url string');
+
+    const fileName = (decodeURIComponent(url).split('?')[0] || '')
+      .split('/')
+      .pop();
+
+    return storage
+      .bucket()
+      .file(`${PROPERTY_BUCKET_NAME}/${fileName}`)
+      .delete()
+      .catch(err => Promise.reject(Error(`${PREFIX} deleteUpload: ${err}`)));
   },
 });
 

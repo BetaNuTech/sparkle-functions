@@ -312,4 +312,31 @@ module.exports = modelSetup({
       .where('inspection', '==', inspectionId)
       .get();
   },
+
+  /**
+   * Lookup all archived deficiencies
+   * associated with a property
+   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {String} propertyId
+   * @param  {firestore.transaction?} transaction
+   * @return {Promise} - resolves {QuerySnapshot}
+   */
+  firestoreQueryByProperty(fs, propertyId, transaction) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    const query = fs
+      .collection(ARCHIVE_COLLECTION)
+      .where('property', '==', propertyId)
+      .where('_collection', '==', DEFICIENT_COLLECTION);
+
+    if (transaction) {
+      assert(
+        typeof transaction.get === 'function',
+        'has firestore transaction'
+      );
+      return transaction.get(query);
+    }
+
+    return query.get(query);
+  },
 });
