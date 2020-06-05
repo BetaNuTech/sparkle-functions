@@ -66,4 +66,12 @@ module.exports = modelSetup({
         );
       });
   },
+
+  firestoreAddProperty(fs, teamId, propertyId, batch) {
+    // TODO
+  },
+
+  firestoreUpdateProperty(fs, oldTeamId, newTeamId, propertyId, batch) {
+    // TODO
+  }
 });
