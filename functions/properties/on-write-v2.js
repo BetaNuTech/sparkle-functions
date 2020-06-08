@@ -33,7 +33,6 @@ module.exports = function createOnWriteV2Handler(fs) {
     const hasUpdatedTemplates = beforeTmpl !== afterTmpl;
 
     if (isTeamRemoved) {
-      console.log('> team removed');
       try {
         await teamUsersModel.firestoreRemoveProperty(
           fs,
@@ -50,7 +49,6 @@ module.exports = function createOnWriteV2Handler(fs) {
     }
 
     if (isTeamAdded) {
-      console.log('> team added');
       try {
         await teamUsersModel.firestoreAddProperty(
           fs,
@@ -67,7 +65,6 @@ module.exports = function createOnWriteV2Handler(fs) {
     }
 
     if (isTeamUpdated) {
-      console.log('> team updated');
       try {
         await teamUsersModel.firestoreUpdateProperty(
           fs,
