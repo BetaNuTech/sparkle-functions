@@ -1,12 +1,11 @@
 const log = require('../../utils/logger');
+const itemUploads = require('./item-uploads');
 
 const PREFIX = 'inspections: utils: delete-uploads:';
-const INSP_BUCKET_NAME = `inspectionItemImages${
-  process.env.NODE_ENV === 'test' ? 'Test' : ''
-}`;
 
 /**
  * Remove all an inspection's uploads
+ * TODO: Deprecate once firebase DB support dropped
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
  * @param  {firebaseAdmin.storage} storage - Firebase Admin Storage instance
  * @param  {String} inspectionId
@@ -27,31 +26,22 @@ module.exports = async function deleteInspectionUploads(
   // into a flat array of upload url's
   itemsSnaps.forEach(itemSnap => {
     const item = itemSnap.val() || {};
-    Object.keys(item.photosData || {}).forEach(id => {
-      itemUploadUrls.push(item.photosData[id].downloadURL);
-    });
+    itemUploadUrls.push(...itemUploads.getUploadUrls(item));
   });
 
   // Itteratively destroy each upload
   if (itemUploadUrls.length) {
     for (let i = 0; i < itemUploadUrls.length; i++) {
       const url = itemUploadUrls[i];
-
       try {
-        const fileName = (decodeURIComponent(url).split('?')[0] || '')
-          .split('/')
-          .pop();
-        await storage
-          .bucket()
-          .file(`${INSP_BUCKET_NAME}/${fileName}`)
-          .delete();
+        await itemUploads.delete(storage, url);
+        updates[url] = 'removed';
         log.info(
-          `${PREFIX} inspection: ${inspectionId} ${fileName} removal succeeded`
+          `${PREFIX} inspection: ${inspectionId} ${url} removal succeeded`
         );
-        updates[fileName] = 'removed';
-      } catch (e) {
+      } catch (err) {
         log.error(
-          `${PREFIX} inspection: ${inspectionId} removal at ${url} failed ${e}`
+          `${PREFIX} inspection: ${inspectionId} removal at ${url} failed | ${err}`
         );
       }
     }
