@@ -24,8 +24,16 @@ module.exports = function createOnWriteV2Handler(fs) {
     const isTeamRemoved = beforeTeam && !afterTeam;
     const isTeamAdded = afterTeam && !beforeTeam;
     const isTeamUpdated = afterTeam && beforeTeam && !afterTeam !== beforeTeam;
+    const beforeTmpl = Object.keys(beforeData.templates || {})
+      .sort()
+      .join('');
+    const afterTmpl = Object.keys(afterData.templates || {})
+      .sort()
+      .join('');
+    const hasUpdatedTemplates = beforeTmpl !== afterTmpl;
 
     if (isTeamRemoved) {
+      console.log('> team removed');
       try {
         await teamUsersModel.firestoreRemoveProperty(
           fs,
@@ -42,6 +50,7 @@ module.exports = function createOnWriteV2Handler(fs) {
     }
 
     if (isTeamAdded) {
+      console.log('> team added');
       try {
         await teamUsersModel.firestoreAddProperty(
           fs,
@@ -58,6 +67,7 @@ module.exports = function createOnWriteV2Handler(fs) {
     }
 
     if (isTeamUpdated) {
+      console.log('> team updated');
       try {
         await teamUsersModel.firestoreUpdateProperty(
           fs,
@@ -67,72 +77,29 @@ module.exports = function createOnWriteV2Handler(fs) {
           batch
         );
         log.info(
-          `${PREFIX} property: "${propertyId}" updated to team: "${beforeTeam}"`
+          `${PREFIX} property: "${propertyId}" updated to team: "${afterTeam}"`
         );
       } catch (err) {
         log.error(`${PREFIX} failed to update property team | ${err}`);
       }
     }
 
-    // Remove old team / property association
-    // TODO: Delete
-    // if (beforeTeam && beforeTeam !== afterTeam) {
-    //   try {
-    //     // Remove old property from team record
-    //     await db.ref(`/teams/${beforeTeam}/properties/${propertyId}`).set(null);
-    //
-    //     // Queue update of removed team's users
-    //     const usersInBeforeTeam = await usersModel.findByTeam(db, beforeTeam);
-    //     usersInBeforeTeam.forEach(userID => {
-    //       userUpdateQueue.push(userID);
-    //     });
-    //   } catch (e) {
-    //     log.error(
-    //       `${PREFIX} property: ${propertyId} remove from team: ${beforeTeam} - failed: ${e}`
-    //     );
-    //   }
-    // }
-
-    // TODO: Delete
-    // if (afterTeam) {
-    //   try {
-    //     // Add new property to team record
-    //     await db.ref(`/teams/${afterTeam}/properties/${propertyId}`).set(true);
-    //
-    //     // Queue update of new team's users
-    //     const usersInAfterTeam = await usersModel.findByTeam(db, afterTeam);
-    //     usersInAfterTeam.forEach(userID => {
-    //       userUpdateQueue.push(userID);
-    //     });
-    //   } catch (e) {
-    //     log.error(
-    //       `${PREFIX} property: ${propertyId} upsert to team: ${afterTeam} - failed: ${e}`
-    //     );
-    //   }
-    // }
-
-    // Queue update to all users
-    // with changed teams
-    // TODO: Delete
-    // userUpdateQueue
-    //   .filter((userID, i, all) => all.indexOf(userID) === i) // unique only
-    //   .forEach(userID => publisher.publish(Buffer.from(userID)));
-
     // Sync templates with
     // latest property relationships
-    // TODO check for property/template changes
-    try {
-      await templatesModel.updatePropertyRelationships(
-        fs,
-        propertyId,
-        beforeData ? Object.keys(beforeData.templates || {}) : [],
-        afterData ? Object.keys(afterData.templates || {}) : [],
-        batch
-      );
-    } catch (err) {
-      log.error(
-        `${PREFIX} failed to update Firestore templates relationship to property "${propertyId}" | ${err}`
-      );
+    if (hasUpdatedTemplates) {
+      try {
+        await templatesModel.updatePropertyRelationships(
+          fs,
+          propertyId,
+          beforeData ? Object.keys(beforeData.templates || {}) : [],
+          afterData ? Object.keys(afterData.templates || {}) : [],
+          batch
+        );
+      } catch (err) {
+        log.error(
+          `${PREFIX} failed to update Firestore templates relationship to property "${propertyId}" | ${err}`
+        );
+      }
     }
 
     // Commit all updates
