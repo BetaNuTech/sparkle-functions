@@ -9,7 +9,7 @@ const PREFIX = 'models: team-users:';
 module.exports = modelSetup({
   /**
    * Remove a property from a team
-   * and all that team's associated users
+   * and all team's associated users
    * @param  {admin.firestore} fs
    * @param  {String} teamId
    * @param  {String} propertyId
@@ -53,12 +53,14 @@ module.exports = modelSetup({
         // Batch team update
         if (teamDocSnap.exists) {
           batchOrTrans.update(teamDocSnap.ref, teamUpdate);
-        }
 
-        // Batch each user's update
-        usersSnap.forEach(({ ref: userRef }) =>
-          batchOrTrans.update(userRef, userUpdate)
-        );
+          // Batch each user's update
+          usersSnap.docs
+            .filter(({ exists }) => exists)
+            .forEach(({ ref: userRef }) =>
+              batchOrTrans.update(userRef, userUpdate)
+            );
+        }
       })
       .catch(err => {
         throw Error(
@@ -67,11 +69,105 @@ module.exports = modelSetup({
       });
   },
 
+  /**
+   * Add a property to a team
+   * and all team's associated users
+   * @param  {admin.firestore} fs
+   * @param  {String} teamId
+   * @param  {String} propertyId
+   * @param  {firestore.batch?} batch
+   * @return {Promise}
+   */
   firestoreAddProperty(fs, teamId, propertyId, batch) {
-    // TODO
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(teamId && typeof teamId === 'string', 'has team id');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+
+    return fs
+      .runTransaction(async transaction => {
+        const queries = Promise.all([
+          teamsModel.firestoreFindRecord(fs, teamId, transaction),
+          usersModel.firestoreFindByTeam(fs, teamId, transaction),
+        ]);
+
+        let teamDocSnap = null;
+        let usersSnap = null;
+        try {
+          [teamDocSnap, usersSnap] = await queries; // eslint-disable-line
+        } catch (err) {
+          throw Error(
+            `${PREFIX} firestoreAddProperty: team/users lookup failed: ${err}`
+          );
+        }
+
+        const batchOrTrans = batch || transaction;
+        const teamUpdate = { [`properties.${propertyId}`]: true };
+        const userUpdate = { [`teams.${teamId}.${propertyId}`]: true };
+
+        // Batch team update
+        if (teamDocSnap.exists) {
+          batchOrTrans.update(teamDocSnap.ref, teamUpdate);
+
+          // Batch each user's update
+          usersSnap.docs
+            .filter(({ exists }) => exists)
+            .forEach(({ ref: userRef }) =>
+              batchOrTrans.update(userRef, userUpdate)
+            );
+        }
+      })
+      .catch(err => {
+        throw Error(
+          `${PREFIX} firestoreAddProperty: transaction updates failed: ${err}`
+        );
+      });
   },
 
-  firestoreUpdateProperty(fs, oldTeamId, newTeamId, propertyId, batch) {
-    // TODO
-  }
+  /**
+   * Update property's old/new
+   * teams and users
+   * @param  {admin.firestore} fs
+   * @param  {String} oldTeamId
+   * @param  {String} newTeamId
+   * @param  {String} propertyId
+   * @param  {firestore.batch?} parentBatch
+   * @return {Promise}
+   */
+  async firestoreUpdateProperty(
+    fs,
+    oldTeamId,
+    newTeamId,
+    propertyId,
+    parentBatch
+  ) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(oldTeamId && typeof oldTeamId === 'string', 'has old team id');
+    assert(newTeamId && typeof newTeamId === 'string', 'has new team id');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    const batch = parentBatch || fs.batch();
+
+    // Add property to new team/users
+    try {
+      await this.firestoreAddProperty(fs, newTeamId, propertyId, batch);
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreUpdateProperty: add property batch failed: ${err}`
+      );
+    }
+
+    // Remove property from old team/users
+    try {
+      await this.firestoreRemoveProperty(fs, oldTeamId, propertyId, batch);
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreUpdateProperty: remove property batch failed: ${err}`
+      );
+    }
+
+    if (parentBatch) {
+      return parentBatch;
+    }
+
+    return batch.commit();
+  },
 });
