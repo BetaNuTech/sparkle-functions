@@ -6,6 +6,7 @@ const createOnWriteTemplatesWatcher = require('./on-write-templates-watcher');
 const createOnWriteTeamsWatcher = require('./on-write-team-watcher');
 const getPropertyYardiResidents = require('./api/get-property-yardi-residents');
 const getPropertyYardiWorkOrders = require('./api/get-property-yardi-work-orders');
+const getLatestCompletedInspection = require('./api/get-latest-completed-inspection');
 const createSyncMeta = require('./pubsub/sync-meta');
 const propertyCode = require('./middleware/property-code');
 const yardiIntegration = require('./middleware/yardi-integration');
@@ -19,7 +20,11 @@ module.exports = {
   createOnWriteTemplatesWatcher,
   createOnWriteTeamsWatcher,
   pubsub: { createSyncMeta },
-  api: { getPropertyYardiResidents, getPropertyYardiWorkOrders },
+  api: {
+    getPropertyYardiResidents,
+    getPropertyYardiWorkOrders,
+    getLatestCompletedInspection,
+  },
   middleware: { propertyCode, yardiIntegration },
   utils: { processMeta },
 };
