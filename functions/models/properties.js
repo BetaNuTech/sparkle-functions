@@ -103,6 +103,23 @@ module.exports = modelSetup({
   },
 
   /**
+   * Lookup property by its' code
+   * @param  {admin.firebase} db
+   * @param  {String} propertyCode
+   * @return {Promise} - resolves {DataSnapshot}
+   */
+  realtimeQueryByCode(db, propertyCode) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(propertyCode, 'has property code');
+    return db
+      .ref('properties')
+      .orderByChild('code')
+      .equalTo(propertyCode)
+      .limitToFirst(1)
+      .once('value');
+  },
+
+  /**
    * Batch remove all firestore property
    * relationships to a deleted team
    * @param  {admin.firestore} fs

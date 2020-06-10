@@ -10,6 +10,7 @@ const PREFIX = 'inspections: process-write:';
  * Sync property meta and all inspection proxies.
  * Proxies include nested, propertyInspectionsList,
  * and completedInspectionsList
+ * TODO: Delete this module once firestore fully supported
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
  * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
  * @param  {String} inspectionId

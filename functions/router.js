@@ -47,6 +47,13 @@ module.exports = (db, fs, auth, settings) => {
 
   // Request Property's residents from Yardi
   app.get(
+    '/v1/properties/:propertyCode/latest-inspection',
+    // TODO: auth?
+    properties.api.getLatestCompletedInspection(fs)
+  );
+
+  // Request Property's residents from Yardi
+  app.get(
     '/v0/properties/:propertyId/yardi/residents',
     authUser(db, auth),
     properties.middleware.propertyCode(fs),

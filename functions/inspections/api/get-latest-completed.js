@@ -1,12 +1,15 @@
 const assert = require('assert');
 const express = require('express');
 const cors = require('cors');
-const moment = require('moment-timezone');
-const log = require('../utils/logger');
-const zipToTimezone = require('../utils/zip-to-timezone');
+const propertiesModel = require('../../models/properties');
+const inspectionsModel = require('../../models/inspections');
+const log = require('../../utils/logger');
+const zipToTimezone = require('../../utils/zip-to-timezone');
+const latestInspectionResponseData = require('./utils/latest-response-json');
+const config = require('../../config/inspections');
 
-const PREFIX = 'inspections: get-latest-completed:';
-const TEMP_NAME_LOOKUP = 'Blueshift Product Inspection';
+const PREFIX = 'inspections: api: get-latest-completed:';
+const TEMP_NAME_LOOKUP = config.blueshiftTemplateName;
 
 /**
  * Factory for getting the latest completed inspection
@@ -14,7 +17,7 @@ const TEMP_NAME_LOOKUP = 'Blueshift Product Inspection';
  * @return {Function} - onRequest handler
  */
 module.exports = function createGetLatestCompletedInspection(db) {
-  assert(Boolean(db), 'has firebase database instance');
+  assert(db && typeof db.ref === 'function', 'has realtime db');
 
   /**
    * Lookup the latest completed inspection for a property
@@ -33,20 +36,14 @@ module.exports = function createGetLatestCompletedInspection(db) {
       return res.status(400).send('Bad Request. Missing Parameters.');
     }
 
-    log.info(
-      `${PREFIX} requesting latest completed inspection of cobalt code: "${propertyCode}"`
-    );
-
     let propertySnap;
     try {
-      propertySnap = await db
-        .ref('properties')
-        .orderByChild('code')
-        .equalTo(propertyCode)
-        .limitToFirst(1)
-        .once('value');
+      propertySnap = await propertiesModel.realtimeQueryByCode(
+        db,
+        propertyCode
+      );
     } catch (err) {
-      log.error(`${PREFIX} ${err}`);
+      log.error(`${PREFIX} property code query failed | ${err}`);
       return res.status(500).send('Unable to retrieve data');
     }
 
@@ -59,14 +56,13 @@ module.exports = function createGetLatestCompletedInspection(db) {
 
     let inspectionsSnapshot;
     try {
-      inspectionsSnapshot = await db
-        .ref('inspections')
-        .orderByChild('property')
-        .equalTo(propertyId)
-        .once('value');
+      inspectionsSnapshot = await inspectionsModel.queryByProperty(
+        db,
+        propertyId
+      );
     } catch (err) {
       // Handle any errors
-      log.error(`${PREFIX} ${err}`);
+      log.error(`${PREFIX} inspections query by property failed | ${err}`);
       res.status(500).send('No inspections found.');
     }
 
@@ -79,7 +75,7 @@ module.exports = function createGetLatestCompletedInspection(db) {
       latestInspectionId,
       latestInspectionByDate,
       latestInspectionByDateId,
-    } = findLatestInspectionData(inspectionsSnapshot, dateForInspection);
+    } = findLatestData(inspectionsSnapshot, dateForInspection);
 
     if (!latestInspection) {
       return res.status(404).send('No completed latest inspection found.');
@@ -120,10 +116,10 @@ module.exports = function createGetLatestCompletedInspection(db) {
  * Find latest inspection from inspections snapshot
  * - provide any available meta data about the latest inspection
  * @param  {firebase.DataSnapshot} inspectionsSnapshot
- * @param  {Number} dateForInspection
+ * @param  {Number?} dateForInspection
  * @return {Object}
  */
-function findLatestInspectionData(inspectionsSnapshot, dateForInspection) {
+function findLatestData(inspectionsSnapshot, dateForInspection) {
   const result = {
     latestInspection: null,
     latestInspectionId: null,
@@ -156,7 +152,9 @@ function findLatestInspectionData(inspectionsSnapshot, dateForInspection) {
     if (
       insp.inspectionCompleted &&
       insp.completionDate &&
-      insp.template.name.indexOf(TEMP_NAME_LOOKUP) > -1
+      (insp.templateName || insp.template.name || '').indexOf(
+        TEMP_NAME_LOOKUP
+      ) > -1
     ) {
       inspections.push({ inspection: insp, key });
     }
@@ -184,99 +182,4 @@ function findLatestInspectionData(inspectionsSnapshot, dateForInspection) {
   }
 
   return result;
-}
-
-/**
- * Configure response JSON for an inspection
- * @param  {Date} date
- * @param  {String} propertyId
- * @param  {Object} latestInspection
- * @param  {String} latestInspectionId
- * @param  {String} timezone
- * @return {Object} - response JSON
- */
-function latestInspectionResponseData(
-  date,
-  propertyId,
-  latestInspection,
-  latestInspectionId,
-  timezone
-) {
-  const currentTimeSecs = date.getTime() / 1000;
-  const currentDay = currentTimeSecs / 60 / 60 / 24;
-  const creationDateDay = latestInspection.creationDate / 60 / 60 / 24; // days since Unix Epoch
-  const completionDateDay = latestInspection.completionDate / 60 / 60 / 24; // days since Unix Epoch
-  const score = Math.round(Number(latestInspection.score));
-  const inspectionURL = `https://sparkle-production.herokuapp.com/properties/${propertyId}/update-inspection/${latestInspectionId}`;
-  const inspectionOverdue = isInspectionOverdue(
-    currentDay,
-    creationDateDay,
-    completionDateDay
-  );
-
-  let alert = '';
-  let complianceAlert = '';
-
-  if (inspectionOverdue) {
-    alert = 'Blueshift Product Inspection OVERDUE (Last: ';
-    alert += moment(latestInspection.creationDate * 1000)
-      .tz(timezone)
-      .format('MM/DD/YY');
-    alert += `, Completed: ${moment(latestInspection.completionDate * 1000)
-      .tz(timezone)
-      .format('MM/DD/YY')}).`;
-
-    // Append extra alert for past max duration warning
-    if (completionDateDay - creationDateDay > 3) {
-      alert +=
-        ' Over 3-day max duration, please start and complete inspection within 3 days.';
-    }
-
-    complianceAlert = alert;
-  }
-
-  // Less than 30 days ago, but Score less than 90%?
-  if (score < 90) {
-    if (alert) {
-      alert += ' POOR RECENT INSPECTION RESULTS. DOUBLE CHECK PRODUCT PROBLEM!';
-    } else {
-      alert = 'POOR RECENT INSPECTION RESULTS. DOUBLE CHECK PRODUCT PROBLEM!';
-    }
-  }
-
-  return {
-    creationDate: moment(latestInspection.creationDate * 1000)
-      .tz(timezone)
-      .format('MM/DD/YY'),
-    completionDate: moment(latestInspection.completionDate * 1000)
-      .tz(timezone)
-      .format('MM/DD/YY'),
-    score: `${score}%`,
-    inspectionReportURL: latestInspection.inspectionReportURL,
-    alert: alert || undefined,
-    complianceAlert: complianceAlert || undefined,
-    inspectionURL,
-  };
-}
-
-/**
- * Determine if inspection is "overdue"
- * @param  {Number} currentDay - Days since UNIX Epoch
- * @param  {Number} creationDateDay - Days since UNIX Epoch
- * @param  {Number} completionDateDay - Days since UNIX Epoch
- * @return {Boolean}
- */
-function isInspectionOverdue(currentDay, creationDateDay, completionDateDay) {
-  let differenceDays;
-
-  if (currentDay - completionDateDay > 3) {
-    // Formula when completed more than 3 days ago
-    differenceDays = currentDay - (creationDateDay + 3); // assume 3 days instead
-  } else {
-    // Formula when completed less than 3 days ago
-    differenceDays = currentDay - completionDateDay; // days since completion
-  }
-
-  log.info(`Days since last inspection = ${differenceDays}`);
-  return differenceDays > 7;
 }
