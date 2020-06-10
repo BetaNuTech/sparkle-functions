@@ -15,75 +15,86 @@ const EIGHT_DAYS_AGO = CURRENT_DAY - 8;
 const NINE_DAYS_AGO = CURRENT_DAY - 9;
 const TEN_DAYS_AGO = CURRENT_DAY - 10;
 const ELEVEN_DAYS_AGO = CURRENT_DAY - 11;
-const TWELVE_DAYS_AGO = CURRENT_DAY - 11;
+const TWELVE_DAYS_AGO = CURRENT_DAY - 12;
+const THIRTEEN_DAYS_AGO = CURRENT_DAY - 13;
 
 describe('Inspections | API | Utils | Is Overdue', () => {
-  it('should only be overdue if completed over 3 days ago and created over 10 days ago', () => {
+  it('should be overdue if created over 10 day from a comparison day', () => {
     [
       {
-        actual: isOverdue(CURRENT_DAY, ELEVEN_DAYS_AGO, CURRENT_DAY),
+        actual: isOverdue(CURRENT_DAY, CURRENT_DAY),
         expected: false,
-        msg: 'completed only today',
+        msg: 'created only today',
       },
       {
-        actual: isOverdue(CURRENT_DAY, ELEVEN_DAYS_AGO, ONE_DAY_AGO),
+        actual: isOverdue(CURRENT_DAY, ONE_DAY_AGO),
         expected: false,
-        msg: 'completed only yesturday',
+        msg: 'created only yesturday',
       },
       {
-        actual: isOverdue(CURRENT_DAY, ELEVEN_DAYS_AGO, TWO_DAYS_AGO),
+        actual: isOverdue(CURRENT_DAY, TWO_DAYS_AGO),
         expected: false,
-        msg: 'completed only 2 days ago',
+        msg: 'created only 2 days ago',
       },
       {
-        actual: isOverdue(CURRENT_DAY, ELEVEN_DAYS_AGO, THREE_DAYS_AGO),
+        actual: isOverdue(CURRENT_DAY, THREE_DAYS_AGO),
         expected: false,
-        msg: 'completed only 3 days ago',
+        msg: 'created only 3 days ago',
       },
       {
-        actual: isOverdue(CURRENT_DAY, FOUR_DAYS_AGO, FOUR_DAYS_AGO),
+        actual: isOverdue(CURRENT_DAY, FOUR_DAYS_AGO),
         expected: false,
         msg: 'created only 4 days ago',
       },
       {
-        actual: isOverdue(CURRENT_DAY, FIVE_DAYS_AGO, FOUR_DAYS_AGO),
+        actual: isOverdue(CURRENT_DAY, FIVE_DAYS_AGO),
         expected: false,
         msg: 'created only 5 days ago',
       },
       {
-        actual: isOverdue(CURRENT_DAY, SIX_DAYS_AGO, FOUR_DAYS_AGO),
+        actual: isOverdue(CURRENT_DAY, SIX_DAYS_AGO),
         expected: false,
         msg: 'created only 6 days ago',
       },
       {
-        actual: isOverdue(CURRENT_DAY, SEVEN_DAYS_AGO, FOUR_DAYS_AGO),
+        actual: isOverdue(CURRENT_DAY, SEVEN_DAYS_AGO),
         expected: false,
         msg: 'created only 7 days ago',
       },
       {
-        actual: isOverdue(CURRENT_DAY, EIGHT_DAYS_AGO, FOUR_DAYS_AGO),
+        actual: isOverdue(CURRENT_DAY, EIGHT_DAYS_AGO),
         expected: false,
         msg: 'created only 8 days ago',
       },
       {
-        actual: isOverdue(CURRENT_DAY, NINE_DAYS_AGO, FOUR_DAYS_AGO),
+        actual: isOverdue(CURRENT_DAY, NINE_DAYS_AGO),
         expected: false,
         msg: 'created only 9 days ago',
       },
       {
-        actual: isOverdue(CURRENT_DAY, TEN_DAYS_AGO, FOUR_DAYS_AGO),
+        actual: isOverdue(CURRENT_DAY, TEN_DAYS_AGO),
         expected: false,
-        msg: 'created 10 days ago',
+        msg: 'created only 10 days ago',
       },
       {
-        actual: isOverdue(CURRENT_DAY, ELEVEN_DAYS_AGO, FOUR_DAYS_AGO),
+        actual: isOverdue(CURRENT_DAY, ELEVEN_DAYS_AGO),
         expected: true,
         msg: 'created 11 days ago',
       },
       {
-        actual: isOverdue(CURRENT_DAY, TWELVE_DAYS_AGO, FOUR_DAYS_AGO),
+        actual: isOverdue(CURRENT_DAY, TWELVE_DAYS_AGO),
         expected: true,
         msg: 'created 12 days ago',
+      },
+      {
+        actual: isOverdue(TWO_DAYS_AGO, TWELVE_DAYS_AGO),
+        expected: false,
+        msg: 'created 10 days from comparison day',
+      },
+      {
+        actual: isOverdue(TWO_DAYS_AGO, THIRTEEN_DAYS_AGO),
+        expected: true,
+        msg: 'created 11 days from comparison day',
       },
     ].forEach(({ actual, expected, msg }) => {
       expect(actual).to.equal(expected, msg);

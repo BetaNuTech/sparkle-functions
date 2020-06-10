@@ -29,7 +29,7 @@ module.exports = function createGetLatestCompletedInspection(db) {
     const propertyCode = req.query.cobalt_code;
     const otherDate = req.query.other_date;
     const dateForInspection = otherDate
-      ? new Date(otherDate).getTime() / 1000
+      ? Math.round(new Date(otherDate).getTime() / 1000)
       : 0;
 
     if (!propertyCode) {
@@ -171,7 +171,7 @@ function findLatestData(inspectionsSnapshot, dateForInspection) {
     if (dateForInspection) {
       const [latestByDate] = sortedInspections.filter(
         keyInspection =>
-          keyInspection.inspection.completionDate <= dateForInspection
+          keyInspection.inspection.creationDate <= dateForInspection
       );
 
       if (latestByDate) {
