@@ -1,24 +1,28 @@
+const assert = require('assert');
+
 /**
- * Determine if inspection is "overdue"
- * @param  {Number} currentDay - Days since UNIX Epoch
- * @param  {Number} creationDateDay - Days since UNIX Epoch
- * @param  {Number} completionDateDay - Days since UNIX Epoch
+ * Check if inspection was created over 10
+ * days since a comparision date
+ * @param  {Number} compareDaysSinceEpoche - Days since UNIX Epoch
+ * @param  {Number} creationDaysSinceEpoche - Days since UNIX Epoch
  * @return {Boolean}
  */
 module.exports = function isInspectionOverdue(
-  currentDay,
-  creationDateDay,
-  completionDateDay
+  compareDaysSinceEpoche,
+  creationDaysSinceEpoche
 ) {
-  let differenceDays;
-
-  if (currentDay - completionDateDay > 3) {
-    // Formula when completed more than 3 days ago
-    differenceDays = currentDay - (creationDateDay + 3); // assume 3 days instead
-  } else {
-    // Formula when completed less than 3 days ago
-    differenceDays = currentDay - completionDateDay; // days since completion
-  }
-
-  return differenceDays > 7;
+  assert(
+    compareDaysSinceEpoche &&
+      typeof compareDaysSinceEpoche === 'number' &&
+      compareDaysSinceEpoche === compareDaysSinceEpoche,
+    'has valid compare day'
+  );
+  assert(
+    creationDaysSinceEpoche &&
+      typeof creationDaysSinceEpoche === 'number' &&
+      creationDaysSinceEpoche === creationDaysSinceEpoche,
+    'has valid creation day'
+  );
+  const daysSinceCreation = compareDaysSinceEpoche - creationDaysSinceEpoche;
+  return daysSinceCreation > 10;
 };

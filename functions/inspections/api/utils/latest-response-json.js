@@ -20,8 +20,6 @@ module.exports = function latestInspectionResponseData(
   latestInspectionId,
   timezone
 ) {
-  const currentTimeSecs = date.getTime() / 1000;
-  const currentDay = currentTimeSecs / 60 / 60 / 24;
   const creationDateDay = latestInspection.creationDate / 60 / 60 / 24; // days since Unix Epoch
   const completionDateDay = latestInspection.completionDate / 60 / 60 / 24; // days since Unix Epoch
   const score = Math.round(Number(latestInspection.score));
@@ -29,11 +27,8 @@ module.exports = function latestInspectionResponseData(
     '{{inspectionId}}',
     latestInspectionId
   );
-  const inspectionOverdue = isInspectionOverdue(
-    currentDay,
-    creationDateDay,
-    completionDateDay
-  );
+  const compareDay = Math.round(date.getTime() / 1000) / 60 / 60 / 24;
+  const inspectionOverdue = isInspectionOverdue(compareDay, creationDateDay);
 
   let alert = '';
   let complianceAlert = '';
