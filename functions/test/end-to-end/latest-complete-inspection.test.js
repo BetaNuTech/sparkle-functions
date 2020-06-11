@@ -2,7 +2,7 @@ const { expect } = require('chai');
 const moment = require('moment-timezone');
 const request = require('supertest');
 const uuid = require('../../test-helpers/uuid');
-const createApp = require('../../inspections/get-latest-completed');
+const createApp = require('../../inspections/api/get-latest-completed');
 const mocking = require('../../test-helpers/mocking');
 const timeMocking = require('../../test-helpers/time');
 const { cleanDb } = require('../../test-helpers/firebase');
@@ -179,18 +179,6 @@ describe('Latest Complete Inspection', () => {
         expected: undefined,
         message:
           'has no overdue alert when completed > 3 days ago & created < 10 days ago',
-      },
-      {
-        data: Object.assign(
-          {},
-          {
-            completionDate: AGE.twoDaysAgo,
-            creationDate: AGE.twentyDaysAgo,
-          },
-          inspectionBase
-        ),
-        expected: undefined,
-        message: 'has no overdue alert when completed < 3 days ago',
       },
     ];
 
@@ -376,13 +364,15 @@ describe('Latest Complete Inspection', () => {
     const tests = [
       {
         data: [inspections.latest],
-        query: AGE.twoDaysAgo,
+        query: moment(AGE.twoDaysAgo * 1000).format('YYYY/MM/DD'),
         expected: undefined,
         message: 'no latest by date when all inspections newer than date',
       },
       {
         data: [inspections.latest, inspections.middle, inspections.oldest],
-        query: inspections.middle.completionDate,
+        query: moment(inspections.middle.creationDate * 1000).format(
+          'YYYY/MM/DD'
+        ),
         expected: moment(inspections.middle.completionDate * 1000)
           .tz(DEFAULT_TZ)
           .format('MM/DD/YY'),
@@ -390,7 +380,9 @@ describe('Latest Complete Inspection', () => {
       },
       {
         data: [inspections.latest, inspections.middle, inspections.oldest],
-        query: inspections.latest.completionDate,
+        query: moment(inspections.latest.creationDate * 1000).format(
+          'YYYY/MM/DD'
+        ),
         expected: moment(inspections.middle.completionDate * 1000)
           .tz(DEFAULT_TZ)
           .format('MM/DD/YY'),
@@ -416,9 +408,8 @@ describe('Latest Complete Inspection', () => {
 
       // Get results
       const app = createApp(db);
-      const otherDate = new Date(query * 1000).toString();
       const response = await request(app)
-        .get(`/?cobalt_code=${code}&other_date=${otherDate}`)
+        .get(`/?cobalt_code=${code}&other_date=${query}`)
         .expect(200);
 
       // Assertions
