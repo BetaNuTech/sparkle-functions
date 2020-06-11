@@ -750,6 +750,31 @@ module.exports = modelSetup({
   },
 
   /**
+   * Update Firestore Inspection
+   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {String} inspectionId
+   * @param  {Object} data
+   * @param  {firestore.batch?} batch
+   * @return {Promise}
+   */
+  firestoreUpdateRecord(fs, inspectionId, data, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(
+      inspectionId && typeof inspectionId === 'string',
+      'has deficient item id'
+    );
+    assert(data && typeof data === 'object', 'has update data');
+    const docRef = fs.collection(INSPECTION_COLLECTION).doc(inspectionId);
+
+    if (batch) {
+      assert(typeof batch.update === 'function', 'has batch instance');
+      return Promise.resolve(batch.update(docRef, data));
+    }
+
+    return docRef.update(data);
+  },
+
+  /**
    * Create or update a Firestore inspection
    * @param  {firebaseAdmin.firestore} fs
    * @param  {String}  inspectionId

@@ -1,4 +1,5 @@
 const processWrite = require('./process-write');
+const onWriteV2 = require('./on-write-v2');
 const createOnWriteAttributeWatcher = require('./on-write-attribute-watcher');
 const createOnDeleteWatcher = require('./on-delete-watcher');
 const onDeleteV2 = require('./on-delete-v2');
@@ -17,6 +18,7 @@ module.exports = {
   onCreateWatcher,
   createOnWriteAttributeWatcher,
   onDeleteV2,
+  onWriteV2,
   createOnDeleteWatcher,
   createOnGetPDFReportHandler,
 
