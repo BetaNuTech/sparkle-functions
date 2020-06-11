@@ -1,6 +1,7 @@
 const processWrite = require('./process-write');
 const createOnWriteAttributeWatcher = require('./on-write-attribute-watcher');
 const createOnDeleteWatcher = require('./on-delete-watcher');
+const onDeleteV2 = require('./on-delete-v2');
 const onCreateWatcher = require('./on-create-watcher');
 const createOnGetPDFReportHandler = require('./on-get-pdf-report');
 const getLatestCompleted = require('./api/get-latest-completed');
@@ -15,6 +16,7 @@ module.exports = {
   getLatestCompleted,
   onCreateWatcher,
   createOnWriteAttributeWatcher,
+  onDeleteV2,
   createOnDeleteWatcher,
   createOnGetPDFReportHandler,
 
@@ -26,6 +28,6 @@ module.exports = {
 
   api: {
     createPatchProperty: createAPIPatchProperty,
-    createGetInspectionPDF: createAPIGetInspectionPDF
+    createGetInspectionPDF: createAPIGetInspectionPDF,
   },
 };
