@@ -262,6 +262,37 @@ module.exports = modelSetup({
   },
 
   /**
+   * Query all properties
+   * @param  {admin.firestore} fs
+   * @param  {Object} query
+   * @param  {firestore.batch?} batch
+   * @return {Promise} - resolves {DataSnapshot}
+   */
+  firestoreQuery(fs, query, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(query && typeof query === 'object', 'has query');
+
+    const fsQuery = fs.colletion(PROPERTY_COLLECTION);
+
+    // Append each query as where clause
+    Object.keys(query).forEach(attr => {
+      const queryArgs = query[attr];
+      assert(
+        queryArgs && Array.isArray(queryArgs),
+        'has query arguments array'
+      );
+      fsQuery.where(attr, ...queryArgs);
+    });
+
+    if (batch) {
+      assert(typeof batch.get === 'function', 'has firestore batch');
+      return Promise.resolve(batch.get(fsQuery));
+    }
+
+    return fsQuery.get(query);
+  },
+
+  /**
    * Update a property's metadata relating
    * to inspections and deficiencies
    * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
