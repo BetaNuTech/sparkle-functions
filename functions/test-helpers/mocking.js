@@ -46,7 +46,10 @@ module.exports = {
     const offset = Math.floor(Math.random() * 100);
     const items = Math.floor(Math.random() * 100);
     const completed = inspConfig.inspectionCompleted || false;
-    const templateName = `test-${offset * 3}`;
+    const templateName =
+      inspConfig.templateName ||
+      (inspConfig.template && inspConfig.template.name) ||
+      `test-${offset * 3}`;
 
     return Object.assign(
       {
