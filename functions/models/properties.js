@@ -272,7 +272,7 @@ module.exports = modelSetup({
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(query && typeof query === 'object', 'has query');
 
-    const fsQuery = fs.colletion(PROPERTY_COLLECTION);
+    const fsQuery = fs.collection(PROPERTY_COLLECTION);
 
     // Append each query as where clause
     Object.keys(query).forEach(attr => {
