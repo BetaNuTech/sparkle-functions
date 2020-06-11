@@ -182,6 +182,29 @@ module.exports = modelSetup({
   },
 
   /**
+   * Update Firestore Property
+   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {String} propertyId
+   * @param  {Object} data
+   * @param  {firestore.batch?} parentBatch
+   * @return {Promise}
+   */
+  firestoreUpdateRecord(fs, propertyId, data, parentBatch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    assert(data && typeof data === 'object', 'has update data');
+
+    const docRef = fs.collection(PROPERTY_COLLECTION).doc(propertyId);
+
+    if (parentBatch) {
+      parentBatch.update(docRef, data);
+      return Promise.resolve(parentBatch);
+    }
+
+    return docRef.update(data);
+  },
+
+  /**
    * Create or update a Firestore property
    * @param  {firebaseAdmin.firestore} fs
    * @param  {String}  propertyId
@@ -295,11 +318,12 @@ module.exports = modelSetup({
   /**
    * Update a property's metadata relating
    * to inspections and deficiencies
-   * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
+   * @param  {admin.firestore} fs - Firestore Admin DB instance
    * @param  {String} propertyId
+   * @param  {firestore.batch?} parentBatch
    * @return {Promise} - resolves {Object} updates
    */
-  async updateMetaData(fs, propertyId) {
+  async updateMetaData(fs, propertyId, parentBatch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
 
@@ -347,7 +371,7 @@ module.exports = modelSetup({
 
     // Update Firebase Property
     try {
-      await this.firestoreUpsertRecord(fs, propertyId, updates);
+      await this.firestoreUpdateRecord(fs, propertyId, updates, parentBatch);
     } catch (err) {
       throw Error(`${PREFIX} failed to update property metadata: ${err}`);
     }
