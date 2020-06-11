@@ -27,8 +27,7 @@ module.exports = function createGetLatestCompletedInspection(fs) {
    */
   return async (req, res) => {
     const payload = { data: null };
-    const { params } = req;
-    const propertyCode = params;
+    const { propertyCode } = req.params;
     const otherDate = parseInt(req.query.other_date || '0', 10);
 
     // Set content type
@@ -52,7 +51,7 @@ module.exports = function createGetLatestCompletedInspection(fs) {
       const snap = await propertiesModel.firestoreQuery(fs, {
         code: ['==', propertyCode],
       });
-      if (!snap.exists || snap.size === 0) {
+      if (snap.size === 0) {
         throw Error('property does not exist');
       }
       property = snap.docs[0].data();
@@ -78,7 +77,7 @@ module.exports = function createGetLatestCompletedInspection(fs) {
         completionDate: ['>', 0],
         templateName: ['==', TEMP_NAME_LOOKUP],
       });
-      if (!snap.exists || snap.size === 0) {
+      if (snap.size === 0) {
         throw Error('no completed inspections');
       }
       snap.docs
@@ -101,8 +100,6 @@ module.exports = function createGetLatestCompletedInspection(fs) {
     // Set latest inspection
     const [latest] = inspections;
     payload.data = createJsonApiInspection(latest);
-
-    // TODO: setup latest inspection by other date
 
     // Set latest inspection alerts
     const alerts = createInspectionAlerts(property, latest);

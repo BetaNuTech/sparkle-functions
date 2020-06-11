@@ -13,6 +13,7 @@ const TEMP_NAME_LOOKUP = config.blueshiftTemplateName;
 
 /**
  * Factory for getting the latest completed inspection
+ * TODO: Delete when Firestore fully supported
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
  * @return {Function} - onRequest handler
  */
