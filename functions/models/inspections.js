@@ -99,13 +99,15 @@ module.exports = modelSetup({
 
   /**
    * Set/update inspections PDF report status
-   * @param {firebaseAdmin.database} db - Firebase Admin DB instance
+   * @param {admin.database} db - Firebase Admin DB instance
+   * @param {admin.firestore} fs - Firestore Admin DB instance
    * @param {String} inspectionId
    * @param {String} status
    * @return {Promise}
    */
-  setPDFReportStatus(db, inspectionId, status) {
+  async setPDFReportStatus(db, fs, inspectionId, status) {
     assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
@@ -115,28 +117,63 @@ module.exports = modelSetup({
       'has valid PDF inspection report status'
     );
 
-    return db
-      .ref(`${INSPECTIONS_PATH}/${inspectionId}/inspectionReportStatus`)
-      .set(status);
+    try {
+      await db
+        .ref(`${INSPECTIONS_PATH}/${inspectionId}/inspectionReportStatus`)
+        .set(status);
+    } catch (err) {
+      throw Error(
+        `${PREFIX} setPDFReportStatus: failed to update Firebase status: ${err}`
+      );
+    }
+
+    try {
+      await this.firestoreUpsertRecord(fs, inspectionId, {
+        inspectionReportStatus: status,
+      });
+    } catch (err) {
+      throw Error(
+        `${PREFIX} setPDFReportStatus: failed to update Firestore status: ${err}`
+      );
+    }
   },
 
   /**
    * Set/update inspections PDF report url
-   * @param {firebaseAdmin.database} db - Firebase Admin DB instance
+   * @param {admin.database} db - Firebase Admin DB instance
+   * @param {admin.firestore} fs - Firestore Admin DB instance
    * @param {String} inspectionId
    * @param {String} url
    * @return {Promise}
    */
-  setReportURL(db, inspectionId, url) {
+  async setReportURL(db, fs, inspectionId, url) {
     assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
     );
     assert(url && typeof url === 'string', 'has report url');
-    return db
-      .ref(`${INSPECTIONS_PATH}/${inspectionId}/inspectionReportURL`)
-      .set(url);
+
+    try {
+      await db
+        .ref(`${INSPECTIONS_PATH}/${inspectionId}/inspectionReportURL`)
+        .set(url);
+    } catch (err) {
+      throw Error(
+        `${PREFIX} setReportURL: Failed to update firebase inspection: ${err}`
+      );
+    }
+
+    try {
+      await this.firestoreUpsertRecord(fs, inspectionId, {
+        inspectionReportURL: url,
+      });
+    } catch (err) {
+      throw Error(
+        `${PREFIX} setReportURL: Failed to update firestore inspection: ${err}`
+      );
+    }
   },
 
   /**
@@ -145,15 +182,36 @@ module.exports = modelSetup({
    * @param {String} inspectionId
    * @return {Promise}
    */
-  updatePDFReportTimestamp(db, inspectionId) {
+  async updatePDFReportTimestamp(db, fs, inspectionId) {
     assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
     );
-    return db
-      .ref(`${INSPECTIONS_PATH}/${inspectionId}/inspectionReportUpdateLastDate`)
-      .set(Date.now() / 1000);
+    const now = Math.round(Date.now() / 1000);
+
+    try {
+      await db
+        .ref(
+          `${INSPECTIONS_PATH}/${inspectionId}/inspectionReportUpdateLastDate`
+        )
+        .set(now);
+    } catch (err) {
+      throw Error(
+        `${PREFIX} updatePDFReportTimestamp: failed to update firebase: ${err}`
+      );
+    }
+
+    try {
+      await this.firestoreUpsertRecord(fs, inspectionId, {
+        inspectionReportUpdateLastDate: now,
+      });
+    } catch (err) {
+      throw Error(
+        `${PREFIX} updatePDFReportTimestamp: failed to update firestore: ${err}`
+      );
+    }
   },
 
   /**
@@ -801,11 +859,13 @@ module.exports = modelSetup({
     }
 
     const { exists } = docSnap;
-    const upsert = {
-      ...data,
-      score: getScore(data),
-      templateName: getTemplateName(data),
-    };
+    const upsert = { ...data };
+    if (data.score !== undefined) {
+      upsert.score = getScore(data);
+    }
+    if (data.template !== undefined) {
+      upsert.templateName = getTemplateName(data);
+    }
 
     try {
       if (exists) {
