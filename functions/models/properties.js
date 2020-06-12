@@ -166,7 +166,7 @@ module.exports = modelSetup({
 
   /**
    * Create a Firestore property
-   * @param  {firebaseAdmin.firestore} fs
+   * @param  {admin.firestore} fs
    * @param  {String} propertyId
    * @param  {Object} data
    * @return {Promise} - resolves {WriteResult}

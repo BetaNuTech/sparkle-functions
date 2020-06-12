@@ -96,6 +96,7 @@ exports.createSlackNotifications = functions.https.onRequest(
 exports.inspectionPdfReport = functions.https.onRequest(
   inspections.createOnGetPDFReportHandler(
     db,
+    fs,
     auth,
     config.clientApps.web.inspectionURL
   )

@@ -3,8 +3,11 @@ const request = require('supertest');
 const createApp = require('../../../inspections/on-get-pdf-report');
 const uuid = require('../../../test-helpers/uuid');
 const mocking = require('../../../test-helpers/mocking');
+const inspectionsModel = require('../../../models/inspections');
+const propertiesModel = require('../../../models/properties');
+const usersModel = require('../../../models/users');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { db, auth, deletePDFInspection } = require('../../setup');
+const { db, fs, auth, deletePDFInspection } = require('../../setup');
 
 // Avoid creating lots of PDF's
 const INSP_ID = uuid();
@@ -40,16 +43,12 @@ describe('Inspections | PDF Report', () => {
       } catch (e) {} // eslint-disable-line no-empty
     }
 
-    return cleanDb(db);
+    return cleanDb(db, fs);
   });
 
   it('should reject request without authorization', async function() {
-    // Setup database
-    await db.ref(`/inspections/${INSP_ID}`).set(INSPECTION_DATA); // Add inspection
-    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
-
     // Execute & Get Result
-    const app = createApp(db, auth, INSP_URL); // auth required when given
+    const app = createApp(db, fs, auth, INSP_URL); // auth required when given
     return request(app)
       .get(`/${PROPERTY_ID}/${INSP_ID}`)
       .set('Accept', 'application/json')
@@ -58,14 +57,17 @@ describe('Inspections | PDF Report', () => {
   });
 
   it('should reject request for incompete inspection', async () => {
+    const inspData = {
+      ...INSPECTION_DATA,
+      inspectionCompleted: false,
+    };
+
     // Setup database
-    await db
-      .ref(`/inspections/${INSP_ID}`)
-      .set(Object.assign({}, INSPECTION_DATA, { inspectionCompleted: false }));
-    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
+    await inspectionsModel.firestoreCreateRecord(fs, INSP_ID, inspData);
+    await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
 
     // Execute & Get Result
-    const app = createApp(db, null, INSP_URL);
+    const app = createApp(db, fs, null, INSP_URL);
     return request(app)
       .get(`/${PROPERTY_ID}/${INSP_ID}`)
       .set('Accept', 'application/json')
@@ -75,11 +77,11 @@ describe('Inspections | PDF Report', () => {
 
   it("should resolve an uploaded PDF's download link", async function() {
     // Setup database
-    await db.ref(`/inspections/${INSP_ID}`).set(INSPECTION_DATA); // Add inspection
-    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
+    await inspectionsModel.firestoreCreateRecord(fs, INSP_ID, INSPECTION_DATA);
+    await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
 
     // Execute & Get Result
-    const app = createApp(db, null, INSP_URL);
+    const app = createApp(db, fs, null, INSP_URL);
     const result = await request(app)
       .get(`/${PROPERTY_ID}/${INSP_ID}`)
       .set('Accept', 'application/json')
@@ -92,11 +94,11 @@ describe('Inspections | PDF Report', () => {
 
   it('should add an `inspectionReportUpdateLastDate` to inspection', async function() {
     // Setup database
-    await db.ref(`/inspections/${INSP_ID}`).set(INSPECTION_DATA); // Add inspection
-    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
+    await inspectionsModel.firestoreCreateRecord(fs, INSP_ID, INSPECTION_DATA);
+    await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
 
     // Execute
-    const app = createApp(db, null, INSP_URL);
+    const app = createApp(db, fs, null, INSP_URL);
     await request(app)
       .get(`/${PROPERTY_ID}/${INSP_ID}`)
       .set('Accept', 'application/json')
@@ -104,23 +106,40 @@ describe('Inspections | PDF Report', () => {
       .expect(200);
 
     // Get Result
-    const actual = await db
-      .ref(`/inspections/${INSP_ID}/inspectionReportUpdateLastDate`)
-      .once('value');
+    const resultFirebase = await inspectionsModel.findRecord(db, INSP_ID);
+    const resultFirestore = await inspectionsModel.firestoreFindRecord(
+      fs,
+      INSP_ID
+    );
 
     // Assertions
-    expect(actual.val()).to.be.a('number');
+    [
+      {
+        actual:
+          (resultFirebase.val() || {}).inspectionReportUpdateLastDate || 0,
+        msg: 'set firebase inspection report update last date',
+      },
+      {
+        actual:
+          (resultFirestore.data() || {}).inspectionReportUpdateLastDate || 0,
+        msg: 'set firestore inspection report update last date',
+      },
+    ].forEach(({ actual, msg }) => {
+      expect(actual).to.be.a('number', msg);
+      expect(actual).to.be.above(1, msg);
+    });
   });
 
   it('should add an `inspectionReportURL` to inspection', async function() {
+    const inspData = Object.assign({}, INSPECTION_DATA);
+    delete inspData.inspectionReportURL;
+
     // Setup database
-    const inspectionData = Object.assign({}, INSPECTION_DATA);
-    delete inspectionData.inspectionReportURL;
-    await db.ref(`/inspections/${INSP_ID}`).set(inspectionData); // Add inspection
-    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
+    await inspectionsModel.firestoreCreateRecord(fs, INSP_ID, inspData);
+    await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
 
     // Execute
-    const app = createApp(db, null, INSP_URL);
+    const app = createApp(db, fs, null, INSP_URL);
     const response = await request(app)
       .get(`/${PROPERTY_ID}/${INSP_ID}`)
       .set('Accept', 'application/json')
@@ -128,22 +147,38 @@ describe('Inspections | PDF Report', () => {
       .expect(200);
 
     // Get Result
-    const actual = await db
-      .ref(`/inspections/${INSP_ID}/inspectionReportURL`)
-      .once('value');
-    const expected = response.body.inspectionReportURL;
+    const resultFirebase = await inspectionsModel.findRecord(db, INSP_ID);
+    const resultFirestore = await inspectionsModel.firestoreFindRecord(
+      fs,
+      INSP_ID
+    );
 
     // Assertions
-    expect(actual.val()).to.equal(expected);
+    [
+      {
+        actual: (resultFirebase.val() || {}).inspectionReportURL || '',
+        expected: response.body.inspectionReportURL,
+        msg: 'set firebase inspection report URL',
+      },
+      {
+        actual: (resultFirestore.data() || {}).inspectionReportURL || '',
+        expected: response.body.inspectionReportURL,
+        msg: 'set firestore inspection report URL',
+      },
+    ].forEach(({ actual, expected, msg }) => {
+      expect(actual).to.equal(expected, msg);
+    });
   });
 
   it('should update `inspectionReportStatus` on inspection', async function() {
+    const final = 'completed_success';
+
     // Setup database
-    await db.ref(`/inspections/${INSP_ID}`).set(INSPECTION_DATA); // Add inspection
-    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
+    await inspectionsModel.firestoreCreateRecord(fs, INSP_ID, INSPECTION_DATA);
+    await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
 
     // Execute
-    const app = createApp(db, null, INSP_URL);
+    const app = createApp(db, fs, null, INSP_URL);
     await request(app)
       .get(`/${PROPERTY_ID}/${INSP_ID}`)
       .set('Accept', 'application/json')
@@ -151,31 +186,48 @@ describe('Inspections | PDF Report', () => {
       .expect(200);
 
     // Get Result
-    const actual = await db
-      .ref(`/inspections/${INSP_ID}/inspectionReportStatus`)
-      .once('value');
+    const resultFirebase = await inspectionsModel.findRecord(db, INSP_ID);
+    const resultFirestore = await inspectionsModel.firestoreFindRecord(
+      fs,
+      INSP_ID
+    );
 
     // Assertions
-    expect(actual.val()).to.equal('completed_success');
+    [
+      {
+        actual: (resultFirebase.val() || {}).inspectionReportStatus || '',
+        expected: final,
+        msg: 'set firebase record report status',
+      },
+      {
+        actual: (resultFirestore.data() || {}).inspectionReportStatus || '',
+        expected: final,
+        msg: 'set firestore record report status',
+      },
+    ].forEach(({ actual, expected, msg }) => {
+      expect(actual).to.equal(expected, msg);
+    });
   });
 
   it('should create a source notification after successfully creating report', async function() {
     const userId = uuid();
     const expected = true; // Source notification exists
-
-    // Setup database
-    await db.ref(`/inspections/${INSP_ID}`).set(INSPECTION_DATA); // Add inspection
-    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
-    await db.ref(`/users/${userId}`).set({
+    const userData = {
       admin: true, // Add admin user
       firstName: 'test',
       lastName: 'user',
       email: 'test@email.com',
-    });
+    };
+
+    // Setup database
+    await inspectionsModel.firestoreCreateRecord(fs, INSP_ID, INSPECTION_DATA);
+    await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
+    await usersModel.firestoreCreateRecord(fs, userId, userData);
 
     // Execute
     const app = createApp(
       db,
+      fs,
       {
         verifyIdToken: () => Promise.resolve({ uid: userId }),
       },
@@ -197,15 +249,17 @@ describe('Inspections | PDF Report', () => {
   });
 
   it('should return immediately when inspection status is generating', async function() {
-    // Setup database
-    const inspectionData = Object.assign({}, INSPECTION_DATA, {
+    const inspData = {
+      ...INSPECTION_DATA,
       inspectionReportStatus: 'generating',
-    });
-    await db.ref(`/inspections/${INSP_ID}`).set(inspectionData); // Add generating inspection
-    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
+    };
+
+    // Setup database
+    await inspectionsModel.firestoreCreateRecord(fs, INSP_ID, inspData);
+    await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
 
     // Execute & Get Result
-    const app = createApp(db, null, INSP_URL);
+    const app = createApp(db, fs, null, INSP_URL);
     const result = await request(app)
       .get(`/${PROPERTY_ID}/${INSP_ID}`)
       .set('Accept', 'application/json')
@@ -218,20 +272,45 @@ describe('Inspections | PDF Report', () => {
   });
 
   it('should return immediately when inspection report up to date', async function() {
-    // Setup database
-    const inspectionData = Object.assign({}, INSPECTION_DATA, {
+    const inspData = {
+      ...INSPECTION_DATA,
       inspectionReportStatus: 'completed_success',
-      inspectionReportUpdateLastDate: Date.now() / 1000, // occured after
-      updatedLastDate: (Date.now() - 1000) / 1000, // occured before
-    });
-    await db.ref(`/inspections/${INSP_ID}`).set(inspectionData); // Add generating inspection
-    await db.ref(`/properties/${PROPERTY_ID}`).set(PROPERTY_DATA); // Add property
+      inspectionReportUpdateLastDate: Math.round(Date.now() / 1000), // occured after
+      updatedLastDate: Math.round((Date.now() - 1000) / 1000), // occured before
+    };
+
+    // Setup database
+    await inspectionsModel.firestoreCreateRecord(fs, INSP_ID, inspData);
+    await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
 
     // Execute, get result, and assertion
-    const app = createApp(db, null, INSP_URL);
+    const app = createApp(db, fs, null, INSP_URL);
     await request(app)
       .get(`/${PROPERTY_ID}/${INSP_ID}`)
       .set('Accept', 'application/json')
       .expect(304);
+  });
+
+  it('should use firebase records when firestore records do not exist', async function() {
+    const expected = 'completed_success';
+
+    // Setup database
+    await inspectionsModel.realtimeUpsertRecord(db, INSP_ID, INSPECTION_DATA);
+    await propertiesModel.realtimeUpsertRecord(db, PROPERTY_ID, PROPERTY_DATA);
+
+    // Execute
+    const app = createApp(db, fs, null, INSP_URL);
+    await request(app)
+      .get(`/${PROPERTY_ID}/${INSP_ID}`)
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    // Get Result
+    const result = await inspectionsModel.findRecord(db, INSP_ID);
+    const actual = (result.val() || {}).inspectionReportStatus || '';
+
+    // Assertions
+    expect(actual).to.equal(expected);
   });
 });
