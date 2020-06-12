@@ -750,6 +750,31 @@ module.exports = modelSetup({
   },
 
   /**
+   * Update Firestore Inspection
+   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {String} inspectionId
+   * @param  {Object} data
+   * @param  {firestore.batch?} batch
+   * @return {Promise}
+   */
+  firestoreUpdateRecord(fs, inspectionId, data, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(
+      inspectionId && typeof inspectionId === 'string',
+      'has deficient item id'
+    );
+    assert(data && typeof data === 'object', 'has update data');
+    const docRef = fs.collection(INSPECTION_COLLECTION).doc(inspectionId);
+
+    if (batch) {
+      assert(typeof batch.update === 'function', 'has batch instance');
+      return Promise.resolve(batch.update(docRef, data));
+    }
+
+    return docRef.update(data);
+  },
+
+  /**
    * Create or update a Firestore inspection
    * @param  {firebaseAdmin.firestore} fs
    * @param  {String}  inspectionId
@@ -819,32 +844,40 @@ module.exports = modelSetup({
 
   /**
    * Remove Firestore Inspection
-   * TODO: Add inspection archiving
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * by moving it to the archive
+   * @param  {admin.firestore} fs - Firestore DB instance
    * @param  {String} inspectionId
+   * @param  {Object?} data - inspection data
+   * @param  {firestore.batch?} parentBatch
    * @return {Promise}
    */
-  async firestoreRemoveRecord(fs, inspectionId) {
+  async firestoreRemoveRecord(fs, inspectionId, data, parentBatch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
     );
 
-    let inspectionDoc = null;
+    let inspectionDocRef = null;
     let inspection = null;
 
-    try {
-      inspectionDoc = await this.firestoreFindRecord(fs, inspectionId);
-      inspection = inspectionDoc.data();
-    } catch (err) {
-      throw Error(`${PREFIX}: firestoreRemoveRecord: ${err}`);
+    if (!data) {
+      try {
+        const snap = await this.firestoreFindRecord(fs, inspectionId);
+        inspectionDocRef = snap.ref;
+        inspection = snap.data();
+      } catch (err) {
+        throw Error(`${PREFIX}: firestoreRemoveRecord: ${err}`);
+      }
+    } else {
+      inspectionDocRef = fs.collection(INSPECTION_COLLECTION).doc(inspectionId);
+      inspection = data;
     }
 
     if (!inspection) return; // inspection does not exist
 
-    const batch = fs.batch();
-    batch.delete(inspectionDoc.ref);
+    const batch = parentBatch || fs.batch();
+    batch.delete(inspectionDocRef);
 
     // Add archive updates to transaction
     await archiveModel.inspection.firestoreCreateRecord(
@@ -854,7 +887,31 @@ module.exports = modelSetup({
       batch
     );
 
+    if (parentBatch) {
+      return Promise.resolve(parentBatch);
+    }
+
     return batch.commit();
+  },
+
+  /**
+   * Delete Firestore Inspection
+   * without archiving it
+   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {String} propertyId
+   * @return {Promise}
+   */
+  firestoreDestroyRecord(fs, inspectionId) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(
+      inspectionId && typeof inspectionId === 'string',
+      'has inspection id'
+    );
+
+    return fs
+      .collection(INSPECTION_COLLECTION)
+      .doc(inspectionId)
+      .delete();
   },
 
   /**
@@ -870,6 +927,37 @@ module.exports = modelSetup({
       .collection(INSPECTION_COLLECTION)
       .where('property', '==', propertyId)
       .get();
+  },
+
+  /**
+   * Query all inspections
+   * @param  {admin.firestore} fs
+   * @param  {Object} query
+   * @param  {firestore.batch?} batch
+   * @return {Promise} - resolves {DataSnapshot}
+   */
+  firestoreQuery(fs, query, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(query && typeof query === 'object', 'has query');
+
+    const fsQuery = fs.collection(INSPECTION_COLLECTION);
+
+    // Append each query as where clause
+    Object.keys(query).forEach(attr => {
+      const queryArgs = query[attr];
+      assert(
+        queryArgs && Array.isArray(queryArgs),
+        'has query arguments array'
+      );
+      fsQuery.where(attr, ...queryArgs);
+    });
+
+    if (batch) {
+      assert(typeof batch.get === 'function', 'has firestore batch');
+      return Promise.resolve(batch.get(fsQuery));
+    }
+
+    return fsQuery.get(query);
   },
 
   /**

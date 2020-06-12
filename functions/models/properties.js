@@ -103,6 +103,23 @@ module.exports = modelSetup({
   },
 
   /**
+   * Lookup property by its' code
+   * @param  {admin.firebase} db
+   * @param  {String} propertyCode
+   * @return {Promise} - resolves {DataSnapshot}
+   */
+  realtimeQueryByCode(db, propertyCode) {
+    assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(propertyCode, 'has property code');
+    return db
+      .ref('properties')
+      .orderByChild('code')
+      .equalTo(propertyCode)
+      .limitToFirst(1)
+      .once('value');
+  },
+
+  /**
    * Batch remove all firestore property
    * relationships to a deleted team
    * @param  {admin.firestore} fs
@@ -162,6 +179,29 @@ module.exports = modelSetup({
       .collection(PROPERTY_COLLECTION)
       .doc(propertyId)
       .create(data);
+  },
+
+  /**
+   * Update Firestore Property
+   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {String} propertyId
+   * @param  {Object} data
+   * @param  {firestore.batch?} parentBatch
+   * @return {Promise}
+   */
+  firestoreUpdateRecord(fs, propertyId, data, parentBatch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    assert(data && typeof data === 'object', 'has update data');
+
+    const docRef = fs.collection(PROPERTY_COLLECTION).doc(propertyId);
+
+    if (parentBatch) {
+      parentBatch.update(docRef, data);
+      return Promise.resolve(parentBatch);
+    }
+
+    return docRef.update(data);
   },
 
   /**
@@ -245,13 +285,45 @@ module.exports = modelSetup({
   },
 
   /**
+   * Query all properties
+   * @param  {admin.firestore} fs
+   * @param  {Object} query
+   * @param  {firestore.batch?} batch
+   * @return {Promise} - resolves {DataSnapshot}
+   */
+  firestoreQuery(fs, query, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(query && typeof query === 'object', 'has query');
+
+    const fsQuery = fs.collection(PROPERTY_COLLECTION);
+
+    // Append each query as where clause
+    Object.keys(query).forEach(attr => {
+      const queryArgs = query[attr];
+      assert(
+        queryArgs && Array.isArray(queryArgs),
+        'has query arguments array'
+      );
+      fsQuery.where(attr, ...queryArgs);
+    });
+
+    if (batch) {
+      assert(typeof batch.get === 'function', 'has firestore batch');
+      return Promise.resolve(batch.get(fsQuery));
+    }
+
+    return fsQuery.get(query);
+  },
+
+  /**
    * Update a property's metadata relating
    * to inspections and deficiencies
-   * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
+   * @param  {admin.firestore} fs - Firestore Admin DB instance
    * @param  {String} propertyId
+   * @param  {firestore.batch?} parentBatch
    * @return {Promise} - resolves {Object} updates
    */
-  async updateMetaData(fs, propertyId) {
+  async updateMetaData(fs, propertyId, parentBatch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
 
@@ -299,7 +371,7 @@ module.exports = modelSetup({
 
     // Update Firebase Property
     try {
-      await this.firestoreUpsertRecord(fs, propertyId, updates);
+      await this.firestoreUpdateRecord(fs, propertyId, updates, parentBatch);
     } catch (err) {
       throw Error(`${PREFIX} failed to update property metadata: ${err}`);
     }

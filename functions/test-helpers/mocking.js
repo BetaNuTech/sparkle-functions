@@ -7,6 +7,34 @@ const ITEM_VALUE_NAMES = config.inspectionItems.valueNames;
 
 module.exports = {
   /**
+   * Create a property
+   * @param  {Object?} propConfig
+   * @return {Object}
+   */
+  createProperty(propConfig = {}) {
+    const finalConfig = JSON.parse(JSON.stringify(propConfig));
+
+    if (propConfig.templates && Array.isArray(propConfig.templates)) {
+      finalConfig.templates = {};
+      propConfig.templates.forEach(tmplId => {
+        finalConfig.templates[tmplId] = true;
+      });
+    }
+
+    if (propConfig.inspections && Array.isArray(propConfig.inspections)) {
+      finalConfig.inspections = {};
+      propConfig.inspections.forEach(inspId => {
+        finalConfig.inspections[inspId] = true;
+      });
+    }
+
+    return {
+      name: 'test',
+      ...finalConfig,
+    };
+  },
+
+  /**
    * Create a randomized inspection object
    * @param  {Object} config
    * @return {Object}
@@ -18,7 +46,10 @@ module.exports = {
     const offset = Math.floor(Math.random() * 100);
     const items = Math.floor(Math.random() * 100);
     const completed = inspConfig.inspectionCompleted || false;
-    const templateName = `test-${offset * 3}`;
+    const templateName =
+      inspConfig.templateName ||
+      (inspConfig.template && inspConfig.template.name) ||
+      `test-${offset * 3}`;
 
     return Object.assign(
       {

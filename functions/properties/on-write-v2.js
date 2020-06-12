@@ -1,3 +1,4 @@
+const assert = require('assert');
 const log = require('../utils/logger');
 const teamUsersModel = require('../models/team-users');
 const templatesModel = require('../models/templates');
@@ -10,6 +11,8 @@ const PREFIX = 'properties: on-write-v2:';
  * @return {Function} - property onWrite handler
  */
 module.exports = function createOnWriteV2Handler(fs) {
+  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+
   return async (change, event) => {
     const { propertyId } = event.params;
     if (!propertyId) {

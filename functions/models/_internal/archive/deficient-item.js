@@ -334,7 +334,7 @@ module.exports = modelSetup({
         typeof transaction.get === 'function',
         'has firestore transaction'
       );
-      return transaction.get(query);
+      return Promise.resolve(transaction.get(query));
     }
 
     return query.get(query);
