@@ -15,12 +15,14 @@ const PREFIX = 'inspections: pdf-reports:';
 
 /**
  * Factory for inspection PDF generator endpoint
- * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+ * @param  {admin.database} db - Firebase Admin DB instance
+ * @param  {admin.firestore} fs - Firestore Admin DB instance
  * @param  {String} inspectionUrl - template for an inspection's URL
  * @return {Function} - onRequest handler
  */
-module.exports = function createOnGETPDFReportHandler(db, inspectionUrl) {
-  assert(Boolean(db), 'has firebase database instance');
+module.exports = function createOnGETPDFReportHandler(db, fs, inspectionUrl) {
+  assert(db && typeof db.ref === 'function', 'has realtime db');
+  assert(fs && typeof fs.collection === 'function', 'has firestore db');
   assert(
     inspectionUrl && typeof inspectionUrl === 'string',
     'has inspection URL template'
@@ -40,42 +42,86 @@ module.exports = function createOnGETPDFReportHandler(db, inspectionUrl) {
     const { inspection: inspectionId } = req.params;
     log.info(`${PREFIX} inspection PDF requested for: ${inspectionId}`);
 
-    // Lookup Inspection
+    // Lookup Firebase Inspection
     let propertyId = '';
-    let inspectionSnap = null;
+    let inspectionData = null;
     let hasPreviousPDFReport = false;
+
+    // Prioritize firestore record
     try {
-      inspectionSnap = await inspectionsModel.findRecord(db, inspectionId);
-      const inspectionData = inspectionSnap.val();
-      if (
-        inspectionData &&
-        Boolean(inspectionData.inspectionReportUpdateLastDate)
-      ) {
-        hasPreviousPDFReport = true;
-      }
-      propertyId = inspectionData ? inspectionData.property : '';
-      if (!propertyId) throw Error('Bad Inspection property reference');
+      const inspectionDoc = await inspectionsModel.firestoreFindRecord(
+        fs,
+        inspectionId
+      );
+      inspectionData = inspectionDoc.data() || null;
     } catch (err) {
-      log.error(`${PREFIX} inspection lookup failed | ${err}`);
+      log.error(`${PREFIX} firestore inspection lookup failed | ${err}`);
+    }
+
+    // Fallback to firebase record
+    if (!inspectionData) {
+      try {
+        const inspectionSnap = await inspectionsModel.findRecord(
+          db,
+          inspectionId
+        );
+        inspectionData = inspectionSnap.val() || null;
+      } catch (err) {
+        log.error(`${PREFIX} firebase inspection lookup failed | ${err}`);
+      }
+    }
+
+    if (!inspectionData) {
+      log.error(`${PREFIX} inspection "${inspectionId}" does not exist`);
       return res.status(400).send({ message: 'Bad Inspection' });
     }
 
-    // Lookup property record
+    if (!inspectionData.property) {
+      log.error(
+        `${PREFIX} inspection "${inspectionId}" missing property reference`
+      );
+      return res.status(400).send({ message: 'Bad Inspection' });
+    }
+
+    // Setup variables for processing request
+    propertyId = inspectionData.property;
+    hasPreviousPDFReport = Boolean(
+      inspectionData.inspectionReportUpdateLastDate
+    );
+
+    // Prioritize Firestore property record
     let property = null;
     try {
-      const propertySnap = await propertiesModel.findRecord(db, propertyId);
-      property = propertySnap.val();
-      property.id = propertyId;
+      const propertySnap = await propertiesModel.firestoreFindRecord(
+        fs,
+        propertyId
+      );
+      property = propertySnap.data() || null;
     } catch (err) {
-      log.error(`${PREFIX} property lookup failed | ${err}`);
+      log.error(`${PREFIX} firestore property lookup failed | ${err}`);
+    }
+
+    // Fallback to firebase property record
+    if (!property) {
+      try {
+        const propertySnap = await propertiesModel.findRecord(db, propertyId);
+        property = propertySnap.val() || null;
+      } catch (err) {
+        log.error(`${PREFIX} firebase property lookup failed | ${err}`);
+      }
+    }
+
+    if (!property) {
       return res.status(400).send({ message: 'Bad Property' });
     }
+
+    property.id = propertyId;
 
     // Append item photo data
     // to inspection record
     let inspection = null;
     try {
-      inspection = await insertInspectionItemImageUris(inspectionSnap.val());
+      inspection = await insertInspectionItemImageUris(inspectionData);
       inspection.id = inspectionId;
     } catch (err) {
       log.error(`${PREFIX} inspection item photo lookup failed | ${err}`);
@@ -108,7 +154,12 @@ module.exports = function createOnGETPDFReportHandler(db, inspectionUrl) {
 
     // Set generating report generation status
     try {
-      await inspectionsModel.setPDFReportStatus(db, inspectionId, 'generating');
+      await inspectionsModel.setPDFReportStatus(
+        db,
+        fs,
+        inspectionId,
+        'generating'
+      );
       log.info(`${PREFIX} updated report status to "generating"`);
     } catch (err) {
       log.error(`${PREFIX} setting report status "generating" failed | ${err}`);
@@ -135,6 +186,7 @@ module.exports = function createOnGETPDFReportHandler(db, inspectionUrl) {
       try {
         await inspectionsModel.setReportURL(
           db,
+          fs,
           inspectionId,
           inspectionReportURL
         );
@@ -146,7 +198,7 @@ module.exports = function createOnGETPDFReportHandler(db, inspectionUrl) {
 
       // Set inspetion reports last update date
       try {
-        await inspectionsModel.updatePDFReportTimestamp(db, inspectionId);
+        await inspectionsModel.updatePDFReportTimestamp(db, fs, inspectionId);
         log.info(`${PREFIX} updated PDF report last update date`);
       } catch (err) {
         log.error(`${PREFIX} setting PDF report update date failed`);
@@ -157,6 +209,7 @@ module.exports = function createOnGETPDFReportHandler(db, inspectionUrl) {
       try {
         await inspectionsModel.setPDFReportStatus(
           db,
+          fs,
           inspectionId,
           'completed_success'
         );
@@ -172,6 +225,7 @@ module.exports = function createOnGETPDFReportHandler(db, inspectionUrl) {
       try {
         await inspectionsModel.setPDFReportStatus(
           db,
+          fs,
           inspectionId,
           'completed_failure'
         );
