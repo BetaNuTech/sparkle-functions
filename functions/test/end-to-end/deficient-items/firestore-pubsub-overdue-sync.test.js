@@ -222,8 +222,13 @@ describe('Deficient Items | Firestore | Overdue Sync', () => {
       };
 
       // Setup database
-      await propertiesModel.realtimeUpsertRecord(db, propertyId, propertyData);
       await propertiesModel.firestoreUpsertRecord(fs, propertyId, propertyData);
+      await propertiesModel.realtimeUpsertRecord(db, propertyId, propertyData);
+      await inspectionsModel.firestoreUpsertRecord(
+        fs,
+        inspectionId,
+        inspectionData
+      );
       await inspectionsModel.realtimeUpsertRecord(
         db,
         inspectionId,
