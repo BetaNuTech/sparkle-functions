@@ -9,6 +9,7 @@ const PREFIX = 'properties: pubsub: sync-meta:';
 /**
  * Sync meta data of all Properties from their
  * completed inspections
+ * TODO: Deprecate
  * @param  {String} topic
  * @param  {functions.pubsub} pubsub
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
