@@ -1,3 +1,4 @@
+const assert = require('assert');
 const pipe = require('lodash/fp/flow');
 const defItemsModel = require('../../models/deficient-items');
 const propertiesModel = require('../../models/properties');
@@ -17,11 +18,12 @@ const propertyMetaUpdates = pipe([
  * Process changes to a property's
  * metadata if it's inspections chanage
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
- * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
  * @param  {String} propertyId
  * @return {Promise} - resolves {Object} updates
  */
-module.exports = async function processMeta(db, fs, propertyId) {
+module.exports = async function processMeta(db, propertyId) {
+  assert(db && typeof db.ref === 'function', 'has realtime db');
+  assert(propertyId && typeof propertyId === 'string', 'has property id');
   let inspectionsSnap = null;
 
   // Lookup all property's inspections
@@ -82,13 +84,13 @@ module.exports = async function processMeta(db, fs, propertyId) {
   }
 
   // Update Firebase Property
-  try {
-    await propertiesModel.firestoreUpsertRecord(fs, propertyId, updates);
-  } catch (err) {
-    throw Error(
-      `${PREFIX} failed updating firestore property metadata: ${err}`
-    );
-  }
+  // try {
+  //   await propertiesModel.firestoreUpsertRecord(fs, propertyId, updates);
+  // } catch (err) {
+  //   throw Error(
+  //     `${PREFIX} failed updating firestore property metadata: ${err}`
+  //   );
+  // }
 
   return updates;
 };

@@ -1,6 +1,7 @@
 const assert = require('assert');
 const log = require('../../utils/logger');
 const { forEachChild } = require('../../utils/firebase-admin');
+const propertiesModel = require('../../models/properties');
 const processPropertyMeta = require('../utils/process-meta');
 
 const PREFIX = 'properties: pubsub: sync-meta:';
@@ -27,24 +28,25 @@ module.exports = function createSyncPropertiesMetahandler(
   return pubsub
     .topic(topic)
     .onPublish(async function syncPropertiesMetaHandler() {
-      const updates = {};
       await forEachChild(
         db,
         '/properties',
         async function proccessPropertyMetaWrite(propertyId) {
           try {
-            const propMetaUpdate = await processPropertyMeta(
-              db,
-              fs,
-              propertyId
-            );
-            Object.assign(updates, propMetaUpdate);
+            await propertiesModel.updateMetaData(fs, propertyId);
           } catch (err) {
-            log.error(`${PREFIX} ${topic} | ${err}`);
+            log.error(
+              `${PREFIX} ${topic} firestore property "${propertyId}" update failed | ${err}`
+            );
+          }
+          try {
+            await processPropertyMeta(db, propertyId);
+          } catch (err) {
+            log.error(
+              `${PREFIX} ${topic} realtime property "${propertyId}" update failed | ${err}`
+            );
           }
         }
       );
-
-      return updates;
     });
 };

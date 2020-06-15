@@ -143,8 +143,11 @@ describe('Inspections | Updated Last Date Write', () => {
     };
 
     // Setup database
+    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData); // Required
     await propertiesModel.realtimeUpsertRecord(db, propertyId, propertyData); // Required
+    await inspectionsModel.firestoreCreateRecord(fs, insp1Id, inspOne); // Add inspection #1
     await inspectionsModel.realtimeUpsertRecord(db, insp1Id, inspOne); // Add inspection #1
+    await inspectionsModel.firestoreCreateRecord(fs, insp2Id, inspTwo); // Add inspection #2
     await inspectionsModel.realtimeUpsertRecord(db, insp2Id, inspTwo); // Add inspection #2
     const beforeSnap = await db
       .ref(`/inspections/${insp1Id}/updatedLastDate`)

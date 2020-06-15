@@ -83,6 +83,10 @@ module.exports = function createSyncOverdueDeficientItems(
                 state = 'overdue';
                 diItem.state = 'overdue';
 
+                log.info(
+                  `${PREFIX} ${topic}: property "${propertyId}" deficiency "${defItemId}" is now overdue`
+                );
+
                 try {
                   await model.updateState(db, fs, diItemSnap, state);
                 } catch (err) {
@@ -93,13 +97,19 @@ module.exports = function createSyncOverdueDeficientItems(
 
                 try {
                   // Sync DI's changes to its' property's metadata
-                  await processPropertyMeta(db, fs, propertyId);
-                  log.info(
-                    `${PREFIX} ${topic}: property "${propertyId}" and deficient item "${defItemId}" has deficiency overdue`
-                  );
+                  await propertiesModel.updateMetaData(fs, propertyId);
                 } catch (err) {
                   log.error(
-                    `${PREFIX} failed to upate property meta of overdue | ${err}`
+                    `${PREFIX} failed to upate firestore property meta of overdue | ${err}`
+                  );
+                }
+
+                try {
+                  // Sync DI's changes to its' property's metadata
+                  await processPropertyMeta(db, propertyId);
+                } catch (err) {
+                  log.error(
+                    `${PREFIX} failed to upate realtime property meta of overdue | ${err}`
                   );
                 }
               } else if (
