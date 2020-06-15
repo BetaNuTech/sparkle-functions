@@ -150,8 +150,11 @@ describe('Inspections | Migration Date Write', () => {
     };
 
     // Setup database
+    await inspectionsModel.firestoreCreateRecord(fs, insp1Id, inspOne); // Add inspection #1
     await inspectionsModel.realtimeUpsertRecord(db, insp1Id, inspOne); // Add inspection #1
+    await inspectionsModel.firestoreCreateRecord(fs, insp2Id, inspTwo); // Add inspection #2
     await inspectionsModel.realtimeUpsertRecord(db, insp2Id, inspTwo); // Add inspection #2
+    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
     await propertiesModel.realtimeUpsertRecord(db, propertyId, propertyData); // Required
     const beforeSnap = await db
       .ref(`/inspections/${insp1Id}/migrationDate`)

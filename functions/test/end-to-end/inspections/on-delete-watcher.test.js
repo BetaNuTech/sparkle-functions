@@ -202,14 +202,22 @@ describe('Inspections | On Delete Watcher', () => {
     propertyData.inspections[insp2Id] = true;
 
     // Setup database
+    await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, propertyData);
     await propertiesModel.realtimeUpsertRecord(db, PROPERTY_ID, propertyData);
+    await inspectionsModel.firestoreCreateRecord(
+      fs,
+      INSPECTION_ID,
+      inspectionOne
+    );
     await inspectionsModel.realtimeUpsertRecord(
       db,
       INSPECTION_ID,
       inspectionOne
     );
+    await inspectionsModel.firestoreCreateRecord(fs, insp2Id, inspectionTwo);
     await inspectionsModel.realtimeUpsertRecord(db, insp2Id, inspectionTwo);
     const snap = await inspectionsModel.findRecord(db, INSPECTION_ID);
+    await inspectionsModel.firestoreRemoveRecord(fs, INSPECTION_ID);
     await inspectionsModel.realtimeRemoveRecord(db, INSPECTION_ID);
 
     // Execute

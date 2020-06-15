@@ -21,7 +21,6 @@ const DEST_PROPERTY_ID = uuid();
 const RAND_PROP_ID = uuid();
 const PROPERTY_PATH = `/properties/${PROPERTY_ID}`;
 const INSPECTION_PATH = `/inspections/${INSPECTION_ID}`;
-const INSPECTION_TWO_PATH = `/inspections/${INSPECTION_TWO_ID}`;
 const DEST_PROPERTY_PATH = `/properties/${DEST_PROPERTY_ID}`;
 const PROPERTY_DATA = {
   name: 'src',
@@ -75,15 +74,96 @@ describe('Inspections | API | Patch Property', () => {
 
   it('successfully reassigns an inspection to a new property', async () => {
     // setup database
-    await db.ref(PROPERTY_PATH).set(PROPERTY_DATA);
-    await db.ref(DEST_PROPERTY_PATH).set(DEST_PROPERTY_DATA);
-    await inspectionsModel.realtimeUpsertRecord(
-      db,
+    await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
+    await propertiesModel.firestoreCreateRecord(
+      fs,
+      DEST_PROPERTY_ID,
+      DEST_PROPERTY_DATA
+    );
+    await inspectionsModel.firestoreCreateRecord(
+      fs,
       INSPECTION_ID,
       INSPECTION_DATA
     );
-    await inspectionsModel.firestoreUpsertRecord(
+
+    // Execute
+    const app = createApp();
+    await request(app)
+      .patch(`/t/${INSPECTION_ID}`)
+      .send({ property: DEST_PROPERTY_ID })
+      .expect('Content-Type', /json/)
+      .expect(201);
+
+    // Get Results
+    const inspectionSnap = await inspectionsModel.firestoreFindRecord(
       fs,
+      INSPECTION_ID
+    );
+    const archivedInsp = await archiveModel.inspection.firestoreFindRecord(
+      fs,
+      INSPECTION_ID
+    );
+    const srcPropertySnap = await propertiesModel.firestoreFindRecord(
+      fs,
+      PROPERTY_ID
+    );
+    const destPropertySnap = await propertiesModel.firestoreFindRecord(
+      fs,
+      DEST_PROPERTY_ID
+    );
+
+    // Assertions
+    [
+      {
+        actual: (inspectionSnap.data() || {}).property || '',
+        expected: DEST_PROPERTY_ID,
+        msg: "reassiged firestore inspection's property",
+      },
+      {
+        actual: archivedInsp.exists,
+        expected: false,
+        msg: 'does not create firestore archived inspection',
+      },
+      {
+        actual: Boolean(
+          ((srcPropertySnap.data() || {}).inspections || {})[INSPECTION_ID]
+        ),
+        expected: false,
+        msg: "removed source firestore property's inspection relationship",
+      },
+      {
+        actual: Boolean(
+          ((destPropertySnap.data() || {}).inspections || {})[INSPECTION_ID]
+        ),
+        expected: true,
+        msg: "added dest firestore property's inspection relationship",
+      },
+    ].forEach(({ actual, expected, msg }) => {
+      expect(actual).to.equal(expected, msg);
+    });
+  });
+
+  it('updates any existing firebase records', async () => {
+    // setup database
+    await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
+    await propertiesModel.realtimeUpsertRecord(db, PROPERTY_ID, PROPERTY_DATA);
+    await propertiesModel.firestoreCreateRecord(
+      fs,
+      DEST_PROPERTY_ID,
+      DEST_PROPERTY_DATA
+    );
+    await propertiesModel.realtimeUpsertRecord(
+      db,
+      DEST_PROPERTY_ID,
+      DEST_PROPERTY_DATA
+    );
+    await inspectionsModel.firestoreCreateRecord(
+      fs,
+      INSPECTION_ID,
+      INSPECTION_DATA
+    );
+    await inspectionsModel.realtimeUpsertRecord(
+      db,
       INSPECTION_ID,
       INSPECTION_DATA
     );
@@ -109,10 +189,6 @@ describe('Inspections | API | Patch Property', () => {
     const destPropInspRelSnap = await db
       .ref(`${DEST_PROPERTY_PATH}/inspections/${INSPECTION_ID}`)
       .once('value');
-    const firestoreInspection = await inspectionsModel.firestoreFindRecord(
-      fs,
-      INSPECTION_ID
-    );
     const srcPropInspProxySnap = await db
       .ref(
         `/propertyInspectionsList/${PROPERTY_ID}/inspections/${INSPECTION_ID}`
@@ -164,17 +240,14 @@ describe('Inspections | API | Patch Property', () => {
         expected: DEST_PROPERTY_ID,
         msg: "reassigned completed inspection proxy's property",
       },
-      {
-        actual: (firestoreInspection.data() || {}).property,
-        expected: DEST_PROPERTY_ID,
-        msg: 'reassigned firestore inspection to new property',
-      },
     ].forEach(({ actual, expected, msg }) => {
       expect(actual).to.equal(expected, msg);
     });
   });
 
   it('updates previous and current property meta data', async () => {
+    const diOneId = uuid();
+    const diTwoId = uuid();
     const final = {
       numOfDeficientItems: 2,
       numOfInspections: 1,
@@ -189,20 +262,16 @@ describe('Inspections | API | Patch Property', () => {
     };
 
     // Setup database
-    await db.ref(PROPERTY_PATH).set(srcPropertyData);
     await propertiesModel.firestoreUpsertRecord(
       fs,
       PROPERTY_ID,
       srcPropertyData
     );
-    await db.ref(DEST_PROPERTY_PATH).set(DEST_PROPERTY_DATA);
     await propertiesModel.firestoreUpsertRecord(
       fs,
       DEST_PROPERTY_ID,
       DEST_PROPERTY_DATA
     );
-    await db.ref(INSPECTION_PATH).set(INSPECTION_DATA);
-    await db.ref(INSPECTION_TWO_PATH).set(INSPECTION_TWO_DATA);
     await inspectionsModel.firestoreUpsertRecord(
       fs,
       INSPECTION_ID,
@@ -213,18 +282,6 @@ describe('Inspections | API | Patch Property', () => {
       INSPECTION_TWO_ID,
       INSPECTION_TWO_DATA
     );
-    const diOne = await deficientItemsModel.realtimeCreateRecord(
-      db,
-      PROPERTY_ID,
-      DEFICIENT_ITEM_ONE_DATA
-    );
-    const diTwo = await deficientItemsModel.realtimeCreateRecord(
-      db,
-      PROPERTY_ID,
-      DEFICIENT_ITEM_TWO_DATA
-    );
-    const diOneId = getRefId(diOne);
-    const diTwoId = getRefId(diTwo);
     await deficientItemsModel.firestoreCreateRecord(fs, diOneId, {
       ...DEFICIENT_ITEM_ONE_DATA,
       property: PROPERTY_ID,
@@ -243,11 +300,6 @@ describe('Inspections | API | Patch Property', () => {
       .expect(201);
 
     // Test results
-    const srcPropertySnap = await propertiesModel.findRecord(db, PROPERTY_ID);
-    const destPropertySnap = await propertiesModel.findRecord(
-      db,
-      DEST_PROPERTY_ID
-    );
     const srcPropertyDoc = await propertiesModel.firestoreFindRecord(
       fs,
       PROPERTY_ID
@@ -256,10 +308,134 @@ describe('Inspections | API | Patch Property', () => {
       fs,
       DEST_PROPERTY_ID
     );
+    const srcProp = srcPropertyDoc.data();
+    const destProp = destPropertyDoc.data();
+
+    // Assertions
+    [
+      {
+        actual: srcProp.numOfDeficientItems,
+        expected: 0,
+        msg: "updated source property's num of deficient items",
+      },
+      {
+        actual: destProp.numOfDeficientItems,
+        expected: final.numOfDeficientItems,
+        msg: "updated destination property's num of deficient items",
+      },
+      {
+        actual: srcProp.numOfInspections,
+        expected: 1,
+        msg: "updated source property's num of inspections",
+      },
+      {
+        actual: destProp.numOfInspections,
+        expected: final.numOfInspections,
+        msg: "updated destination property's num of inspections",
+      },
+      {
+        actual: srcProp.numOfRequiredActionsForDeficientItems,
+        expected: 0,
+        msg: "updated source property's number of required actions",
+      },
+      {
+        actual: destProp.numOfRequiredActionsForDeficientItems,
+        expected: final.numOfRequiredActionsForDeficientItems,
+        msg: "updated dest property's number of required actions",
+      },
+      {
+        actual: srcProp.numOfFollowUpActionsForDeficientItems,
+        expected: 0,
+        msg: "updated source property's number of follow up actions",
+      },
+      {
+        actual: destProp.numOfFollowUpActionsForDeficientItems,
+        expected: final.numOfFollowUpActionsForDeficientItems,
+        msg: "updated dest property's number of follow up actions",
+      },
+    ].forEach(({ actual, expected, msg }) =>
+      expect(actual).to.equal(expected, msg)
+    );
+  });
+
+  it('updates any realtime previous/current property meta data', async () => {
+    const final = {
+      numOfDeficientItems: 2,
+      numOfInspections: 1,
+      lastInspectionScore: INSPECTION_DATA.score,
+      numOfRequiredActionsForDeficientItems: 2,
+      numOfFollowUpActionsForDeficientItems: 0,
+    };
+    const srcPropertyData = {
+      ...PROPERTY_DATA,
+      ...final,
+      numOfInspections: Object.keys(PROPERTY_DATA.inspections).length,
+    };
+
+    // Setup database
+    await propertiesModel.firestoreUpsertRecord(
+      fs,
+      PROPERTY_ID,
+      srcPropertyData
+    );
+    await propertiesModel.realtimeUpsertRecord(db, PROPERTY_ID, PROPERTY_DATA);
+    await propertiesModel.firestoreUpsertRecord(
+      fs,
+      DEST_PROPERTY_ID,
+      DEST_PROPERTY_DATA
+    );
+    await propertiesModel.realtimeUpsertRecord(
+      db,
+      DEST_PROPERTY_ID,
+      DEST_PROPERTY_DATA
+    );
+    await inspectionsModel.firestoreUpsertRecord(
+      fs,
+      INSPECTION_ID,
+      INSPECTION_DATA
+    );
+    await inspectionsModel.realtimeUpsertRecord(
+      db,
+      INSPECTION_ID,
+      INSPECTION_DATA
+    );
+    await inspectionsModel.firestoreUpsertRecord(
+      fs,
+      INSPECTION_TWO_ID,
+      INSPECTION_TWO_DATA
+    );
+    await inspectionsModel.realtimeUpsertRecord(
+      db,
+      INSPECTION_TWO_ID,
+      INSPECTION_TWO_DATA
+    );
+    await deficientItemsModel.realtimeCreateRecord(
+      db,
+      PROPERTY_ID,
+      DEFICIENT_ITEM_ONE_DATA
+    );
+    await deficientItemsModel.realtimeCreateRecord(
+      db,
+      PROPERTY_ID,
+      DEFICIENT_ITEM_TWO_DATA
+    );
+
+    // Execute
+    const app = createApp();
+    await request(app)
+      .patch(`/t/${INSPECTION_ID}`)
+      .send({ property: DEST_PROPERTY_ID })
+      .expect('Content-Type', /json/)
+      .expect(201);
+
+    // Test results
+    const srcPropertySnap = await propertiesModel.findRecord(db, PROPERTY_ID);
+    const destPropertySnap = await propertiesModel.findRecord(
+      db,
+      DEST_PROPERTY_ID
+    );
     const srcProp = srcPropertySnap.val();
     const destProp = destPropertySnap.val();
-    const fsSrcProp = srcPropertyDoc.data();
-    const fsDestProp = destPropertyDoc.data();
 
     // Assertions
     [
@@ -269,19 +445,9 @@ describe('Inspections | API | Patch Property', () => {
         msg: "updated realtime source property's num of deficient items",
       },
       {
-        actual: fsSrcProp.numOfDeficientItems,
-        expected: 0,
-        msg: "updated firestore source property's num of deficient items",
-      },
-      {
         actual: destProp.numOfDeficientItems,
         expected: final.numOfDeficientItems,
         msg: "updated realtime destination property's num of deficient items",
-      },
-      {
-        actual: fsDestProp.numOfDeficientItems,
-        expected: final.numOfDeficientItems,
-        msg: "updated firestore destination property's num of deficient items",
       },
       {
         actual: srcProp.numOfInspections,
@@ -289,19 +455,9 @@ describe('Inspections | API | Patch Property', () => {
         msg: "updated realtime source property's num of inspections",
       },
       {
-        actual: fsSrcProp.numOfInspections,
-        expected: 1,
-        msg: "updated firestore source property's num of inspections",
-      },
-      {
         actual: destProp.numOfInspections,
         expected: final.numOfInspections,
         msg: "updated realtime destination property's num of inspections",
-      },
-      {
-        actual: fsDestProp.numOfInspections,
-        expected: final.numOfInspections,
-        msg: "updated firestore destination property's num of inspections",
       },
       {
         actual: srcProp.numOfRequiredActionsForDeficientItems,
@@ -309,19 +465,9 @@ describe('Inspections | API | Patch Property', () => {
         msg: "updated realtime source property's number of required actions",
       },
       {
-        actual: fsSrcProp.numOfRequiredActionsForDeficientItems,
-        expected: 0,
-        msg: "updated firestore source property's number of required actions",
-      },
-      {
         actual: destProp.numOfRequiredActionsForDeficientItems,
         expected: final.numOfRequiredActionsForDeficientItems,
         msg: "updated realtime dest property's number of required actions",
-      },
-      {
-        actual: fsDestProp.numOfRequiredActionsForDeficientItems,
-        expected: final.numOfRequiredActionsForDeficientItems,
-        msg: "updated firestore dest property's number of required actions",
       },
       {
         actual: srcProp.numOfFollowUpActionsForDeficientItems,
@@ -329,19 +475,9 @@ describe('Inspections | API | Patch Property', () => {
         msg: "updated realtime source property's number of follow up actions",
       },
       {
-        actual: fsSrcProp.numOfFollowUpActionsForDeficientItems,
-        expected: 0,
-        msg: "updated firestore source property's number of follow up actions",
-      },
-      {
         actual: destProp.numOfFollowUpActionsForDeficientItems,
         expected: final.numOfFollowUpActionsForDeficientItems,
         msg: "updated realtime dest property's number of follow up actions",
-      },
-      {
-        actual: fsDestProp.numOfFollowUpActionsForDeficientItems,
-        expected: final.numOfFollowUpActionsForDeficientItems,
-        msg: "updated firestore dest property's number of follow up actions",
       },
     ].forEach(({ actual, expected, msg }) =>
       expect(actual).to.equal(expected, msg)
@@ -349,26 +485,118 @@ describe('Inspections | API | Patch Property', () => {
   });
 
   it('reassigns active deficient items under new property', async () => {
+    const diOneId = uuid();
+    const diTwoId = uuid();
+    const diThreeId = uuid();
+
     // setup database
-    await propertiesModel.realtimeUpsertRecord(db, PROPERTY_ID, PROPERTY_DATA);
     await propertiesModel.firestoreUpsertRecord(fs, PROPERTY_ID, PROPERTY_DATA);
-    await propertiesModel.realtimeUpsertRecord(
-      db,
-      DEST_PROPERTY_ID,
-      DEST_PROPERTY_DATA
-    );
     await propertiesModel.firestoreUpsertRecord(
       fs,
       DEST_PROPERTY_ID,
       DEST_PROPERTY_DATA
     );
-    await inspectionsModel.realtimeUpsertRecord(
-      db,
+    await inspectionsModel.firestoreUpsertRecord(
+      fs,
       INSPECTION_ID,
       INSPECTION_DATA
     );
+
+    // Stup active DI database
+    await deficientItemsModel.firestoreCreateRecord(fs, diOneId, {
+      ...DEFICIENT_ITEM_ONE_DATA,
+      property: PROPERTY_ID,
+    });
+    await deficientItemsModel.firestoreCreateRecord(fs, diTwoId, {
+      ...DEFICIENT_ITEM_TWO_DATA,
+      property: PROPERTY_ID,
+    });
+    await deficientItemsModel.firestoreCreateRecord(fs, diThreeId, {
+      ...RAND_DEF_ITEM_DATA,
+      property: RAND_PROP_ID,
+    });
+
+    // Execute
+    const app = createApp();
+    await request(app)
+      .patch(`/t/${INSPECTION_ID}`)
+      .send({ property: DEST_PROPERTY_ID })
+      .expect('Content-Type', /json/)
+      .expect(201);
+
+    // Get Results
+    const srcPropDoc = await propertiesModel.firestoreFindRecord(
+      fs,
+      PROPERTY_ID
+    );
+    const destPropDoc = await propertiesModel.firestoreFindRecord(
+      fs,
+      DEST_PROPERTY_ID
+    );
+    const diOneDoc = await deficientItemsModel.firestoreFindRecord(fs, diOneId);
+    const diTwoDoc = await deficientItemsModel.firestoreFindRecord(fs, diTwoId);
+    const diThreeDoc = await deficientItemsModel.firestoreFindRecord(
+      fs,
+      diThreeId
+    );
+
+    // Assertions
+    [
+      {
+        actual: ((srcPropDoc.data() || {}).inspections || {})[INSPECTION_ID],
+        expected: undefined,
+        msg: 'removed inspection relationship from source realtime property',
+      },
+      {
+        actual: ((destPropDoc.data() || {}).inspections || {})[INSPECTION_ID],
+        expected: true,
+        msg: 'added inspection relationship to target firestore property',
+      },
+      {
+        actual: diOneDoc.data().property,
+        expected: DEST_PROPERTY_ID,
+        msg: "reassiged inspection's first firestore DI to new property",
+      },
+      {
+        actual: diTwoDoc.data().property,
+        expected: DEST_PROPERTY_ID,
+        msg: "reassiged inspection's second firestore DI to new property",
+      },
+      {
+        actual: diThreeDoc.data().property,
+        expected: RAND_PROP_ID,
+        msg: 'has no effect on unrelated firestore deficient item',
+      },
+    ].forEach(({ actual, expected, msg }) => {
+      if (!expected) {
+        expect(actual).to.equal(expected, msg);
+      } else {
+        expect(actual).to.deep.equal(expected, msg);
+      }
+    });
+  });
+
+  it('reassigns any active realtime deficient items under new property', async () => {
+    // setup database
+    await propertiesModel.firestoreUpsertRecord(fs, PROPERTY_ID, PROPERTY_DATA);
+    await propertiesModel.realtimeUpsertRecord(db, PROPERTY_ID, PROPERTY_DATA);
+    await propertiesModel.firestoreUpsertRecord(
+      fs,
+      DEST_PROPERTY_ID,
+      DEST_PROPERTY_DATA
+    );
+    await propertiesModel.realtimeUpsertRecord(
+      db,
+      DEST_PROPERTY_ID,
+      DEST_PROPERTY_DATA
+    );
     await inspectionsModel.firestoreUpsertRecord(
       fs,
+      INSPECTION_ID,
+      INSPECTION_DATA
+    );
+    await inspectionsModel.realtimeUpsertRecord(
+      db,
       INSPECTION_ID,
       INSPECTION_DATA
     );
@@ -392,18 +620,6 @@ describe('Inspections | API | Patch Property', () => {
     const diOneId = getRefId(diOne);
     const diTwoId = getRefId(diTwo);
     const diThreeId = getRefId(diThree);
-    await deficientItemsModel.firestoreCreateRecord(fs, diOneId, {
-      ...DEFICIENT_ITEM_ONE_DATA,
-      property: PROPERTY_ID,
-    });
-    await deficientItemsModel.firestoreCreateRecord(fs, diTwoId, {
-      ...DEFICIENT_ITEM_TWO_DATA,
-      property: PROPERTY_ID,
-    });
-    await deficientItemsModel.firestoreCreateRecord(fs, diThreeId, {
-      ...RAND_DEF_ITEM_DATA,
-      property: RAND_PROP_ID,
-    });
 
     // Execute
     const app = createApp();
@@ -444,20 +660,6 @@ describe('Inspections | API | Patch Property', () => {
       DEST_PROPERTY_ID,
       diThreeId
     );
-    const srcPropDoc = await propertiesModel.firestoreFindRecord(
-      fs,
-      PROPERTY_ID
-    );
-    const destPropDoc = await propertiesModel.firestoreFindRecord(
-      fs,
-      DEST_PROPERTY_ID
-    );
-    const diOneDoc = await deficientItemsModel.firestoreFindRecord(fs, diOneId);
-    const diTwoDoc = await deficientItemsModel.firestoreFindRecord(fs, diTwoId);
-    const diThreeDoc = await deficientItemsModel.firestoreFindRecord(
-      fs,
-      diThreeId
-    );
 
     // Assertions
     [
@@ -491,31 +693,6 @@ describe('Inspections | API | Patch Property', () => {
         expected: null,
         msg: 'does not move unrelated realtime record under new property',
       },
-      {
-        actual: ((srcPropDoc.data() || {}).inspections || {})[INSPECTION_ID],
-        expected: undefined,
-        msg: 'removed inspection relationship from source realtime property',
-      },
-      {
-        actual: ((destPropDoc.data() || {}).inspections || {})[INSPECTION_ID],
-        expected: true,
-        msg: 'added inspection relationship to target firestore property',
-      },
-      {
-        actual: diOneDoc.data().property,
-        expected: DEST_PROPERTY_ID,
-        msg: "reassiged inspection's first firestore DI to new property",
-      },
-      {
-        actual: diTwoDoc.data().property,
-        expected: DEST_PROPERTY_ID,
-        msg: "reassiged inspection's second firestore DI to new property",
-      },
-      {
-        actual: diThreeDoc.data().property,
-        expected: RAND_PROP_ID,
-        msg: 'has no effect on unrelated firestore deficient item',
-      },
     ].forEach(({ actual, expected, msg }) => {
       if (!expected) {
         expect(actual).to.equal(expected, msg);
@@ -531,30 +708,124 @@ describe('Inspections | API | Patch Property', () => {
     const diThreeId = uuid();
 
     // setup database
-    await propertiesModel.realtimeUpsertRecord(db, PROPERTY_ID, PROPERTY_DATA);
-    await propertiesModel.firestoreUpsertRecord(fs, PROPERTY_ID, PROPERTY_DATA);
-    await propertiesModel.realtimeUpsertRecord(
-      db,
-      DEST_PROPERTY_ID,
-      DEST_PROPERTY_DATA
-    );
-    await propertiesModel.firestoreUpsertRecord(
+    await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
+    await propertiesModel.firestoreCreateRecord(
       fs,
       DEST_PROPERTY_ID,
       DEST_PROPERTY_DATA
     );
-    await inspectionsModel.realtimeUpsertRecord(
-      db,
-      INSPECTION_ID,
-      INSPECTION_DATA
-    );
-    await inspectionsModel.firestoreUpsertRecord(
+    await inspectionsModel.firestoreCreateRecord(
       fs,
       INSPECTION_ID,
       INSPECTION_DATA
     );
 
     // Stup archive DI database
+    await archiveModel.deficientItem.firestoreCreateRecord(fs, diOneId, {
+      ...DEFICIENT_ITEM_ONE_DATA,
+      property: PROPERTY_ID,
+    });
+    await archiveModel.deficientItem.firestoreCreateRecord(fs, diTwoId, {
+      ...DEFICIENT_ITEM_TWO_DATA,
+      property: PROPERTY_ID,
+    });
+    await archiveModel.deficientItem.firestoreCreateRecord(fs, diThreeId, {
+      ...RAND_DEF_ITEM_DATA,
+      property: RAND_PROP_ID,
+    });
+
+    // Execute
+    const app = createApp();
+    await request(app)
+      .patch(`/t/${INSPECTION_ID}`)
+      .send({ property: DEST_PROPERTY_ID })
+      .expect('Content-Type', /json/)
+      .expect(201);
+
+    // Get Results
+    const diOneDoc = await archiveModel.deficientItem.firestoreFindRecord(
+      fs,
+      diOneId
+    );
+    const diTwoDoc = await archiveModel.deficientItem.firestoreFindRecord(
+      fs,
+      diTwoId
+    );
+    const diThreeDoc = await archiveModel.deficientItem.firestoreFindRecord(
+      fs,
+      diThreeId
+    );
+
+    // Assertions
+    [
+      {
+        actual: diOneDoc.data().property,
+        expected: DEST_PROPERTY_ID,
+        msg:
+          "reassiged inspection's first archive firestore DI to new property",
+      },
+      {
+        actual: diTwoDoc.data().property,
+        expected: DEST_PROPERTY_ID,
+        msg:
+          "reassiged inspection's second archive firestore DI to new property",
+      },
+      {
+        actual: diThreeDoc.data().property,
+        expected: RAND_PROP_ID,
+        msg: 'had no affected on unrelated archived firestore DI property',
+      },
+    ].forEach(({ actual, expected, msg }) => {
+      if (!expected) {
+        expect(actual).to.equal(expected, msg);
+      } else {
+        expect(actual).to.deep.equal(expected, msg);
+      }
+    });
+  });
+
+  it('reassigns any archived realtime deficient items under new property', async () => {
+    const diOneId = uuid();
+    const diTwoId = uuid();
+    const diThreeId = uuid();
+
+    // setup database
+    await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
+    await propertiesModel.realtimeUpsertRecord(db, PROPERTY_ID, PROPERTY_DATA);
+    await propertiesModel.firestoreCreateRecord(
+      fs,
+      DEST_PROPERTY_ID,
+      DEST_PROPERTY_DATA
+    );
+    await propertiesModel.realtimeUpsertRecord(
+      db,
+      DEST_PROPERTY_ID,
+      DEST_PROPERTY_DATA
+    );
+    await inspectionsModel.firestoreCreateRecord(
+      fs,
+      INSPECTION_ID,
+      INSPECTION_DATA
+    );
+    await inspectionsModel.realtimeUpsertRecord(
+      db,
+      INSPECTION_ID,
+      INSPECTION_DATA
+    );
+
+    // Stup archive DI database
+    await archiveModel.deficientItem.firestoreCreateRecord(fs, diOneId, {
+      ...DEFICIENT_ITEM_ONE_DATA,
+      property: PROPERTY_ID,
+    });
+    await archiveModel.deficientItem.firestoreCreateRecord(fs, diTwoId, {
+      ...DEFICIENT_ITEM_TWO_DATA,
+      property: PROPERTY_ID,
+    });
+    await archiveModel.deficientItem.firestoreCreateRecord(fs, diThreeId, {
+      ...RAND_DEF_ITEM_DATA,
+      property: RAND_PROP_ID,
+    });
     await archiveModel.deficientItem.realtimeCreateRecord(
       db,
       PROPERTY_ID,
@@ -573,18 +844,6 @@ describe('Inspections | API | Patch Property', () => {
       diThreeId,
       RAND_DEF_ITEM_DATA
     );
-    await archiveModel.deficientItem.firestoreCreateRecord(fs, diOneId, {
-      ...DEFICIENT_ITEM_ONE_DATA,
-      property: PROPERTY_ID,
-    });
-    await archiveModel.deficientItem.firestoreCreateRecord(fs, diTwoId, {
-      ...DEFICIENT_ITEM_TWO_DATA,
-      property: PROPERTY_ID,
-    });
-    await archiveModel.deficientItem.firestoreCreateRecord(fs, diThreeId, {
-      ...RAND_DEF_ITEM_DATA,
-      property: RAND_PROP_ID,
-    });
 
     // Execute
     const app = createApp();
@@ -625,18 +884,6 @@ describe('Inspections | API | Patch Property', () => {
       DEST_PROPERTY_ID,
       diThreeId
     );
-    const diOneDoc = await archiveModel.deficientItem.firestoreFindRecord(
-      fs,
-      diOneId
-    );
-    const diTwoDoc = await archiveModel.deficientItem.firestoreFindRecord(
-      fs,
-      diTwoId
-    );
-    const diThreeDoc = await archiveModel.deficientItem.firestoreFindRecord(
-      fs,
-      diThreeId
-    );
 
     // Assertions
     [
@@ -669,23 +916,6 @@ describe('Inspections | API | Patch Property', () => {
         actual: newDiThreeSnap.val(),
         expected: null,
         msg: 'did not create new realtime archive for unrelated deficient item',
-      },
-      {
-        actual: diOneDoc.data().property,
-        expected: DEST_PROPERTY_ID,
-        msg:
-          "reassiged inspection's first archive firestore DI to new property",
-      },
-      {
-        actual: diTwoDoc.data().property,
-        expected: DEST_PROPERTY_ID,
-        msg:
-          "reassiged inspection's second archive firestore DI to new property",
-      },
-      {
-        actual: diThreeDoc.data().property,
-        expected: RAND_PROP_ID,
-        msg: 'had no affected on unrelated archived firestore DI property',
       },
     ].forEach(({ actual, expected, msg }) => {
       if (!expected) {

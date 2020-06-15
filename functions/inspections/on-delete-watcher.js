@@ -1,5 +1,6 @@
 const assert = require('assert');
 const log = require('../utils/logger');
+const propertiesModel = require('../models/properties');
 const processPropertyMeta = require('../properties/utils/process-meta');
 const deleteUploads = require('./utils/delete-uploads');
 const inspectionsModel = require('../models/inspections');
@@ -14,9 +15,9 @@ const PREFIX = 'inspections: on-delete:';
  * @return {Function} - inspection onDelete handler
  */
 module.exports = function createOnDeleteHandler(db, fs, storage) {
-  assert(Boolean(db), 'has realtime DB instance');
-  assert(Boolean(fs), 'has firestore DB instance');
-  assert(Boolean(storage), 'has firebase storage instance');
+  assert(db && typeof db.ref === 'function', 'has realtime db');
+  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  assert(storage && typeof storage.bucket === 'function', 'has storage');
 
   return async (inspectionSnap, event) => {
     const { inspectionId } = event.params;
@@ -54,10 +55,18 @@ module.exports = function createOnDeleteHandler(db, fs, storage) {
     // to completed inspection meta data
     if (isCompleted) {
       try {
-        await processPropertyMeta(db, fs, propertyId);
+        await propertiesModel.updateMetaData(fs, propertyId);
       } catch (err) {
         log.error(
-          `${PREFIX} failed to update property "${propertyId}" meta data | ${err}`
+          `${PREFIX} failed to update firestore property "${propertyId}" meta data | ${err}`
+        );
+      }
+
+      try {
+        await processPropertyMeta(db, propertyId);
+      } catch (err) {
+        log.error(
+          `${PREFIX} failed to update realtime property "${propertyId}" meta data | ${err}`
         );
       }
     }

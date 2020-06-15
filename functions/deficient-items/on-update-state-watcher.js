@@ -2,6 +2,7 @@ const assert = require('assert');
 const log = require('../utils/logger');
 const config = require('../config');
 const diModel = require('../models/deficient-items');
+const propertiesModel = require('../models/properties');
 const processPropertyMeta = require('../properties/utils/process-meta');
 
 const PREFIX = 'deficient-items: on-di-state-update:';
@@ -86,10 +87,22 @@ module.exports = function createOnDiStateUpdateHandler(
       beforeState !== afterState
     ) {
       try {
-        await processPropertyMeta(db, fs, propertyId);
-        log.info(`${PREFIX} updated property's deficient item metadata`);
+        await propertiesModel.updateMetaData(fs, propertyId);
       } catch (err) {
-        log.error(`${PREFIX} property metadata update failed | ${err}`);
+        log.error(
+          `${PREFIX} firestore property metadata update failed | ${err}`
+        );
+      }
+
+      try {
+        await processPropertyMeta(db, propertyId);
+        log.info(
+          `${PREFIX} updated realtime property's deficient item metadata`
+        );
+      } catch (err) {
+        log.error(
+          `${PREFIX} realtime property metadata update failed | ${err}`
+        );
       }
     }
 

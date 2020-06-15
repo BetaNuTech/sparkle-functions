@@ -1,3 +1,4 @@
+const assert = require('assert');
 const log = require('../../utils/logger');
 const itemUploads = require('./item-uploads');
 
@@ -6,8 +7,8 @@ const PREFIX = 'inspections: utils: delete-uploads:';
 /**
  * Remove all an inspection's uploads
  * TODO: Deprecate once firebase DB support dropped
- * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
- * @param  {firebaseAdmin.storage} storage - Firebase Admin Storage instance
+ * @param  {admin.database} db - Firebase Admin DB instance
+ * @param  {admin.storage} storage - Firebase Admin Storage instance
  * @param  {String} inspectionId
  * @return {Promise} - resolve {Object} updates
  */
@@ -16,6 +17,12 @@ module.exports = async function deleteInspectionUploads(
   storage,
   inspectionId
 ) {
+  assert(db && typeof db.ref === 'function', 'has realtime db');
+  assert(
+    storage && typeof storage.bucket === 'function',
+    'has storage instance'
+  );
+  assert(inspectionId && typeof inspectionId === 'string', 'has inspection id');
   const itemsSnaps = await db
     .ref(`/inspections/${inspectionId}/template/items`)
     .once('value');
