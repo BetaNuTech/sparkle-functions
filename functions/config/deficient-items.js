@@ -76,6 +76,7 @@ module.exports = {
   /**
    * DI proxy attributes mapped
    * to their respective source item names
+   * TODO: Deprecate when dificient-items/on-write-inspection-watcher dropped
    * @type {Object}
    */
   inspectionItemProxyAttrs: {
@@ -83,6 +84,10 @@ module.exports = {
     itemInspectorNotes: 'inspectorNotes',
     itemMainInputSelection: 'mainInputSelection',
     itemPhotosData: 'photosData',
+    sectionSubtitle: 'textInputValue',
+  },
+
+  inspectionItemProxyAttrsV2: {
     sectionSubtitle: 'textInputValue',
   },
 

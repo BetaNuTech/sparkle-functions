@@ -595,7 +595,7 @@ module.exports = modelSetup({
    * @param  {Object} data
    * @return {Promise}
    */
-  async firestireSafelyCreateRecord(fs, deficiencyId, data) {
+  async firestoreSafelyCreateRecord(fs, deficiencyId, data) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       deficiencyId && typeof deficiencyId === 'string',
@@ -634,7 +634,7 @@ module.exports = modelSetup({
       }
     } catch (err) {
       throw Error(
-        `${PREFIX} firestireSafelyCreateRecord: archive lookup failed: ${err}`
+        `${PREFIX} firestoreSafelyCreateRecord: archive lookup failed: ${err}`
       );
     }
 
@@ -650,7 +650,7 @@ module.exports = modelSetup({
         if (existingDeficiencies.size === 0) {
           this.firestoreCreateRecord(
             fs,
-            deficiencyId,
+            archivedId || deficiencyId,
             { ...data, ...archived },
             transaction
           );
@@ -667,7 +667,7 @@ module.exports = modelSetup({
       });
     } catch (err) {
       throw Error(
-        `${PREFIX} firestireSafelyCreateRecord: transaction failed: ${err}`
+        `${PREFIX} firestoreSafelyCreateRecord: transaction failed: ${err}`
       );
     }
   },
@@ -1107,5 +1107,15 @@ module.exports = modelSetup({
       .file(filePath)
       .delete()
       .catch(err => Promise.reject(Error(`${PREFIX} deleteUpload: ${err}`)));
+  },
+
+  /**
+   * Generate a Firestore ID for deficiency collection
+   * @param  {admin.firestore} fs
+   * @return {String} - id
+   */
+  uuid(fs) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    return fs.collection(DEFICIENT_COLLECTION).doc().id;
   },
 });

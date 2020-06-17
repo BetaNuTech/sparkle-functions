@@ -2,7 +2,6 @@ const assert = require('assert');
 const config = require('../../config');
 const getLatestItemAdminEditTimestamp = require('./get-latest-admin-edit-timestamp');
 
-const LOG_PREFIX = 'inspections: utils: create-deficient-items';
 const DEFICIENT_ITEM_ELIGIBLE = config.inspectionItems.deficientListEligible;
 const ITEM_VALUE_NAMES = [
   'mainInputZeroValue',
@@ -50,23 +49,14 @@ const WHITELISTED_FALSEY_ATTRS = ['itemMainInputSelection', 'hasItemPhotoData'];
  * @return {Object} - deficient items
  */
 module.exports = function createDeficientItems(inspection = { template: {} }) {
-  assert(
-    inspection && typeof inspection === 'object',
-    `${LOG_PREFIX} has inspection`
-  );
+  assert(inspection && typeof inspection === 'object', 'has inspection');
   assert(Boolean(inspection.id), 'has inspection id');
-  assert(
-    inspection.inspectionCompleted,
-    `${LOG_PREFIX} has completed inspection`
-  );
-  assert(Boolean(inspection.template), `${LOG_PREFIX} has inspection template`);
-  assert(
-    Boolean(inspection.template.items),
-    `${LOG_PREFIX} has inspection template items`
-  );
+  assert(inspection.inspectionCompleted, 'has completed inspection');
+  assert(Boolean(inspection.template), 'has inspection template');
+  assert(Boolean(inspection.template.items), 'has inspection template items');
   assert(
     inspection.template.trackDeficientItems,
-    `${LOG_PREFIX} has deficient items list enabled`
+    'has deficient items list enabled'
   );
 
   const result = {};
@@ -113,8 +103,8 @@ module.exports = function createDeficientItems(inspection = { template: {} }) {
     result[item.id] = Object.assign({}, DEFAULT_DEFICIENT_ITEM, {
       inspection: inspection.id,
       item: item.id,
-      createdAt: Date.now() / 1000,
-      updatedAt: Date.now() / 1000,
+      createdAt: Math.round(Date.now() / 1000),
+      updatedAt: Math.round(Date.now() / 1000),
       itemMainInputType: item.mainInputType,
       sectionTitle: section.title || undefined,
       itemTitle: item.title,
