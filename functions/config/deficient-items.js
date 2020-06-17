@@ -89,6 +89,7 @@ module.exports = {
 
   inspectionItemProxyAttrsV2: {
     sectionSubtitle: 'textInputValue',
+    itemMainInputSelection: 'mainInputSelection',
   },
 
   /**

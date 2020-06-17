@@ -94,16 +94,16 @@ module.exports = function createOnWriteHandler(db, fs) {
 
         // Update each existing deficient items'
         // proxy data from its' source inspection item
-        const updateDeficientItemIds = diUtils.findMatchingItems(
+        const updateDeficiencyIds = diUtils.findMatchingItems(
           currentDeficientItems,
           expectedDeficientItems
         );
 
-        for (let i = 0; i < updateDeficientItemIds.length; i++) {
-          const updateDeficientItemId = updateDeficientItemIds[i];
-          const deficientItem = currentDeficientItems[updateDeficientItemId];
-          const expDeficientItem = expectedDeficientItems[deficientItem.item];
+        for (let i = 0; i < updateDeficiencyIds.length; i++) {
+          const updateDeficiencyId = updateDeficiencyIds[i];
+          const deficientItem = currentDeficientItems[updateDeficiencyId];
           const inspectionItemId = deficientItem.item;
+          const expDeficientItem = expectedDeficientItems[inspectionItemId];
           const itemUpdates = getDiffs(
             expectedDeficientItems[inspectionItemId],
             deficientItem,
@@ -113,7 +113,8 @@ module.exports = function createOnWriteHandler(db, fs) {
           // Sync deficiency's item score proxy attribute
           if (
             expDeficientItem &&
-            typeof expDeficientItem.itemScore === 'number'
+            typeof expDeficientItem.itemScore === 'number' &&
+            expDeficientItem.itemScore !== deficientItem.itemScore
           ) {
             itemUpdates.itemScore = expDeficientItem.itemScore;
           }
@@ -121,15 +122,15 @@ module.exports = function createOnWriteHandler(db, fs) {
           // Write, log, and set in memory w/ any updates
           if (Object.keys(itemUpdates).length) {
             itemUpdates.updatedAt = Math.round(Date.now() / 1000); // modify updatedAt
-            await diModel.firestoreUpdateRecord(fs, updateDeficientItemId, {
+            await diModel.firestoreUpdateRecord(fs, updateDeficiencyId, {
               ...deficientItem,
               ...itemUpdates,
             });
             log.info(
-              `${PREFIX} updating outdated deficiency "${updateDeficientItemId}"`
+              `${PREFIX} updating outdated deficiency "${updateDeficiencyId}"`
             );
             Object.assign(
-              currentDeficientItems[updateDeficientItemId],
+              currentDeficientItems[updateDeficiencyId],
               itemUpdates
             ); // update current snapshot value
           }
@@ -137,7 +138,7 @@ module.exports = function createOnWriteHandler(db, fs) {
 
         // Add new deficient item(s) to DI
         // NOTE: these are inspection item ID's
-        //       not deficient item identifiers
+        //       not deficiency identifiers
         const addInspectionItemIds = diUtils.findMissingItems(
           expectedDeficientItems,
           currentDeficientItems

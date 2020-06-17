@@ -576,7 +576,7 @@ describe('Inspections | On Write | V2', () => {
               'fiveactions_onetofive',
               true,
               {
-                mainInputSelection: 0, // Require deficient selection
+                mainInputSelection: 0, // Deficient selection
                 sectionId,
                 index: 1, // required
               }
@@ -586,7 +586,10 @@ describe('Inspections | On Write | V2', () => {
         },
       })
     );
-    const updates = Object.freeze({ sectionSubtitle: 'updated' });
+    const updates = Object.freeze({
+      sectionSubtitle: 'updated',
+      itemMainInputSelection: 1, // New deficient item eligible score
+    });
 
     // List of all proxy attrs synced to source item
     const diAttrNames = Object.keys(DEFICIENT_ITEM_PROXY_ATTRS);
@@ -619,7 +622,7 @@ describe('Inspections | On Write | V2', () => {
       'created new deficiency'
     );
     const deficiencyId = originalDeficiencyDoc.id;
-    const lastUpdatedAt = originalDeficiencyDoc.data().updatedAt;
+    let lastUpdatedAt = originalDeficiencyDoc.data().updatedAt - 1;
 
     // Test update of each proxy attribute
     for (let i = 0; i < diAttrNames.length; i++) {
@@ -672,6 +675,7 @@ describe('Inspections | On Write | V2', () => {
       // Assertions
       expect(actual).to.equal(expected, `updated proxy attribute "${diAttr}"`);
       expect(newUpdatedAt > lastUpdatedAt).to.equal(true, 'set new updated at');
+      lastUpdatedAt = newUpdatedAt - 1;
     }
   });
 
@@ -804,6 +808,73 @@ describe('Inspections | On Write | V2', () => {
     // Test result
     const resultDoc = await diModel.firestoreFindRecord(fs, deficiencyId);
     const actual = (resultDoc.data() || {}).itemScore || 0;
+
+    // Assertions
+    expect(actual).to.equal(expected);
+  });
+
+  it('should update existing deficiency with new item selection not create a new deficiency', async () => {
+    const expected = 1;
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const itemId = uuid();
+    const deficiencyId = uuid();
+    const itemType = 'fiveactions_onetofive';
+    const itemUpdatedIndex = DEFICIENT_ITEM_ELIGIBLE[itemType].lastIndexOf(
+      true
+    ); // get last deficient eligible index
+    const itemInitIndex = DEFICIENT_ITEM_ELIGIBLE[itemType].indexOf(true);
+    const itemConfig = { mainInputSelection: itemInitIndex };
+    const inspData = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: propertyId,
+      template: {
+        trackDeficientItems: true,
+        items: {
+          [itemId]: mocking.createCompletedMainInputItem(
+            itemType,
+            true, // Create one new deficient item
+            itemConfig
+          ),
+        },
+      },
+    });
+    const deficientData = mocking.createDeficiency(
+      {
+        property: propertyId,
+        inspection: inspectionId,
+        item: itemId,
+      },
+      inspData
+    );
+    const inspUpdate = {
+      [`template.items.${itemId}.mainInputSelection`]: itemUpdatedIndex,
+    };
+
+    // Setup database
+    await inspectionsModel.firestoreCreateRecord(fs, inspectionId, inspData);
+    await diModel.firestoreCreateRecord(fs, deficiencyId, deficientData);
+    const beforeSnap = await inspectionsModel.firestoreFindRecord(
+      fs,
+      inspectionId
+    );
+    await inspectionsModel.firestoreUpdateRecord(fs, inspectionId, inspUpdate);
+    const afterSnap = await inspectionsModel.firestoreFindRecord(
+      fs,
+      inspectionId
+    );
+
+    // Execute
+    const changeSnap = test.makeChange(beforeSnap, afterSnap);
+    const wrapped = test.wrap(cloudFunctions.inspectionWriteV2);
+    await wrapped(changeSnap, { params: { inspectionId } });
+
+    // Test result
+    const inspDeficiencyDocs = await diModel.firestoreQuery(fs, {
+      inspection: inspectionId,
+    });
+    const actual = inspDeficiencyDocs.size;
 
     // Assertions
     expect(actual).to.equal(expected);
