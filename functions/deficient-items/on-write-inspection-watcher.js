@@ -3,6 +3,8 @@ const log = require('../utils/logger');
 const config = require('../config');
 const { getDiffs } = require('../utils/object-differ');
 const model = require('../models/deficient-items');
+const findMatchingItems = require('./utils/find-matching-items');
+const findMissingItems = require('./utils/find-missing-items');
 const createDeficientItems = require('./utils/create-deficient-items');
 const getLatestItemAdminEditTimestamp = require('./utils/get-latest-admin-edit-timestamp');
 
@@ -73,7 +75,7 @@ module.exports = function createOnInspectionWriteHandler(db, fs) {
 
       // Archive any deficient item(s) belonging
       // to inspection items that are no longer deficient
-      const removeDeficientItemIds = findMissingdDeficientItemIDs(
+      const removeDeficientItemIds = findMissingItems(
         currentDeficientItems,
         expectedDeficientItems
       );
@@ -91,7 +93,7 @@ module.exports = function createOnInspectionWriteHandler(db, fs) {
 
       // Update each existing deficient items'
       // proxy data from its' source inspection item
-      const updateDeficientItemIds = findMatchingDeficientItemIDs(
+      const updateDeficientItemIds = findMatchingItems(
         currentDeficientItems,
         expectedDeficientItems
       );
@@ -149,7 +151,7 @@ module.exports = function createOnInspectionWriteHandler(db, fs) {
       // Add new deficient item(s) to DI
       // NOTE: these are inspection item ID's
       //       not deficient item identifiers
-      const addInspectionItemIds = findMissingdDeficientItemIDs(
+      const addInspectionItemIds = findMissingItems(
         expectedDeficientItems,
         currentDeficientItems
       );
@@ -166,7 +168,7 @@ module.exports = function createOnInspectionWriteHandler(db, fs) {
         const addedDeficientItemID = Object.keys(addResult)[0]
           .split('/')
           .pop();
-        await model.firestireSafelyCreateRecord(fs, addedDeficientItemID, {
+        await model.firestoreSafelyCreateRecord(fs, addedDeficientItemID, {
           ...deficientItemData,
           property: inspection.property,
         });
@@ -183,39 +185,3 @@ module.exports = function createOnInspectionWriteHandler(db, fs) {
     }
   };
 };
-
-/**
- * Compare 2 versions of an inspection's deficient
- * item tree and return the deficient item ID's
- * that no longer exist in target tree
- * @param  {Object} source
- * @param  {Object} target
- * @return {String[]} - deprecated deficient item ID's
- */
-function findMissingdDeficientItemIDs(source, target) {
-  return Object.keys(source).filter(defItemID => {
-    const { item } = source[defItemID];
-    const [found] = Object.keys(target).filter(
-      targetItemID => target[targetItemID].item === item
-    );
-    return !found;
-  });
-}
-
-/**
- * Compare 2 versions of an inspection's deficient
- * item tree and return the deficient item ID's
- * that still exist in target tree
- * @param  {Object} source
- * @param  {Object} target
- * @return {String[]} - deprecated deficient item ID's
- */
-function findMatchingDeficientItemIDs(source, target) {
-  return Object.keys(source).filter(defItemID => {
-    const { item } = source[defItemID]; // inspection item ID
-    const [found] = Object.keys(target).filter(
-      targetItemID => target[targetItemID].item === item
-    );
-    return Boolean(found);
-  });
-}

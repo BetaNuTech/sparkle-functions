@@ -38,10 +38,10 @@ module.exports = (db, fs, pubsubClient, storage) => {
 
     inspectionDeleteV2: functions.firestore
       .document('/inspections/{inspectionId}')
-      .onDelete(inspections.onDeleteV2(fs)),
+      .onDelete(inspections.onDeleteV2(db, fs)),
 
     inspectionWriteV2: functions.firestore
       .document('/inspections/{inspectionId}')
-      .onWrite(inspections.onWriteV2(fs)),
+      .onWrite(inspections.onWriteV2(db, fs)),
   };
 };

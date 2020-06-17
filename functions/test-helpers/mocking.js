@@ -1,5 +1,6 @@
 const assert = require('assert');
 const config = require('../config');
+const createDeficiencies = require('../deficient-items/utils/create-deficient-items');
 
 const INSPECTION_SCORES = config.inspectionItems.scores;
 const DEFICIENT_LIST_ELIGIBLE = config.inspectionItems.deficientListEligible;
@@ -68,7 +69,7 @@ module.exports = {
           items: {},
         },
         totalItems: items,
-        updatedLastDate: now - offset / 2,
+        updatedLastDate: Math.round(now - offset / 2),
       },
       inspConfig
     );
@@ -184,6 +185,51 @@ module.exports = {
         item: itemId,
       }
     );
+  },
+
+  /**
+   * Create a mock firestore deficiency
+   * @param  {Object} defConfig
+   * @param  {Object?} sourceInspection
+   * @param  {Object?} sourceItem
+   * @return {Object}
+   */
+  createDeficiency(defConfig, sourceInspection, sourceItem) {
+    assert(defConfig && typeof defConfig === 'object', 'has config object');
+    const { inspection, item, property } = defConfig;
+    assert(
+      inspection && typeof inspection === 'string',
+      'config has inspection id'
+    );
+    assert(item && typeof item === 'string', 'config has item id');
+    assert(property && typeof property === 'string', 'config has property id');
+
+    const itemConfig =
+      sourceItem ||
+      this.createCompletedMainInputItem('twoactions_checkmarkx', true);
+    const inspectionConfig =
+      sourceInspection ||
+      this.createInspection({
+        deficienciesExist: true,
+        inspectionCompleted: true,
+        property,
+        template: {
+          trackDeficientItems: true,
+          items: {
+            // Create single deficient item on inspection
+            [item]: itemConfig,
+          },
+        },
+      });
+
+    // Create deficiency from inspection
+    const deficiencies = createDeficiencies({
+      ...inspectionConfig,
+      id: inspection,
+    });
+
+    // Overwrite generated state with config
+    return { ...deficiencies[item], ...defConfig };
   },
 
   createSection(sectionConfig = {}) {
