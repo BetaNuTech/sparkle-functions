@@ -121,9 +121,10 @@ module.exports = modelSetup({
    * @param  {admin.database} db
    * @param  {String[]} userIds
    * @param  {String} teamId
+   * @param  {firestore.batch?} parentBatch
    * @return {Promise}
    */
-  firestoreBatchRemoveTeam(fs, userIds, teamId) {
+  firestoreBatchRemoveTeam(fs, userIds, teamId, parentBatch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(userIds && Array.isArray(userIds), 'has user ids is an array');
     assert(
@@ -131,8 +132,14 @@ module.exports = modelSetup({
       'user ids is an array of strings'
     );
     assert(teamId && typeof teamId === 'string', 'has team id');
+    if (parentBatch) {
+      assert(
+        typeof parentBatch.update === 'function',
+        'has firestore batch/transaction'
+      );
+    }
 
-    const batch = fs.batch();
+    const batch = parentBatch || fs.batch();
     const collection = fs.collection(USERS_COLLECTION);
 
     // Remove each users team
@@ -140,6 +147,10 @@ module.exports = modelSetup({
       const userDoc = collection.doc(id);
       batch.update(userDoc, { [`teams.${teamId}`]: FieldValue.delete() });
     });
+
+    if (parentBatch) {
+      return Promise.resolve(parentBatch);
+    }
 
     return batch.commit();
   },
