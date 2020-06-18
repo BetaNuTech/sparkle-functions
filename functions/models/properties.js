@@ -124,9 +124,10 @@ module.exports = modelSetup({
    * relationships to a deleted team
    * @param  {admin.firestore} fs
    * @param  {String[]} propertyIds
+   * @param  {firestore.batch?} parentBatch
    * @return {Promise}
    */
-  firestoreBatchRemoveTeam(fs, propertyIds) {
+  firestoreBatchRemoveTeam(fs, propertyIds, parentBatch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       propertyIds && Array.isArray(propertyIds),
@@ -136,8 +137,14 @@ module.exports = modelSetup({
       propertyIds.every(id => id && typeof id === 'string'),
       'property ids is an array of strings'
     );
+    if (parentBatch) {
+      assert(
+        typeof parentBatch.update === 'function',
+        'has firestore batch/transaction'
+      );
+    }
 
-    const batch = fs.batch();
+    const batch = parentBatch || fs.batch();
     const collection = fs.collection(PROPERTY_COLLECTION);
 
     // Remove each properties team
@@ -145,6 +152,10 @@ module.exports = modelSetup({
       const propertyDoc = collection.doc(id);
       batch.update(propertyDoc, { team: FieldValue.delete() });
     });
+
+    if (parentBatch) {
+      return Promise.resolve(parentBatch);
+    }
 
     return batch.commit();
   },
@@ -288,10 +299,10 @@ module.exports = modelSetup({
    * Query all properties
    * @param  {admin.firestore} fs
    * @param  {Object} query
-   * @param  {firestore.batch?} batch
+   * @param  {firestore.transaction?} transaction
    * @return {Promise} - resolves {DataSnapshot}
    */
-  firestoreQuery(fs, query, batch) {
+  firestoreQuery(fs, query, transaction) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(query && typeof query === 'object', 'has query');
 
@@ -307,9 +318,12 @@ module.exports = modelSetup({
       fsQuery.where(attr, ...queryArgs);
     });
 
-    if (batch) {
-      assert(typeof batch.get === 'function', 'has firestore batch');
-      return Promise.resolve(batch.get(fsQuery));
+    if (transaction) {
+      assert(
+        typeof transaction.get === 'function',
+        'has firestore transaction'
+      );
+      return Promise.resolve(transaction.get(fsQuery));
     }
 
     return fsQuery.get(query);
