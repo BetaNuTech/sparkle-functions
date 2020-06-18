@@ -30,7 +30,28 @@ module.exports = {
     }
 
     return {
-      name: 'test',
+      name: 'test property',
+      ...finalConfig,
+    };
+  },
+
+  /**
+   * Create a team
+   * @param  {Object?} teamConfig
+   * @return {Object}
+   */
+  createTeam(teamConfig = {}) {
+    const finalConfig = JSON.parse(JSON.stringify(teamConfig));
+
+    if (teamConfig.properties && Array.isArray(teamConfig.properties)) {
+      finalConfig.properties = {};
+      teamConfig.properties.forEach(tmplId => {
+        finalConfig.properties[tmplId] = true;
+      });
+    }
+
+    return {
+      name: 'test team',
       ...finalConfig,
     };
   },

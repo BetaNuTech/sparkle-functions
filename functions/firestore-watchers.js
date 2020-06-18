@@ -1,5 +1,6 @@
 const functions = require('firebase-functions');
 const properties = require('./properties');
+const teams = require('./teams');
 const inspections = require('./inspections');
 const deficientItems = require('./deficient-items');
 const templateCategories = require('./template-categories');
@@ -43,5 +44,9 @@ module.exports = (db, fs, pubsubClient, storage) => {
     inspectionWriteV2: functions.firestore
       .document('/inspections/{inspectionId}')
       .onWrite(inspections.onWriteV2(db, fs)),
+
+    teamDeleteV2: functions.firestore
+      .document('/teams/{teamId}')
+      .onDelete(teams.onDeleteV2(fs)),
   };
 };
