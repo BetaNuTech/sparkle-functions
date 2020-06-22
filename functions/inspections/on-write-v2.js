@@ -48,17 +48,6 @@ module.exports = function createOnWriteHandler(db, fs) {
       );
     }
 
-    // Update inspections' property meta data
-    // when either the updated last date or migration
-    // date has changed
-    if (hasUpdatedLastDate || hasUpdatedMigration) {
-      try {
-        await propertiesModel.updateMetaData(fs, propertyId);
-      } catch (err) {
-        log.error(`${PREFIX} property meta data update failed | ${err}`);
-      }
-    }
-
     // For inspections tracking deficiencies
     // archive unapplicable deficiencies,
     // update existing deficiencies,
@@ -163,6 +152,18 @@ module.exports = function createOnWriteHandler(db, fs) {
           );
         }
         log.error(`${PREFIX} ${err}`);
+      }
+    }
+
+    // Update inspections' property meta data
+    // when either the updated last date or migration
+    // date has changed
+    // NOTE: Must update after deficiency creation/update
+    if (hasUpdatedLastDate || hasUpdatedMigration) {
+      try {
+        await propertiesModel.updateMetaData(fs, propertyId);
+      } catch (err) {
+        log.error(`${PREFIX} property meta data update failed | ${err}`);
       }
     }
   };
