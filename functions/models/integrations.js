@@ -326,12 +326,9 @@ module.exports = modelSetup({
       data.grantedBy && typeof data.grantedBy === 'string',
       'has granted by string'
     );
+    assert(data.team && typeof data.team === 'string', 'has slack team id');
     assert(
-      data.team_id && typeof data.team_id === 'string',
-      'has slack team id'
-    );
-    assert(
-      data.team_name && typeof data.team_name === 'string',
+      data.teamName && typeof data.teamName === 'string',
       'has slack team name'
     );
     if (batch) {
@@ -354,5 +351,18 @@ module.exports = modelSetup({
 
     // Regular set
     return doc.set(integrationData);
+  },
+
+  /**
+   * Lookup Slack system credentials
+   * @param  {admin.firestore} fs
+   * @return {Promise} - resolves {DocumentSnapshot}
+   */
+  firestoreFindSlack(fs) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    return fs
+      .collection(INTEGRATIONS_COLLECTION)
+      .doc('slack')
+      .get();
   },
 });

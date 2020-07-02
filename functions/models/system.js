@@ -771,7 +771,7 @@ module.exports = modelSetup({
    * @param  {firestore.batch?} batch
    * @return {Promise}
    */
-  firestoreUpsertSlackAppCredentials(fs, credentials, batch) {
+  firestoreUpsertSlack(fs, credentials, batch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       credentials && typeof credentials === 'object',
@@ -824,5 +824,18 @@ module.exports = modelSetup({
         return batch;
       }
     });
+  },
+
+  /**
+   * Lookup Slack system credentials
+   * @param  {admin.firestore} fs
+   * @return {Promise} - resolves {DocumentSnapshot}
+   */
+  firestoreFindSlack(fs) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    return fs
+      .collection(SYSTEM_COLLECTION)
+      .doc('slack')
+      .get();
   },
 });

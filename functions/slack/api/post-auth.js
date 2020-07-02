@@ -28,6 +28,9 @@ module.exports = function createPatchProperty(fs) {
     const { slackCode, redirectUri } = body;
     const send500Error = create500ErrHandler(PREFIX, res);
 
+    // Set JSON API formatted response
+    res.set('Content-Type', 'application/vnd.api+json');
+
     // Reject impropertly stuctured request body
     if (!slackCode || !redirectUri) {
       let message = 'Slack Auth Handler requires:';
@@ -67,7 +70,7 @@ module.exports = function createPatchProperty(fs) {
 
     try {
       // Set private credentials
-      await systemModel.firestoreUpsertSlackAppCredentials(
+      await systemModel.firestoreUpsertSlack(
         fs,
         {
           token: slackResponse.access_token,
