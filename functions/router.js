@@ -2,6 +2,7 @@ const cors = require('cors');
 const assert = require('assert');
 const express = require('express');
 const bodyParser = require('body-parser');
+const slack = require('./slack');
 const properties = require('./properties');
 const inspections = require('./inspections');
 const versions = require('./versions');
@@ -68,6 +69,13 @@ module.exports = (db, fs, auth, settings) => {
     properties.middleware.propertyCode(fs),
     properties.middleware.yardiIntegration(db),
     properties.api.getPropertyYardiWorkOrders(db)
+  );
+
+  // Authorize Slack code & store Slack API credentials
+  app.post(
+    '/v0/integrations/slack/authorization',
+    authUser(db, auth, true),
+    slack.api.postAuth(fs)
   );
 
   return app;

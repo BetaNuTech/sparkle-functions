@@ -2,8 +2,11 @@ const got = require('got');
 const assert = require('assert');
 const integrationsModel = require('../models/integrations');
 const systemModel = require('../models/system');
+const config = require('../config');
 
 const PREFIX = 'services: slack:';
+const SLACK_APP_CLIENT_ID = config.slackApp.clientId;
+const SLACK_APP_CLIENT_SECRET = config.slackApp.clientSecret;
 
 module.exports = {
   /**
@@ -104,6 +107,41 @@ module.exports = {
     }
 
     return this.clearDatabaseFromSlackReferences(db);
+  },
+
+  /**
+   * Authorize a slack code and redirect to get
+   * system's access token & slack team details
+   * @param  {String}  slackCode
+   * @param  {String}  redirectUri
+   * @return {Promise} - resolves {Object} response body
+   */
+  async authorizeCredentials(slackCode, redirectUri) {
+    assert(slackCode && typeof slackCode === 'string', 'has slack code string');
+    assert(
+      redirectUri && typeof redirectUri === 'string',
+      'has redirect URI string'
+    );
+
+    const queryParams = `?client_id=${SLACK_APP_CLIENT_ID}&client_secret=${SLACK_APP_CLIENT_SECRET}&code=${slackCode}&redirect_uri=${redirectUri}`;
+    const response = await got(
+      `https://slack.com/api/oauth.access${queryParams}`,
+      {
+        headers: {
+          'content-type': 'application/x-www-form-urlencoded',
+        },
+        responseType: 'json',
+        method: 'POST',
+        json: true,
+      }
+    );
+
+    if (!response || !response.body || !response.body.ok) {
+      const respErrMsg = response && response.body && response.body.error;
+      throw Error(respErrMsg || 'Unknown Slack API error');
+    }
+
+    return response.body;
   },
 };
 

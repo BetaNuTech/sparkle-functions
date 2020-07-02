@@ -10,6 +10,7 @@ const SERVICE_ACCOUNT_CLIENT_ID =
   config.firebase.databaseAuthVariableOverride.uid;
 const DI_DATABASE_PATH = config.deficientItems.dbPath;
 const DEFICIENT_COLLECTION = config.deficientItems.collection;
+const SYSTEM_COLLECTION = 'system';
 const TRELLO_ORG_PATH = `/system/integrations/${SERVICE_ACCOUNT_CLIENT_ID}/trello/organization`;
 const YARDI_ORG_PATH = `/system/integrations/${SERVICE_ACCOUNT_CLIENT_ID}/yardi/organization`;
 const COBALT_ORG_PATH = `/system/integrations/${SERVICE_ACCOUNT_CLIENT_ID}/cobalt/organization`;
@@ -760,5 +761,68 @@ module.exports = modelSetup({
     }
 
     return response;
+  },
+
+  /**
+   * Create or update an organization's Slack
+   * API credentials for Sparkle/Slack integrations
+   * @param  {admin.firestore} fs
+   * @param  {Object} credentials
+   * @param  {firestore.batch?} batch
+   * @return {Promise}
+   */
+  firestoreUpsertSlackAppCredentials(fs, credentials, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(
+      credentials && typeof credentials === 'object',
+      'has credentials object'
+    );
+    assert(
+      credentials.token && typeof credentials.token === 'string',
+      'has token'
+    );
+    assert(
+      credentials.scope && typeof credentials.scope === 'string',
+      'has scope'
+    );
+    if (batch) {
+      assert(
+        typeof batch.update === 'function' &&
+          typeof batch.create === 'function',
+        'has firestore batch'
+      );
+    }
+
+    return fs.runTransaction(async transaction => {
+      const slackCredentialsDoc = fs.collection(SYSTEM_COLLECTION).doc('slack');
+
+      let slackCredentialsRef = null;
+      try {
+        slackCredentialsRef = await transaction.get(slackCredentialsDoc);
+      } catch (err) {
+        throw Error(
+          `${PREFIX} firestoreUpsertSlackAppCredentials: failed to lookup existing Slack credentials`
+        );
+      }
+
+      const batchOrTrans = batch || transaction;
+      const now = Math.round(Date.now() / 1000);
+      const data = {
+        scope: credentials.scope,
+        accessToken: credentials.token,
+        updatedAt: now,
+      };
+
+      if (slackCredentialsRef.exists) {
+        batchOrTrans.update(slackCredentialsDoc, data);
+      } else {
+        data.createdAt = now;
+        batchOrTrans.create(slackCredentialsDoc, data);
+      }
+
+      if (batch) {
+        return batch;
+      }
+    });
   },
 });

@@ -3,6 +3,7 @@ const assert = require('assert');
 const modelSetup = require('./utils/model-setup');
 
 const PREFIX = 'models: integrations:';
+const INTEGRATIONS_COLLECTION = 'integrations';
 const TRELLO_PROPERTIES_PATH = '/integrations/trello/properties';
 const TRELLO_ORG_PATH = '/integrations/trello/organization';
 const SLACK_ORG_PATH = '/integrations/slack/organization';
@@ -307,6 +308,51 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {DocumentSnapshot[]}
    */
   getClientApps(fs) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     return fs.collection(CLIENT_APPS_COLLECTION).get();
+  },
+
+  /**
+   * Set/replace Slacks integration details
+   * @param  {admin.firestore} fs
+   * @param  {Object} data
+   * @param  {firestore.batch?} batch
+   * @return {Promise} - resolves {Object} integration data
+   */
+  firestoreSetSlack(fs, data, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(data && typeof data === 'object', 'has data object');
+    assert(
+      data.grantedBy && typeof data.grantedBy === 'string',
+      'has granted by string'
+    );
+    assert(
+      data.team_id && typeof data.team_id === 'string',
+      'has slack team id'
+    );
+    assert(
+      data.team_name && typeof data.team_name === 'string',
+      'has slack team name'
+    );
+    if (batch) {
+      assert(typeof batch.set === 'function', 'has firestore batch');
+    }
+
+    const doc = fs.collection(INTEGRATIONS_COLLECTION).doc('slack');
+    const integrationData = {
+      createdAt: Math.round(Date.now() / 1000),
+      grantedBy: data.grantedBy,
+      team: data.team,
+      teamName: data.teamName,
+    };
+
+    // Append to batch
+    if (batch) {
+      batch.set(doc, integrationData);
+      return Promise.resolve(integrationData);
+    }
+
+    // Regular set
+    return doc.set(integrationData);
   },
 });
