@@ -8,7 +8,7 @@ const systemModel = require('../../../models/system');
 const integrationsModel = require('../../../models/integrations');
 const postSlackAuth = require('../../../slack/api/post-auth');
 
-describe('Integrations | API | POST Slack Authorization', () => {
+describe('Slack | API | POST Slack Authorization', () => {
   afterEach(() => sinon.restore());
 
   it('returns a helpful error when a slack code is not provided', done => {
@@ -17,7 +17,7 @@ describe('Integrations | API | POST Slack Authorization', () => {
     request(createApp())
       .post('/t')
       .send()
-      .expect('Content-Type', /json/)
+      .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(400)
       .then(res => {
         const actual = res.body.errors[0].detail;
@@ -33,7 +33,7 @@ describe('Integrations | API | POST Slack Authorization', () => {
     request(createApp())
       .post('/t')
       .send({ slackCode: 'test' })
-      .expect('Content-Type', /json/)
+      .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(400)
       .then(res => {
         const actual = res.body.errors[0].detail;
@@ -54,7 +54,7 @@ describe('Integrations | API | POST Slack Authorization', () => {
 
     let actual = '';
     sinon
-      .stub(systemModel, 'firestoreUpsertSlackAppCredentials')
+      .stub(systemModel, 'firestoreUpsertSlack')
       .callsFake((_, { token }) => {
         actual = token;
         return Promise.reject(Error('fail'));
@@ -63,7 +63,7 @@ describe('Integrations | API | POST Slack Authorization', () => {
     request(createApp())
       .post('/t')
       .send({ slackCode: 'test', redirectUri: '/test' })
-      .expect('Content-Type', /json/)
+      .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(500)
       .then(() => {
         expect(actual).to.equal(expected);
@@ -80,7 +80,7 @@ describe('Integrations | API | POST Slack Authorization', () => {
       team_id: expected,
       scope: 'test',
     });
-    sinon.stub(systemModel, 'firestoreUpsertSlackAppCredentials').resolves();
+    sinon.stub(systemModel, 'firestoreUpsertSlack').resolves();
 
     let actual = '';
     sinon
@@ -93,7 +93,7 @@ describe('Integrations | API | POST Slack Authorization', () => {
     request(createApp())
       .post('/t')
       .send({ slackCode: 'test', redirectUri: '/test' })
-      .expect('Content-Type', /json/)
+      .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(500)
       .then(() => {
         expect(actual).to.equal(expected);
@@ -117,7 +117,7 @@ describe('Integrations | API | POST Slack Authorization', () => {
       },
     };
     sinon.stub(slackService, 'authorizeCredentials').resolves({});
-    sinon.stub(systemModel, 'firestoreUpsertSlackAppCredentials').resolves();
+    sinon.stub(systemModel, 'firestoreUpsertSlack').resolves();
     sinon
       .stub(integrationsModel, 'firestoreSetSlack')
       .resolves(integrationData);
@@ -125,7 +125,7 @@ describe('Integrations | API | POST Slack Authorization', () => {
     request(createApp())
       .post('/t')
       .send({ slackCode: 'test', redirectUri: '/test' })
-      .expect('Content-Type', /json/)
+      .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(201)
       .then(res => {
         const actual = res.body;
