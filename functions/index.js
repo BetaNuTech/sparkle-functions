@@ -83,6 +83,7 @@ exports.deleteSlackAuthorization = functions.https.onRequest(
 );
 
 //  POST /notifications
+//  NOTE: Deprecated in favor of router API
 exports.createSlackNotifications = functions.https.onRequest(
   slack.createOnSlackNotificationHandler(
     db,
