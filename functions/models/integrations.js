@@ -365,4 +365,22 @@ module.exports = modelSetup({
       .doc('slack')
       .get();
   },
+
+  /**
+   * Remove slack integration details
+   * @param  {admin.firestore} fs
+   * @param  {firstore.batch?} batch
+   * @return {Promise}
+   */
+  firestoreRemoveSlack(fs, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    const doc = fs.collection(INTEGRATIONS_COLLECTION).doc('slack');
+
+    if (batch) {
+      batch.delete(doc);
+      return Promise.resolve();
+    }
+
+    return doc.delete();
+  },
 });

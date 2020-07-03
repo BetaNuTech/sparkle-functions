@@ -59,6 +59,7 @@ module.exports = {
 
   /**
    * Clear database from all references to uninstalled slack app
+   * NOTE: DEPRECATED: Delete when Firebase Db dropped
    * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
    * @returns {Promise} - resolve {void}
    */
@@ -142,6 +143,33 @@ module.exports = {
     }
 
     return response.body;
+  },
+
+  /**
+   * Remove a slack app from a workspace
+   * @param  {String}  accessToken
+   * @return {Promise}
+   */
+  async uninstallApp(accessToken) {
+    assert(accessToken && typeof accessToken === 'string', 'has access token');
+
+    const queryParams = `?client_id=${SLACK_APP_CLIENT_ID}&client_secret=${SLACK_APP_CLIENT_SECRET}&token=${accessToken}`;
+    const response = await got(
+      `https://slack.com/api/apps.uninstall${queryParams}`,
+      {
+        headers: {
+          'content-type': 'application/x-www-form-urlencoded',
+        },
+        responseType: 'json',
+        method: 'GET',
+        json: true,
+      }
+    );
+
+    if (!response || !response.body || !response.body.ok) {
+      const respErrMsg = response && response.body && response.body.error;
+      throw Error(respErrMsg || 'Unknown Slack API error');
+    }
   },
 };
 

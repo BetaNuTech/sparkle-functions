@@ -78,5 +78,12 @@ module.exports = (db, fs, auth, settings) => {
     slack.api.postAuth(fs)
   );
 
+  // Delete Slack App from a Slack Workspace
+  app.delete(
+    '/v0/integrations/slack/authorization',
+    authUser(db, auth, true),
+    slack.api.deleteAuth(fs)
+  );
+
   return app;
 };
