@@ -3,6 +3,7 @@ const createOnSlackNotificationHandler = require('./create-notification-record-h
 const createDeleteSlackAppHandler = require('./delete-slack-app');
 const createSlackEventsApiHandler = require('./create-slack-events-api-handler');
 const postAuth = require('./api/post-auth');
+const deleteAuth = require('./api/delete-auth');
 
 module.exports = {
   createOnSlackAppAuthHandler,
@@ -12,5 +13,6 @@ module.exports = {
 
   api: {
     postAuth,
+    deleteAuth,
   },
 };
