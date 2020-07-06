@@ -1,6 +1,5 @@
 const assert = require('assert');
 const log = require('../../utils/logger');
-const slackService = require('../../services/slack');
 const systemModel = require('../../models/system');
 const integrationsModel = require('../../models/integrations');
 const notificationsModel = require('../../models/notifications');
@@ -37,7 +36,11 @@ module.exports = function createDeleteSlackAppHandler(fs) {
     if (eventType === 'app_uninstalled' && teamId) {
       let wasAuthorized = false;
       try {
-        wasAuthorized = await slackService.isAuthorizedTeam(null, fs, teamId);
+        wasAuthorized = await integrationsModel.isAuthorizedSlackTeam(
+          null,
+          fs,
+          teamId
+        );
       } catch (err) {
         log.error(`${PREFIX} app_uninstalled team lookup failed: ${err}`);
         return res.status(200).send({ message: 'error' });
