@@ -68,8 +68,9 @@ exports.createTrelloDeficientItemCard = functions.https.onRequest(
 );
 
 // POST /slackApp
+// DEPRECATED: Remove when Firebase DB dropped
 exports.slackAppEvents = functions.https.onRequest(
-  slack.createSlackEventsApiHandler(db)
+  slack.slackEventsApiHandler(db)
 );
 
 // POST /integrations/slack/authorization

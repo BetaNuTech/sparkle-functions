@@ -2,7 +2,7 @@ const { expect } = require('chai');
 const request = require('supertest');
 const nock = require('nock');
 
-const slackEventsApiHandler = require('../../slack/create-slack-events-api-handler');
+const slackEventsApiHandler = require('../../slack/slack-events-api-handler');
 const { cleanDb } = require('../../test-helpers/firebase');
 const { db, uid: SERVICE_ACCOUNT_ID } = require('../setup');
 
@@ -63,8 +63,8 @@ describe('Slack App Delete', () => {
     expect(actual).to.equal(expected);
   });
 
-  it('should reject request when uninstalled Slack team does not match organization', async function() {
-    const expected = 'error';
+  it('should disregard request when uninstalled Slack team does not match organization', async function() {
+    const expected = 'successful';
     await db.ref(`${SLACK_INTEGRATION_DB_PATH}`).set(ORGANIZATION_DATA);
 
     const body = {

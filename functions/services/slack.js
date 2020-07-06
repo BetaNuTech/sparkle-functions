@@ -89,25 +89,57 @@ module.exports = {
   },
 
   /**
-   * Handle app uninstalled event
-   * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
-   * @param  {teamId} String - slack team identifier
-   * @returns {Promise} - returns {Boolean} success
+   * Is given team ID integrated with system
+   * @param  {admin.database?}  db
+   * @param  {admin.firestore?}  fs
+   * @param  {String}  teamId
+   * @return {Promise} - resolves {Boolean}
    */
-  async handleAppUninstalledEvent(db, teamId) {
-    assert(Boolean(db), 'has database instance');
+  async isAuthorizedTeam(db, fs, teamId) {
+    if (db) {
+      assert(typeof db.ref === 'function', 'has realtime db');
+    }
+    if (fs) {
+      assert(typeof fs.collection === 'function', 'has firestore db');
+    }
+    assert(Boolean(db || fs), 'has firebase or firestore database');
     assert(teamId && typeof teamId === 'string', 'has team id');
 
-    const slackOrganization =
-      (await integrationsModel.getSlackOrganization(db)).val() || {};
+    let slackOrganization = null;
 
-    if (slackOrganization.team !== teamId) {
-      throw new Error(
-        `${PREFIX} app_uninstalled for wrong team, wanted: "${slackOrganization.team}" got: "${teamId}"`
-      );
+    // Lookup firestore Slack integration
+    if (fs) {
+      try {
+        const slackOrganizationSnap = await integrationsModel.firestoreFindSlack(
+          fs
+        );
+        if (slackOrganizationSnap.data()) {
+          slackOrganization = slackOrganizationSnap.data();
+        }
+      } catch (err) {
+        throw Error(
+          `${PREFIX} isOrganizationsTeam: Firestore lookup failed: ${err}`
+        );
+      }
     }
 
-    return this.clearDatabaseFromSlackReferences(db);
+    // Lookup firebase Slack integration
+    if (!slackOrganization && db) {
+      try {
+        const slackOrganizationSnap = await integrationsModel.getSlackOrganization(
+          db
+        );
+        if (slackOrganizationSnap.val()) {
+          slackOrganization = slackOrganizationSnap.val();
+        }
+      } catch (err) {
+        throw Error(
+          `${PREFIX} isOrganizationsTeam: Firebase DB lookup failed: ${err}`
+        );
+      }
+    }
+
+    return Boolean(slackOrganization && slackOrganization.team === teamId);
   },
 
   /**

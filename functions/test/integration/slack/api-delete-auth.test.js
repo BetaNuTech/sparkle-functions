@@ -64,9 +64,7 @@ describe('Slack | API | DELETE Slack Authorization', () => {
     sinon.stub(slackService, 'uninstallApp').resolves();
     sinon.stub(systemModel, 'firestoreRemoveSlack').resolves();
     sinon.stub(integrationsModel, 'firestoreRemoveSlack').resolves();
-    sinon
-      .stub(notificationsModel, 'firestoreRemoveAllSlack')
-      .resolves();
+    sinon.stub(notificationsModel, 'firestoreRemoveAllSlack').resolves();
 
     request(createApp())
       .delete('/t')

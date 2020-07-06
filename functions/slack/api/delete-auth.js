@@ -99,9 +99,7 @@ module.exports = function createDeleteSlackAppHandler(fs) {
       );
     }
 
-    log.info(
-      `${PREFIX} Slack app successfully uninstalled by user: "${user.id}"`
-    );
+    log.info(`${PREFIX} Slack app uninstalled by user: "${user.id}"`);
     res.status(204).send();
   };
 };
