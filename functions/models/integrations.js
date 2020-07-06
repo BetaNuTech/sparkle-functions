@@ -95,6 +95,7 @@ module.exports = modelSetup({
 
   /**
    * Remove an individual Slack notification record
+   * TODO: Move to notifications model
    * @param  {firebaseAdmin.database} db firbase database
    * @param  {String} channelName
    * @param  {String} notificationId
@@ -248,6 +249,7 @@ module.exports = modelSetup({
   /**
    * Join specified Slack channel and
    * record success in integrations history
+   * TODO: Move to Slack Service
    * @param   {firebaseAdmin.database} db firbase database
    * @param   {String} accessToken
    * @param   {String} channelName
@@ -337,7 +339,7 @@ module.exports = modelSetup({
 
     const doc = fs.collection(INTEGRATIONS_COLLECTION).doc('slack');
     const integrationData = {
-      createdAt: Math.round(Date.now() / 1000),
+      createdAt: data.createdAt || Math.round(Date.now() / 1000),
       grantedBy: data.grantedBy,
       team: data.team,
       teamName: data.teamName,
@@ -382,5 +384,55 @@ module.exports = modelSetup({
     }
 
     return doc.delete();
+  },
+
+  /**
+   * Is given Slack team ID integrated with system
+   * @param  {admin.database?}  db
+   * @param  {admin.firestore?}  fs
+   * @param  {String}  teamId
+   * @return {Promise} - resolves {Boolean}
+   */
+  async isAuthorizedSlackTeam(db, fs, teamId) {
+    if (db) {
+      assert(typeof db.ref === 'function', 'has realtime db');
+    }
+    if (fs) {
+      assert(typeof fs.collection === 'function', 'has firestore db');
+    }
+    assert(Boolean(db || fs), 'has firebase or firestore database');
+    assert(teamId && typeof teamId === 'string', 'has team id');
+
+    let slackOrganization = null;
+
+    // Lookup firestore Slack integration
+    if (fs) {
+      try {
+        const slackOrganizationSnap = await this.firestoreFindSlack(fs);
+        if (slackOrganizationSnap.data()) {
+          slackOrganization = slackOrganizationSnap.data();
+        }
+      } catch (err) {
+        throw Error(
+          `${PREFIX} isOrganizationsTeam: Firestore lookup failed: ${err}`
+        );
+      }
+    }
+
+    // Lookup firebase Slack integration
+    if (!slackOrganization && db) {
+      try {
+        const slackOrganizationSnap = await this.getSlackOrganization(db);
+        if (slackOrganizationSnap.val()) {
+          slackOrganization = slackOrganizationSnap.val();
+        }
+      } catch (err) {
+        throw Error(
+          `${PREFIX} isOrganizationsTeam: Firebase DB lookup failed: ${err}`
+        );
+      }
+    }
+
+    return Boolean(slackOrganization && slackOrganization.team === teamId);
   },
 });

@@ -89,60 +89,6 @@ module.exports = {
   },
 
   /**
-   * Is given team ID integrated with system
-   * @param  {admin.database?}  db
-   * @param  {admin.firestore?}  fs
-   * @param  {String}  teamId
-   * @return {Promise} - resolves {Boolean}
-   */
-  async isAuthorizedTeam(db, fs, teamId) {
-    if (db) {
-      assert(typeof db.ref === 'function', 'has realtime db');
-    }
-    if (fs) {
-      assert(typeof fs.collection === 'function', 'has firestore db');
-    }
-    assert(Boolean(db || fs), 'has firebase or firestore database');
-    assert(teamId && typeof teamId === 'string', 'has team id');
-
-    let slackOrganization = null;
-
-    // Lookup firestore Slack integration
-    if (fs) {
-      try {
-        const slackOrganizationSnap = await integrationsModel.firestoreFindSlack(
-          fs
-        );
-        if (slackOrganizationSnap.data()) {
-          slackOrganization = slackOrganizationSnap.data();
-        }
-      } catch (err) {
-        throw Error(
-          `${PREFIX} isOrganizationsTeam: Firestore lookup failed: ${err}`
-        );
-      }
-    }
-
-    // Lookup firebase Slack integration
-    if (!slackOrganization && db) {
-      try {
-        const slackOrganizationSnap = await integrationsModel.getSlackOrganization(
-          db
-        );
-        if (slackOrganizationSnap.val()) {
-          slackOrganization = slackOrganizationSnap.val();
-        }
-      } catch (err) {
-        throw Error(
-          `${PREFIX} isOrganizationsTeam: Firebase DB lookup failed: ${err}`
-        );
-      }
-    }
-
-    return Boolean(slackOrganization && slackOrganization.team === teamId);
-  },
-
-  /**
    * Authorize a slack code and redirect to get
    * system's access token & slack team details
    * @param  {String}  slackCode

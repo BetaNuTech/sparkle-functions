@@ -3,7 +3,6 @@ const { expect } = require('chai');
 const sinon = require('sinon');
 const express = require('express');
 const bodyParser = require('body-parser');
-const slackService = require('../../../services/slack');
 const systemModel = require('../../../models/system');
 const integrationsModel = require('../../../models/integrations');
 const notificationsModel = require('../../../models/notifications');
@@ -35,7 +34,7 @@ describe('Slack | API | POST Events Webhooks', () => {
     const expected = false;
 
     // Stub integrations
-    sinon.stub(slackService, 'isAuthorizedTeam').resolves(false);
+    sinon.stub(integrationsModel, 'isAuthorizedSlackTeam').resolves(false);
     const removeCredentials = sinon
       .stub(systemModel, 'firestoreRemoveSlack')
       .resolves();
@@ -53,7 +52,7 @@ describe('Slack | API | POST Events Webhooks', () => {
   });
 
   it('removes all slack records on uninstall event', done => {
-    sinon.stub(slackService, 'isAuthorizedTeam').resolves(true);
+    sinon.stub(integrationsModel, 'isAuthorizedSlackTeam').resolves(true);
     sinon
       .stub(systemModel, 'firestoreFindSlack')
       .resolves(stubSlackCredentials());

@@ -4,6 +4,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const log = require('../utils/logger');
 const slackService = require('../services/slack');
+const integrationsModel = require('../models/integrations');
 
 const PREFIX = 'slack: slack events API handler:';
 
@@ -37,7 +38,11 @@ module.exports = function createDeleteSlackAppHandler(db) {
     if (body.event.type === 'app_uninstalled' && teamId) {
       let wasAuthorized = false;
       try {
-        wasAuthorized = await slackService.isAuthorizedTeam(db, null, teamId);
+        wasAuthorized = await integrationsModel.isAuthorizedSlackTeam(
+          db,
+          null,
+          teamId
+        );
       } catch (err) {
         log.error(`${PREFIX} app_uninstalled team lookup failed: ${err}`);
         return res.status(200).send({ message: 'error' });
