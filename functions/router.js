@@ -85,5 +85,8 @@ module.exports = (db, fs, auth, settings) => {
     slack.api.deleteAuth(fs)
   );
 
+  // Slack POST events webook
+  app.post('/v0/integrations/slack/events', slack.api.postEventsWebhook(fs));
+
   return app;
 };
