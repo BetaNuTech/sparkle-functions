@@ -9,6 +9,7 @@ const createCommentForDiState = require('./pubsub/create-comment-for-deficient-i
 const createUpdateDueDate = require('./pubsub/update-card-due-date');
 const createOnCreateDICompletedPhoto = require('./on-create-deficient-item-completed-photo');
 const postAuth = require('./api/post-auth');
+const getBoards = require('./api/get-boards');
 
 module.exports = {
   createOnUpsertTrelloTokenHandler,
@@ -27,5 +28,6 @@ module.exports = {
 
   api: {
     postAuth,
+    getBoards,
   },
 };
