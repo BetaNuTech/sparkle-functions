@@ -4,8 +4,20 @@ const systemModel = require('../models/system');
 
 (async () => {
   // /system/integrations/{uid}/trello/organization
-  // const trelloSnap = await systemModel.findTrelloCredentials(db);
-  // TODO
+  const trelloSnap = await systemModel.findTrelloCredentials(db);
+  if (trelloSnap.val()) {
+    const trelloCredentials = trelloSnap.val();
+    if (trelloCredentials.createdAt) {
+      trelloCredentials.createdAt = Math.round(trelloCredentials.createdAt);
+    }
+    if (trelloCredentials.updatedAt) {
+      trelloCredentials.updatedAt = Math.round(trelloCredentials.updatedAt);
+    } else {
+      trelloCredentials.updatedAt = Math.round(Date.now() / 1000);
+    }
+    await systemModel.firestoreUpsertTrello(fs, trelloCredentials);
+    log.info(`Synced Trello Credentials`);
+  }
 
   // /system/integrations/{uid}/yardi/organization
   // const yardiSnap = await systemModel.findYardiCredentials(db);
@@ -20,11 +32,16 @@ const systemModel = require('../models/system');
 
   if (slackSnap.val()) {
     const slackCredentials = slackSnap.val();
-    await systemModel.firestoreUpsertSlack(fs, {
-      token: slackCredentials.accessToken,
-      scope: slackCredentials.scope,
-      createdAt: Math.round(slackCredentials.createdAt),
-    });
+    slackCredentials.token = slackCredentials.accessToken;
+    if (slackCredentials.createdAt) {
+      slackCredentials.createdAt = Math.round(slackCredentials.createdAt);
+    }
+    if (slackCredentials.updatedAt) {
+      slackCredentials.updatedAt = Math.round(slackCredentials.updatedAt);
+    } else {
+      slackCredentials.updatedAt = Math.round(Date.now() / 1000);
+    }
+    await systemModel.firestoreUpsertSlack(fs, slackCredentials);
     log.info(`Synced Slack Credentials`);
   }
 

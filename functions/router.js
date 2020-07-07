@@ -3,6 +3,7 @@ const assert = require('assert');
 const express = require('express');
 const bodyParser = require('body-parser');
 const slack = require('./slack');
+const trello = require('./slack');
 const properties = require('./properties');
 const inspections = require('./inspections');
 const versions = require('./versions');
@@ -71,7 +72,7 @@ module.exports = (db, fs, auth, settings) => {
     properties.api.getPropertyYardiWorkOrders(db)
   );
 
-  // Authorize Slack code & store Slack API credentials
+  // Authorize Slack API credentials
   app.post(
     '/v0/integrations/slack/authorization',
     authUser(db, auth, true),
@@ -87,6 +88,13 @@ module.exports = (db, fs, auth, settings) => {
 
   // Slack POST events webook
   app.post('/v0/integrations/slack/events', slack.api.postEventsWebhook(fs));
+
+  // Authorize Trello API credentials
+  app.post(
+    '/v0/integrations/trello/authorization',
+    authUser(db, auth, true),
+    trello.api.postAuth(fs)
+  );
 
   return app;
 };

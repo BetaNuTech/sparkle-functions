@@ -435,4 +435,92 @@ module.exports = modelSetup({
 
     return Boolean(slackOrganization && slackOrganization.team === teamId);
   },
+
+  /**
+   * Create or update an organization's Trello
+   * public details of Sparkle/Trello integration
+   * @param  {admin.firestore} fs
+   * @param  {Object} details
+   * @param  {firestore.batch?} batch
+   * @return {Promise} - resolves {Object} integration details
+   */
+  firestoreUpsertTrello(fs, details, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(details && typeof details === 'object', 'has details object');
+    assert(
+      details.member && typeof details.member === 'string',
+      'has trello member ID'
+    );
+    assert(
+      details.trelloUsername && typeof details.trelloUsername === 'string',
+      'has trello username'
+    );
+
+    if (details.trelloEmail) {
+      assert(
+        typeof details.trelloEmail === 'string',
+        'has trello member email string'
+      );
+    }
+
+    if (details.trelloFullName) {
+      assert(
+        typeof details.trelloFullName === 'string',
+        'has trello member full name string'
+      );
+    }
+
+    if (batch) {
+      assert(
+        typeof batch.update === 'function' &&
+          typeof batch.create === 'function',
+        'has firestore batch'
+      );
+    }
+
+    return fs.runTransaction(async transaction => {
+      const trelloDoc = fs.collection(INTEGRATIONS_COLLECTION).doc('trello');
+
+      let trelloRef = null;
+      try {
+        trelloRef = await transaction.get(trelloDoc);
+      } catch (err) {
+        throw Error(
+          `${PREFIX} firestoreUpsertTrelloCredentials: failed to lookup existing trello credentials`
+        );
+      }
+
+      const batchOrTrans = batch || transaction;
+      const now = Math.round(Date.now() / 1000);
+      const data = {
+        member: details.member,
+        trelloUsername: details.trelloUsername,
+        updatedAt: now,
+      };
+      if (details.trelloEmail) data.trelloEmail = details.trelloEmail;
+      if (details.trelloFullName) data.trelloFullName = details.trelloFullName;
+
+      if (trelloRef.exists) {
+        batchOrTrans.update(trelloDoc, data);
+      } else {
+        data.createdAt = now;
+        batchOrTrans.create(trelloDoc, data);
+      }
+
+      return data;
+    });
+  },
+
+  /**
+   * Lookup Trello system credentials
+   * @param  {admin.firestore} fs
+   * @return {Promise} - resolves {DocumentSnapshot}
+   */
+  firestoreFindTrello(fs) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    return fs
+      .collection(INTEGRATIONS_COLLECTION)
+      .doc('trello')
+      .get();
+  },
 });

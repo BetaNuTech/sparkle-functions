@@ -856,4 +856,85 @@ module.exports = modelSetup({
 
     return doc.delete();
   },
+
+  /**
+   * Create or update an organization's Trello
+   * API credentials for Sparkle/Trello integrations
+   * @param  {admin.firestore} fs
+   * @param  {Object} credentials
+   * @param  {firestore.batch?} batch
+   * @return {Promise} - resolves {DocumentSnapshot}
+   */
+  firestoreUpsertTrello(fs, credentials, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(
+      credentials && typeof credentials === 'object',
+      'has credentials object'
+    );
+    assert(
+      credentials.authToken && typeof credentials.authToken === 'string',
+      'has token'
+    );
+    assert(
+      credentials.apikey && typeof credentials.apikey === 'string',
+      'has api key'
+    );
+    assert(
+      credentials.user && typeof credentials.user === 'string',
+      'has firebase user ID'
+    );
+    if (batch) {
+      assert(
+        typeof batch.update === 'function' &&
+          typeof batch.create === 'function',
+        'has firestore batch'
+      );
+    }
+
+    return fs.runTransaction(async transaction => {
+      const trelloCredentialsDoc = fs
+        .collection(SYSTEM_COLLECTION)
+        .doc('trello');
+
+      let trelloCredentialsRef = null;
+      try {
+        trelloCredentialsRef = await transaction.get(trelloCredentialsDoc);
+      } catch (err) {
+        throw Error(
+          `${PREFIX} firestoreUpsertTrelloCredentials: failed to lookup existing trello credentials`
+        );
+      }
+
+      const batchOrTrans = batch || transaction;
+      const now = Math.round(Date.now() / 1000);
+      const data = {
+        user: credentials.user,
+        apikey: credentials.apikey,
+        authToken: credentials.authToken,
+        updatedAt: now,
+      };
+
+      if (trelloCredentialsRef.exists) {
+        batchOrTrans.update(trelloCredentialsDoc, data);
+      } else {
+        data.createdAt = now;
+        batchOrTrans.create(trelloCredentialsDoc, data);
+      }
+
+      return trelloCredentialsDoc;
+    });
+  },
+
+  /**
+   * Lookup Trello system credentials
+   * @param  {admin.firestore} fs
+   * @return {Promise} - resolves {DocumentSnapshot}
+   */
+  firestoreFindTrello(fs) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    return fs
+      .collection(SYSTEM_COLLECTION)
+      .doc('trello')
+      .get();
+  },
 });
