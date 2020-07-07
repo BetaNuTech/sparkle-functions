@@ -3,11 +3,12 @@ const assert = require('assert');
 const express = require('express');
 const bodyParser = require('body-parser');
 const slack = require('./slack');
-const trello = require('./slack');
+const trello = require('./trello');
 const properties = require('./properties');
 const inspections = require('./inspections');
 const versions = require('./versions');
 const authUser = require('./utils/auth-firebase-user');
+const authTrelloReq = require('./utils/auth-trello-request');
 
 /**
  * Configure Express app with
@@ -94,6 +95,14 @@ module.exports = (db, fs, auth, settings) => {
     '/v0/integrations/trello/authorization',
     authUser(db, auth, true),
     trello.api.postAuth(fs)
+  );
+
+  // Fetch all Trello boards
+  app.get(
+    '/v0/integrations/trello/boards',
+    authUser(db, auth, true),
+    authTrelloReq(db),
+    trello.api.getBoards(fs)
   );
 
   return app;
