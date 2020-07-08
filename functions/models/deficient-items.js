@@ -782,20 +782,20 @@ module.exports = modelSetup({
   /**
    * Update Firestore Deficient Item
    * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
-   * @param  {String} deficientItemId
+   * @param  {String} deficiencyId
    * @param  {Object} data
    * @return {Promise}
    */
-  firestoreUpdateRecord(fs, deficientItemId, data) {
+  firestoreUpdateRecord(fs, deficiencyId, data) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
-      deficientItemId && typeof deficientItemId === 'string',
-      'has deficient item id'
+      deficiencyId && typeof deficiencyId === 'string',
+      'has deficiency id'
     );
     assert(data && typeof data === 'object', 'has update data');
     return fs
       .collection(DEFICIENT_COLLECTION)
-      .doc(deficientItemId)
+      .doc(deficiencyId)
       .update(data);
   },
 
@@ -1080,6 +1080,7 @@ module.exports = modelSetup({
 
   /**
    * Delete a deficiency's image uploads
+   * TODO: Move to deficiency service
    * @param  {admin.storage} storage
    * @param  {String} propertyId
    * @param  {String} deficiencyId

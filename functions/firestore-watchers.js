@@ -25,6 +25,10 @@ module.exports = (db, fs, pubsubClient, storage) => {
       .document('archives/{deficiencyId}')
       .onUpdate(deficientItems.createOnUpdateArchiveV2(db, fs)),
 
+    deficientItemsProgressNotesSyncV2: functions.firestore
+      .document('archives/{deficiencyId}')
+      .onUpdate(deficientItems.onUpdateProgressNoteV2(fs)),
+
     templateCategoryDeleteV2: functions.firestore
       .document('/templateCategories/{categoryId}')
       .onDelete(templateCategories.createOnDeleteWatcherV2(fs)),

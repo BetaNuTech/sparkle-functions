@@ -2,6 +2,7 @@ const got = require('got');
 const assert = require('assert');
 
 const PREFIX = 'services: trello:';
+const DELETED_TRELLO_CARD_ERR_CODE = 'ERR_TRELLO_CARD_DELETED';
 
 module.exports = {
   /**
@@ -182,5 +183,43 @@ module.exports = {
     }
 
     return responseBody;
+  },
+
+  /**
+   * Publish a comment to an existing Trello Card
+   * @param  {String}  cardId
+   * @param  {String}  authToken
+   * @param  {String}  apiKey
+   * @param  {String}  text
+   * @return {Promise}
+   */
+  async publishTrelloCardComment(cardId, authToken, apiKey, text) {
+    assert(cardId && typeof cardId === 'string', 'has trello card id');
+    assert(authToken && typeof authToken === 'string', 'has auth token');
+    assert(apiKey && typeof apiKey === 'string', 'has api key');
+    assert(text && typeof text === 'string', 'has comment text');
+
+    try {
+      await got(
+        `https://api.trello.com/1/cards/${cardId}/actions/comments?key=${apiKey}&token=${authToken}&text=${encodeURIComponent(
+          text
+        )}`,
+        {
+          responseType: 'json',
+          method: 'POST',
+        }
+      );
+    } catch (err) {
+      const resultErr = Error(
+        `${PREFIX} publishTrelloCardComment: POST to trello API card: "${cardId}" comments failed: ${err}`
+      );
+
+      // Handle Deleted Trello card
+      if (err.statusCode === 404) {
+        resultErr.code = DELETED_TRELLO_CARD_ERR_CODE;
+      }
+
+      throw resultErr;
+    }
   },
 };
