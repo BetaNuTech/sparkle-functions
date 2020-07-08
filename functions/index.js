@@ -49,11 +49,13 @@ exports.deleteTrelloAuthorization = functions.https.onRequest(
 );
 
 // GET /integrations/trello/{propertyId}/boards
+// DEPRECATED: Remove when Firebase DB dropped
 exports.getAllTrelloBoards = functions.https.onRequest(
   trello.createOnGetAllTrelloBoardsHandler(db, auth)
 );
 
 // GET /integrations/trello/{propertyId}/boards/{boardId}/lists
+// DEPRECATED: Remove when Firebase DB dropped
 exports.getAllTrelloBoardLists = functions.https.onRequest(
   trello.createOnGetAllTrelloBoardListsHandler(db, auth)
 );

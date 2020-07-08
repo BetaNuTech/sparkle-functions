@@ -105,5 +105,13 @@ module.exports = (db, fs, auth, settings) => {
     trello.api.getBoards(fs)
   );
 
+  // Fetch all Trello board's lists
+  app.get(
+    '/v0/integrations/trello/boards/:boardId/lists',
+    authUser(db, auth, true),
+    authTrelloReq(db),
+    trello.api.getBoardLists(fs)
+  );
+
   return app;
 };

@@ -148,4 +148,39 @@ module.exports = {
 
     return responseBody;
   },
+
+  /**
+   * Request all Trello lists belonging to a given board
+   * @param  {String}  boardId
+   * @param  {String}  authToken
+   * @param  {String}  apiKey
+   * @return {Promise} - resolves {Object} response body
+   */
+  async fetchBoardLists(boardId, authToken, apiKey) {
+    assert(boardId && typeof boardId === 'string', 'has board id');
+    assert(authToken && typeof authToken === 'string', 'has auth token');
+    assert(apiKey && typeof apiKey === 'string', 'has api key');
+
+    let response = null;
+    try {
+      response = await got(
+        `https://api.trello.com/1/boards/${boardId}/lists?key=${apiKey}&token=${authToken}`
+      );
+    } catch (err) {
+      throw Error(
+        `${PREFIX} fetchBoardLists: Trello API request failed: ${err}`
+      );
+    }
+
+    let responseBody = null;
+    try {
+      responseBody = JSON.parse(response.body);
+    } catch (err) {
+      throw Error(
+        `${PREFIX} fetchBoardLists: failed to parse Trello API response JSON`
+      );
+    }
+
+    return responseBody;
+  },
 };
