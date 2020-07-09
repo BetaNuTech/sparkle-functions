@@ -83,7 +83,7 @@ module.exports = function createOnUpdateDeficiencyProgNote(fs) {
       log.info(
         `${PREFIX} Deficiency: "${deficiencyId}" has no Trello Card, exiting`
       );
-      return; // eslint-disable-line no-useless-return
+      return;
     }
 
     // Lookup user that created Progress Note
@@ -95,9 +95,10 @@ module.exports = function createOnUpdateDeficiencyProgNote(fs) {
       );
       progressNoteAuthor = userSnap.data() || null;
       if (!progressNoteAuthor) {
-        throw Error(
-          `author of progress note "${progressNote.user}" does not exist`
+        log.info(
+          `${PREFIX} progress note user author: "${progressNote.user}" does not exist`
         );
+        return;
       }
     } catch (err) {
       throw Error(

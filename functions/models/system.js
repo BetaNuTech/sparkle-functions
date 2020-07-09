@@ -1021,6 +1021,21 @@ module.exports = modelSetup({
   },
 
   /**
+   * Lookup a Property's Trello cards
+   * @param  {admin.firestore} fs
+   * @param  {String} propertyId
+   * @return {Promise} - resolves {DocumentSnapshot}
+   */
+  firestoreFindTrelloProperty(fs, propertyId) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    return fs
+      .collection(SYSTEM_COLLECTION)
+      .doc(`trello-${propertyId}`)
+      .get();
+  },
+
+  /**
    * Lookup Trello system credentials
    * @param  {admin.firestore} fs
    * @return {Promise} - resolves {DocumentSnapshot}
