@@ -1,6 +1,7 @@
 const log = require('../utils/logger');
-const { db, fs } = require('./setup'); // eslint-disable-line
+const { db, fs, uid } = require('./setup'); // eslint-disable-line
 const systemModel = require('../models/system');
+const utils = require('../utils/firebase-admin');
 
 (async () => {
   // /system/integrations/{uid}/trello/organization
@@ -18,6 +19,21 @@ const systemModel = require('../models/system');
     await systemModel.firestoreUpsertTrello(fs, trelloCredentials);
     log.info(`Synced Trello Credentials`);
   }
+
+  // /system/integrations/${uid}/trello/properties
+  await utils.forEachChild(
+    db,
+    `/system/integrations/${uid}/trello/properties`,
+    async (id, data) => {
+      log.info(`Syncing Property: "${id}" Trello Details`);
+
+      try {
+        await systemModel.firestoreCreateTrelloProperty(fs, id, data);
+      } catch (err) {
+        log.error(`Failed to sync Property: "${id}" Trello Details`);
+      }
+    }
+  );
 
   // /system/integrations/{uid}/yardi/organization
   // const yardiSnap = await systemModel.findYardiCredentials(db);
