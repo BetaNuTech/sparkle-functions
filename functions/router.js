@@ -29,7 +29,7 @@ module.exports = (db, fs, auth, settings) => {
 
   app.get(
     '/v0/versions',
-    authUser(db, auth),
+    authUser(fs, auth),
     versions.api.getClientAppVersions(fs)
   );
 
@@ -37,14 +37,14 @@ module.exports = (db, fs, auth, settings) => {
   // reassignment endpoint
   app.patch(
     '/v0/inspections/:inspectionId',
-    authUser(db, auth, true), // admin only
+    authUser(fs, auth, true), // admin only
     inspections.api.createPatchProperty(db, fs)
   );
 
   // Generate Inspection PDF report
   app.get(
     '/v0/inspections/:inspection/pdf-report',
-    authUser(db, auth),
+    authUser(fs, auth),
     inspections.api.createGetInspectionPDF(db, fs, inspectionUrl)
   );
 
@@ -58,7 +58,7 @@ module.exports = (db, fs, auth, settings) => {
   // Request Property's residents from Yardi
   app.get(
     '/v0/properties/:propertyId/yardi/residents',
-    authUser(db, auth),
+    authUser(fs, auth),
     properties.middleware.propertyCode(fs),
     properties.middleware.yardiIntegration(db),
     properties.api.getPropertyYardiResidents(db)
@@ -67,7 +67,7 @@ module.exports = (db, fs, auth, settings) => {
   // Request Property's work orders from Yardi
   app.get(
     '/v0/properties/:propertyId/yardi/work-orders',
-    authUser(db, auth),
+    authUser(fs, auth),
     properties.middleware.propertyCode(fs),
     properties.middleware.yardiIntegration(db),
     properties.api.getPropertyYardiWorkOrders(db)
@@ -76,14 +76,14 @@ module.exports = (db, fs, auth, settings) => {
   // Authorize Slack API credentials
   app.post(
     '/v0/integrations/slack/authorization',
-    authUser(db, auth, true),
+    authUser(fs, auth, true),
     slack.api.postAuth(fs)
   );
 
   // Delete Slack App from a Slack Workspace
   app.delete(
     '/v0/integrations/slack/authorization',
-    authUser(db, auth, true),
+    authUser(fs, auth, true),
     slack.api.deleteAuth(fs)
   );
 
@@ -93,14 +93,14 @@ module.exports = (db, fs, auth, settings) => {
   // Authorize Trello API credentials
   app.post(
     '/v0/integrations/trello/authorization',
-    authUser(db, auth, true),
+    authUser(fs, auth, true),
     trello.api.postAuth(fs)
   );
 
   // Fetch all Trello boards
   app.get(
     '/v0/integrations/trello/boards',
-    authUser(db, auth, true),
+    authUser(fs, auth, true),
     authTrelloReq(db),
     trello.api.getBoards(fs)
   );
@@ -108,7 +108,7 @@ module.exports = (db, fs, auth, settings) => {
   // Fetch all Trello board's lists
   app.get(
     '/v0/integrations/trello/boards/:boardId/lists',
-    authUser(db, auth, true),
+    authUser(fs, auth, true),
     authTrelloReq(db),
     trello.api.getBoardLists(fs)
   );
