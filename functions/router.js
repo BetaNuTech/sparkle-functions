@@ -101,7 +101,7 @@ module.exports = (db, fs, auth, settings) => {
   app.get(
     '/v0/integrations/trello/boards',
     authUser(fs, auth, true),
-    authTrelloReq(db),
+    authTrelloReq(fs),
     trello.api.getBoards(fs)
   );
 
@@ -109,7 +109,7 @@ module.exports = (db, fs, auth, settings) => {
   app.get(
     '/v0/integrations/trello/boards/:boardId/lists',
     authUser(fs, auth, true),
-    authTrelloReq(db),
+    authTrelloReq(fs),
     trello.api.getBoardLists(fs)
   );
 
