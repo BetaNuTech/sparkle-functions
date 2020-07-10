@@ -48,6 +48,24 @@ module.exports = function findHistory(deficientItem) {
       get current() {
         return historyItems[0] || null;
       },
+
+      /**
+       * Lookup ID of an item
+       * @param  {Object} item
+       * @return {String}
+       */
+      getItemId(item) {
+        assert(
+          item &&
+            typeof item === 'object' &&
+            typeof item.createdAt === 'number',
+          'has historical item'
+        );
+
+        return Object.keys(history).find(
+          id => history[id].createdAt === item.createdAt
+        );
+      },
     };
   };
 };

@@ -751,6 +751,7 @@ module.exports = modelSetup({
 
   /**
    * POST a Trello card attachment
+   * DEPRECATED: Delete when Firebase DB dropped
    * @param  {admin.database} db
    * @param  {admin.firestore} db
    * @param  {String} propertyId

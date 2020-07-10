@@ -1,51 +1,49 @@
 const nock = require('nock');
-const hbs = require('handlebars');
 const { expect } = require('chai');
-const {
-  trelloCardDIProgressNoteTemplate,
-} = require('../../../config/deficient-items');
 const uuid = require('../../../test-helpers/uuid');
 const mocking = require('../../../test-helpers/mocking');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const userModel = require('../../../models/users');
 const deficiencyModel = require('../../../models/deficient-items');
 const systemModel = require('../../../models/system');
 const { fs, test, cloudFunctions } = require('../../setup');
 
-describe('Deficiency | Update Progress Notes V2', () => {
+describe('Deficiency | Update Completed Photo V2', () => {
   afterEach(async () => {
     nock.cleanAll();
     await cleanDb(null, fs);
   });
 
-  it("publishes a progress note comment to a Deficiency's Trello Card", async () => {
-    const expected = true;
+  it("publishes a completed photo to a Deficiency's Trello Card", async () => {
     const cardId = uuid();
     const userId = uuid();
     const propertyId = uuid();
     const itemId = uuid();
     const inspectionId = uuid();
     const deficiencyId = uuid();
-    const progNoteId = uuid();
+    const compPhotoId = uuid();
+    const newCompPhotoId = uuid();
+    const attachmentId = uuid();
     const deficiencyData = mocking.createDeficiency({
       property: propertyId,
       inspection: inspectionId,
       item: itemId,
       trelloCardURL: `https://trello.com/cards/${cardId}`,
-      progressNotes: {
-        [progNoteId]: {
+      completedPhotos: {
+        [compPhotoId]: {
           startDate: '1/11/25',
-          progressNote: 'text',
           user: userId,
           createdAt: now(),
+          storageDBPath: 'https://test.com',
+          downloadURL: 'https://download.com',
         },
       },
     });
     // Add new progress note
     const defUpdate = {
-      [`progressNotes.${uuid()}`]: {
+      [`completedPhotos.${newCompPhotoId}`]: {
         startDate: '1/11/25',
-        progressNote: 'text',
+        storageDBPath: 'https://test.com',
+        downloadURL: 'https://download.com',
         user: userId,
         createdAt: now() + 1,
       },
@@ -59,14 +57,17 @@ describe('Deficiency | Update Progress Notes V2', () => {
       cards: { [cardId]: deficiencyId },
     };
     const userData = createUser();
-    const trelloComment = createTrelloCommentText(userData, 'text');
+    const trelloText = createTrelloUrlAttachment(
+      userData,
+      'https://download.com'
+    );
 
     // Stup requests
-    const commentCreated = nock('https://api.trello.com')
+    const postPhoto = nock('https://api.trello.com')
       .post(
-        `/1/cards/${cardId}/actions/comments?key=key&token=token&text=${trelloComment}`
+        `/1/cards/${cardId}/attachments?key=key&token=token&url=${trelloText}`
       )
-      .reply(200, {});
+      .reply(200, { id: attachmentId });
 
     // Setup database
     await deficiencyModel.firestoreCreateRecord(
@@ -80,7 +81,6 @@ describe('Deficiency | Update Progress Notes V2', () => {
       propertyId,
       trelloPropertyData
     );
-    await userModel.firestoreCreateRecord(fs, userId, userData);
     const beforeSnap = await deficiencyModel.firestoreFindRecord(
       fs,
       deficiencyId
@@ -93,12 +93,33 @@ describe('Deficiency | Update Progress Notes V2', () => {
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
 
     // Execute
-    const wrapped = test.wrap(cloudFunctions.deficientItemsProgressNotesSyncV2);
+    const wrapped = test.wrap(cloudFunctions.deficiencyUpdateCompletedPhotos);
     await wrapped(changeSnap, { params: { deficiencyId } });
 
+    // Test Results
+    const deficiencySnap = await deficiencyModel.firestoreFindRecord(
+      fs,
+      deficiencyId
+    );
+    const completedPhoto =
+      ((deficiencySnap.data() || {}).completedPhotos || {})[newCompPhotoId] ||
+      {};
+
     // Assertions
-    const actual = commentCreated.isDone();
-    expect(actual).to.equal(expected);
+    [
+      {
+        actual: postPhoto.isDone(),
+        expected: true,
+        msg: 'completed POST to Trello API',
+      },
+      {
+        actual: completedPhoto.trelloCardAttachement,
+        expected: attachmentId,
+        msg: 'Set trello card attachement ID to deficiency',
+      },
+    ].forEach(({ actual, expected, msg }) => {
+      expect(actual).to.equal(expected, msg);
+    });
   });
 
   it('should cleanup references to deleted Trello card from database', async () => {
@@ -108,23 +129,14 @@ describe('Deficiency | Update Progress Notes V2', () => {
     const itemId = uuid();
     const inspectionId = uuid();
     const deficiencyId = uuid();
-    const progNoteId = uuid();
-    const completedPhotoId = uuid();
+    const compPhotoId = uuid();
     const deficiencyData = mocking.createDeficiency({
       property: propertyId,
       inspection: inspectionId,
       item: itemId,
       trelloCardURL: `https://trello.com/cards/${cardId}`,
-      progressNotes: {
-        [progNoteId]: {
-          startDate: '1/11/25',
-          progressNote: 'text',
-          user: userId,
-          createdAt: now(),
-        },
-      },
       completedPhotos: {
-        [completedPhotoId]: {
+        [compPhotoId]: {
           downloadURL: 'test.com',
           trelloCardAttachement: 'exists',
         },
@@ -132,9 +144,10 @@ describe('Deficiency | Update Progress Notes V2', () => {
     });
     // Add new progress note
     const defUpdate = {
-      [`progressNotes.${uuid()}`]: {
+      [`completedPhotos.${uuid()}`]: {
         startDate: '1/11/25',
-        progressNote: 'text',
+        storageDBPath: 'https://test.com',
+        downloadURL: 'https://download.com',
         user: userId,
         createdAt: now() + 1,
       },
@@ -148,12 +161,15 @@ describe('Deficiency | Update Progress Notes V2', () => {
       cards: { [cardId]: deficiencyId },
     };
     const userData = createUser();
-    const trelloComment = createTrelloCommentText(userData, 'text');
+    const trelloText = createTrelloUrlAttachment(
+      userData,
+      'https://download.com'
+    );
 
     // Stup requests
     nock('https://api.trello.com')
       .post(
-        `/1/cards/${cardId}/actions/comments?key=key&token=token&text=${trelloComment}`
+        `/1/cards/${cardId}/attachments?key=key&token=token&url=${trelloText}`
       )
       .reply(404, {});
 
@@ -169,7 +185,6 @@ describe('Deficiency | Update Progress Notes V2', () => {
       propertyId,
       trelloPropertyData
     );
-    await userModel.firestoreCreateRecord(fs, userId, userData);
     const beforeSnap = await deficiencyModel.firestoreFindRecord(
       fs,
       deficiencyId
@@ -182,7 +197,7 @@ describe('Deficiency | Update Progress Notes V2', () => {
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
 
     // Execute
-    const wrapped = test.wrap(cloudFunctions.deficientItemsProgressNotesSyncV2);
+    const wrapped = test.wrap(cloudFunctions.deficiencyUpdateCompletedPhotos);
     await wrapped(changeSnap, { params: { deficiencyId } });
 
     // Test Results
@@ -195,9 +210,9 @@ describe('Deficiency | Update Progress Notes V2', () => {
       deficiencyId
     );
     const deficiency = deficiencySnap.data() || { trelloCardURL: 'test' };
-    const completedPhoto = (deficiency.completedPhotos || {})[
-      completedPhotoId
-    ] || { trelloCardAttachement: 'test' };
+    const completedPhoto = (deficiency.completedPhotos || {})[compPhotoId] || {
+      trelloCardAttachement: 'test',
+    };
 
     // Assertions
     [
@@ -235,13 +250,6 @@ function now() {
   return Math.round(Date.now() / 1000);
 }
 
-function createTrelloCommentText(user, text) {
-  return encodeURIComponent(
-    hbs.compile(trelloCardDIProgressNoteTemplate)({
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      progressNote: text,
-    })
-  );
+function createTrelloUrlAttachment(user, url) {
+  return encodeURIComponent(url);
 }
