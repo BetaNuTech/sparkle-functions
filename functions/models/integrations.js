@@ -523,4 +523,90 @@ module.exports = modelSetup({
       .doc('trello')
       .get();
   },
+
+  /**
+   * Remove all Property/Trello integrations
+   * @param  {admin.firestore} fs
+   * @param  {firestore.batch?} batch
+   * @return {Promise} - resolves {Document[]}
+   */
+  firestoreRemoveAllTrelloProperties(fs, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    if (batch) {
+      assert(typeof batch.delete === 'function', 'has firestore batch');
+    }
+
+    return fs.runTransaction(async transaction => {
+      const integrationDocs = fs.collection(INTEGRATIONS_COLLECTION);
+
+      let trelloPropertyDocs = null;
+      try {
+        trelloPropertyDocs = await this.firestoreFindAllTrelloProperties(
+          fs,
+          transaction
+        );
+      } catch (err) {
+        throw Error(
+          `${PREFIX} firestoreRemoveAllTrelloProperties: failed lookup: ${err}`
+        );
+      }
+
+      const batchOrTrans = batch || transaction;
+      trelloPropertyDocs.forEach(doc => batchOrTrans.delete(doc.ref));
+
+      return integrationDocs;
+    });
+  },
+
+  /**
+   * Lookup all Property Trello Integrations
+   * @param  {admin.firestore} fs
+   * @param  {firestore.transaction?} transaction
+   * @return {Promise} - resolves {Documents[]}
+   */
+  async firestoreFindAllTrelloProperties(fs, transaction) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    if (transaction) {
+      assert(typeof transaction.get === 'function', 'has firestore batch');
+    }
+
+    const trelloPropertyDocs = [];
+    const integrationDocs = fs.collection(INTEGRATIONS_COLLECTION);
+
+    try {
+      const request = transaction
+        ? transaction.get(integrationDocs)
+        : integrationDocs.get();
+      const integrationsSnap = await request;
+
+      // Push Trello property
+      // integrations to array
+      integrationsSnap.docs
+        .filter(({ id }) => id.search(/^trello-/) === 0)
+        .forEach(docSnap => trelloPropertyDocs.push(docSnap));
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreFindAllTrelloProperties: failed to lookup all integration properties: ${err}`
+      );
+    }
+
+    return trelloPropertyDocs;
+  },
+
+  /**
+   * Create a property Trello integration
+   * @param  {admin.firestore} fs
+   * @param  {String} propertyId
+   * @param  {Object} data
+   * @return {Promise}
+   */
+  firestoreCreateTrelloProperty(fs, propertyId, data) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    assert(data && typeof data === 'object', 'has data object');
+    return fs
+      .collection(INTEGRATIONS_COLLECTION)
+      .doc(`trello-${propertyId}`)
+      .create(data);
+  },
 });

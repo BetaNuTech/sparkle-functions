@@ -1005,6 +1005,28 @@ module.exports = modelSetup({
   },
 
   /**
+   * Remove Firestore Property
+   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {firstore.batch?} batch
+   * @return {Promise} - resolves {Document}
+   */
+  firestoreRemoveTrello(fs, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    if (batch) {
+      assert(typeof batch.delete === 'function', 'has firestore batch');
+    }
+
+    const doc = fs.collection(SYSTEM_COLLECTION).doc('trello');
+
+    if (batch) {
+      batch.delete(doc);
+      return Promise.resolve(doc);
+    }
+
+    return doc.delete();
+  },
+
+  /**
    * Create a property's Trello integration record
    * @param  {admin.firestore} fs
    * @param  {String} propertyId

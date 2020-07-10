@@ -97,6 +97,13 @@ module.exports = (db, fs, auth, settings) => {
     trello.api.postAuth(fs)
   );
 
+  // Remove Trello API credentials & integrations
+  app.delete(
+    '/v0/integrations/trello/authorization',
+    authUser(fs, auth, true),
+    trello.api.deleteAuth(fs)
+  );
+
   // Fetch all Trello boards
   app.get(
     '/v0/integrations/trello/boards',
