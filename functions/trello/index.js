@@ -9,6 +9,7 @@ const createCommentForDiState = require('./pubsub/create-comment-for-deficient-i
 const createUpdateDueDate = require('./pubsub/update-card-due-date');
 const createOnCreateDICompletedPhoto = require('./on-create-deficient-item-completed-photo');
 const postAuth = require('./api/post-auth');
+const deleteAuth = require('./api/delete-auth');
 const getBoards = require('./api/get-boards');
 const getBoardLists = require('./api/get-board-lists');
 
@@ -29,6 +30,7 @@ module.exports = {
 
   api: {
     postAuth,
+    deleteAuth,
     getBoards,
     getBoardLists,
   },
