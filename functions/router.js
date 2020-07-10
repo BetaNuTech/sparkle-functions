@@ -113,5 +113,17 @@ module.exports = (db, fs, auth, settings) => {
     trello.api.getBoardLists(fs)
   );
 
+  // Create Trello Card for deficiency
+  app.post(
+    '/v0/deficiencies/:deficiencyId/trello/card',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    trello.api.postDeficiencyCard(fs)
+  );
+
   return app;
 };
