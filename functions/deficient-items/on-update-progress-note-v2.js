@@ -25,8 +25,8 @@ module.exports = function createOnUpdateDeficiencyProgNote(fs) {
 
   return async (change, event) => {
     const { deficiencyId } = event.params;
-    const beforeDeficiency = change.before.data();
-    const afterDeficiency = change.after.data();
+    const beforeDeficiency = change.before.data() || {};
+    const afterDeficiency = change.after.data() || {};
     const propertyId = afterDeficiency.property;
     const beforeProgressNoteHistory = findHistory(beforeDeficiency)(
       'progressNotes'
@@ -145,6 +145,7 @@ module.exports = function createOnUpdateDeficiencyProgNote(fs) {
             deficiencyId,
             trelloCardId
           );
+          return;
         } catch (cleanUpErr) {
           throw Error(
             `${PREFIX} failed to cleanup deleted Trello Card | ${cleanUpErr}`

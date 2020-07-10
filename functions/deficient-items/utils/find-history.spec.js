@@ -61,5 +61,27 @@ describe('Deficient Items', function() {
       expect(actualPrevious).to.equal(expectedPrevious, 'found previous');
       expect(actualCurrent).to.equal(expectedCurrent, 'found current');
     });
+
+    it("should return the ID of any of its' historical items", () => {
+      const expectedCurrent = 'current';
+      const expectedPrevious = 'previous';
+      const history = findHistory({
+        history: {
+          a: { createdAt: 42 },
+          b: { createdAt: 24 },
+          c: { createdAt: 102 },
+          [expectedCurrent]: { createdAt: 122 },
+          [expectedPrevious]: { createdAt: 121 },
+          f: { createdAt: 88 },
+          g: { createdAt: 2 },
+        },
+      })('history');
+      const previous = history.previous;
+      const current = history.current;
+      const actualPrevious = history.getItemId(previous);
+      const actualCurrent = history.getItemId(current);
+      expect(actualPrevious).to.equal(expectedPrevious, 'found previous ID');
+      expect(actualCurrent).to.equal(expectedCurrent, 'found current ID');
+    });
   });
 });

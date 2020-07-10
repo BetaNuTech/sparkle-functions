@@ -222,4 +222,46 @@ module.exports = {
       throw resultErr;
     }
   },
+
+  /**
+   * POST an attachment to a Trello Card
+   * @param  {String} cardId
+   * @param  {String} authToken
+   * @param  {String} apiKey
+   * @param  {String} url
+   * @return {Promise} - resolves {Object} response
+   */
+  async publishCardAttachment(cardId, authToken, apiKey, url) {
+    assert(cardId && typeof cardId === 'string', 'has trello card id');
+    assert(authToken && typeof authToken === 'string', 'has auth token');
+    assert(apiKey && typeof apiKey === 'string', 'has api key');
+    assert(url && typeof url === 'string', 'has attachment image url');
+
+    let response = null;
+    try {
+      response = await got(
+        `https://api.trello.com/1/cards/${cardId}/attachments?key=${apiKey}&token=${authToken}&url=${encodeURIComponent(
+          url
+        )}`,
+        {
+          responseType: 'json',
+          method: 'POST',
+          json: true,
+        }
+      );
+    } catch (err) {
+      const resultErr = Error(
+        `${PREFIX}: publishCardAttachment: POST attachment card: ${cardId} request to trello API failed: ${err}`
+      );
+
+      // Set Deleted Trello card error code
+      if (err.statusCode === 404) {
+        resultErr.code = DELETED_TRELLO_CARD_ERR_CODE;
+      }
+
+      throw resultErr;
+    }
+
+    return response;
+  },
 };

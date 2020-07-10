@@ -29,6 +29,11 @@ module.exports = (db, fs, pubsubClient, storage) => {
       .document('archives/{deficiencyId}')
       .onUpdate(deficientItems.onUpdateProgressNoteV2(fs)),
 
+    // Replaces: onCreateDeficientItemCompletedPhotoTrelloAttachement
+    deficiencyUpdateCompletedPhotos: functions.firestore
+      .document('archives/{deficiencyId}')
+      .onUpdate(deficientItems.onUpdateCompletedPhotoV2(fs)),
+
     templateCategoryDeleteV2: functions.firestore
       .document('/templateCategories/{categoryId}')
       .onDelete(templateCategories.createOnDeleteWatcherV2(fs)),
