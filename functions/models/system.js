@@ -155,6 +155,67 @@ module.exports = modelSetup({
   },
 
   /**
+   * Create or update a property trello object
+   * @param  {admin.firestore} fs
+   * @param  {String} propertyId
+   * @param  {Object} details
+   * @param  {firestore.batch?} batch
+   * @return {Promise}
+   */
+  firestoreUpsertPropertyTrello(fs, propertyId, details, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    assert(details && typeof details === 'object', 'has upsert object');
+    assert(
+      typeof details.cards === 'object',
+      'has upsert object must contains a "cards" object'
+    );
+
+    if (batch) {
+      assert(
+        typeof batch.update === 'function' &&
+          typeof batch.create === 'function',
+        'has firestore batch'
+      );
+    }
+
+    return fs.runTransaction(async transaction => {
+      const doc = fs.collection(SYSTEM_COLLECTION).doc(`trello-${propertyId}`);
+
+      let propertyTrelloRef = null;
+      try {
+        propertyTrelloRef = await transaction.get(doc);
+      } catch (err) {
+        throw Error(
+          `${PREFIX} firestoreUpsertPropertyTrello: failed to lookup existing property trello details: ${err}`
+        );
+      }
+
+      const batchOrTrans = batch || transaction;
+      const existingData = propertyTrelloRef.data() || {};
+      const data = {
+        ...existingData,
+        ...{
+          cards: {
+            ...(existingData.cards || {}),
+            ...details.cards,
+          },
+        },
+      };
+
+      if (propertyTrelloRef.exists) {
+        batchOrTrans.update(doc, data);
+      } else {
+        batchOrTrans.create(doc, data);
+      }
+
+      if (batch) {
+        return batch;
+      }
+    });
+  },
+
+  /**
    * Find any Trello Card ID associated with
    * a Deficient Item
    * @param  {firebaseadmin.database} db

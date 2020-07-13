@@ -49,6 +49,8 @@ describe('Teams | On Delete | V2', () => {
       fs,
       property2Id
     );
+    delete property1Data.team;
+    delete property2Data.team;
 
     // Assertions
     [
@@ -65,12 +67,12 @@ describe('Teams | On Delete | V2', () => {
       },
       {
         actual: prop1Snap.data() || null,
-        expected: { name: property1Data.name },
+        expected: property1Data,
         msg: 'removed property 1 team association',
       },
       {
         actual: prop2Snap.data() || null,
-        expected: { name: property2Data.name },
+        expected: property2Data,
         msg: 'removed property 2 team association',
       },
     ].forEach(({ actual, expected, msg }) => {
