@@ -1,5 +1,6 @@
 const assert = require('assert');
 const config = require('../config');
+const uuid = require('./uuid');
 const createDeficiencies = require('../deficient-items/utils/create-deficient-items');
 
 const INSPECTION_SCORES = config.inspectionItems.scores;
@@ -31,6 +32,7 @@ module.exports = {
 
     return {
       name: 'test property',
+      zip: '32003',
       ...finalConfig,
     };
   },
@@ -263,5 +265,28 @@ module.exports = {
       },
       sectionConfig
     );
+  },
+
+  /**
+   * Create public facing Trello integration
+   * @param  {Object?} intConfig
+   * @return {Object}
+   */
+  createPropertyTrelloIntegration(intConfig = {}) {
+    const now = Math.round(Date.now() / 1000);
+
+    return {
+      grantedBy: uuid(),
+      updatedAt: now, // UNIX timestamp
+      openBoard: uuid(),
+      openBoardName: 'open board',
+      openList: uuid(),
+      openListName: 'open list',
+      closedBoard: uuid(),
+      closedBoardName: 'closed board',
+      closedList: uuid(),
+      closedListName: 'closed list',
+      ...intConfig,
+    };
   },
 };

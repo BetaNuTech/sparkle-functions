@@ -129,6 +129,7 @@ module.exports = (db, fs, auth, settings) => {
       team: true,
       property: true,
     }),
+    authTrelloReq(fs),
     trello.api.postDeficiencyCard(fs)
   );
 

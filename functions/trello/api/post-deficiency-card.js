@@ -7,28 +7,29 @@ const deficiencyModel = require('../../models/deficient-items');
 const inspectionsModel = require('../../models/inspections');
 const integrationsModel = require('../../models/integrations');
 const propertiesModel = require('../../models/properties');
+const trello = require('../../services/trello');
 const config = require('../../config');
+const create500ErrHandler = require('../../utils/unexpected-api-error');
 
 const PREFIX = 'trello: api: post-card:';
 const ITEM_VALUE_NAMES = config.inspectionItems.valueNames;
+const DEF_ITEM_URI = config.clientApps.web.deficientItemURL;
 
 /**
  * Factory for creating POST request handler
  * that creates new Trello card for a deficiency
  * @param  {admin.firestore} fs - Firestore Admin DB instance
- * @param  {String} deficientItemUri - Source template for all DI URI's
+ * @param  {String} deficiencyUri
  * @return {Function} - onRequest handler
  */
 module.exports = function createOnTrelloDeficientItemCard(
   fs,
-  deficientItemUri
+  deficiencyUri = DEF_ITEM_URI
 ) {
   assert(fs && typeof fs.collection === 'function', 'has firestore db');
-
-  // TODO: Move?
   assert(
-    deficientItemUri && typeof deficientItemUri === 'string',
-    'has deficient item URI template'
+    deficiencyUri && typeof deficiencyUri === 'string',
+    'has deficiency uri string'
   );
 
   // Template all Card
@@ -36,7 +37,7 @@ module.exports = function createOnTrelloDeficientItemCard(
   const descriptionTemplate = hbs.compile(
     config.deficientItems.trelloCardDescriptionTemplate
   );
-  const deficientItemUriTemplate = hbs.compile(deficientItemUri);
+  const deficientItemUriTemplate = hbs.compile(deficiencyUri);
 
   /**
    * Create POST trello card for request handler
@@ -45,10 +46,26 @@ module.exports = function createOnTrelloDeficientItemCard(
    * @return {Promise}
    */
   return async (req, res) => {
-    const { params, user } = req;
-    const { deficiencyId } = params;
+    const { user, params, trelloCredentials } = req;
+    const { deficiencyId = '' } = params;
+    const send500Error = create500ErrHandler(PREFIX, res);
+    assert(
+      deficiencyId && typeof deficiencyId === 'string',
+      'defined "deficiencyId" param in path'
+    );
+    assert(
+      trelloCredentials && typeof trelloCredentials === 'object',
+      'has trello credentials in request'
+    );
+    assert(
+      user && typeof user === 'object',
+      'has user configuration in request'
+    );
 
     log.info(`${PREFIX} requested by user: "${user.id}"`);
+
+    // Configure JSON API response
+    res.set('Content-Type', 'application/vnd.api+json');
 
     // Lookup Deficiency
     let deficiency = null;
@@ -70,9 +87,12 @@ module.exports = function createOnTrelloDeficientItemCard(
       }
     } catch (err) {
       log.error(`${PREFIX} deficiency lookup failed | ${err}`);
-      // TODO JSON-API
       return res.status(409).send({
-        message: 'Requested property or deficient item could not be found',
+        errors: [
+          {
+            detail: 'Requested property or deficiency could not be found',
+          },
+        ],
       });
     }
 
@@ -86,86 +106,102 @@ module.exports = function createOnTrelloDeficientItemCard(
       property = propertySnap.data() || null;
       if (!property) throw Error(`property: "${propertyId}" does not exist`);
     } catch (err) {
-      // TODO JSON-API
+      log.error(`${PREFIX} property lookup failed | ${err}`);
       return res.status(409).send({
-        message: "Deficiency's property could not be found",
+        errors: [
+          {
+            detail: "Deficiency's property could not be found",
+          },
+        ],
       });
     }
 
-    // Lookup Trello credentials
-    // TODO
-    let trelloCredentials = null;
+    // Reject request to re-create a
+    // previously published Trello Card
     try {
-      const savedTokenCredentials = await systemModel.findTrelloCredentials(db);
-
-      if (!savedTokenCredentials.exists()) throw Error();
-      trelloCredentials = savedTokenCredentials.val();
-    } catch (err) {
-      return res.status(403).send({ message: 'Error accessing trello token' });
-    }
-
-    // Reject request to re-create previously
-    // published Trello Card
-    // TODO
-    try {
-      const trelloCardExists = await systemModel.isDeficientItemTrelloCardCreated(
-        db,
+      const trelloCardId = await systemModel.firestoreFindTrelloCardId(
+        fs,
         propertyId,
         deficiencyId
       );
-      if (trelloCardExists) throw Error();
+      if (trelloCardId) {
+        throw Error('trello card already exists for deficiency');
+      }
     } catch (err) {
-      // TODO JSON-API
-      return res
-        .status(409)
-        .send({ message: 'Deficient Item already has published Trello Card' });
+      log.error(`${PREFIX} | ${err}`);
+      return res.status(409).send({
+        errors: [
+          {
+            detail: 'Deficiency already has published Trello Card',
+          },
+        ],
+      });
     }
 
-    // Lookup integration data
-    // TODO
+    // Lookup public integration data
     let trelloPropertyConfig = null;
     try {
-      const trelloIntegrationSnap = await integrationsModel.findByTrelloProperty(
-        db,
+      const trelloIntegrationSnap = await integrationsModel.firestoreFindTrelloProperty(
+        fs,
         propertyId
       );
 
-      if (!trelloIntegrationSnap.exists()) throw Error();
-      trelloPropertyConfig = trelloIntegrationSnap.val();
-      if (!trelloPropertyConfig.openList) throw Error();
+      trelloPropertyConfig = trelloIntegrationSnap.data() || null;
+
+      if (!trelloPropertyConfig) {
+        throw Error('public Trello integration not recorded');
+      }
+      if (!trelloPropertyConfig.openList) {
+        throw Error('public Trello integration open list not set');
+      }
     } catch (err) {
-      // TODO JSON-API
+      log.error(
+        `${PREFIX} public trello integration details lookup failed | ${err}`
+      );
       return res.status(409).send({
-        message: 'Trello integration details for property not found or invalid',
+        errors: [
+          {
+            detail:
+              'Trello integration details for property not found or invalid',
+          },
+        ],
       });
     }
 
     // Lookup Deficiency's Inspection
-    // TODO
     let inspectionItem = null;
     try {
-      const inspectionItemSnap = await inspectionsModel.findItem(
-        db,
-        deficientItem.inspection,
-        deficientItem.item
+      const inspectionSnap = await inspectionsModel.firestoreFindRecord(
+        fs,
+        deficiency.inspection
       );
-      if (!inspectionItemSnap.exists()) throw Error();
-      inspectionItem = inspectionItemSnap.val();
+      const inspection = inspectionSnap.data() || null;
+
+      if (
+        !inspection ||
+        !inspection.template ||
+        typeof inspection.template.items !== 'object'
+      ) {
+        throw Error("deficiency's inspection could not be found");
+      }
+      inspectionItem = inspection.template.items[deficiency.item] || null;
+      if (!inspectionItem) {
+        throw Error("deficiency's inspection item could not be found");
+      }
     } catch (err) {
       log.error(`${PREFIX} inspection item lookup failed | ${err}`);
-      // TODO JSON-API
-      return res
-        .status(409)
-        .send({ message: 'Inspection of Deficient Item does not exist' });
+      return res.status(409).send({
+        errors: [{ detail: 'Inspection of Deficiency does not exist' }],
+      });
     }
 
     // Lookup Trello public facing details
-    // TODO
     let trelloOrganization = null;
     try {
-      const trelloOrgSnap = await integrationsModel.getTrelloOrganization(db);
-      trelloOrganization = trelloOrgSnap.val() || {};
+      const trelloOrgSnap = await integrationsModel.firestoreFindTrello(fs);
+      trelloOrganization = trelloOrgSnap.data() || {};
     } catch (err) {
+      // Allow failure
       log.error(
         `${PREFIX} Trello Organization integration lookup failed | ${err}`
       );
@@ -176,81 +212,119 @@ module.exports = function createOnTrelloDeficientItemCard(
       typeof inspectionItem[name] === 'number' ? inspectionItem[name] : 0
     ).sort((a, b) => b - a);
 
-    let trelloPayload = null;
-    try {
-      const trelloCardPayload = {
-        name: deficientItem.itemTitle, // source inspection item name
-        desc: descriptionTemplate({
-          createdAt: new Date(deficientItem.createdAt * 1000)
-            .toGMTString()
-            .split(' ')
-            .slice(0, 4)
-            .join(' '),
-          itemScore: deficientItem.itemScore || 0,
-          highestItemScore,
-          itemInspectorNotes: deficientItem.itemInspectorNotes || '',
-          currentPlanToFix: deficientItem.currentPlanToFix || '',
-          sectionTitle: deficientItem.sectionTitle || '',
-          sectionSubtitle: deficientItem.sectionSubtitle || '',
-          url: deficientItemUriTemplate({ propertyId, deficiencyId }),
+    const trelloCardPayload = {
+      name: deficiency.itemTitle, // source inspection item name
+      desc: descriptionTemplate({
+        createdAt: new Date(deficiency.createdAt * 1000)
+          .toGMTString()
+          .split(' ')
+          .slice(0, 4)
+          .join(' '),
+        itemScore: deficiency.itemScore || 0,
+        highestItemScore,
+        itemInspectorNotes: deficiency.itemInspectorNotes || '',
+        currentPlanToFix: deficiency.currentPlanToFix || '',
+        sectionTitle: deficiency.sectionTitle || '',
+        sectionSubtitle: deficiency.sectionSubtitle || '',
+        url: deficientItemUriTemplate({
+          propertyId,
+          deficientItemId: deficiencyId,
         }),
-      };
+      }),
+    };
 
-      // Set members to authorized Trello account
-      if (trelloOrganization.member) {
-        trelloCardPayload.idMembers = trelloOrganization.member;
-      }
+    // Set members to authorized Trello account
+    if (trelloOrganization.member) {
+      trelloCardPayload.idMembers = trelloOrganization.member;
+    }
 
-      // Append any due date as date string
-      if (
-        deficientItem.currentDueDateDay ||
-        deficientItem.currentDeferredDateDay
-      ) {
-        const dueDate =
-          deficientItem.currentDueDateDay ||
-          deficientItem.currentDeferredDateDay;
-        trelloCardPayload.due = toISO8601(dueDate, property.zip);
-      }
+    // Append any due date as date string
+    if (deficiency.currentDueDateDay || deficiency.currentDeferredDateDay) {
+      const dueDate =
+        deficiency.currentDueDateDay || deficiency.currentDeferredDateDay;
+      trelloCardPayload.due = toISO8601(dueDate, property.zip);
+    }
 
-      // TODO move to service
-      const trelloResponse = await got(
-        `https://api.trello.com/1/cards?idList=${trelloPropertyConfig.openList}&keyFromSource=all&key=${trelloCredentials.apikey}&token=${trelloCredentials.authToken}`,
-        {
-          headers: { 'content-type': 'application/json' },
-          body: trelloCardPayload,
-          responseType: 'json',
-          json: true,
-        }
+    // Publish Card to Trello API
+    let cardId = '';
+    let cardUrl = '';
+    try {
+      const trelloResponse = await trello.publishListCard(
+        trelloPropertyConfig.openList,
+        trelloCredentials.apikey,
+        trelloCredentials.authToken,
+        trelloCardPayload
       );
-      trelloPayload = trelloResponse && trelloResponse.body;
-      if (!trelloPayload) throw Error('bad payload');
+      cardId = trelloResponse.id;
+      cardUrl = trelloResponse.shortUrl;
     } catch (err) {
-      log.error(`${PREFIX} Error retrieved from Trello API: ${err}`);
-      // TODO JSON-API
-      return res.status(err.statusCode || 500).send({
-        message: 'Error from trello API',
-      });
+      return send500Error(
+        err,
+        `Error retrieved from Trello API | ${err}`,
+        'Error from trello API'
+      );
+    }
+
+    const batch = fs.batch();
+
+    // Update system trello/property cards
+    try {
+      await systemModel.firestoreUpsertPropertyTrello(
+        fs,
+        propertyId,
+        { cards: { [cardId]: deficiencyId } },
+        batch
+      );
+    } catch (err) {
+      return send500Error(
+        err,
+        `failed to update system trello property | ${err}`,
+        'Trello card reference failed to save'
+      );
+    }
+
+    // Update deficiency trello card url
+    try {
+      await deficiencyModel.firestoreUpdateRecord(
+        fs,
+        deficiencyId,
+        {
+          updatedAt: Math.round(Date.now() / 1000),
+          trelloCardURL: cardUrl,
+        },
+        batch
+      );
+    } catch (err) {
+      return send500Error(
+        err,
+        `failed to update deficiency trello card | ${err}`,
+        'Deficiency failed to save'
+      );
     }
 
     try {
-      // TODO
-      await systemModel.createPropertyTrelloCard(db, {
-        property: propertyId,
-        trelloCard: trelloPayload.id,
-        deficientItem: deficiencyId,
-        trelloCardURL: trelloPayload.shortUrl,
-      });
+      await batch.commit();
     } catch (err) {
-      log.error(`${PREFIX} Error persisting trello reference: ${err}`);
-      // TODO JSON-API
-      return res.status(500).send({
-        message: 'Trello card reference failed to save',
-      });
+      return send500Error(
+        err,
+        `failed to commit database writes | ${err}`,
+        'System error'
+      );
     }
 
-    // TODO JSON-API Deficiency Record
+    // Success
     res.status(201).send({
-      message: 'successfully created trello card',
+      data: {
+        id: cardId,
+        type: 'trello-card',
+        data: { shortUrl: cardUrl },
+      },
+      relationships: {
+        deficiency: {
+          id: deficiencyId,
+          type: 'deficiency',
+        },
+      },
     });
   };
 };

@@ -264,4 +264,37 @@ module.exports = {
 
     return response;
   },
+
+  /**
+   * Publish a Trello card to a Trello boards' list
+   * @param  {String} listId
+   * @param  {String} authToken
+   * @param  {String} apiKey
+   * @param  {Object} payload
+   * @return {Promise} - resolves {Object} response body
+   */
+  async publishListCard(listId, apiKey, authToken, payload) {
+    assert(listId && typeof listId === 'string', 'has trello list id');
+    assert(authToken && typeof authToken === 'string', 'has auth token');
+    assert(apiKey && typeof apiKey === 'string', 'has api key');
+    assert(
+      payload && typeof payload === 'object',
+      'has Trello card payload object'
+    );
+
+    const response = await got(
+      `https://api.trello.com/1/cards?idList=${listId}&keyFromSource=all&key=${apiKey}&token=${authToken}`,
+      {
+        headers: { 'content-type': 'application/json' },
+        body: payload,
+        responseType: 'json',
+        json: true,
+      }
+    );
+    const body = response && response.body;
+    if (!body || !body.id || !body.shortUrl) {
+      throw Error(`${PREFIX} unexpected response`);
+    }
+    return body;
+  },
 };

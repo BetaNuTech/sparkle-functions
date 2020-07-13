@@ -609,4 +609,19 @@ module.exports = modelSetup({
       .doc(`trello-${propertyId}`)
       .create(data);
   },
+
+  /**
+   * Lookup a property Trello integration
+   * @param  {admin.firestore} fs
+   * @param  {String} propertyId
+   * @return {Promise}
+   */
+  firestoreFindTrelloProperty(fs, propertyId) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    return fs
+      .collection(INTEGRATIONS_COLLECTION)
+      .doc(`trello-${propertyId}`)
+      .get();
+  },
 });
