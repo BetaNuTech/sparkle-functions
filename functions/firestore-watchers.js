@@ -62,7 +62,12 @@ module.exports = (db, fs, pubsubClient, storage) => {
     createNotification: functions.firestore
       .document('/notifications/{notificationId}')
       .onCreate(
-        notifications.onCreate(fs, pubsubClient, 'notifications-slack-sync')
+        notifications.onCreate(
+          fs,
+          pubsubClient,
+          'notifications-slack-sync',
+          'push-messages-sync'
+        )
       ),
   };
 };
