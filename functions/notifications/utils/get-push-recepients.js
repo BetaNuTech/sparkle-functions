@@ -7,7 +7,7 @@ const assert = require('assert');
  * @param  {Array}    excludes
  * @param  {Boolean}  allowCorp
  * @param  {String}   property
- * @return {String[]}
+ * @return {String[]} - user ID's
  */
 module.exports = function getPushRecepients({
   users,

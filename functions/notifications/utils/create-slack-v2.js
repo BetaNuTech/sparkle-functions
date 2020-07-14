@@ -32,8 +32,11 @@ module.exports = async (fs, notificationId, notification) => {
     publishedMediums,
   } = notification;
 
+  const publishedSlack = Boolean(publishedMediums && publishedMediums.slack);
+  const configuredSlack = Boolean(notification.slack);
+
   // Slack notification previously configured
-  if (publishedMediums && publishedMediums.slack) {
+  if (publishedSlack || configuredSlack) {
     return null;
   }
 
@@ -119,6 +122,7 @@ _${userAgent}_`; // Add Slack indent formatting
   try {
     await notificationsModel.firestoreUpdateRecord(fs, notificationId, {
       slack: result,
+      'publishedMediums.slack': false,
     });
   } catch (err) {
     throw Error(
