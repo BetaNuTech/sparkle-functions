@@ -229,6 +229,7 @@ exports.templateCategoryWrite = functions.database
   .onWrite(templateCategories.onWrite(fs));
 
 // Create Slack Notifications From Source
+// DEPRECATED
 exports.onCreateSourceSlackNotification = functions.database
   .ref('/notifications/src/{notificationId}')
   .onCreate(
@@ -240,6 +241,7 @@ exports.onCreateSourceSlackNotification = functions.database
   );
 
 // Create Push Notifications From Source
+// DEPRECATED
 exports.onCreateSourcePushNotification = functions.database
   .ref('/notifications/src/{notificationId}')
   .onCreate(

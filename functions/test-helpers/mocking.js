@@ -66,7 +66,7 @@ module.exports = {
   createInspection(inspConfig) {
     assert(Boolean(inspConfig.property, 'config has `property` id'));
 
-    const now = Math.round(Date.now() / 1000);
+    const now = nowUnix();
     const offset = Math.floor(Math.random() * 100);
     const items = Math.floor(Math.random() * 100);
     const completed = inspConfig.inspectionCompleted || false;
@@ -268,16 +268,38 @@ module.exports = {
   },
 
   /**
+   * Create public facing Slack integration
+   * @param  {Object?} intConfig
+   * @param  {Object?} channelsConfig
+   * @return {Object}
+   */
+  createSlackIntegration(intConfig = {}, channelsConfig = null) {
+    const integration = {
+      createdAt: nowUnix(),
+      grantedBy: uuid(), // Sparkle user
+      defaultChannelName: 'default-channel',
+      team: uuid(), // Slack team ID
+      teamName: 'Slack Team',
+      joinedChannelNames: {},
+      ...intConfig,
+    };
+
+    if (channelsConfig) {
+      integration.joinedChannelNames = { ...channelsConfig };
+    }
+
+    return integration;
+  },
+
+  /**
    * Create public facing Trello integration
    * @param  {Object?} intConfig
    * @return {Object}
    */
   createPropertyTrelloIntegration(intConfig = {}) {
-    const now = Math.round(Date.now() / 1000);
-
     return {
       grantedBy: uuid(),
-      updatedAt: now, // UNIX timestamp
+      updatedAt: nowUnix(), // UNIX timestamp
       openBoard: uuid(),
       openBoardName: 'open board',
       openList: uuid(),
@@ -289,4 +311,38 @@ module.exports = {
       ...intConfig,
     };
   },
+
+  /**
+   * Create a default notification record
+   * @param  {Object?} noteConfig
+   * @param  {Object?} slackConfig
+   * @return {Object}
+   */
+  createNotification(noteConfig = {}, slackConfig = null) {
+    const notification = {
+      title: 'title',
+      summary: 'summary',
+      creator: uuid(),
+      property: '',
+      markdownBody: '',
+      userAgent: '',
+
+      publishedMediums: {
+        slack: false,
+        push: false,
+      },
+
+      ...noteConfig,
+    };
+
+    if (slackConfig) {
+      notification.slack = { ...slackConfig };
+    }
+
+    return notification;
+  },
 };
+
+function nowUnix() {
+  return Math.round(Date.now() / 1000);
+}

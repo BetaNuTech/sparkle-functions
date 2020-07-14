@@ -340,9 +340,7 @@ module.exports = modelSetup({
     const doc = fs.collection(INTEGRATIONS_COLLECTION).doc('slack');
     const integrationData = {
       createdAt: data.createdAt || Math.round(Date.now() / 1000),
-      grantedBy: data.grantedBy,
-      team: data.team,
-      teamName: data.teamName,
+      ...data,
     };
 
     // Append to batch

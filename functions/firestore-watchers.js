@@ -4,6 +4,7 @@ const teams = require('./teams');
 const inspections = require('./inspections');
 const deficientItems = require('./deficient-items');
 const templateCategories = require('./template-categories');
+const notifications = require('./notifications');
 
 module.exports = (db, fs, pubsubClient, storage) => {
   return {
@@ -57,5 +58,11 @@ module.exports = (db, fs, pubsubClient, storage) => {
     teamDeleteV2: functions.firestore
       .document('/teams/{teamId}')
       .onDelete(teams.onDeleteV2(fs)),
+
+    createNotification: functions.firestore
+      .document('/notifications/{notificationId}')
+      .onCreate(
+        notifications.onCreate(fs, pubsubClient, 'notifications-slack-sync')
+      ),
   };
 };

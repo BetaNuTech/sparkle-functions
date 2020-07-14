@@ -146,6 +146,7 @@ module.exports = {
           'teams',
           'system',
           'integrations',
+          'notifications',
         ].map(col => deleteFirestoreCollection(fs, col))
       );
     }
