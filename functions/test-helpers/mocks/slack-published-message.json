@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "channel": "CG9A762TT",
+  "ts": "1562925218.001200",
+  "message": {
+    "type": "message",
+    "subtype": "bot_message",
+    "text": "    *THIS IS TITLE*\n\n   this is body",
+    "ts": "1562925218.001200",
+    "username": "Sparkle Inspections",
+    "bot_id": "BLC0KDFLG"
+  }
+}

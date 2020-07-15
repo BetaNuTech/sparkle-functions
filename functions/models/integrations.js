@@ -80,6 +80,7 @@ module.exports = modelSetup({
 
   /**
    * Lookup all notifications by a Slack channel
+   * DEPRECATED
    * @param  {firebaseAdmin.database} db firbase database
    * @param  {String} channelName
    * @return {Promise} - resolves {DataSnapshot} notifications snapshot
@@ -95,7 +96,7 @@ module.exports = modelSetup({
 
   /**
    * Remove an individual Slack notification record
-   * TODO: Move to notifications model
+   * DEPRECATED
    * @param  {firebaseAdmin.database} db firbase database
    * @param  {String} channelName
    * @param  {String} notificationId
@@ -249,7 +250,7 @@ module.exports = modelSetup({
   /**
    * Join specified Slack channel and
    * record success in integrations history
-   * TODO: Move to Slack Service
+   * DEPRECATED
    * @param   {firebaseAdmin.database} db firbase database
    * @param   {String} accessToken
    * @param   {String} channelName
@@ -364,6 +365,31 @@ module.exports = modelSetup({
       .collection(INTEGRATIONS_COLLECTION)
       .doc('slack')
       .get();
+  },
+
+  /**
+   * Update Firestore notification
+   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {String} notificationId
+   * @param  {Object} data
+   * @param  {firestore.batch?} batch
+   * @return {Promise}
+   */
+  firestoreUpdateSlack(fs, data, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(data && typeof data === 'object', 'has update data');
+    if (batch) {
+      assert(typeof batch.update === 'function', 'has firestore batch');
+    }
+
+    const doc = fs.collection(INTEGRATIONS_COLLECTION).doc('slack');
+
+    if (batch) {
+      batch.update(doc, data);
+      return Promise.resolve(doc);
+    }
+
+    return doc.update(data);
   },
 
   /**
