@@ -65,6 +65,7 @@ _${userAgent}_`; // Add Slack indent formatting
    * @param {String} channel
    */
   const result = {
+    createdAt: Math.round(Date.now() / 1000),
     title: propertyId ? '' : title, // Title admin notifications only
     message,
     channel: '',

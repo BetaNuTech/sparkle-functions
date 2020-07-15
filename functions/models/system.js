@@ -917,10 +917,17 @@ module.exports = modelSetup({
       credentials && typeof credentials === 'object',
       'has credentials object'
     );
-    assert(
-      credentials.token && typeof credentials.token === 'string',
-      'has token'
-    );
+    if (credentials.token) {
+      assert(typeof credentials.token === 'string', 'has token string');
+    }
+    if (credentials.accessToken) {
+      assert(
+        typeof credentials.accessToken === 'string',
+        'has access token string'
+      );
+    }
+    assert(credentials.accessToken || credentials.token, 'has access or token');
+
     assert(
       credentials.scope && typeof credentials.scope === 'string',
       'has scope'
@@ -949,7 +956,7 @@ module.exports = modelSetup({
       const now = Math.round(Date.now() / 1000);
       const data = {
         scope: credentials.scope,
-        accessToken: credentials.token,
+        accessToken: credentials.token || credentials.accessToken,
         updatedAt: now,
       };
 

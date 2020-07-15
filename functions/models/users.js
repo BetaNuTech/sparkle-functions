@@ -286,7 +286,7 @@ module.exports = modelSetup({
   },
 
   /**
-   * Query all properties
+   * Query all uers
    * @param  {admin.firestore} fs
    * @param  {Object} query
    * @param  {firestore.transaction?} transaction
@@ -302,7 +302,7 @@ module.exports = modelSetup({
       );
     }
 
-    const fsQuery = fs.collection(USERS_COLLECTION);
+    let fsQuery = fs.collection(USERS_COLLECTION);
 
     // Append each query as where clause
     Object.keys(query).forEach(attr => {
@@ -311,7 +311,7 @@ module.exports = modelSetup({
         queryArgs && Array.isArray(queryArgs),
         'has query arguments array'
       );
-      fsQuery.where(attr, ...queryArgs);
+      fsQuery = fsQuery.where(attr, ...queryArgs);
     });
 
     if (transaction) {

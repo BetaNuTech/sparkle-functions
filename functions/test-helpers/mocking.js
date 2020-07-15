@@ -7,6 +7,10 @@ const INSPECTION_SCORES = config.inspectionItems.scores;
 const DEFICIENT_LIST_ELIGIBLE = config.inspectionItems.deficientListEligible;
 const ITEM_VALUE_NAMES = config.inspectionItems.valueNames;
 
+function nowUnix() {
+  return Math.round(Date.now() / 1000);
+}
+
 module.exports = {
   /**
    * Create a property
@@ -268,6 +272,21 @@ module.exports = {
   },
 
   /**
+   * Create system's slack credentials
+   * @param  {Object} credConfig
+   * @return {Object}
+   */
+  createSlackCredentials(credConfig = {}) {
+    return {
+      accessToken: 'token',
+      scope: 'scope',
+      createdAt: nowUnix(), // Unix timestamp
+      updatedAt: nowUnix(), // Unix timestamp
+      ...credConfig,
+    };
+  },
+
+  /**
    * Create public facing Slack integration
    * @param  {Object?} intConfig
    * @param  {Object?} channelsConfig
@@ -341,8 +360,6 @@ module.exports = {
 
     return notification;
   },
-};
 
-function nowUnix() {
-  return Math.round(Date.now() / 1000);
-}
+  nowUnix,
+};

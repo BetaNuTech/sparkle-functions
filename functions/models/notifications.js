@@ -381,21 +381,24 @@ module.exports = modelSetup({
    * @param  {admin.firestore} fs - Firestore DB instance
    * @param  {String} notificationId
    * @param  {Object} data
-   * @param  {firestore.batch?} parentBatch
+   * @param  {firestore.batch?} batch
    * @return {Promise}
    */
-  firestoreUpdateRecord(fs, notificationId, data, parentBatch) {
+  firestoreUpdateRecord(fs, notificationId, data, batch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       notificationId && typeof notificationId === 'string',
       'has notification id'
     );
     assert(data && typeof data === 'object', 'has update data');
+    if (batch) {
+      assert(typeof batch.update === 'function', 'has firestore batch');
+    }
 
     const doc = fs.collection(NOTIFICATIONS_COLLECTION).doc(notificationId);
 
-    if (parentBatch) {
-      parentBatch.update(doc, data);
+    if (batch) {
+      batch.update(doc, data);
       return Promise.resolve(doc);
     }
 
@@ -420,5 +423,41 @@ module.exports = modelSetup({
       .collection(NOTIFICATIONS_COLLECTION)
       .doc(notificationId)
       .create(data);
+  },
+
+  /**
+   * Query all notifications
+   * @param  {admin.firestore} fs
+   * @param  {Object} query
+   * @param  {firestore.transaction?} transaction
+   * @return {Promise} - resolves {DataSnapshot}
+   */
+  firestoreQuery(fs, query, transaction) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(query && typeof query === 'object', 'has query');
+    if (transaction) {
+      assert(
+        typeof transaction.get === 'function',
+        'has firestore transaction'
+      );
+    }
+
+    let fsQuery = fs.collection(NOTIFICATIONS_COLLECTION);
+
+    // Append each query as where clause
+    Object.keys(query).forEach(attr => {
+      const queryArgs = query[attr];
+      assert(
+        queryArgs && Array.isArray(queryArgs),
+        'has query arguments array'
+      );
+      fsQuery = fsQuery.where(attr, ...queryArgs);
+    });
+
+    if (transaction) {
+      return Promise.resolve(transaction.get(fsQuery));
+    }
+
+    return fsQuery.get(query);
   },
 });

@@ -4,6 +4,7 @@ const onCreate = require('./on-create-v2');
 const createCleanup = require('./pubsub/cleanup');
 const createPublishSlack = require('./pubsub/publish-slack');
 const createPublishPush = require('./pubsub/publish-push');
+const publishSlack = require('./pubsub/publish-slack-v2');
 
 module.exports = {
   onCreate,
@@ -14,5 +15,6 @@ module.exports = {
     createCleanup,
     createPublishSlack,
     createPublishPush,
+    publishSlack,
   },
 };

@@ -149,6 +149,43 @@ module.exports = {
       throw Error(respErrMsg || 'Unknown Slack API error');
     }
   },
+
+  /**
+   * Request to join a Slack channel
+   * @param   {String} accessToken
+   * @param   {String} channelName
+   * @returns {Promise} - resolves {Object} response body
+   */
+  async joinChannel(accessToken, channelName) {
+    assert(accessToken && typeof accessToken === 'string', 'has access token');
+    assert(channelName && typeof channelName === 'string', 'has channel name');
+
+    let response = null;
+    try {
+      response = await got(
+        `https://slack.com/api/channels.join?token=${accessToken}&name=${channelName}&validate=true`,
+        {
+          headers: {
+            'content-type': 'application/x-www-form-urlencoded',
+          },
+          responseType: 'json',
+          method: 'POST',
+          json: true,
+        }
+      );
+
+      if (!response || !response.body || !response.body.ok) {
+        const respErrMsg = response && response.body && response.body.error;
+        throw Error(
+          `Slack API Request failed: ${respErrMsg || 'Unknown Error'}`
+        );
+      }
+    } catch (err) {
+      throw Error(`${PREFIX} joinChannel: ${err}`); // wrap error
+    }
+
+    return response.body;
+  },
 };
 
 /**

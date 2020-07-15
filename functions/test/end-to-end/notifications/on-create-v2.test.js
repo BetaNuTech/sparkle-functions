@@ -63,6 +63,9 @@ describe('Notifications | On Create V2', () => {
       notificationId
     );
     const actual = snap.data();
+    if (actual && actual.slack && actual.slack.createdAt) {
+      delete actual.slack.createdAt;
+    }
 
     expect(actual).to.deep.equal(expected);
   });
@@ -120,6 +123,9 @@ describe('Notifications | On Create V2', () => {
       notificationId
     );
     const actual = snap.data();
+    if (actual && actual.slack && actual.slack.createdAt) {
+      delete actual.slack.createdAt;
+    }
 
     expect(actual).to.deep.equal(expected);
   });

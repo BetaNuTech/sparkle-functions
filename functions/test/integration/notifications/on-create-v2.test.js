@@ -2,6 +2,12 @@ const { expect } = require('chai');
 const sinon = require('sinon');
 const uuid = require('../../../test-helpers/uuid');
 const mocking = require('../../../test-helpers/mocking');
+const {
+  createFirestore,
+  createCollection,
+  createSnapshot,
+  createPubSub,
+} = require('../../../test-helpers/stubs');
 const usersModel = require('../../../models/users');
 const propertiesModel = require('../../../models/properties');
 const integrationsModel = require('../../../models/integrations');
@@ -39,8 +45,8 @@ describe('Notifications | On Create V2', function() {
     };
 
     await createHandler(
-      stubFirestore(),
-      stubPubSub(publisher),
+      createFirestore(),
+      createPubSub(publisher),
       'slack-topic',
       'push-topic'
     )(createSnapshot(notificationId, notificiation), {
@@ -80,8 +86,8 @@ describe('Notifications | On Create V2', function() {
       .resolves();
 
     await createHandler(
-      stubFirestore(),
-      stubPubSub(),
+      createFirestore(),
+      createPubSub(),
       'slack-topic',
       'push-topic'
     )(createSnapshot(notificationId, notificiation), {
@@ -117,8 +123,8 @@ describe('Notifications | On Create V2', function() {
     };
 
     await createHandler(
-      stubFirestore(),
-      stubPubSub(publisher),
+      createFirestore(),
+      createPubSub(publisher),
       'slack-topic',
       'push-topic'
     )(createSnapshot(notificationId, notificiation), {
@@ -151,8 +157,8 @@ describe('Notifications | On Create V2', function() {
       .resolves();
 
     await createHandler(
-      stubFirestore(),
-      stubPubSub(),
+      createFirestore(),
+      createPubSub(),
       'slack-topic',
       'push-topic'
     )(createSnapshot(notificationId, notificiation), {
@@ -185,8 +191,8 @@ describe('Notifications | On Create V2', function() {
       .resolves();
 
     await createHandler(
-      stubFirestore(),
-      stubPubSub(),
+      createFirestore(),
+      createPubSub(),
       'slack-topic',
       'push-topic'
     )(createSnapshot(notificationId, notificiation), {
@@ -221,8 +227,8 @@ describe('Notifications | On Create V2', function() {
       .resolves();
 
     await createHandler(
-      stubFirestore(),
-      stubPubSub(),
+      createFirestore(),
+      createPubSub(),
       'slack-topic',
       'push-topic'
     )(createSnapshot(notificationId, notificiation), {
@@ -257,8 +263,8 @@ describe('Notifications | On Create V2', function() {
       .resolves();
 
     await createHandler(
-      stubFirestore(),
-      stubPubSub(),
+      createFirestore(),
+      createPubSub(),
       'slack-topic',
       'push-topic'
     )(createSnapshot(notificationId, notificiation), {
@@ -331,8 +337,8 @@ describe('Notifications | On Create V2', function() {
         return Promise.resolve();
       });
       await createHandler(
-        stubFirestore(),
-        stubPubSub(),
+        createFirestore(),
+        createPubSub(),
         'slack-topic',
         'push-topic'
       )(createSnapshot(notificationId, notificiation), {
@@ -425,8 +431,8 @@ describe('Notifications | On Create V2', function() {
         return Promise.resolve();
       });
       await createHandler(
-        stubFirestore(),
-        stubPubSub(),
+        createFirestore(),
+        createPubSub(),
         'slack-topic',
         'push-topic'
       )(createSnapshot(notificationId, notificiation), {
@@ -465,8 +471,8 @@ describe('Notifications | On Create V2', function() {
     };
 
     await createHandler(
-      stubFirestore(),
-      stubPubSub(publisher),
+      createFirestore(),
+      createPubSub(publisher),
       'slack-topic',
       'push-topic'
     )(createSnapshot(expected, notificiation), {
@@ -505,8 +511,8 @@ describe('Notifications | On Create V2', function() {
       });
 
     await createHandler(
-      stubFirestore(),
-      stubPubSub(),
+      createFirestore(),
+      createPubSub(),
       'slack-topic',
       'push-topic'
     )(createSnapshot(notificationId, notificiation), {
@@ -538,8 +544,8 @@ describe('Notifications | On Create V2', function() {
       .resolves();
 
     await createHandler(
-      stubFirestore(),
-      stubPubSub(),
+      createFirestore(),
+      createPubSub(),
       'slack-topic',
       'push-topic'
     )(createSnapshot(notificationId, notificiation), {
@@ -574,8 +580,8 @@ describe('Notifications | On Create V2', function() {
       .resolves();
 
     await createHandler(
-      stubFirestore(),
-      stubPubSub(),
+      createFirestore(),
+      createPubSub(),
       'slack-topic',
       'push-topic'
     )(createSnapshot(notificationId, notificiation), {
@@ -608,8 +614,8 @@ describe('Notifications | On Create V2', function() {
       });
 
     await createHandler(
-      stubFirestore(),
-      stubPubSub(),
+      createFirestore(),
+      createPubSub(),
       'slack-topic',
       'push-topic'
     )(createSnapshot(notificationId, notificiation), {
@@ -619,38 +625,3 @@ describe('Notifications | On Create V2', function() {
     expect(actual).to.equal(expected);
   });
 });
-
-function stubFirestore() {
-  return {
-    collection: () => {},
-    batch: () => ({}),
-  };
-}
-
-function stubPubSub(cb = () => {}) {
-  return {
-    topic: () => ({
-      publisher: () => ({
-        publish: (...args) => {
-          cb(...args);
-          return Promise.resolve();
-        },
-      }),
-    }),
-  };
-}
-
-function createSnapshot(id = uuid(), data = null) {
-  return {
-    exists: Boolean(data),
-    id,
-    data: () => data,
-  };
-}
-
-function createCollection(...docs) {
-  return {
-    docs,
-    size: docs.length,
-  };
-}
