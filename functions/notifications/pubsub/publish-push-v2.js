@@ -11,7 +11,7 @@ const PREFIX = 'notifications: pubsub: publish-push-v2:';
  * Publish all push nofication to their
  * user's registration token and remove the
  * push notification's configuration on success
- * @param  {admin.database} db
+ * @param  {admin.firestore} fs
  * @param  {functions.pubsub} pubSub
  * @param  {String} topic
  * @param  {admin.messaging} messaging

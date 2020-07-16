@@ -89,5 +89,11 @@ module.exports = (
       'push-messages-sync',
       messaging
     ),
+
+    cleanupNotificationsV2: notifications.pubsub.cleanPublished(
+      fs,
+      functionsPubSub,
+      'notifications-sync'
+    ),
   };
 };
