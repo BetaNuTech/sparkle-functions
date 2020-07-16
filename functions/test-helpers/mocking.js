@@ -362,6 +362,8 @@ module.exports = {
     if (pushConfig) {
       notification.push = { ...pushConfig };
       notification.unpublishedPush = Object.keys(notification.push).length;
+    } else {
+      notification.unpublishedPush = 0;
     }
 
     return notification;

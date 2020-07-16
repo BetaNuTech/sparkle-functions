@@ -188,6 +188,7 @@ describe('Notifications | On Create V2', () => {
     const adminUser = { firstName: 'test', admin: true };
     const expected = {
       ...notification,
+      unpublishedPush: 2,
       push: {
         [user1Id]: {
           title: notification.title,
@@ -253,6 +254,7 @@ describe('Notifications | On Create V2', () => {
     };
     const expected = {
       ...notification,
+      unpublishedPush: 1,
       push: {
         [user1Id]: {
           title: notification.title,
