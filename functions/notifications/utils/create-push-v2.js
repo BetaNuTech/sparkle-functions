@@ -73,6 +73,7 @@ module.exports = async (fs, notificationId, notification) => {
   if (!recipientUserIds.length) {
     try {
       await notificationsModel.firestoreUpdateRecord(fs, notificationId, {
+        unpublishedPush: 0,
         'publishedMediums.push': true,
       });
     } catch (err) {
@@ -99,6 +100,7 @@ module.exports = async (fs, notificationId, notification) => {
   try {
     await notificationsModel.firestoreUpdateRecord(fs, notificationId, {
       push: result,
+      unpublishedPush: Object.keys(result).length,
       'publishedMediums.push': false,
     });
   } catch (err) {

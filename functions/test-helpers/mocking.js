@@ -335,9 +335,10 @@ module.exports = {
    * Create a default notification record
    * @param  {Object?} noteConfig
    * @param  {Object?} slackConfig
+   * @param  {Object?} pushConfig
    * @return {Object}
    */
-  createNotification(noteConfig = {}, slackConfig = null) {
+  createNotification(noteConfig = {}, slackConfig = null, pushConfig = null) {
     const notification = {
       title: 'title',
       summary: 'summary',
@@ -356,6 +357,11 @@ module.exports = {
 
     if (slackConfig) {
       notification.slack = { ...slackConfig };
+    }
+
+    if (pushConfig) {
+      notification.push = { ...pushConfig };
+      notification.unpublishedPush = Object.keys(notification.push).length;
     }
 
     return notification;

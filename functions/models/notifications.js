@@ -257,6 +257,7 @@ module.exports = modelSetup({
 
   /**
    * Find a user's registration tokens
+   * DEPRECATED
    * @param  {admin.database} db firbase database
    * @param  {String} notificationId
    * @return {Promise} - resolves {DataSnapshot}
