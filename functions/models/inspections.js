@@ -1000,7 +1000,7 @@ module.exports = modelSetup({
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(query && typeof query === 'object', 'has query');
 
-    const fsQuery = fs.collection(INSPECTION_COLLECTION);
+    let fsQuery = fs.collection(INSPECTION_COLLECTION);
 
     // Append each query as where clause
     Object.keys(query).forEach(attr => {
@@ -1009,7 +1009,7 @@ module.exports = modelSetup({
         queryArgs && Array.isArray(queryArgs),
         'has query arguments array'
       );
-      fsQuery.where(attr, ...queryArgs);
+      fsQuery = fsQuery.where(attr, ...queryArgs);
     });
 
     if (batch) {

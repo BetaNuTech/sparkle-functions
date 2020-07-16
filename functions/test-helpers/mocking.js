@@ -1,10 +1,15 @@
 const assert = require('assert');
 const config = require('../config');
+const uuid = require('./uuid');
 const createDeficiencies = require('../deficient-items/utils/create-deficient-items');
 
 const INSPECTION_SCORES = config.inspectionItems.scores;
 const DEFICIENT_LIST_ELIGIBLE = config.inspectionItems.deficientListEligible;
 const ITEM_VALUE_NAMES = config.inspectionItems.valueNames;
+
+function nowUnix() {
+  return Math.round(Date.now() / 1000);
+}
 
 module.exports = {
   /**
@@ -31,6 +36,7 @@ module.exports = {
 
     return {
       name: 'test property',
+      zip: '32003',
       ...finalConfig,
     };
   },
@@ -64,7 +70,7 @@ module.exports = {
   createInspection(inspConfig) {
     assert(Boolean(inspConfig.property, 'config has `property` id'));
 
-    const now = Math.round(Date.now() / 1000);
+    const now = nowUnix();
     const offset = Math.floor(Math.random() * 100);
     const items = Math.floor(Math.random() * 100);
     const completed = inspConfig.inspectionCompleted || false;
@@ -264,4 +270,104 @@ module.exports = {
       sectionConfig
     );
   },
+
+  /**
+   * Create system's slack credentials
+   * @param  {Object} credConfig
+   * @return {Object}
+   */
+  createSlackCredentials(credConfig = {}) {
+    return {
+      accessToken: 'token',
+      scope: 'scope',
+      createdAt: nowUnix(), // Unix timestamp
+      updatedAt: nowUnix(), // Unix timestamp
+      ...credConfig,
+    };
+  },
+
+  /**
+   * Create public facing Slack integration
+   * @param  {Object?} intConfig
+   * @param  {Object?} channelsConfig
+   * @return {Object}
+   */
+  createSlackIntegration(intConfig = {}, channelsConfig = null) {
+    const integration = {
+      createdAt: nowUnix(),
+      grantedBy: uuid(), // Sparkle user
+      defaultChannelName: 'default-channel',
+      team: uuid(), // Slack team ID
+      teamName: 'Slack Team',
+      joinedChannelNames: {},
+      ...intConfig,
+    };
+
+    if (channelsConfig) {
+      integration.joinedChannelNames = { ...channelsConfig };
+    }
+
+    return integration;
+  },
+
+  /**
+   * Create public facing Trello integration
+   * @param  {Object?} intConfig
+   * @return {Object}
+   */
+  createPropertyTrelloIntegration(intConfig = {}) {
+    return {
+      grantedBy: uuid(),
+      updatedAt: nowUnix(), // UNIX timestamp
+      openBoard: uuid(),
+      openBoardName: 'open board',
+      openList: uuid(),
+      openListName: 'open list',
+      closedBoard: uuid(),
+      closedBoardName: 'closed board',
+      closedList: uuid(),
+      closedListName: 'closed list',
+      ...intConfig,
+    };
+  },
+
+  /**
+   * Create a default notification record
+   * @param  {Object?} noteConfig
+   * @param  {Object?} slackConfig
+   * @param  {Object?} pushConfig
+   * @return {Object}
+   */
+  createNotification(noteConfig = {}, slackConfig = null, pushConfig = null) {
+    const notification = {
+      title: 'title',
+      summary: 'summary',
+      creator: uuid(),
+      property: '',
+      markdownBody: '',
+      userAgent: '',
+
+      publishedMediums: {
+        slack: false,
+        push: false,
+      },
+
+      ...noteConfig,
+    };
+
+    if (slackConfig) {
+      notification.slack = { ...slackConfig };
+    }
+
+    if (pushConfig) {
+      notification.push = { ...pushConfig };
+      notification.unpublishedPush = Object.keys(notification.push).length;
+    } else {
+      notification.unpublishedPush = 0;
+    }
+
+    return notification;
+  },
+
+  nowUnix,
 };

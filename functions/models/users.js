@@ -284,4 +284,50 @@ module.exports = modelSetup({
 
     return query.get();
   },
+
+  /**
+   * Query all uers
+   * @param  {admin.firestore} fs
+   * @param  {Object} query
+   * @param  {firestore.transaction?} transaction
+   * @return {Promise} - resolves {DataSnapshot}
+   */
+  firestoreQuery(fs, query, transaction) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(query && typeof query === 'object', 'has query');
+    if (transaction) {
+      assert(
+        typeof transaction.get === 'function',
+        'has firestore transaction'
+      );
+    }
+
+    let fsQuery = fs.collection(USERS_COLLECTION);
+
+    // Append each query as where clause
+    Object.keys(query).forEach(attr => {
+      const queryArgs = query[attr];
+      assert(
+        queryArgs && Array.isArray(queryArgs),
+        'has query arguments array'
+      );
+      fsQuery = fsQuery.where(attr, ...queryArgs);
+    });
+
+    if (transaction) {
+      return Promise.resolve(transaction.get(fsQuery));
+    }
+
+    return fsQuery.get(query);
+  },
+
+  /**
+   * Lookup all user documents snapshots
+   * @param  {admin.firestore} fs
+   * @return {Promise} - resolves {DocumentSnapshot[]}
+   */
+  firestoreFindAll(fs) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    return fs.collection(USERS_COLLECTION).get();
+  },
 });

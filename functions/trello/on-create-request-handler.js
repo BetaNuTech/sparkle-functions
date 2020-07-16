@@ -12,6 +12,7 @@ const PREFIX = 'trello: upsert token:';
 
 /**
  * Factory for trello token upsert endpoint
+ * DEPRECATED: Delete when Firebase DB dropped
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
  * @param  {firebaseAdmin.auth} auth - Firebase Admin auth instance
  * @return {Function} - onRequest handler

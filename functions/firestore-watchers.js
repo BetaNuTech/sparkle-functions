@@ -4,8 +4,16 @@ const teams = require('./teams');
 const inspections = require('./inspections');
 const deficientItems = require('./deficient-items');
 const templateCategories = require('./template-categories');
+const notifications = require('./notifications');
 
-module.exports = (db, fs, pubsubClient, storage) => {
+module.exports = (
+  db,
+  fs,
+  pubsubClient,
+  storage,
+  functionsPubSub,
+  messaging
+) => {
   return {
     deficientItemsPropertyMetaSyncV2: functions.firestore
       .document('deficiencies/{deficiencyId}')
@@ -24,6 +32,15 @@ module.exports = (db, fs, pubsubClient, storage) => {
     deficientItemsUnarchivingV2: functions.firestore
       .document('archives/{deficiencyId}')
       .onUpdate(deficientItems.createOnUpdateArchiveV2(db, fs)),
+
+    deficientItemsProgressNotesSyncV2: functions.firestore
+      .document('archives/{deficiencyId}')
+      .onUpdate(deficientItems.onUpdateProgressNoteV2(fs)),
+
+    // Replaces: onCreateDeficientItemCompletedPhotoTrelloAttachement
+    deficiencyUpdateCompletedPhotos: functions.firestore
+      .document('archives/{deficiencyId}')
+      .onUpdate(deficientItems.onUpdateCompletedPhotoV2(fs)),
 
     templateCategoryDeleteV2: functions.firestore
       .document('/templateCategories/{categoryId}')
@@ -48,5 +65,35 @@ module.exports = (db, fs, pubsubClient, storage) => {
     teamDeleteV2: functions.firestore
       .document('/teams/{teamId}')
       .onDelete(teams.onDeleteV2(fs)),
+
+    createNotification: functions.firestore
+      .document('/notifications/{notificationId}')
+      .onCreate(
+        notifications.onCreate(
+          fs,
+          pubsubClient,
+          'notifications-slack-sync',
+          'push-messages-sync'
+        )
+      ),
+
+    publishSlackNotificationsV2: notifications.pubsub.publishSlack(
+      fs,
+      functionsPubSub,
+      'notifications-slack-sync'
+    ),
+
+    publishPushNotificationsV2: notifications.pubsub.publishPush(
+      fs,
+      functionsPubSub,
+      'push-messages-sync',
+      messaging
+    ),
+
+    cleanupNotificationsV2: notifications.pubsub.cleanPublished(
+      fs,
+      functionsPubSub,
+      'notifications-sync'
+    ),
   };
 };

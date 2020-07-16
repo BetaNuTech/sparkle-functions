@@ -29,4 +29,5 @@ module.exports = {
   test,
   cloudFunctions,
   config,
+  uid: config.firebase.databaseAuthVariableOverride.uid,
 };

@@ -8,8 +8,8 @@ const PREFIX = 'utils: auth-firebase-user:';
  * Creates a middleware instance to handle
  * verifying Firebase auth tokens and setting `req.user`
  * NOTE: Side effect sets `req.user` upon successful lookup or rejects request
- * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
- * @param  {firebaseAdmin.Auth} auth - Firebase service for user auth
+ * @param  {admin.database|admin.firestore} db - Firebase/Firestore Admin DB instance
+ * @param  {admin.Auth} auth - Firebase service for user auth
  * @param  {Boolean?} shouldBeAdmin
  * @param  {Object?} permissionLevels
  * @return {Promise} verification & lookup requests
@@ -22,6 +22,10 @@ module.exports = function authFirebaseUser(
 ) {
   assert(Boolean(db), 'has firebase database instance');
   assert(Boolean(auth), 'has firebase auth instance');
+  const userLookup = (typeof db.ref === 'function'
+    ? usersModel.getUser
+    : usersModel.firestoreFindRecord
+  ).bind(usersModel);
 
   // User permissions levels instead
   // of "shouldBeAdmin"
@@ -51,8 +55,9 @@ module.exports = function authFirebaseUser(
 
     try {
       const decodedToken = await auth.verifyIdToken(idToken);
-      const userSnap = await usersModel.getUser(db, decodedToken.uid);
-      const user = userSnap.val();
+      const userSnap = await userLookup(db, decodedToken.uid);
+      const user =
+        typeof userSnap.val === 'function' ? userSnap.val() : userSnap.data();
 
       if (shouldBeAdmin && !user.admin) {
         throw Error('Non-admin users cannot access this route');

@@ -3,6 +3,7 @@ const modelSetup = require('./utils/model-setup');
 const { firebase: firebaseConfig } = require('../config');
 
 const PREFIX = 'models: notifications:';
+const NOTIFICATIONS_COLLECTION = 'notifications';
 const SRC_NOTIFICATION_PATH = '/notifications/src';
 const SLACK_NOTIFICATION_PATH = '/notifications/slack';
 const PUSH_NOTIFICATION_PATH = '/notifications/push';
@@ -20,7 +21,7 @@ module.exports = modelSetup({
 
   /**
    * Remove a source notification
-   * @param  {firebaseAdmin.database} db firbase database
+   * @param  {admin.database} db firbase database
    * @param  {String} notificationId
    * @return {Promise}
    */
@@ -34,7 +35,7 @@ module.exports = modelSetup({
 
   /**
    * Create a new source notification
-   * @param  {firebaseAdmin.database} db firbase database
+   * @param  {admin.database} db firbase database
    * @param  {Object} notification
    * @return {Promise}
    */
@@ -67,7 +68,7 @@ module.exports = modelSetup({
    * specified channel name resolving
    * DB reference to the new notification
    * TODO: Deprecate
-   * @param  {firebaseAdmin.database} db firbase database
+   * @param  {admin.database} db firbase database
    * @param  {String} channelName
    * @param  {Object} notification
    * @return {Promise} - resolves {db.Ref}
@@ -97,7 +98,7 @@ module.exports = modelSetup({
 
   /**
    * Add a slack notification to a notification channel
-   * @param  {firebaseAdmin.database} db firbase database
+   * @param  {admin.database} db firbase database
    * @param  {String} channelName
    * @param  {String} notificationId
    * @param  {Object} notification
@@ -137,7 +138,7 @@ module.exports = modelSetup({
    * while marking the source notification's
    * published mediums for push
    * NOTE: /notifications/push/*
-   * @param  {firebaseAdmin.database} db firbase database
+   * @param  {admin.database} db firbase database
    * @param  {String} notificationId
    * @param  {Object[]} notifications
    * @return {Object} - result
@@ -188,7 +189,7 @@ module.exports = modelSetup({
 
   /**
    * Update a source notification's published mediums
-   * @param  {firebaseAdmin.database} db firbase database
+   * @param  {admin.database} db firbase database
    * @param  {String} notificationId
    * @param  {Object} update
    * @return {Promise}
@@ -215,7 +216,7 @@ module.exports = modelSetup({
 
   /**
    * Return all push notification records
-   * @param  {firebaseAdmin.database} db firbase database
+   * @param  {admin.database} db firbase database
    * @return {Promise} - resolves {DataSnapshot}
    */
   findAllPush(db) {
@@ -224,7 +225,7 @@ module.exports = modelSetup({
 
   /**
    * Find Push Notifications for a source notification
-   * @param {firebaseAdmin.database} db firbase database
+   * @param {admin.database} db firbase database
    * @param {String} srcNotificationId
    */
   findPushBySrc(db, srcNotificationId) {
@@ -242,7 +243,7 @@ module.exports = modelSetup({
 
   /**
    * Remove a push notification record
-   * @param  {firebaseAdmin.database} db firbase database
+   * @param  {admin.database} db firbase database
    * @param  {String} pushNotificationId
    * @return {Promise}
    */
@@ -256,7 +257,8 @@ module.exports = modelSetup({
 
   /**
    * Find a user's registration tokens
-   * @param  {firebaseAdmin.database} db firbase database
+   * DEPRECATED
+   * @param  {admin.database} db firbase database
    * @param  {String} notificationId
    * @return {Promise} - resolves {DataSnapshot}
    */
@@ -266,5 +268,223 @@ module.exports = modelSetup({
       `${PREFIX} findUserRegistrationTokens: has user ID`
     );
     return db.ref(`/registrationTokens/${userId}`).once('value');
+  },
+
+  /**
+   * Find all slack notifications
+   * @param  {admin.firestore} fs
+   * @return {Promise}
+   */
+  firestoreFindAllSlack(fs) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    return fs
+      .collection(NOTIFICATIONS_COLLECTION)
+      .where('medium', '==', 'slack')
+      .get();
+  },
+
+  /**
+   * Remove all notifications intended for Slack
+   * @param  {admin.firestore} fs
+   * @param  {firestore.batch?} parentBatch
+   * @return {Promise}
+   */
+  async firestoreRemoveAllSlack(fs, parentBatch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    if (parentBatch) {
+      assert(typeof parentBatch.delete === 'function', 'has firestore batch');
+    }
+
+    const batch = parentBatch || fs.batch();
+
+    // Lookup all slack medium notifications
+    let slackNotificationsSnap = null;
+    try {
+      slackNotificationsSnap = await this.firestoreFindAllSlack(fs);
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreRemoveAllSlack: failed to lookup notifications | ${err}`
+      );
+    }
+
+    // Add each notification to delete batch
+    slackNotificationsSnap.docs.forEach(notificationDoc =>
+      batch.delete(notificationDoc.ref)
+    );
+
+    // Only commit local batched deletes
+    if (!parentBatch) {
+      return batch.commit();
+    }
+  },
+
+  /**
+   * Create a Firestore notification
+   * @param  {admin.firestore} fs
+   * @param  {Object} data
+   * @param  {firestore.batch?} batch
+   * @return {Promise} - resolves {DocumentSnapshot}
+   */
+  firestoreAddRecord(fs, data, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(data && typeof data === 'object', 'has data');
+    assert(
+      data.message && typeof data.message === 'string',
+      'data has property id'
+    );
+    if (data.title) {
+      assert(typeof data.title === 'string', 'data has title string');
+    }
+    if (data.src) {
+      assert(typeof data.src === 'string', 'data has src string');
+    }
+    if (data.channel) {
+      assert(typeof data.channel === 'string', 'data has channel string');
+    }
+    if (data.medium) {
+      assert(typeof data.medium === 'string', 'data has medium string');
+    }
+    if (batch) {
+      assert(typeof batch.create === 'function', 'has firestore batch');
+    }
+
+    // Generates a document with a new ID
+    const doc = fs.collection(NOTIFICATIONS_COLLECTION).doc();
+
+    if (batch) {
+      batch.create(doc, data);
+      return Promise.resolve(doc);
+    }
+
+    return doc.create(data);
+  },
+
+  /**
+   * Lookup Firestore Notification
+   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {String} notificationId
+   * @return {Promise}
+   */
+  firestoreFindRecord(fs, notificationId) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(
+      notificationId && typeof notificationId === 'string',
+      'has notification id'
+    );
+    return fs
+      .collection(NOTIFICATIONS_COLLECTION)
+      .doc(notificationId)
+      .get();
+  },
+
+  /**
+   * Update Firestore notification
+   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {String} notificationId
+   * @param  {Object} data
+   * @param  {firestore.batch?} batch
+   * @return {Promise}
+   */
+  firestoreUpdateRecord(fs, notificationId, data, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(
+      notificationId && typeof notificationId === 'string',
+      'has notification id'
+    );
+    assert(data && typeof data === 'object', 'has update data');
+    if (batch) {
+      assert(typeof batch.update === 'function', 'has firestore batch');
+    }
+
+    const doc = fs.collection(NOTIFICATIONS_COLLECTION).doc(notificationId);
+
+    if (batch) {
+      batch.update(doc, data);
+      return Promise.resolve(doc);
+    }
+
+    return doc.update(data);
+  },
+
+  /**
+   * Create a Firestore notification
+   * @param  {admin.firestore} fs
+   * @param  {String} notificationId
+   * @param  {Object} data
+   * @return {Promise} - resolves {WriteResult}
+   */
+  firestoreCreateRecord(fs, notificationId, data) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(
+      notificationId && typeof notificationId === 'string',
+      'has notification id'
+    );
+    assert(data && typeof data === 'object', 'has data');
+    return fs
+      .collection(NOTIFICATIONS_COLLECTION)
+      .doc(notificationId)
+      .create(data);
+  },
+
+  /**
+   * Query all notifications
+   * @param  {admin.firestore} fs
+   * @param  {Object} query
+   * @param  {firestore.transaction?} transaction
+   * @return {Promise} - resolves {DataSnapshot}
+   */
+  firestoreQuery(fs, query, transaction) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(query && typeof query === 'object', 'has query');
+    if (transaction) {
+      assert(
+        typeof transaction.get === 'function',
+        'has firestore transaction'
+      );
+    }
+
+    let fsQuery = fs.collection(NOTIFICATIONS_COLLECTION);
+
+    // Append each query as where clause
+    Object.keys(query).forEach(attr => {
+      const queryArgs = query[attr];
+      assert(
+        queryArgs && Array.isArray(queryArgs),
+        'has query arguments array'
+      );
+      fsQuery = fsQuery.where(attr, ...queryArgs);
+    });
+
+    if (transaction) {
+      return Promise.resolve(transaction.get(fsQuery));
+    }
+
+    return fsQuery.get(query);
+  },
+
+  /**
+   * Delete Firestore Notification
+   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {String} notificationId
+   * @param  {firestore.batch?} batch
+   * @return {Promise} resolves {Document}
+   */
+  firestoreDestroyRecord(fs, notificationId, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(
+      notificationId && typeof notificationId === 'string',
+      'has notification id'
+    );
+    if (batch) {
+      assert(typeof batch.delete === 'function', 'has firestore batch');
+    }
+    const doc = fs.collection(NOTIFICATIONS_COLLECTION).doc(notificationId);
+
+    if (batch) {
+      batch.delete(doc);
+      return Promise.resolve(doc);
+    }
+
+    return doc.delete();
   },
 });
