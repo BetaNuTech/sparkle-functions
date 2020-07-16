@@ -335,12 +335,14 @@ exports.userTeamsSync = teams.pubsub.createSyncUserTeam(
   fs
 );
 
+// DEPRECATED
 exports.publishSlackNotifications = notifications.pubsub.createPublishSlack(
   'notifications-slack-sync',
   functions.pubsub,
   db
 );
 
+// DEPRECATED
 exports.publishPushNotifications = notifications.pubsub.createPublishPush(
   'push-messages-sync',
   functions.pubsub,
@@ -393,7 +395,8 @@ const fsWatchers = firestoreWatchers(
   fs,
   pubsubClient,
   storage,
-  functions.pubsub
+  functions.pubsub,
+  messaging
 );
 Object.keys(fsWatchers).forEach(endpoint => {
   exports[endpoint] = fsWatchers[endpoint];

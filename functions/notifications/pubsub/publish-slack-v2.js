@@ -45,7 +45,7 @@ module.exports = function publishSlackNotification(fs, pubsub, topic) {
           : '*';
     } catch (err) {
       log.warn(
-        `${PREFIX} message parsing failed, targeting all slack notifications`
+        `${PREFIX} message parsing failed, targeting all slack notifications | ${err}`
       );
     }
 

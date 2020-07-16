@@ -6,6 +6,7 @@ const firebaseConfig = require('./firebase');
 const slackApp = require('./slack-app');
 const clientApps = require('./client-apps');
 const cobalt = require('./cobalt');
+const notifications = require('./notifications');
 
 const env = process.env.NODE_ENV || 'production';
 
@@ -26,5 +27,6 @@ module.exports = Object.assign(
   { slackApp },
   { firebase: firebaseConfig },
   { clientApps },
-  { cobalt }
+  { cobalt },
+  { notifications }
 );

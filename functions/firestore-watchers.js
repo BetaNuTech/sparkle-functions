@@ -6,7 +6,14 @@ const deficientItems = require('./deficient-items');
 const templateCategories = require('./template-categories');
 const notifications = require('./notifications');
 
-module.exports = (db, fs, pubsubClient, storage, functionsPubSub) => {
+module.exports = (
+  db,
+  fs,
+  pubsubClient,
+  storage,
+  functionsPubSub,
+  messaging
+) => {
   return {
     deficientItemsPropertyMetaSyncV2: functions.firestore
       .document('deficiencies/{deficiencyId}')
@@ -74,6 +81,13 @@ module.exports = (db, fs, pubsubClient, storage, functionsPubSub) => {
       fs,
       functionsPubSub,
       'notifications-slack-sync'
+    ),
+
+    publishPushNotificationsV2: notifications.pubsub.publishPush(
+      fs,
+      functionsPubSub,
+      'push-messages-sync',
+      messaging
     ),
   };
 };

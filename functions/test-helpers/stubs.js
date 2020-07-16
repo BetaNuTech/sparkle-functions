@@ -45,4 +45,13 @@ module.exports = {
       }),
     };
   },
+
+  createMessagingStub(cb = () => {}) {
+    return {
+      sendToDevice(...args) {
+        const result = cb(...args);
+        return result || Promise.resolve({ multicastId: uuid() });
+      },
+    };
+  },
 };
