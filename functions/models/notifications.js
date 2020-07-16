@@ -461,4 +461,30 @@ module.exports = modelSetup({
 
     return fsQuery.get(query);
   },
+
+  /**
+   * Delete Firestore Notification
+   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {String} notificationId
+   * @param  {firestore.batch?} batch
+   * @return {Promise} resolves {Document}
+   */
+  firestoreDestroyRecord(fs, notificationId, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(
+      notificationId && typeof notificationId === 'string',
+      'has notification id'
+    );
+    if (batch) {
+      assert(typeof batch.delete === 'function', 'has firestore batch');
+    }
+    const doc = fs.collection(NOTIFICATIONS_COLLECTION).doc(notificationId);
+
+    if (batch) {
+      batch.delete(doc);
+      return Promise.resolve(doc);
+    }
+
+    return doc.delete();
+  },
 });
