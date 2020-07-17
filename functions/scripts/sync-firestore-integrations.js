@@ -1,9 +1,10 @@
 const log = require('../utils/logger');
 const { db, fs } = require('./setup'); // eslint-disable-line
 const integrationsModel = require('../models/integrations');
+const utils = require('../utils/firebase-admin');
 
 (async () => {
-  // /system/integrations/{uid}/trello/organization
+  // /integrations/trello/organization
   const trelloSnap = await integrationsModel.getTrelloOrganization(db);
   if (trelloSnap.val()) {
     const trelloDetails = trelloSnap.val();
@@ -15,17 +16,48 @@ const integrationsModel = require('../models/integrations');
     } else {
       trelloDetails.updatedAt = Math.round(Date.now() / 1000);
     }
-    await integrationsModel.firestoreUpsertTrello(fs, trelloDetails);
-    log.info(`Synced Trello Integration`);
+    try {
+      await integrationsModel.firestoreUpsertTrello(fs, trelloDetails);
+      log.info(`Synced Trello Integration`);
+    } catch (err) {}
   }
 
-  // /system/integrations/{uid}/yardi/organization
-  // const yardiSnap = await integrationsModel.findYardiCredentials(db);
-  // TODO
+  // /integrations/trello/properties/{propertyId}
+  await utils.forEachChild(
+    db,
+    `/integrations/trello/properties`,
+    async (id, data) => {
+      log.info(`Syncing Trello Integration of Property: "${id}"`);
 
-  // /system/integrations/{uid}/cobalt/organization
-  // const cobaltSnap = await integrationsModel.findCobaltCredentials(db)
-  // TODO
+      try {
+        await integrationsModel.firestoreCreateTrelloProperty(fs, id, data);
+      } catch (err) {
+        log.error(
+          `Failed to sync Property: "${id}" Trello Integration Details`
+        );
+      }
+    }
+  );
+
+  // /integrations/yardi/organization
+  const yardiSnap = await integrationsModel.getYardiOrganization(db);
+  if (yardiSnap.val()) {
+    const details = yardiSnap.val();
+    try {
+      await integrationsModel.firestoreCreateYardi(fs, details);
+      log.info(`Synced Yardi Integration`);
+    } catch (err) {} // eslint-disable-line
+  }
+
+  // /integrations/cobalt/organization
+  const cobaltSnap = await integrationsModel.getCobaltOrganization(db);
+  if (cobaltSnap.val()) {
+    const details = cobaltSnap.val();
+    try {
+      await integrationsModel.firestoreCreateCobalt(fs, details);
+      log.info(`Synced Cobalt Integration`);
+    } catch (err) {} // eslint-disable-line
+  }
 
   // /integrations/slack/organization
   const slackSnap = await integrationsModel.getSlackOrganization(db);
@@ -40,8 +72,10 @@ const integrationsModel = require('../models/integrations');
     } else {
       slackDetails.updatedAt = Math.round(Date.now() / 1000);
     }
-    await integrationsModel.firestoreSetSlack(fs, slackDetails);
-    log.info(`Synced Slack Integration`);
+    try {
+      await integrationsModel.firestoreSetSlack(fs, slackDetails);
+      log.info(`Synced Slack Integration`);
+    } catch (err) {}
   }
 
   log.info('Completed integration sync successfully');

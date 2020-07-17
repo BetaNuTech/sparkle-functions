@@ -37,11 +37,24 @@ const utils = require('../utils/firebase-admin');
 
   // /system/integrations/{uid}/yardi/organization
   // const yardiSnap = await systemModel.findYardiCredentials(db);
-  // TODO
+  const yardiSnap = await systemModel.findYardiCredentials(db);
+  if (yardiSnap.val()) {
+    const details = yardiSnap.val();
+    try {
+      await systemModel.firestoreCreateYardi(fs, details);
+      log.info(`Synced Yardi Integration`);
+    } catch (err) {} // eslint-disable-line
+  }
 
   // /system/integrations/{uid}/cobalt/organization
-  // const cobaltSnap = await systemModel.findCobaltCredentials(db)
-  // TODO
+  const cobaltSnap = await systemModel.findCobaltCredentials(db);
+  if (cobaltSnap.val()) {
+    const details = cobaltSnap.val();
+    try {
+      await systemModel.firestoreCreateCobalt(fs, details);
+      log.info(`Synced Cobalt Integration`);
+    } catch (err) {} // eslint-disable-line
+  }
 
   // /system/integrations/{uid}/slack/organization
   const slackSnap = await systemModel.findSlackCredentials(db);
@@ -57,8 +70,11 @@ const utils = require('../utils/firebase-admin');
     } else {
       slackCredentials.updatedAt = Math.round(Date.now() / 1000);
     }
-    await systemModel.firestoreUpsertSlack(fs, slackCredentials);
-    log.info(`Synced Slack Credentials`);
+
+    try {
+      await systemModel.firestoreUpsertSlack(fs, slackCredentials);
+      log.info(`Synced Slack Credentials`);
+    } catch (err) {} // eslint-disable-line
   }
 
   log.info('Completed system sync successfully');

@@ -3,6 +3,7 @@ const request = require('supertest');
 const express = require('express');
 const handler = require('../../../trello/api/delete-auth');
 const uuid = require('../../../test-helpers/uuid');
+const mocking = require('../../../test-helpers/mocking');
 const { cleanDb } = require('../../../test-helpers/firebase');
 const systemModel = require('../../../models/system');
 const integrationsModel = require('../../../models/integrations');
@@ -37,13 +38,44 @@ describe('Trello | API | DELETE Auth', () => {
     expect(actual).to.equal(expected);
   });
 
-  it('removes all property integration details', async () => {
-    const expected = 0;
+  it('successfully deletes Trello system property records', async () => {
+    const expected = false;
+    const propertyId = uuid();
+    const trelloProperty = { cards: { [uuid()]: mocking.nowUnix() } };
     const trelloCredentials = {
-      authToken: 'xoxp-auth-token',
+      authToken: 'token',
       apikey: 'key',
       user: uuid(),
     };
+
+    // Setup Database
+    await systemModel.firestoreUpsertTrello(fs, trelloCredentials);
+    await systemModel.firestoreCreateTrelloProperty(
+      fs,
+      propertyId,
+      trelloProperty
+    );
+
+    // Execute
+    const app = createApp();
+    await request(app)
+      .delete('/t')
+      .send()
+      .expect(204);
+
+    // Get Results
+    const systemDoc = await systemModel.firestoreFindTrelloProperty(
+      fs,
+      propertyId
+    );
+    const actual = systemDoc.exists;
+
+    // Assertions
+    expect(actual).to.equal(expected);
+  });
+
+  it('removes all property integration details', async () => {
+    const expected = 0;
     const propertyTrelloIntegration = {
       grantedBy: uuid(),
       updatedAt: Math.round(Date.now() / 1000),
@@ -58,7 +90,6 @@ describe('Trello | API | DELETE Auth', () => {
     };
 
     // Setup Database
-    await systemModel.firestoreUpsertTrello(fs, trelloCredentials);
     await integrationsModel.firestoreCreateTrelloProperty(
       fs,
       uuid(),
@@ -82,6 +113,33 @@ describe('Trello | API | DELETE Auth', () => {
       fs
     );
     const actual = propertyTrelloIntegrations.length;
+
+    // Assertions
+    expect(actual).to.equal(expected);
+  });
+
+  it('removes integration organization', async () => {
+    const expected = false;
+    const trelloOrg = {
+      member: '123',
+      trelloUsername: 'user',
+      trelloEmail: 'email',
+      trelloFullName: 'test user',
+    };
+
+    // Setup Database
+    await integrationsModel.firestoreCreateTrello(fs, trelloOrg);
+
+    // Execute
+    const app = createApp();
+    await request(app)
+      .delete('/t')
+      .send()
+      .expect(204);
+
+    // Get Results
+    const orgDoc = await integrationsModel.firestoreFindTrello(fs);
+    const actual = orgDoc.exists;
 
     // Assertions
     expect(actual).to.equal(expected);
