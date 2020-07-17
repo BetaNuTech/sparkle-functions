@@ -31,6 +31,8 @@ describe('Trello | API | DELETE Authorization', () => {
     const expected = 'Integration Error';
 
     sinon.stub(systemModel, 'firestoreRemoveTrello').resolves();
+    sinon.stub(systemModel, 'firestoreRemoveAllTrelloProperties').resolves();
+    sinon.stub(integrationsModel, 'firestoreRemoveTrello').resolves();
     sinon
       .stub(integrationsModel, 'firestoreRemoveAllTrelloProperties')
       .rejects(Error('failed'));
@@ -50,6 +52,8 @@ describe('Trello | API | DELETE Authorization', () => {
 
   it('returns empty success response when Trello auth successfully deleted', done => {
     sinon.stub(systemModel, 'firestoreRemoveTrello').resolves();
+    sinon.stub(systemModel, 'firestoreRemoveAllTrelloProperties').resolves();
+    sinon.stub(integrationsModel, 'firestoreRemoveTrello').resolves();
     sinon
       .stub(integrationsModel, 'firestoreRemoveAllTrelloProperties')
       .resolves();

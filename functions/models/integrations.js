@@ -6,6 +6,8 @@ const PREFIX = 'models: integrations:';
 const INTEGRATIONS_COLLECTION = 'integrations';
 const TRELLO_PROPERTIES_PATH = '/integrations/trello/properties';
 const TRELLO_ORG_PATH = '/integrations/trello/organization';
+const YARDI_ORG_PATH = '/integrations/yardi/organization';
+const COBALT_ORG_PATH = '/integrations/cobalt/organization';
 const SLACK_ORG_PATH = '/integrations/slack/organization';
 const SLACK_NOTIFICATION_PATH = '/notifications/slack';
 const CLIENT_APPS_COLLECTION = '/clients';
@@ -212,11 +214,28 @@ module.exports = modelSetup({
   /**
    * Get the public facing Trello organization details
    * @param  {firebaseAdmin.database} db - firbase database
-   * @param  {Object} settings
    * @return {Promise} - resolves {DataSnapshot}
    */
   getTrelloOrganization(db) {
     return db.ref(TRELLO_ORG_PATH).once('value');
+  },
+
+  /**
+   * Get the public facing Yardi organization details
+   * @param  {firebaseAdmin.database} db - firbase database
+   * @return {Promise} - resolves {DataSnapshot}
+   */
+  getYardiOrganization(db) {
+    return db.ref(YARDI_ORG_PATH).once('value');
+  },
+
+  /**
+   * Get the public facing Cobalt organization details
+   * @param  {firebaseAdmin.database} db - firbase database
+   * @return {Promise} - resolves {DataSnapshot}
+   */
+  getCobaltOrganization(db) {
+    return db.ref(COBALT_ORG_PATH).once('value');
   },
 
   /**
@@ -583,6 +602,28 @@ module.exports = modelSetup({
   },
 
   /**
+   * Remove Firestore Trello integration
+   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {firstore.batch?} batch
+   * @return {Promise} - resolves {Document}
+   */
+  firestoreRemoveTrello(fs, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    if (batch) {
+      assert(typeof batch.delete === 'function', 'has firestore batch');
+    }
+
+    const doc = fs.collection(INTEGRATIONS_COLLECTION).doc('trello');
+
+    if (batch) {
+      batch.delete(doc);
+      return Promise.resolve(doc);
+    }
+
+    return doc.delete();
+  },
+
+  /**
    * Lookup all Property Trello Integrations
    * @param  {admin.firestore} fs
    * @param  {firestore.transaction?} transaction
@@ -615,6 +656,51 @@ module.exports = modelSetup({
     }
 
     return trelloPropertyDocs;
+  },
+
+  /**
+   * Create a Firestore Trello Organization
+   * @param  {admin.firestore} fs
+   * @param  {Object} data
+   * @return {Promise} - resolves {WriteResult}
+   */
+  firestoreCreateTrello(fs, data) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(data && typeof data === 'object', 'has data');
+    return fs
+      .collection(INTEGRATIONS_COLLECTION)
+      .doc('trello')
+      .create(data);
+  },
+
+  /**
+   * Create a Firestore Yardi Organization
+   * @param  {admin.firestore} fs
+   * @param  {Object} data
+   * @return {Promise} - resolves {WriteResult}
+   */
+  firestoreCreateYardi(fs, data) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(data && typeof data === 'object', 'has data');
+    return fs
+      .collection(INTEGRATIONS_COLLECTION)
+      .doc('yardi')
+      .create(data);
+  },
+
+  /**
+   * Create a Firestore Cobalt Organization
+   * @param  {admin.firestore} fs
+   * @param  {Object} data
+   * @return {Promise} - resolves {WriteResult}
+   */
+  firestoreCreateCobalt(fs, data) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(data && typeof data === 'object', 'has data');
+    return fs
+      .collection(INTEGRATIONS_COLLECTION)
+      .doc('cobalt')
+      .create(data);
   },
 
   /**

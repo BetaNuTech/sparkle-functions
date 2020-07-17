@@ -42,7 +42,28 @@ module.exports = function createDeleteTrelloAuthHandler(fs) {
       );
     }
 
+    try {
+      await systemModel.firestoreRemoveAllTrelloProperties(fs, batch);
+    } catch (err) {
+      return send500Error(
+        err,
+        `failed to destroy system trello properties | ${err}`,
+        'System Properties Error'
+      );
+    }
+
     // Delete public facing Trello orgnaization
+    try {
+      await integrationsModel.firestoreRemoveTrello(fs, batch);
+    } catch (err) {
+      return send500Error(
+        err,
+        `failed to destroy trello integration | ${err}`,
+        'Integration Organization Error'
+      );
+    }
+
+    // Delete public facing Trello properties
     try {
       await integrationsModel.firestoreRemoveAllTrelloProperties(fs, batch);
     } catch (err) {
