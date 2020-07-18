@@ -34,12 +34,12 @@ module.exports = (
       .onUpdate(deficientItems.createOnUpdateArchiveV2(db, fs)),
 
     deficientItemsProgressNotesSyncV2: functions.firestore
-      .document('archives/{deficiencyId}')
+      .document('deficiencies/{deficiencyId}')
       .onUpdate(deficientItems.onUpdateProgressNoteV2(fs)),
 
     // Replaces: onCreateDeficientItemCompletedPhotoTrelloAttachement
     deficiencyUpdateCompletedPhotos: functions.firestore
-      .document('archives/{deficiencyId}')
+      .document('deficiencies/{deficiencyId}')
       .onUpdate(deficientItems.onUpdateCompletedPhotoV2(fs)),
 
     templateCategoryDeleteV2: functions.firestore
