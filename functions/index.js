@@ -359,6 +359,7 @@ exports.cleanupNotifications = notifications.pubsub.createCleanup(
   'notifications-slack-sync'
 );
 
+// DEPRECATED
 exports.trelloCommentsForDefItemStateUpdates = trello.pubsub.createCommentForDiState(
   'deficient-item-status-update',
   functions.pubsub,
