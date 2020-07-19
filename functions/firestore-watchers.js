@@ -49,6 +49,13 @@ module.exports = (
       'deficient-item-status-update'
     ),
 
+    // Replaces: trelloDiCardClose
+    deficiencyTrelloCardClose: deficiency.pubsub.trelloCardClose(
+      fs,
+      functions.pubsub,
+      'deficient-item-status-update'
+    ),
+
     templateCategoryDeleteV2: functions.firestore
       .document('/templateCategories/{categoryId}')
       .onDelete(templateCategories.createOnDeleteWatcherV2(fs)),
