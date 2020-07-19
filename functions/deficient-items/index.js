@@ -8,6 +8,7 @@ const onUpdateProgressNoteV2 = require('./on-update-progress-note-v2');
 const onUpdateCompletedPhotoV2 = require('./on-update-completed-photo-v2');
 const trelloCardStateComment = require('./pubsub/trello-card-state-comment-v2');
 const createSyncOverdue = require('./pubsub/sync-overdue');
+const trelloCardClose = require('./pubsub/trello-card-close-v2');
 
 module.exports = {
   createOnWriteInspection,
@@ -18,5 +19,5 @@ module.exports = {
   onUpdateProgressNote,
   onUpdateProgressNoteV2,
   onUpdateCompletedPhotoV2,
-  pubsub: { createSyncOverdue, trelloCardStateComment },
+  pubsub: { createSyncOverdue, trelloCardStateComment, trelloCardClose },
 };

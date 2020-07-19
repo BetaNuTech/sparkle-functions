@@ -374,6 +374,7 @@ exports.trelloCardDueDateUpdates = trello.pubsub.createUpdateDueDate(
   fs
 );
 
+// DEPRECATED
 exports.trelloDiCardClose = trello.pubsub.createCloseDiCard(
   'deficient-item-status-update',
   functions.pubsub,

@@ -273,7 +273,7 @@ module.exports = {
    * @param  {Object} payload
    * @return {Promise} - resolves {Object} response body
    */
-  async publishListCard(listId, apiKey, authToken, payload) {
+  async publishListCard(listId, authToken, apiKey, payload) {
     assert(listId && typeof listId === 'string', 'has trello list id');
     assert(authToken && typeof authToken === 'string', 'has auth token');
     assert(apiKey && typeof apiKey === 'string', 'has api key');
@@ -282,19 +282,82 @@ module.exports = {
       'has Trello card payload object'
     );
 
-    const response = await got(
-      `https://api.trello.com/1/cards?idList=${listId}&keyFromSource=all&key=${apiKey}&token=${authToken}`,
-      {
-        headers: { 'content-type': 'application/json' },
-        body: payload,
-        responseType: 'json',
-        json: true,
+    let body = null;
+    try {
+      const response = await got(
+        `https://api.trello.com/1/cards?idList=${listId}&keyFromSource=all&key=${apiKey}&token=${authToken}`,
+        {
+          headers: { 'content-type': 'application/json' },
+          body: payload,
+          responseType: 'json',
+          json: true,
+        }
+      );
+      body = response && response.body;
+      if (!body || !body.id || !body.shortUrl) {
+        throw Error(`${PREFIX} unexpected response`);
       }
-    );
-    const body = response && response.body;
-    if (!body || !body.id || !body.shortUrl) {
-      throw Error(`${PREFIX} unexpected response`);
+    } catch (err) {
+      const resultErr = Error(
+        `${PREFIX}: publishListCard: POST card to list: "${listId}" request to trello API failed: ${err}`
+      );
+
+      // Set Deleted Trello card error code
+      if (err.statusCode === 404) {
+        resultErr.code = DELETED_TRELLO_CARD_ERR_CODE;
+      }
+
+      throw resultErr;
     }
+
     return body;
+  },
+
+  /**
+   * PUT updates to a Trello Card
+   * @param  {String} cardId
+   * @param  {String} authToken
+   * @param  {String} apiKey
+   * @param  {Object} updates
+   * @return {Promise} - resolves {Object} response
+   */
+  async updateTrelloCard(cardId, authToken, apiKey, updates) {
+    assert(cardId && typeof cardId === 'string', 'has trello card id');
+    assert(authToken && typeof authToken === 'string', 'has auth token');
+    assert(apiKey && typeof apiKey === 'string', 'has api key');
+    assert(updates && typeof updates === 'object', 'has updates object');
+
+    let trelloUpdateUrl = `https://api.trello.com/1/cards/${cardId}?key=${apiKey}&token=${authToken}`;
+
+    // Append updates to trello update URL
+    // NOTE: added in alphabetical order for test suite
+    Object.keys(updates)
+      .sort()
+      .forEach(param => {
+        trelloUpdateUrl += `&${param}=${encodeURIComponent(updates[param])}`;
+      });
+
+    // PUT Trello card updates
+    let response = null;
+    try {
+      response = await got(trelloUpdateUrl, {
+        responseType: 'json',
+        method: 'PUT',
+        json: true,
+      });
+    } catch (err) {
+      const resultErr = Error(
+        `${PREFIX}: updateTrelloCard: PUT to card: "${cardId}" request to trello API failed: ${err}`
+      );
+
+      // Set Deleted Trello card error code
+      if (err.statusCode === 404) {
+        resultErr.code = DELETED_TRELLO_CARD_ERR_CODE;
+      }
+
+      throw resultErr;
+    }
+
+    return response;
   },
 };

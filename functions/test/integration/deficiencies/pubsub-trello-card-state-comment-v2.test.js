@@ -69,7 +69,6 @@ describe('Deficiencies | Pubsub | Trello Card Status Comment V2', function() {
   });
 
   it("should append state transition comment to a deficiency's Trello card", async () => {
-    const expected = true;
     const deficiencyId = uuid();
     const propertyId = uuid();
     const inspectionId = uuid();
@@ -103,7 +102,16 @@ describe('Deficiencies | Pubsub | Trello Card Status Comment V2', function() {
     sinon
       .stub(usersModel, 'firestoreFindRecord')
       .resolves(createSnapshot(userId, user));
-    const publish = sinon.stub(trello, 'publishTrelloCardComment').resolves();
+    const result = {};
+    sinon
+      .stub(trello, 'publishTrelloCardComment')
+      .callsFake((actualCardId, authToken, apiKey, text) => {
+        result.cardId = actualCardId;
+        result.authToken = authToken;
+        result.apiKey = apiKey;
+        result.text = text;
+        return Promise.resolve({});
+      });
 
     await createHandler(
       createFirestore(),
@@ -112,7 +120,29 @@ describe('Deficiencies | Pubsub | Trello Card Status Comment V2', function() {
       createMessagingStub()
     );
 
-    const actual = publish.called;
-    expect(actual).to.equal(expected);
+    [
+      {
+        actual: result.cardId,
+        expected: cardId,
+        msg: 'updated requested card',
+      },
+      {
+        actual: result.authToken,
+        expected: credentials.authToken,
+        msg: 'updated using system Trello auth token',
+      },
+      {
+        actual: result.apiKey,
+        expected: credentials.apikey,
+        msg: 'updated using system Trello api key',
+      },
+      {
+        actual: Boolean(result.text),
+        expected: true,
+        msg: 'sent comment text',
+      },
+    ].forEach(({ actual, expected, msg }) => {
+      expect(actual).to.equal(expected, msg);
+    });
   });
 });

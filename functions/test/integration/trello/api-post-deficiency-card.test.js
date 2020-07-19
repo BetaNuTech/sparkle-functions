@@ -243,7 +243,7 @@ describe('Trello | API | POST Deficiency Card', () => {
     const actual = {};
     sinon
       .stub(trelloService, 'publishListCard')
-      .callsFake((openList, apikey, authToken, payload) => {
+      .callsFake((openList, authToken, apikey, payload) => {
         actual.openList = openList;
         actual.apikey = apikey;
         actual.authToken = authToken;
@@ -402,7 +402,7 @@ describe('Trello | API | POST Deficiency Card', () => {
     let actual = '';
     sinon
       .stub(trelloService, 'publishListCard')
-      .callsFake((listId, apiKey, authToken, payload) => {
+      .callsFake((listId, authToken, apiKey, payload) => {
         const { due: result } = payload;
         actual = result.slice(-6); // get due date offset
         return Promise.resolve(trelloResponse);
@@ -472,7 +472,7 @@ describe('Trello | API | POST Deficiency Card', () => {
     let actual = '';
     sinon
       .stub(trelloService, 'publishListCard')
-      .callsFake((listId, apiKey, authToken, payload) => {
+      .callsFake((listId, authToken, apiKey, payload) => {
         const { desc: result } = payload;
         actual = result.search(/&[#a-z0-9]+;/g);
         return Promise.resolve(trelloResponse);
@@ -561,7 +561,7 @@ ${CLIENT_API_DOMAIN.replace('{{propertyId}}', propertyId).replace(
     let actual = '';
     sinon
       .stub(trelloService, 'publishListCard')
-      .callsFake((listId, apiKey, authToken, payload) => {
+      .callsFake((listId, authToken, apiKey, payload) => {
         actual = payload.desc;
         return Promise.resolve(trelloResponse);
       });
