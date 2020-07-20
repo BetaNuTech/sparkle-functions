@@ -10,6 +10,7 @@ const notificationsModel = require('../../../models/notifications');
 const { cleanDb } = require('../../../test-helpers/firebase');
 const { fs, test, cloudFunctions } = require('../../setup');
 
+const DEF_ITEM_URI = config.clientApps.web.deficientItemURL;
 const OVERDUE_ELIGIBLE_STATES = config.deficientItems.overdueEligibleStates;
 
 describe('Deficiencies | Pubsub | Overdue Sync V2', () => {
@@ -222,7 +223,7 @@ describe('Deficiencies | Pubsub | Overdue Sync V2', () => {
         urrentResponsibilityGroup: 'site_level_manages_vendor',
         currentCompleteNowReason: 'currentCompleteNowReason',
         currentReasonIncomplete: 'currentReasonIncomplete',
-        trelloCardURL: 'trelloCardURL',
+        trelloCardURL: 'test.com/card',
         progressNotes: {
           createdAt: Math.round(Date.now() / 1000),
           progressNote: 'progressNote',
@@ -232,13 +233,17 @@ describe('Deficiencies | Pubsub | Overdue Sync V2', () => {
       inspection,
       inspection.template.items[itemId]
     );
+    const defUrl = DEF_ITEM_URI.replace('{{propertyId}}', propertyId).replace(
+      '{{deficientItemId}}',
+      deficiencyId
+    );
+
     const expected = {
       title: property.name,
       summary:
         'Deficient Item: title moved from pending to requires-progress-update by Sparkle',
       property: propertyId,
-      markdownBody:
-        'Deficient Item moved from *pending* to state *requires-progress-update*.\n```\nTitle: title\nSection: sectionTitle\nSub-section: sectionSubtitle\nDue Date: 10/23/40\nPlan to fix: currentPlanToFix\n```\n```\nComplete Now Reason: currentCompleteNowReason\n```\n```\nReason Incomplete: currentReasonIncomplete\n```\nDeficient Item: https://staging.sapphire-standard.com/properties/-12/deficient-items/-15\nTrello Card: trelloCardURL\n*Updated by*: Sparkle',
+      markdownBody: `Deficient Item moved from *pending* to state *requires-progress-update*.\n\`\`\`\nTitle: title\nSection: sectionTitle\nSub-section: sectionSubtitle\nDue Date: 10/23/40\nPlan to fix: currentPlanToFix\n\`\`\`\n\`\`\`\nComplete Now Reason: currentCompleteNowReason\n\`\`\`\n\`\`\`\nReason Incomplete: currentReasonIncomplete\n\`\`\`\nDeficient Item: ${defUrl}\nTrello Card: test.com/card\n*Updated by*: Sparkle`,
       creator: '',
     };
 
