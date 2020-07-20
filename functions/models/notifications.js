@@ -409,21 +409,29 @@ module.exports = modelSetup({
   /**
    * Create a Firestore notification
    * @param  {admin.firestore} fs
-   * @param  {String} notificationId
+   * @param  {String?} notificationId
    * @param  {Object} data
+   * @param  {firestore.batch?} batch
    * @return {Promise} - resolves {WriteResult}
    */
-  firestoreCreateRecord(fs, notificationId, data) {
+  firestoreCreateRecord(fs, notificationId, data, batch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
-    assert(
-      notificationId && typeof notificationId === 'string',
-      'has notification id'
-    );
+    if (notificationId) {
+      assert(typeof notificationId === 'string', 'has notification id');
+    }
     assert(data && typeof data === 'object', 'has data');
-    return fs
-      .collection(NOTIFICATIONS_COLLECTION)
-      .doc(notificationId)
-      .create(data);
+    if (batch) {
+      assert(typeof batch.create === 'function', 'has firestore batch');
+    }
+    notificationId =
+      notificationId || fs.collection(NOTIFICATIONS_COLLECTION).doc().id;
+    const doc = fs.collection(NOTIFICATIONS_COLLECTION).doc(notificationId);
+
+    if (batch) {
+      return Promise.resolve(batch.create(doc, data));
+    }
+
+    return doc.create(data);
   },
 
   /**

@@ -313,6 +313,7 @@ exports.regTokensSync = regTokens.pubsub.createSyncOutdated(
   db
 );
 
+// DEPRECATED
 exports.deficientItemsOverdueSync = deficientItems.pubsub.createSyncOverdue(
   'deficient-items-sync',
   functions.pubsub,
@@ -350,6 +351,7 @@ exports.publishPushNotifications = notifications.pubsub.createPublishPush(
   messaging
 );
 
+// DEPRECATED
 exports.cleanupNotifications = notifications.pubsub.createCleanup(
   db,
   functions.pubsub,
@@ -367,6 +369,7 @@ exports.trelloCommentsForDefItemStateUpdates = trello.pubsub.createCommentForDiS
   fs
 );
 
+// DEPRECATED
 exports.trelloCardDueDateUpdates = trello.pubsub.createUpdateDueDate(
   'deficient-item-status-update',
   functions.pubsub,

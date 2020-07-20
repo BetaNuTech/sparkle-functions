@@ -12,7 +12,7 @@ module.exports = function createStateHistory(idItem, options = {}) {
   assert(options && typeof options === 'object', 'has options');
 
   const { currentStartDate, state } = idItem;
-  const { createdAt = Date.now() / 1000, user } = options;
+  const { createdAt = Math.round(Date.now() / 1000), user } = options;
 
   assert(state && typeof state === 'string', 'has DI with "state" string');
   assert(
