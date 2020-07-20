@@ -612,9 +612,9 @@ describe('Inspections | On Write | V2', () => {
 
     // Lookup created deficiency id
     const deficienciesSnap = await diModel.firestoreQuery(fs, {
-      property: propertyId,
-      inspection: inspectionId,
-      item: itemId,
+      property: ['==', propertyId],
+      inspection: ['==', inspectionId],
+      item: ['==', itemId],
     });
     const [originalDeficiencyDoc] = deficienciesSnap.docs.filter(Boolean);
     expect(originalDeficiencyDoc.exists).to.equal(
@@ -735,7 +735,7 @@ describe('Inspections | On Write | V2', () => {
 
     // Test result
     const deficientDocs = await diModel.firestoreQuery(fs, {
-      property: propertyId,
+      property: ['==', propertyId],
     });
     const [deficientDoc] = deficientDocs.docs.filter(Boolean);
     const actual = (deficientDoc.data() || {}).itemScore || 0;
@@ -872,7 +872,7 @@ describe('Inspections | On Write | V2', () => {
 
     // Test result
     const inspDeficiencyDocs = await diModel.firestoreQuery(fs, {
-      inspection: inspectionId,
+      inspection: ['==', inspectionId],
     });
     const actual = inspDeficiencyDocs.size;
 
