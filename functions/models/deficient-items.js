@@ -795,18 +795,36 @@ module.exports = modelSetup({
   },
 
   /**
-   * Lookup Firestore Deficiency Item query
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
-   * @param  {String} propertyId
+   * Lookup Firestore Deficiency query
+   * @param  {admin.firestore} fs - Firestore DB instance
    * @param  {Object} query
+   * @param  {firestore.batch?} batch
    * @return {Promise} - resolves {DocumentSnapshot[]}
    */
-  firestoreQuery(fs, query) {
+  firestoreQuery(fs, query, batch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
-    assert(query && typeof query === 'object', 'has query hash');
-    const colRef = fs.collection(DEFICIENT_COLLECTION);
-    Object.keys(query).forEach(attr => colRef.where(attr, '==', query[attr]));
-    return colRef.get();
+    assert(query && typeof query === 'object', 'has query');
+    if (batch) {
+      assert(typeof batch.get === 'function', 'has firestore batch');
+    }
+
+    let fsQuery = fs.collection(DEFICIENT_COLLECTION);
+
+    // Append each query as where clause
+    Object.keys(query).forEach(attr => {
+      const queryArgs = query[attr];
+      assert(
+        queryArgs && Array.isArray(queryArgs),
+        'has query arguments array'
+      );
+      fsQuery = fsQuery.where(attr, ...queryArgs);
+    });
+
+    if (batch) {
+      return Promise.resolve(batch.get(fsQuery));
+    }
+
+    return fsQuery.get(query);
   },
 
   /**

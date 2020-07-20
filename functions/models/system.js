@@ -711,6 +711,7 @@ module.exports = modelSetup({
 
   /**
    * PUT request to trello API
+   * DEPRECATED
    * @param  {admin.database} db
    * @param  {admin.firestore} fs
    * @param  {String} propertyId

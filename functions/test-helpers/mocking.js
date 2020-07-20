@@ -6,6 +6,7 @@ const createDeficiencies = require('../deficient-items/utils/create-deficient-it
 const INSPECTION_SCORES = config.inspectionItems.scores;
 const DEFICIENT_LIST_ELIGIBLE = config.inspectionItems.deficientListEligible;
 const ITEM_VALUE_NAMES = config.inspectionItems.valueNames;
+const DEFICIENCY_STATES = config.deficientItems.allStates;
 
 function nowUnix() {
   return Math.round(Date.now() / 1000);
@@ -259,6 +260,21 @@ module.exports = {
     return { ...deficiencies[item], ...defConfig };
   },
 
+  /**
+   * Create a deficiency's state history entry
+   * @param  {Object?} histConfig
+   * @return {Object}
+   */
+  createDeficiencyStateHistory(histConfig = {}) {
+    return {
+      state:
+        DEFICIENCY_STATES[Math.floor(Math.random() * DEFICIENCY_STATES.length)],
+      user: uuid(),
+      createdAt: nowUnix(),
+      ...histConfig,
+    };
+  },
+
   createSection(sectionConfig = {}) {
     return Object.assign(
       {
@@ -308,6 +324,42 @@ module.exports = {
     }
 
     return integration;
+  },
+
+  /**
+   * Create user
+   * @param  {Object?} credConfig
+   * @return {Object}
+   */
+  createUser(userConfig = {}) {
+    return {
+      firstName: 'first',
+      lastName: 'last',
+      email: 'test@email.com',
+      pushOptOut: false,
+      admin: false,
+      corporate: false,
+      lastUserAgent: 'web',
+      createdAt: nowUnix(), // Unix timestamp
+      lastSignInDate: nowUnix() - 10000,
+      ...userConfig,
+    };
+  },
+
+  /**
+   * Create system Trello credentials
+   * @param  {Object?} credConfig
+   * @return {Object}
+   */
+  createTrelloCredentials(credConfig = {}) {
+    return {
+      authToken: 'token',
+      apikey: 'key',
+      user: uuid(),
+      createdAt: nowUnix(), // Unix timestamp
+      updatedAt: nowUnix(), // Unix timestamp
+      ...credConfig,
+    };
   },
 
   /**

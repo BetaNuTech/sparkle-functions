@@ -2,7 +2,7 @@ const functions = require('firebase-functions');
 const properties = require('./properties');
 const teams = require('./teams');
 const inspections = require('./inspections');
-const deficientItems = require('./deficient-items');
+const deficiency = require('./deficient-items');
 const templateCategories = require('./template-categories');
 const notifications = require('./notifications');
 
@@ -18,7 +18,7 @@ module.exports = (
     deficientItemsPropertyMetaSyncV2: functions.firestore
       .document('deficiencies/{deficiencyId}')
       .onUpdate(
-        deficientItems.createOnUpdateStateV2(
+        deficiency.createOnUpdateStateV2(
           fs,
           pubsubClient,
           'deficient-item-status-update'
@@ -27,20 +27,48 @@ module.exports = (
 
     deficientItemsArchivingV2: functions.firestore
       .document('deficiencies/{deficiencyId}')
-      .onUpdate(deficientItems.createOnUpdateArchiveV2(db, fs)),
+      .onUpdate(deficiency.createOnUpdateArchiveV2(db, fs)),
 
     deficientItemsUnarchivingV2: functions.firestore
       .document('archives/{deficiencyId}')
-      .onUpdate(deficientItems.createOnUpdateArchiveV2(db, fs)),
+      .onUpdate(deficiency.createOnUpdateArchiveV2(db, fs)),
 
     deficientItemsProgressNotesSyncV2: functions.firestore
       .document('deficiencies/{deficiencyId}')
-      .onUpdate(deficientItems.onUpdateProgressNoteV2(fs)),
+      .onUpdate(deficiency.onUpdateProgressNoteV2(fs)),
 
     // Replaces: onCreateDeficientItemCompletedPhotoTrelloAttachement
     deficiencyUpdateCompletedPhotos: functions.firestore
       .document('deficiencies/{deficiencyId}')
-      .onUpdate(deficientItems.onUpdateCompletedPhotoV2(fs)),
+      .onUpdate(deficiency.onUpdateCompletedPhotoV2(fs)),
+
+    // Replaces: trelloCommentsForDefItemStateUpdates
+    deficiencyTrelloCardStateComments: deficiency.pubsub.trelloCardStateComment(
+      fs,
+      functions.pubsub,
+      'deficient-item-status-update'
+    ),
+
+    // Replaces: trelloDiCardClose
+    deficiencyTrelloCardClose: deficiency.pubsub.trelloCardClose(
+      fs,
+      functions.pubsub,
+      'deficient-item-status-update'
+    ),
+
+    // Replaces: trelloCardDueDateUpdates
+    deficiencyTrelloCardDueDates: deficiency.pubsub.trelloCardDueDate(
+      fs,
+      functions.pubsub,
+      'deficient-item-status-update'
+    ),
+
+    // Replaces: deficientItemsOverdueSync
+    deficiencySyncOverdue: deficiency.pubsub.syncOverdue(
+      fs,
+      functions.pubsub,
+      'deficient-items-sync'
+    ),
 
     templateCategoryDeleteV2: functions.firestore
       .document('/templateCategories/{categoryId}')
@@ -77,12 +105,14 @@ module.exports = (
         )
       ),
 
+    // Replaces: publishSlackNotifications
     publishSlackNotificationsV2: notifications.pubsub.publishSlack(
       fs,
       functionsPubSub,
       'notifications-slack-sync'
     ),
 
+    // REPLACES: publishPushNotifications
     publishPushNotificationsV2: notifications.pubsub.publishPush(
       fs,
       functionsPubSub,
@@ -90,6 +120,7 @@ module.exports = (
       messaging
     ),
 
+    // Replaces: cleanupNotifications
     cleanupNotificationsV2: notifications.pubsub.cleanPublished(
       fs,
       functionsPubSub,

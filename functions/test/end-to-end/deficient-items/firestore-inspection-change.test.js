@@ -443,8 +443,8 @@ describe('Deficient Items | Firestore Inspection Change', () => {
 
       // Collect DI before data
       const itemOneDiDoc = await diModel.firestoreQuery(fs, {
-        property: propertyId,
-        item: itemId,
+        property: ['==', propertyId],
+        item: ['==', itemId],
       });
       const [itemOneDi] = itemOneDiDoc.docs;
       const deficientItemId = itemOneDi.id;
@@ -530,8 +530,8 @@ describe('Deficient Items | Firestore Inspection Change', () => {
 
     // Test result
     const resultsDoc = await diModel.firestoreQuery(fs, {
-      property: propertyId,
-      item: itemId,
+      property: ['==', propertyId],
+      item: ['==', itemId],
     });
     const [actualData] = resultsDoc.docs;
     const actual = actualData ? actualData.data().itemDataLastUpdatedDate : 0;
@@ -593,8 +593,8 @@ describe('Deficient Items | Firestore Inspection Change', () => {
 
     // Test result
     const resultsDoc = await diModel.firestoreQuery(fs, {
-      property: propertyId,
-      item: item2Id,
+      property: ['==', propertyId],
+      item: ['==', item2Id],
     });
     const actual = resultsDoc.size > 0;
 
@@ -648,8 +648,8 @@ describe('Deficient Items | Firestore Inspection Change', () => {
 
     // Test result
     const resultsDoc = await diModel.firestoreQuery(fs, {
-      property: propertyId,
-      item: itemId,
+      property: ['==', propertyId],
+      item: ['==', itemId],
     });
     const [actualData] = resultsDoc.docs;
     const actual = actualData ? actualData.data().itemScore : 0;
@@ -707,8 +707,8 @@ describe('Deficient Items | Firestore Inspection Change', () => {
 
     // Test result
     const resultsDoc = await diModel.firestoreQuery(fs, {
-      property: propertyId,
-      item: itemId,
+      property: ['==', propertyId],
+      item: ['==', itemId],
     });
     const [actualData] = resultsDoc.docs;
     const actual = actualData ? actualData.data().itemScore : 0;

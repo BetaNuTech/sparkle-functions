@@ -251,8 +251,8 @@ module.exports = function createOnTrelloDeficientItemCard(
     try {
       const trelloResponse = await trello.publishListCard(
         trelloPropertyConfig.openList,
-        trelloCredentials.apikey,
         trelloCredentials.authToken,
+        trelloCredentials.apikey,
         trelloCardPayload
       );
       cardId = trelloResponse.id;
