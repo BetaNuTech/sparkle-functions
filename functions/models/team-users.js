@@ -146,21 +146,21 @@ module.exports = modelSetup({
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     const batch = parentBatch || fs.batch();
 
-    // Add property to new team/users
-    try {
-      await this.firestoreAddProperty(fs, newTeamId, propertyId, batch);
-    } catch (err) {
-      throw Error(
-        `${PREFIX} firestoreUpdateProperty: add property batch failed: ${err}`
-      );
-    }
-
     // Remove property from old team/users
     try {
       await this.firestoreRemoveProperty(fs, oldTeamId, propertyId, batch);
     } catch (err) {
       throw Error(
         `${PREFIX} firestoreUpdateProperty: remove property batch failed: ${err}`
+      );
+    }
+
+    // Add property to new team/users
+    try {
+      await this.firestoreAddProperty(fs, newTeamId, propertyId, batch);
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreUpdateProperty: add property batch failed: ${err}`
       );
     }
 

@@ -26,7 +26,7 @@ module.exports = function createOnWriteV2Handler(fs) {
     const afterTeam = afterData.team || '';
     const isTeamRemoved = beforeTeam && !afterTeam;
     const isTeamAdded = afterTeam && !beforeTeam;
-    const isTeamUpdated = afterTeam && beforeTeam && !afterTeam !== beforeTeam;
+    const isTeamUpdated = afterTeam && beforeTeam && afterTeam !== beforeTeam;
     const beforeTmpl = Object.keys(beforeData.templates || {})
       .sort()
       .join('');
@@ -77,7 +77,7 @@ module.exports = function createOnWriteV2Handler(fs) {
           batch
         );
         log.info(
-          `${PREFIX} property: "${propertyId}" updated to team: "${afterTeam}"`
+          `${PREFIX} property: "${propertyId}" updated team from: "${beforeTeam}" to: "${afterTeam}"`
         );
       } catch (err) {
         log.error(`${PREFIX} failed to update property team | ${err}`);
