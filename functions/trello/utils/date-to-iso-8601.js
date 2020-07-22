@@ -15,6 +15,6 @@ module.exports = (dateStr, zipCode) => {
 
   // Set to last second of provided date
   return moment
-    .tz(`${year}-${month}-${date} 23:59:59`, timezone)
+    .tz(`${year}-${month}-${date} 23:59:59`, 'YYYY-MM-DD HH:mm:ss', timezone)
     .toISOString(true); // keep offset
 };

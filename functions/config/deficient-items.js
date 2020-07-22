@@ -52,6 +52,8 @@ const progressNoteTempl = `{{{firstName}}} {{{lastName}}} ({{{email}}}) has adde
 
 module.exports = {
   dbPath: '/propertyInspectionDeficientItems',
+  storagePathTemplate:
+    'deficientItemImages/{{propertyId}}/{{deficiencyId}}/{{fileName}}',
   collection: 'deficiencies',
   initialState: 'requires-action',
   defaultTimezone: 'America/New_York',
@@ -74,6 +76,7 @@ module.exports = {
   /**
    * DI proxy attributes mapped
    * to their respective source item names
+   * TODO: Deprecate when dificient-items/on-write-inspection-watcher dropped
    * @type {Object}
    */
   inspectionItemProxyAttrs: {
@@ -82,6 +85,11 @@ module.exports = {
     itemMainInputSelection: 'mainInputSelection',
     itemPhotosData: 'photosData',
     sectionSubtitle: 'textInputValue',
+  },
+
+  inspectionItemProxyAttrsV2: {
+    sectionSubtitle: 'textInputValue',
+    itemMainInputSelection: 'mainInputSelection',
   },
 
   /**

@@ -4,6 +4,7 @@ const uuid = require('../../../test-helpers/uuid');
 const mocking = require('../../../test-helpers/mocking');
 const { cleanDb } = require('../../../test-helpers/firebase');
 const diModel = require('../../../models/deficient-items');
+const systemModel = require('../../../models/system');
 const archiveModel = require('../../../models/_internal/archive');
 const propertiesModel = require('../../../models/properties');
 const inspectionsModel = require('../../../models/inspections');
@@ -196,7 +197,6 @@ describe('Deficient Items | Firestore | Archiving', () => {
       deficienciesExist: true,
       inspectionCompleted: true,
       property: PROPERTY_ID,
-
       template: {
         trackDeficientItems: true,
         items: {
@@ -240,6 +240,11 @@ describe('Deficient Items | Firestore | Archiving', () => {
     await db
       .ref(TRELLO_PROPERTY_CARDS_PATH)
       .set(TRELLO_SYSTEM_PROPERTY_CARDS_DATA);
+    await systemModel.firestoreCreateTrelloProperty(
+      fs,
+      PROPERTY_ID,
+      TRELLO_SYSTEM_PROPERTY_CARDS_DATA
+    );
     await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
     await db.ref(TRELLO_INTEGRATIONS_DB_PATH).set(INTEGRATIONS_DATA);
 
@@ -480,6 +485,11 @@ describe('Deficient Items Unarchiving', () => {
     await db
       .ref(TRELLO_PROPERTY_CARDS_PATH)
       .set(TRELLO_SYSTEM_PROPERTY_CARDS_DATA);
+    await systemModel.firestoreCreateTrelloProperty(
+      fs,
+      PROPERTY_ID,
+      TRELLO_SYSTEM_PROPERTY_CARDS_DATA
+    );
     await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
     await db.ref(TRELLO_INTEGRATIONS_DB_PATH).set(INTEGRATIONS_DATA);
 

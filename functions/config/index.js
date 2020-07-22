@@ -1,10 +1,12 @@
 const s3Config = require('./s3');
+const inspections = require('./inspections');
 const inspectionItems = require('./inspection-items');
 const deficientItems = require('./deficient-items');
 const firebaseConfig = require('./firebase');
 const slackApp = require('./slack-app');
 const clientApps = require('./client-apps');
 const cobalt = require('./cobalt');
+const notifications = require('./notifications');
 
 const env = process.env.NODE_ENV || 'production';
 
@@ -19,10 +21,12 @@ if (env === 'development') {
 module.exports = Object.assign(
   { env },
   { s3: s3Config },
+  { inspections },
   { inspectionItems },
   { deficientItems },
   { slackApp },
   { firebase: firebaseConfig },
   { clientApps },
-  { cobalt }
+  { cobalt },
+  { notifications }
 );

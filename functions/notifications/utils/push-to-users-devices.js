@@ -1,14 +1,15 @@
 const assert = require('assert');
 const log = require('../../utils/logger');
+const config = require('../../config');
 const notificationsModel = require('../../models/notifications');
 
 const PREFIX = 'notifications: utils: push-to-users-devices:';
-const PUSH_NOTIFICATION_ICON =
-  'https://s3.us-east-2.amazonaws.com/sapphireinspections/assets/app_icon_192.png';
+const PUSH_NOTIFICATION_ICON = config.notifications.pushMessageIcon;
 
 /**
  * Publish a given push notifcation message
  * to all a user's registered device tokens
+ * DEPRECATED: use ./publish-push-message instead
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
  * @param  {firebaseAdmin.messaging} messaging - Firebase Admin messaging service instance
  * @param  {String} userId

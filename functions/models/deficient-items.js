@@ -8,6 +8,7 @@ const config = require('../config');
 const PREFIX = 'models: deficient-items:';
 const DATABASE_PATH = config.deficientItems.dbPath;
 const DEFICIENT_COLLECTION = config.deficientItems.collection;
+const STORAGE_PATH_TEMPLATE = config.deficientItems.storagePathTemplate;
 
 module.exports = modelSetup({
   /**
@@ -358,6 +359,7 @@ module.exports = modelSetup({
   /**
    * Perform update of single completed photo of
    * deficient items
+   * DEPRECATED: Delete when firebase DB dropped
    * @param  {admin.database} db
    * @param  {admin.firestore} fs
    * @param  {String} propertyId
@@ -418,6 +420,58 @@ module.exports = modelSetup({
         `${PREFIX} updateCompletedPhotoTrelloCardAttachment: firestore update failed: ${err}`
       );
     }
+  },
+
+  /**
+   * Update a deficiency's completed photo
+   * trello card attachment identifier
+   * @param  {admin.firestore} fs
+   * @param  {String} deficiencyId
+   * @param  {String} completedPhotoId
+   * @param  {String} trelloAttachmentId
+   * @param  {firestore.batch?} batch
+   * @return {Promise} - resolves {Document}
+   */
+  async firestoreUpdateCompletedPhotoTrelloCardAttachment(
+    fs,
+    deficiencyId,
+    completedPhotoId,
+    trelloAttachmentId,
+    batch
+  ) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(
+      deficiencyId && typeof deficiencyId === 'string',
+      'has deficiency id'
+    );
+    assert(
+      completedPhotoId && typeof completedPhotoId === 'string',
+      'has completed photo id'
+    );
+    assert(
+      trelloAttachmentId && typeof trelloAttachmentId === 'string',
+      'has trello attachment id'
+    );
+    const updatedAt = Math.round(Date.now() / 1000);
+
+    let doc = null;
+    try {
+      doc = await this.firestoreUpdateRecord(
+        fs,
+        deficiencyId,
+        {
+          updatedAt,
+          [`completedPhotos.${completedPhotoId}.trelloCardAttachement`]: trelloAttachmentId,
+        },
+        batch
+      );
+    } catch (err) {
+      throw Error(
+        `${PREFIX} firestoreUpdateCompletedPhotoTrelloCardAttachment: update failed: ${err}`
+      );
+    }
+
+    return doc;
   },
 
   /**
@@ -594,7 +648,7 @@ module.exports = modelSetup({
    * @param  {Object} data
    * @return {Promise}
    */
-  async firestireSafelyCreateRecord(fs, deficiencyId, data) {
+  async firestoreSafelyCreateRecord(fs, deficiencyId, data) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       deficiencyId && typeof deficiencyId === 'string',
@@ -633,7 +687,7 @@ module.exports = modelSetup({
       }
     } catch (err) {
       throw Error(
-        `${PREFIX} firestireSafelyCreateRecord: archive lookup failed: ${err}`
+        `${PREFIX} firestoreSafelyCreateRecord: archive lookup failed: ${err}`
       );
     }
 
@@ -649,7 +703,7 @@ module.exports = modelSetup({
         if (existingDeficiencies.size === 0) {
           this.firestoreCreateRecord(
             fs,
-            deficiencyId,
+            archivedId || deficiencyId,
             { ...data, ...archived },
             transaction
           );
@@ -666,7 +720,7 @@ module.exports = modelSetup({
       });
     } catch (err) {
       throw Error(
-        `${PREFIX} firestireSafelyCreateRecord: transaction failed: ${err}`
+        `${PREFIX} firestoreSafelyCreateRecord: transaction failed: ${err}`
       );
     }
   },
@@ -741,18 +795,36 @@ module.exports = modelSetup({
   },
 
   /**
-   * Lookup Firestore Deficiency Item query
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
-   * @param  {String} propertyId
+   * Lookup Firestore Deficiency query
+   * @param  {admin.firestore} fs - Firestore DB instance
    * @param  {Object} query
+   * @param  {firestore.batch?} batch
    * @return {Promise} - resolves {DocumentSnapshot[]}
    */
-  firestoreQuery(fs, query) {
+  firestoreQuery(fs, query, batch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
-    assert(query && typeof query === 'object', 'has query hash');
-    const colRef = fs.collection(DEFICIENT_COLLECTION);
-    Object.keys(query).forEach(attr => colRef.where(attr, '==', query[attr]));
-    return colRef.get();
+    assert(query && typeof query === 'object', 'has query');
+    if (batch) {
+      assert(typeof batch.get === 'function', 'has firestore batch');
+    }
+
+    let fsQuery = fs.collection(DEFICIENT_COLLECTION);
+
+    // Append each query as where clause
+    Object.keys(query).forEach(attr => {
+      const queryArgs = query[attr];
+      assert(
+        queryArgs && Array.isArray(queryArgs),
+        'has query arguments array'
+      );
+      fsQuery = fsQuery.where(attr, ...queryArgs);
+    });
+
+    if (batch) {
+      return Promise.resolve(batch.get(fsQuery));
+    }
+
+    return fsQuery.get(query);
   },
 
   /**
@@ -781,21 +853,30 @@ module.exports = modelSetup({
   /**
    * Update Firestore Deficient Item
    * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
-   * @param  {String} deficientItemId
+   * @param  {String} deficiencyId
    * @param  {Object} data
-   * @return {Promise}
+   * @param  {firestore.batch?}
+   * @return {Promise} - resolves {Document}
    */
-  firestoreUpdateRecord(fs, deficientItemId, data) {
+  firestoreUpdateRecord(fs, deficiencyId, data, batch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
-      deficientItemId && typeof deficientItemId === 'string',
-      'has deficient item id'
+      deficiencyId && typeof deficiencyId === 'string',
+      'has deficiency id'
     );
     assert(data && typeof data === 'object', 'has update data');
-    return fs
-      .collection(DEFICIENT_COLLECTION)
-      .doc(deficientItemId)
-      .update(data);
+    if (batch) {
+      assert(typeof batch.update === 'function', 'has firestore batch');
+    }
+
+    const doc = fs.collection(DEFICIENT_COLLECTION).doc(deficiencyId);
+
+    if (batch) {
+      batch.update(doc, data);
+      return Promise.resolve(doc);
+    }
+
+    return doc.update(data);
   },
 
   /**
@@ -1018,5 +1099,104 @@ module.exports = modelSetup({
     }
 
     return updates;
+  },
+
+  /**
+   * Delete all inspections active
+   * and archived, associated with
+   * a property
+   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {String} propertyId
+   * @param  {firestore.batch} batch
+   * @return {Promise} - resolves {QuerySnapshot[]}
+   */
+  firestoreRemoveForProperty(fs, propertyId, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+
+    return fs
+      .runTransaction(async transaction => {
+        const queryActive = fs
+          .collection(DEFICIENT_COLLECTION)
+          .where('property', '==', propertyId);
+
+        // Collection references to
+        // all active and archived
+        // deficiencies for the property
+        let activeDiSnap = null;
+        let archivedDiSnap = null;
+        const inspectionRefs = [];
+        try {
+          [activeDiSnap, archivedDiSnap] = await Promise.all([
+            transaction.get(queryActive),
+            archive.deficientItem.firestoreQueryByProperty(
+              fs,
+              propertyId,
+              transaction
+            ),
+          ]);
+          activeDiSnap.forEach(({ ref }) => inspectionRefs.push(ref));
+          archivedDiSnap.forEach(({ ref }) => inspectionRefs.push(ref));
+        } catch (err) {
+          throw Error(
+            `${PREFIX} firestoreRemoveForProperty: deficiency lookup failed: ${err}`
+          );
+        }
+
+        // Include all deletes into batch
+        const batchOrTrans = batch || transaction;
+        inspectionRefs.forEach(ref => batchOrTrans.delete(ref));
+
+        // Retuern all active/archived
+        // deficiency query snapshots
+        return [activeDiSnap, archivedDiSnap];
+      })
+      .catch(err => {
+        throw Error(
+          `${PREFIX} firestoreRemoveForProperty: deficiency deletes failed: ${err}`
+        );
+      });
+  },
+
+  /**
+   * Delete a deficiency's image uploads
+   * TODO: Move to deficiency service
+   * @param  {admin.storage} storage
+   * @param  {String} propertyId
+   * @param  {String} deficiencyId
+   * @param  {String} url
+   * @return {Promise}
+   */
+  deleteUpload(storage, propertyId, deficiencyId, url) {
+    assert(storage && typeof storage.bucket === 'function', 'has storage');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    assert(
+      deficiencyId && typeof deficiencyId === 'string',
+      'has deficiency id'
+    );
+    assert(url && typeof url === 'string', 'has url string');
+
+    const fileName = (decodeURIComponent(url).split('?')[0] || '')
+      .split('/')
+      .pop();
+    const filePath = STORAGE_PATH_TEMPLATE.replace('{{propertyId}}', propertyId)
+      .replace('{{deficiencyId}}', deficiencyId)
+      .replace('{{fileName}}', fileName);
+
+    return storage
+      .bucket()
+      .file(filePath)
+      .delete()
+      .catch(err => Promise.reject(Error(`${PREFIX} deleteUpload: ${err}`)));
+  },
+
+  /**
+   * Generate a Firestore ID for deficiency collection
+   * @param  {admin.firestore} fs
+   * @return {String} - id
+   */
+  uuid(fs) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    return fs.collection(DEFICIENT_COLLECTION).doc().id;
   },
 });

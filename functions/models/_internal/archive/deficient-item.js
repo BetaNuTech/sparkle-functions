@@ -278,19 +278,28 @@ module.exports = modelSetup({
    * @param  {admin.firestore} fs - Firestore DB instance
    * @param  {String} deficientItemId
    * @param  {Object} data
+   * @param  {firestore.batch?} batch
    * @return {Promise}
    */
-  firestoreUpdateRecord(fs, deficientItemId, data) {
+  firestoreUpdateRecord(fs, deficientItemId, data, batch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
       'has deficient item id'
     );
     assert(data && typeof data === 'object', 'has update data');
-    return fs
-      .collection(ARCHIVE_COLLECTION)
-      .doc(deficientItemId)
-      .update(data);
+    if (batch) {
+      assert(typeof batch.update === 'function', 'has firestore batch');
+    }
+
+    const doc = fs.collection(ARCHIVE_COLLECTION).doc(deficientItemId);
+
+    if (batch) {
+      batch.update(doc, data);
+      return Promise.resolve();
+    }
+
+    return doc.update(data);
   },
 
   /**
@@ -311,5 +320,32 @@ module.exports = modelSetup({
       .where('_collection', '==', DEFICIENT_COLLECTION)
       .where('inspection', '==', inspectionId)
       .get();
+  },
+
+  /**
+   * Lookup all archived deficiencies
+   * associated with a property
+   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {String} propertyId
+   * @param  {firestore.transaction?} transaction
+   * @return {Promise} - resolves {QuerySnapshot}
+   */
+  firestoreQueryByProperty(fs, propertyId, transaction) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    const query = fs
+      .collection(ARCHIVE_COLLECTION)
+      .where('property', '==', propertyId)
+      .where('_collection', '==', DEFICIENT_COLLECTION);
+
+    if (transaction) {
+      assert(
+        typeof transaction.get === 'function',
+        'has firestore transaction'
+      );
+      return Promise.resolve(transaction.get(query));
+    }
+
+    return query.get(query);
   },
 });

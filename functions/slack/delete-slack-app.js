@@ -14,7 +14,7 @@ const SLACK_APP_CLIENT_ID = slackApp.clientId;
 const SLACK_APP_CLIENT_SECRET = slackApp.clientSecret;
 
 /**
- * Factory for deleting Trello authorizor
+ * Factory for deleting Slack authorizor
  * for the organization and property configs
  * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
  * @param  {firebaseAdmin.auth} auth - Firebase Admin auth instance

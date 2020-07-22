@@ -74,6 +74,19 @@ describe('Utils | Auth Firebase User', () => {
       .expect(200);
   });
 
+  it('should authorize an admin user from Firestore', () => {
+    const db = createFsStub({}, { admin: true });
+    const auth = createAuthStub();
+
+    // Execute & Get Result
+    const app = createApp(authUser(db, auth, true), successHandler);
+
+    return request(app)
+      .get(`/${PROPERTY_ID}`)
+      .set('Authorization', 'fb-jwt 123')
+      .expect(200);
+  });
+
   it('should reject a non-admin user when requested via permissions hash', () => {
     const db = createDbStub({}, { properties: { [PROPERTY_ID]: true } }); // property level user
     const auth = createAuthStub();
@@ -244,6 +257,21 @@ function createDbStub(config = {}, userConfig = {}) {
     },
     config
   );
+}
+
+function createFsStub(config = {}, userConfig = {}) {
+  return {
+    collection: () => ({
+      doc: () => ({
+        get: () =>
+          Promise.resolve({
+            id: uuid(),
+            data: () => ({ ...userConfig }),
+          }),
+      }),
+    }),
+    ...config,
+  };
 }
 
 function createAuthStub(config = {}, tokenConfig = {}) {

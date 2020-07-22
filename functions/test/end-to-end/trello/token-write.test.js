@@ -16,6 +16,7 @@ const TRELLO_AUTH_TOKEN =
 const TRELLO_MEMBER_ID = GET_TRELLO_TOKEN_PAYLOAD.idMember;
 const TRELLO_USERNAME = GET_TRELLO_MEMBER_PAYLOAD.username;
 
+// DEPRECATED: Delete when Firebase DB dropped
 describe('Trello Upsert Token', () => {
   afterEach(async () => {
     await cleanDb(db);

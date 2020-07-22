@@ -1,14 +1,14 @@
+const assert = require('assert');
 const log = require('../../utils/logger');
+const itemUploads = require('./item-uploads');
 
 const PREFIX = 'inspections: utils: delete-uploads:';
-const INSP_BUCKET_NAME = `inspectionItemImages${
-  process.env.NODE_ENV === 'test' ? 'Test' : ''
-}`;
 
 /**
  * Remove all an inspection's uploads
- * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
- * @param  {firebaseAdmin.storage} storage - Firebase Admin Storage instance
+ * TODO: Deprecate once firebase DB support dropped
+ * @param  {admin.database} db - Firebase Admin DB instance
+ * @param  {admin.storage} storage - Firebase Admin Storage instance
  * @param  {String} inspectionId
  * @return {Promise} - resolve {Object} updates
  */
@@ -17,6 +17,12 @@ module.exports = async function deleteInspectionUploads(
   storage,
   inspectionId
 ) {
+  assert(db && typeof db.ref === 'function', 'has realtime db');
+  assert(
+    storage && typeof storage.bucket === 'function',
+    'has storage instance'
+  );
+  assert(inspectionId && typeof inspectionId === 'string', 'has inspection id');
   const itemsSnaps = await db
     .ref(`/inspections/${inspectionId}/template/items`)
     .once('value');
@@ -27,31 +33,22 @@ module.exports = async function deleteInspectionUploads(
   // into a flat array of upload url's
   itemsSnaps.forEach(itemSnap => {
     const item = itemSnap.val() || {};
-    Object.keys(item.photosData || {}).forEach(id => {
-      itemUploadUrls.push(item.photosData[id].downloadURL);
-    });
+    itemUploadUrls.push(...itemUploads.getUploadUrls(item));
   });
 
   // Itteratively destroy each upload
   if (itemUploadUrls.length) {
     for (let i = 0; i < itemUploadUrls.length; i++) {
       const url = itemUploadUrls[i];
-
       try {
-        const fileName = (decodeURIComponent(url).split('?')[0] || '')
-          .split('/')
-          .pop();
-        await storage
-          .bucket()
-          .file(`${INSP_BUCKET_NAME}/${fileName}`)
-          .delete();
+        await itemUploads.delete(storage, url);
+        updates[url] = 'removed';
         log.info(
-          `${PREFIX} inspection: ${inspectionId} ${fileName} removal succeeded`
+          `${PREFIX} inspection: ${inspectionId} ${url} removal succeeded`
         );
-        updates[fileName] = 'removed';
-      } catch (e) {
+      } catch (err) {
         log.error(
-          `${PREFIX} inspection: ${inspectionId} removal at ${url} failed ${e}`
+          `${PREFIX} inspection: ${inspectionId} removal at ${url} failed | ${err}`
         );
       }
     }

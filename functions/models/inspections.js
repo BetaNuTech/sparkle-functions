@@ -4,6 +4,7 @@ const modelSetup = require('./utils/model-setup');
 const diModel = require('./deficient-items');
 const archiveModel = require('./_internal/archive');
 const deleteUploads = require('../inspections/utils/delete-uploads');
+const itemUploads = require('../inspections/utils/item-uploads');
 
 const PREFIX = 'models: inspections:';
 const INSPECTIONS_PATH = '/inspections';
@@ -98,13 +99,15 @@ module.exports = modelSetup({
 
   /**
    * Set/update inspections PDF report status
-   * @param {firebaseAdmin.database} db - Firebase Admin DB instance
+   * @param {admin.database} db - Firebase Admin DB instance
+   * @param {admin.firestore} fs - Firestore Admin DB instance
    * @param {String} inspectionId
    * @param {String} status
    * @return {Promise}
    */
-  setPDFReportStatus(db, inspectionId, status) {
+  async setPDFReportStatus(db, fs, inspectionId, status) {
     assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
@@ -114,28 +117,63 @@ module.exports = modelSetup({
       'has valid PDF inspection report status'
     );
 
-    return db
-      .ref(`${INSPECTIONS_PATH}/${inspectionId}/inspectionReportStatus`)
-      .set(status);
+    try {
+      await db
+        .ref(`${INSPECTIONS_PATH}/${inspectionId}/inspectionReportStatus`)
+        .set(status);
+    } catch (err) {
+      throw Error(
+        `${PREFIX} setPDFReportStatus: failed to update Firebase status: ${err}`
+      );
+    }
+
+    try {
+      await this.firestoreUpsertRecord(fs, inspectionId, {
+        inspectionReportStatus: status,
+      });
+    } catch (err) {
+      throw Error(
+        `${PREFIX} setPDFReportStatus: failed to update Firestore status: ${err}`
+      );
+    }
   },
 
   /**
    * Set/update inspections PDF report url
-   * @param {firebaseAdmin.database} db - Firebase Admin DB instance
+   * @param {admin.database} db - Firebase Admin DB instance
+   * @param {admin.firestore} fs - Firestore Admin DB instance
    * @param {String} inspectionId
    * @param {String} url
    * @return {Promise}
    */
-  setReportURL(db, inspectionId, url) {
+  async setReportURL(db, fs, inspectionId, url) {
     assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
     );
     assert(url && typeof url === 'string', 'has report url');
-    return db
-      .ref(`${INSPECTIONS_PATH}/${inspectionId}/inspectionReportURL`)
-      .set(url);
+
+    try {
+      await db
+        .ref(`${INSPECTIONS_PATH}/${inspectionId}/inspectionReportURL`)
+        .set(url);
+    } catch (err) {
+      throw Error(
+        `${PREFIX} setReportURL: Failed to update firebase inspection: ${err}`
+      );
+    }
+
+    try {
+      await this.firestoreUpsertRecord(fs, inspectionId, {
+        inspectionReportURL: url,
+      });
+    } catch (err) {
+      throw Error(
+        `${PREFIX} setReportURL: Failed to update firestore inspection: ${err}`
+      );
+    }
   },
 
   /**
@@ -144,15 +182,36 @@ module.exports = modelSetup({
    * @param {String} inspectionId
    * @return {Promise}
    */
-  updatePDFReportTimestamp(db, inspectionId) {
+  async updatePDFReportTimestamp(db, fs, inspectionId) {
     assert(db && typeof db.ref === 'function', 'has realtime db');
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
     );
-    return db
-      .ref(`${INSPECTIONS_PATH}/${inspectionId}/inspectionReportUpdateLastDate`)
-      .set(Date.now() / 1000);
+    const now = Math.round(Date.now() / 1000);
+
+    try {
+      await db
+        .ref(
+          `${INSPECTIONS_PATH}/${inspectionId}/inspectionReportUpdateLastDate`
+        )
+        .set(now);
+    } catch (err) {
+      throw Error(
+        `${PREFIX} updatePDFReportTimestamp: failed to update firebase: ${err}`
+      );
+    }
+
+    try {
+      await this.firestoreUpsertRecord(fs, inspectionId, {
+        inspectionReportUpdateLastDate: now,
+      });
+    } catch (err) {
+      throw Error(
+        `${PREFIX} updatePDFReportTimestamp: failed to update firestore: ${err}`
+      );
+    }
   },
 
   /**
@@ -749,6 +808,31 @@ module.exports = modelSetup({
   },
 
   /**
+   * Update Firestore Inspection
+   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {String} inspectionId
+   * @param  {Object} data
+   * @param  {firestore.batch?} batch
+   * @return {Promise}
+   */
+  firestoreUpdateRecord(fs, inspectionId, data, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(
+      inspectionId && typeof inspectionId === 'string',
+      'has deficient item id'
+    );
+    assert(data && typeof data === 'object', 'has update data');
+    const docRef = fs.collection(INSPECTION_COLLECTION).doc(inspectionId);
+
+    if (batch) {
+      assert(typeof batch.update === 'function', 'has batch instance');
+      return Promise.resolve(batch.update(docRef, data));
+    }
+
+    return docRef.update(data);
+  },
+
+  /**
    * Create or update a Firestore inspection
    * @param  {firebaseAdmin.firestore} fs
    * @param  {String}  inspectionId
@@ -775,11 +859,13 @@ module.exports = modelSetup({
     }
 
     const { exists } = docSnap;
-    const upsert = {
-      ...data,
-      score: getScore(data),
-      templateName: getTemplateName(data),
-    };
+    const upsert = { ...data };
+    if (data.score !== undefined) {
+      upsert.score = getScore(data);
+    }
+    if (data.template !== undefined) {
+      upsert.templateName = getTemplateName(data);
+    }
 
     try {
       if (exists) {
@@ -818,32 +904,40 @@ module.exports = modelSetup({
 
   /**
    * Remove Firestore Inspection
-   * TODO: Add inspection archiving
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * by moving it to the archive
+   * @param  {admin.firestore} fs - Firestore DB instance
    * @param  {String} inspectionId
+   * @param  {Object?} data - inspection data
+   * @param  {firestore.batch?} parentBatch
    * @return {Promise}
    */
-  async firestoreRemoveRecord(fs, inspectionId) {
+  async firestoreRemoveRecord(fs, inspectionId, data, parentBatch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection id'
     );
 
-    let inspectionDoc = null;
+    let inspectionDocRef = null;
     let inspection = null;
 
-    try {
-      inspectionDoc = await this.firestoreFindRecord(fs, inspectionId);
-      inspection = inspectionDoc.data();
-    } catch (err) {
-      throw Error(`${PREFIX}: firestoreRemoveRecord: ${err}`);
+    if (!data) {
+      try {
+        const snap = await this.firestoreFindRecord(fs, inspectionId);
+        inspectionDocRef = snap.ref;
+        inspection = snap.data();
+      } catch (err) {
+        throw Error(`${PREFIX}: firestoreRemoveRecord: ${err}`);
+      }
+    } else {
+      inspectionDocRef = fs.collection(INSPECTION_COLLECTION).doc(inspectionId);
+      inspection = data;
     }
 
     if (!inspection) return; // inspection does not exist
 
-    const batch = fs.batch();
-    batch.delete(inspectionDoc.ref);
+    const batch = parentBatch || fs.batch();
+    batch.delete(inspectionDocRef);
 
     // Add archive updates to transaction
     await archiveModel.inspection.firestoreCreateRecord(
@@ -853,12 +947,36 @@ module.exports = modelSetup({
       batch
     );
 
+    if (parentBatch) {
+      return Promise.resolve(parentBatch);
+    }
+
     return batch.commit();
   },
 
   /**
+   * Delete Firestore Inspection
+   * without archiving it
+   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {String} propertyId
+   * @return {Promise}
+   */
+  firestoreDestroyRecord(fs, inspectionId) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(
+      inspectionId && typeof inspectionId === 'string',
+      'has inspection id'
+    );
+
+    return fs
+      .collection(INSPECTION_COLLECTION)
+      .doc(inspectionId)
+      .delete();
+  },
+
+  /**
    * Lookup all inspections associated with a property
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} fs - Firestore DB instance
    * @param  {String} propertyId
    * @return {Promise} - resolves {QuerySnapshot}
    */
@@ -869,6 +987,114 @@ module.exports = modelSetup({
       .collection(INSPECTION_COLLECTION)
       .where('property', '==', propertyId)
       .get();
+  },
+
+  /**
+   * Query all inspections
+   * @param  {admin.firestore} fs
+   * @param  {Object} query
+   * @param  {firestore.batch?} batch
+   * @return {Promise} - resolves {DataSnapshot}
+   */
+  firestoreQuery(fs, query, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(query && typeof query === 'object', 'has query');
+
+    let fsQuery = fs.collection(INSPECTION_COLLECTION);
+
+    // Append each query as where clause
+    Object.keys(query).forEach(attr => {
+      const queryArgs = query[attr];
+      assert(
+        queryArgs && Array.isArray(queryArgs),
+        'has query arguments array'
+      );
+      fsQuery = fsQuery.where(attr, ...queryArgs);
+    });
+
+    if (batch) {
+      assert(typeof batch.get === 'function', 'has firestore batch');
+      return Promise.resolve(batch.get(fsQuery));
+    }
+
+    return fsQuery.get(query);
+  },
+
+  /**
+   * Delete all inspections active
+   * and archived, associated with
+   * a property
+   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {String} propertyId
+   * @param  {firestore.batch} batch
+   * @return {Promise} - resolves {QuerySnapshot[]}
+   */
+  firestoreRemoveForProperty(fs, propertyId, batch) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+
+    return fs
+      .runTransaction(async transaction => {
+        const queryActive = fs
+          .collection(INSPECTION_COLLECTION)
+          .where('property', '==', propertyId);
+
+        // Collection references to
+        // all active and archived
+        // inspections for the property
+        let activeInspSnap = null;
+        let archivedInspSnap = null;
+        const inspectionRefs = [];
+        try {
+          [activeInspSnap, archivedInspSnap] = await Promise.all([
+            transaction.get(queryActive),
+            archiveModel.inspection.firestoreQueryByProperty(
+              fs,
+              propertyId,
+              transaction
+            ),
+          ]);
+          activeInspSnap.forEach(({ ref }) => inspectionRefs.push(ref));
+          archivedInspSnap.forEach(({ ref }) => inspectionRefs.push(ref));
+        } catch (err) {
+          throw Error(
+            `${PREFIX} firestoreRemoveForProperty: inspection lookup failed: ${err}`
+          );
+        }
+
+        // Include all deletes into batch
+        const batchOrTrans = batch || transaction;
+        inspectionRefs.forEach(ref => batchOrTrans.delete(ref));
+
+        // Retuern all active/archived
+        // inspection query snapshots
+        return [activeInspSnap, archivedInspSnap];
+      })
+      .catch(err => {
+        throw Error(
+          `${PREFIX} firestoreRemoveForProperty: inspection deletes failed: ${err}`
+        );
+      });
+  },
+
+  /**
+   * Remove all uploads for an inspection's item
+   * @param  {admin.storage} storage
+   * @param  {Object} item
+   * @return {Promise} - All remove requests grouped together
+   */
+  async deleteItemUploads(storage, item) {
+    assert(storage && typeof storage.bucket === 'function', 'has storage');
+    assert(item && typeof item === 'object', 'has item object');
+
+    const requests = [];
+    const urls = itemUploads.getUploadUrls(item);
+
+    for (let i = 0; i < urls.length; i++) {
+      requests.push(itemUploads.delete(storage, urls[i]));
+    }
+
+    return Promise.all(requests);
   },
 });
 

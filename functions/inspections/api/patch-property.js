@@ -35,30 +35,58 @@ module.exports = function createPatchProperty(db, fs) {
       return res.status(400).send({ message: 'body missing property' });
     }
 
-    // Lookup Property
+    // Lookup Firestore Property
     let property = null;
     try {
-      const propertySnap = await propertiesModel.findRecord(db, propertyId);
-      property = propertySnap.val();
+      const propertySnap = await propertiesModel.firestoreFindRecord(
+        fs,
+        propertyId
+      );
+      property = propertySnap.data() || null;
       if (!property) throw Error('Not found');
     } catch (err) {
-      log.error(`${PREFIX} property lookup failed | ${err}`);
-      return res.status(400).send({ message: 'body contains bad property' });
+      log.error(`${PREFIX} firestore property lookup failed | ${err}`);
     }
 
-    // Lookup Inspection
+    // Lookup fallback Firebase Property
+    if (!property) {
+      try {
+        const propertySnap = await propertiesModel.findRecord(db, propertyId);
+        property = propertySnap.val() || null;
+        if (!property) throw Error('Not found');
+      } catch (err) {
+        log.error(`${PREFIX} firebase property lookup failed | ${err}`);
+        return res.status(400).send({ message: 'body contains bad property' });
+      }
+    }
+
+    // Lookup Firestore Inspection
     let inspection = null;
     try {
-      const inspectionSnap = await inspectionsModel.findRecord(
-        db,
+      const inspectionSnap = await inspectionsModel.firestoreFindRecord(
+        fs,
         inspectionId
       );
-      inspection = inspectionSnap.val();
+      inspection = inspectionSnap.data() || null;
       if (!inspection) throw Error('Not found');
     } catch (err) {
-      return res.status(409).send({
-        message: 'requested inspection not found',
-      });
+      log.error(`${PREFIX} firestore inspection lookup failed | ${err}`);
+    }
+
+    // Lookup fallback Firebase Inspection
+    if (!inspection) {
+      try {
+        const inspectionSnap = await inspectionsModel.findRecord(
+          db,
+          inspectionId
+        );
+        inspection = inspectionSnap.val() || null;
+        if (!inspection) throw Error('Not found');
+      } catch (err) {
+        return res.status(409).send({
+          message: 'requested inspection not found',
+        });
+      }
     }
 
     const srcPropertyId = inspection.property;
@@ -67,11 +95,8 @@ module.exports = function createPatchProperty(db, fs) {
     try {
       await inspectionsModel.reassignProperty(db, inspectionId, propertyId);
     } catch (err) {
-      return send500Error(
-        err,
-        'inspection property reassignment failed',
-        'unexpected error'
-      );
+      // Allow failure
+      log.error(`${PREFIX} failed to reassign firebase property | ${err}`);
     }
 
     // Perform reassign on Firestore
@@ -90,25 +115,36 @@ module.exports = function createPatchProperty(db, fs) {
       );
     }
 
-    // Update source property meta data
     try {
-      await properties.utils.processMeta(db, fs, srcPropertyId);
+      const batch = fs.batch();
+      await propertiesModel.updateMetaData(fs, srcPropertyId, batch);
+      await propertiesModel.updateMetaData(fs, propertyId, batch);
+      await batch.commit();
     } catch (err) {
       return send500Error(
         err,
-        'source property metadata update failed',
+        'properties metadata update failed',
         'unexpected error'
+      );
+    }
+
+    // Update source property meta data
+    try {
+      await properties.utils.processMeta(db, srcPropertyId);
+    } catch (err) {
+      // Allow failure
+      log.error(
+        `${PREFIX} realtime source property meta update failed | ${err}`
       );
     }
 
     // Update destination property meta data
     try {
-      await properties.utils.processMeta(db, fs, propertyId);
+      await properties.utils.processMeta(db, propertyId);
     } catch (err) {
-      return send500Error(
-        err,
-        'destination property metadata update failed',
-        'unexpected error'
+      // Allow failure
+      log.error(
+        `${PREFIX} realtime distination property meta update failed | ${err}`
       );
     }
 

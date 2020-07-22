@@ -69,6 +69,7 @@ const TRELLO_INTEGRATIONS_DB_PATH = `/integrations/trello/properties/${PROPERTY_
 const TRELLO_ORG_INTEGRATION_DB_PATH = '/integrations/trello/organization';
 const DEFICIENT_ITEM_DB_PATH = `${appConfig.deficientItems.dbPath}/${PROPERTY_ID}/${DEFICIENT_ITEM_ID}`;
 
+// DEPRECATED
 describe('Trello Create Deficient Item Cards', () => {
   afterEach(async () => {
     nock.cleanAll();

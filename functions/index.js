@@ -39,26 +39,31 @@ exports.latestCompleteInspection = functions.https.onRequest(
 );
 
 // POST /integrations/trello/authorization
+// DEPRECATED in favor of router
 exports.upsertTrelloToken = functions.https.onRequest(
   trello.createOnUpsertTrelloTokenHandler(db, auth)
 );
 
 // DELETE /integrations/trello/authorization
+// DEPRECATED in favor of router
 exports.deleteTrelloAuthorization = functions.https.onRequest(
   trello.createDeleteTrelloAuthHandler(db, auth)
 );
 
 // GET /integrations/trello/{propertyId}/boards
+// DEPRECATED: Remove when Firebase DB dropped
 exports.getAllTrelloBoards = functions.https.onRequest(
   trello.createOnGetAllTrelloBoardsHandler(db, auth)
 );
 
 // GET /integrations/trello/{propertyId}/boards/{boardId}/lists
+// DEPRECATED: Remove when Firebase DB dropped
 exports.getAllTrelloBoardLists = functions.https.onRequest(
   trello.createOnGetAllTrelloBoardListsHandler(db, auth)
 );
 
 // POST /properties/:propertyId/deficient-items/:deficientItemId/trello/card
+// DEPRECATED: in favor of router
 exports.createTrelloDeficientItemCard = functions.https.onRequest(
   trello.createOnTrelloDeficientItemCardHandler(
     db,
@@ -68,21 +73,25 @@ exports.createTrelloDeficientItemCard = functions.https.onRequest(
 );
 
 // POST /slackApp
+// DEPRECATED: Remove when Firebase DB dropped
 exports.slackAppEvents = functions.https.onRequest(
-  slack.createSlackEventsApiHandler(db)
+  slack.slackEventsApiHandler(db)
 );
 
 // POST /integrations/slack/authorization
+// NOTE: Deprecate when firebase db dropped
 exports.createSlackAppAuth = functions.https.onRequest(
   slack.createOnSlackAppAuthHandler(db, auth)
 );
 
 // DELETE /integrations/slack/authorization
+// NOTE: Deprecated: delete when firebase db dropped
 exports.deleteSlackAuthorization = functions.https.onRequest(
   slack.createDeleteSlackAppHandler(db, auth)
 );
 
 //  POST /notifications
+//  NOTE: Deprecated in favor of router API
 exports.createSlackNotifications = functions.https.onRequest(
   slack.createOnSlackNotificationHandler(
     db,
@@ -96,6 +105,7 @@ exports.createSlackNotifications = functions.https.onRequest(
 exports.inspectionPdfReport = functions.https.onRequest(
   inspections.createOnGetPDFReportHandler(
     db,
+    fs,
     auth,
     config.clientApps.web.inspectionURL
   )
@@ -219,6 +229,7 @@ exports.templateCategoryWrite = functions.database
   .onWrite(templateCategories.onWrite(fs));
 
 // Create Slack Notifications From Source
+// DEPRECATED
 exports.onCreateSourceSlackNotification = functions.database
   .ref('/notifications/src/{notificationId}')
   .onCreate(
@@ -230,6 +241,7 @@ exports.onCreateSourceSlackNotification = functions.database
   );
 
 // Create Push Notifications From Source
+// DEPRECATED
 exports.onCreateSourcePushNotification = functions.database
   .ref('/notifications/src/{notificationId}')
   .onCreate(
@@ -301,6 +313,7 @@ exports.regTokensSync = regTokens.pubsub.createSyncOutdated(
   db
 );
 
+// DEPRECATED
 exports.deficientItemsOverdueSync = deficientItems.pubsub.createSyncOverdue(
   'deficient-items-sync',
   functions.pubsub,
@@ -323,12 +336,14 @@ exports.userTeamsSync = teams.pubsub.createSyncUserTeam(
   fs
 );
 
+// DEPRECATED
 exports.publishSlackNotifications = notifications.pubsub.createPublishSlack(
   'notifications-slack-sync',
   functions.pubsub,
   db
 );
 
+// DEPRECATED
 exports.publishPushNotifications = notifications.pubsub.createPublishPush(
   'push-messages-sync',
   functions.pubsub,
@@ -336,6 +351,7 @@ exports.publishPushNotifications = notifications.pubsub.createPublishPush(
   messaging
 );
 
+// DEPRECATED
 exports.cleanupNotifications = notifications.pubsub.createCleanup(
   db,
   functions.pubsub,
@@ -345,6 +361,7 @@ exports.cleanupNotifications = notifications.pubsub.createCleanup(
   'notifications-slack-sync'
 );
 
+// DEPRECATED
 exports.trelloCommentsForDefItemStateUpdates = trello.pubsub.createCommentForDiState(
   'deficient-item-status-update',
   functions.pubsub,
@@ -352,6 +369,7 @@ exports.trelloCommentsForDefItemStateUpdates = trello.pubsub.createCommentForDiS
   fs
 );
 
+// DEPRECATED
 exports.trelloCardDueDateUpdates = trello.pubsub.createUpdateDueDate(
   'deficient-item-status-update',
   functions.pubsub,
@@ -359,6 +377,7 @@ exports.trelloCardDueDateUpdates = trello.pubsub.createUpdateDueDate(
   fs
 );
 
+// DEPRECATED
 exports.trelloDiCardClose = trello.pubsub.createCloseDiCard(
   'deficient-item-status-update',
   functions.pubsub,
@@ -376,7 +395,14 @@ exports.api = functions.https.onRequest(
 
 // Firestore Watchers
 
-const fsWatchers = firestoreWatchers(db, fs, pubsubClient);
+const fsWatchers = firestoreWatchers(
+  db,
+  fs,
+  pubsubClient,
+  storage,
+  functions.pubsub,
+  messaging
+);
 Object.keys(fsWatchers).forEach(endpoint => {
   exports[endpoint] = fsWatchers[endpoint];
 });

@@ -16,9 +16,15 @@ const properties = require('../properties');
     }
 
     try {
-      await properties.utils.processMeta(db, fs, id);
+      await propertiesModel.updateMetaData(fs, id);
     } catch (err) {
-      log.error(`Failed to sync property "${id}" meta data | ${err}`);
+      log.error(`Failed to sync firestore property "${id}" meta data | ${err}`);
+    }
+
+    try {
+      await properties.utils.processMeta(db, id);
+    } catch (err) {
+      log.error(`Failed to sync realtime property "${id}" meta data | ${err}`);
     }
 
     try {
