@@ -111,11 +111,6 @@ exports.inspectionPdfReport = functions.https.onRequest(
   )
 );
 
-// Deficient Items
-exports.deficientItemsWrite = functions.database
-  .ref('/inspections/{inspectionId}/updatedAt')
-  .onWrite(deficientItems.createOnWriteInspection(db, fs));
-
 exports.deficientItemsPropertyMetaSync = functions.database
   .ref('/propertyInspectionDeficientItems/{propertyId}/{itemId}/state')
   .onUpdate(

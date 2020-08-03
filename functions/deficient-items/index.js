@@ -1,4 +1,3 @@
-const createOnWriteInspection = require('./on-write-inspection-watcher');
 const createOnUpdateState = require('./on-update-state-watcher');
 const createOnUpdateStateV2 = require('./on-update-state-watcher-v2');
 const createOnUpdateArchive = require('./on-update-archive-watcher');
@@ -13,7 +12,6 @@ const trelloCardDueDate = require('./pubsub/trello-card-due-date-v2');
 const syncOverdue = require('./pubsub/sync-overdue-v2');
 
 module.exports = {
-  createOnWriteInspection,
   createOnUpdateState,
   createOnUpdateStateV2,
   createOnUpdateArchive,
