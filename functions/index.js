@@ -111,11 +111,6 @@ exports.inspectionPdfReport = functions.https.onRequest(
   )
 );
 
-// Property templates onWrite
-exports.propertyTemplatesWrite = functions.database
-  .ref('/properties/{propertyId}/templates')
-  .onWrite(properties.createOnWriteTemplatesWatcher(db));
-
 // Property onWrite
 exports.propertyWrite = functions.database
   .ref('/properties/{propertyId}')
