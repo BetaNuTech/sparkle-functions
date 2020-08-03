@@ -111,13 +111,6 @@ exports.inspectionPdfReport = functions.https.onRequest(
   )
 );
 
-// Users teams onWrite
-exports.userTeamWrite = functions.database
-  .ref('/users/{userId}/teams/{teamId}')
-  .onWrite(
-    teams.createOnWriteUserTeamWatcher(db, pubsubClient, 'user-teams-sync')
-  );
-
 // teams onDelete
 exports.teamDelete = functions.database
   .ref('/teams/{teamId}')
