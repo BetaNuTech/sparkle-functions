@@ -111,12 +111,6 @@ exports.inspectionPdfReport = functions.https.onRequest(
   )
 );
 
-// For migrating to a new architecture only, setting a newer date
-// This allow the updatedLastDate to stay as-is (make sure client doesn't update it though)
-exports.inspectionMigrationDateWrite = functions.database
-  .ref('/inspections/{inspectionId}/migrationDate')
-  .onWrite(inspections.createOnWriteAttributeWatcher(db, fs));
-
 // Property templates onWrite
 exports.propertyTemplatesWrite = functions.database
   .ref('/properties/{propertyId}/templates')
@@ -202,11 +196,6 @@ exports.deficientItemsProgressNotesSync = functions.database
 exports.templateWrite = functions.database
   .ref('/templates/{templateId}')
   .onWrite(templates.createOnWriteWatcher(db, fs));
-
-// Inspection updatedLastDate onWrite
-exports.inspectionUpdatedLastDateWrite = functions.database
-  .ref('/inspections/{inspectionId}/updatedLastDate')
-  .onWrite(inspections.createOnWriteAttributeWatcher(db, fs));
 
 // Inspection onCreate
 exports.inspectionCreate = functions.database
