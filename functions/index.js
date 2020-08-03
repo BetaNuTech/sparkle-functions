@@ -111,11 +111,6 @@ exports.inspectionPdfReport = functions.https.onRequest(
   )
 );
 
-// teams onDelete
-exports.teamDelete = functions.database
-  .ref('/teams/{teamId}')
-  .onDelete(teams.createOnDeleteWatcher(db, fs));
-
 // Deficient Items
 exports.deficientItemsWrite = functions.database
   .ref('/inspections/{inspectionId}/updatedAt')
