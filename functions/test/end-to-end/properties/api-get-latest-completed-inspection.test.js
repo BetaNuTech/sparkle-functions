@@ -106,8 +106,8 @@ function createInspection(inspConfig = {}) {
     creationDate: timestamp,
     completionDate: timestamp + 5000,
     score: 100,
-    templateName: BLUESHIFT_TEMPLATE,
-    template: { name: BLUESHIFT_TEMPLATE },
+    templateName: `Test - ${BLUESHIFT_TEMPLATE}`,
+    template: { name: `Test - ${BLUESHIFT_TEMPLATE}` },
     inspectionReportURL: 'https://test.com/img.pdf',
     ...inspConfig,
   };

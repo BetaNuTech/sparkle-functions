@@ -75,13 +75,14 @@ module.exports = function createGetLatestCompletedInspection(fs) {
         property: ['==', property.id],
         inspectionCompleted: ['==', true],
         completionDate: ['>', 0],
-        templateName: ['==', TEMP_NAME_LOOKUP],
       });
       if (snap.size === 0) {
         throw Error('no completed inspections');
       }
       snap.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
+        // Remove non-blueshift inspections
+        .filter(doc => `${doc.templateName}`.search(TEMP_NAME_LOOKUP) > -1)
         // Sort by creation date descending
         .sort((a, b) => b.creationDate - a.creationDate)
         .forEach(result => inspections.push(result));
