@@ -90,18 +90,21 @@ describe('Properties | API | GET Latest Inspection', () => {
       completionDate: latest,
       score: 99,
       property: property.id,
+      templateName: `Test - ${BLUESHIFT_TEMPLATE}`,
     });
     const olderInspection = createInspection({
       id: 'older',
       creationDate: older - 1,
       completionDate: older,
       property: property.id,
+      templateName: `Test Two - ${BLUESHIFT_TEMPLATE}`,
     });
     const oldestInspection = createInspection({
       id: 'oldest',
       creationDate: oldest - 1,
       completionDate: oldest,
       property: property.id,
+      templateName: `Test Three 123 - ${BLUESHIFT_TEMPLATE}`,
     });
 
     const inspectionsSnap = wrapSnapshot([
@@ -120,6 +123,73 @@ describe('Properties | API | GET Latest Inspection', () => {
           inspectionReportURL: latestInspection.inspectionReportURL,
           inspectionURL: createInspectionUrl(
             latestInspection.property,
+            'expected'
+          ),
+        },
+      },
+    };
+
+    // Stup requests
+    sinon.stub(propertiesModel, 'firestoreQuery').resolves(propertiesSnap);
+    sinon.stub(inspectionsModel, 'firestoreQuery').resolves(inspectionsSnap);
+
+    request(createApp())
+      .get('/test')
+      .send()
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(200)
+      .then(res => {
+        expect(res.body).to.deep.equal(expected);
+        done();
+      })
+      .catch(done);
+  });
+
+  it('filters out inspections not associated with Blueshift', done => {
+    const latest = TODAY_UNIX;
+    const older = YESTURDAY_UNIX;
+    const oldest = TWO_DAYS_AGO_UNIX;
+    const property = createProperty();
+    const propertiesSnap = wrapSnapshot([property]);
+    const olderInspection = createInspection({
+      id: 'expected',
+      score: 99,
+      creationDate: older - 1,
+      completionDate: older,
+      property: property.id,
+      templateName: `Test - ${BLUESHIFT_TEMPLATE}`,
+    });
+    const latestInspection = createInspection({
+      id: 'latest-unrelated',
+      creationDate: latest - 1,
+      completionDate: latest,
+      property: property.id,
+      templateName: 'unrelated',
+    });
+    const oldestInspection = createInspection({
+      id: 'oldest',
+      creationDate: oldest - 1,
+      completionDate: oldest,
+      property: property.id,
+      templateName: `Test 2 - ${BLUESHIFT_TEMPLATE}`,
+    });
+
+    const inspectionsSnap = wrapSnapshot([
+      olderInspection,
+      oldestInspection,
+      latestInspection,
+    ]);
+    const expected = {
+      data: {
+        id: 'expected',
+        type: 'inspection',
+        attributes: {
+          creationDate: olderInspection.creationDate,
+          completionDate: olderInspection.completionDate,
+          score: `${Math.round(olderInspection.score)}%`,
+          inspectionReportURL: olderInspection.inspectionReportURL,
+          inspectionURL: createInspectionUrl(
+            olderInspection.property,
             'expected'
           ),
         },
@@ -445,7 +515,7 @@ function createInspection(inspConfig = {}) {
     creationDate: timestamp,
     completionDate: timestamp + 5000,
     score: 100,
-    templateName: BLUESHIFT_TEMPLATE,
+    templateName: `Test - ${BLUESHIFT_TEMPLATE}`,
     template: { name: BLUESHIFT_TEMPLATE },
     inspectionReportURL: 'https://test.com/img.pdf',
     ...inspConfig,
