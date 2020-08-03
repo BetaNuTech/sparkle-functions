@@ -111,11 +111,6 @@ exports.inspectionPdfReport = functions.https.onRequest(
   )
 );
 
-// Property onWrite
-exports.propertyWrite = functions.database
-  .ref('/properties/{propertyId}')
-  .onWrite(properties.createOnWriteWatcher(db, fs));
-
 // Property onDelete
 exports.propertyDelete = functions.database
   .ref('/properties/{propertyId}')
