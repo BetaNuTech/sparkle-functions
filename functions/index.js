@@ -111,17 +111,6 @@ exports.inspectionPdfReport = functions.https.onRequest(
   )
 );
 
-exports.deficientItemsPropertyMetaSync = functions.database
-  .ref('/propertyInspectionDeficientItems/{propertyId}/{itemId}/state')
-  .onUpdate(
-    deficientItems.createOnUpdateState(
-      db,
-      fs,
-      pubsubClient,
-      'deficient-item-status-update'
-    )
-  );
-
 exports.deficientItemsArchiving = functions.database
   .ref(
     '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/archive'
