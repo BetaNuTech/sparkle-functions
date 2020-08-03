@@ -111,19 +111,6 @@ exports.inspectionPdfReport = functions.https.onRequest(
   )
 );
 
-// Property onDelete
-exports.propertyDelete = functions.database
-  .ref('/properties/{propertyId}')
-  .onDelete(
-    properties.createOnDeleteWatcher(
-      db,
-      fs,
-      storage,
-      pubsubClient,
-      'user-teams-sync'
-    )
-  );
-
 // Property team onWrite
 exports.propertyTeamWrite = functions.database
   .ref('/properties/{propertyId}/team')

@@ -1,5 +1,4 @@
 const onWriteV2 = require('./on-write-v2');
-const createOnDeleteWatcher = require('./on-delete-watcher');
 const onDeleteWatcherV2 = require('./on-delete-watcher-v2');
 const createOnWriteTeamsWatcher = require('./on-write-team-watcher');
 const getPropertyYardiResidents = require('./api/get-property-yardi-residents');
@@ -11,7 +10,6 @@ const yardiIntegration = require('./middleware/yardi-integration');
 const processMeta = require('./utils/process-meta');
 
 module.exports = {
-  createOnDeleteWatcher,
   onDeleteWatcherV2,
   onWriteV2,
   createOnWriteTeamsWatcher,
