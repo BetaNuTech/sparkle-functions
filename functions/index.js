@@ -111,18 +111,6 @@ exports.inspectionPdfReport = functions.https.onRequest(
   )
 );
 
-exports.deficientItemsArchiving = functions.database
-  .ref(
-    '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/archive'
-  )
-  .onUpdate(deficientItems.createOnUpdateArchive(db, fs));
-
-exports.deficientItemsUnarchiving = functions.database
-  .ref(
-    '/archive/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/archive'
-  )
-  .onUpdate(deficientItems.createOnUpdateArchive(db, fs));
-
 exports.deficientItemsProgressNotesSync = functions.database
   .ref(
     '/propertyInspectionDeficientItems/{propertyId}/{deficiencyId}/progressNotes/{progressNoteId}'
