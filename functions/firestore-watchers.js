@@ -37,7 +37,6 @@ module.exports = (
       .document('deficiencies/{deficiencyId}')
       .onUpdate(deficiency.onUpdateProgressNoteV2(fs)),
 
-    // Replaces: onCreateDeficientItemCompletedPhotoTrelloAttachement
     deficiencyUpdateCompletedPhotos: functions.firestore
       .document('deficiencies/{deficiencyId}')
       .onUpdate(deficiency.onUpdateCompletedPhotoV2(fs)),

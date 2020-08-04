@@ -6,7 +6,6 @@ const createDeleteTrelloAuthHandler = require('./delete-trello-auth-handler');
 const createCloseDiCard = require('./pubsub/close-deficient-item-card');
 const createCommentForDiState = require('./pubsub/create-comment-for-deficient-item-state');
 const createUpdateDueDate = require('./pubsub/update-card-due-date');
-const createOnCreateDICompletedPhoto = require('./on-create-deficient-item-completed-photo');
 const postAuth = require('./api/post-auth');
 const deleteAuth = require('./api/delete-auth');
 const getBoards = require('./api/get-boards');
@@ -19,7 +18,6 @@ module.exports = {
   createOnGetAllTrelloBoardListsHandler,
   createOnTrelloDeficientItemCardHandler,
   createDeleteTrelloAuthHandler,
-  createOnCreateDICompletedPhoto,
 
   pubsub: {
     createCloseDiCard,

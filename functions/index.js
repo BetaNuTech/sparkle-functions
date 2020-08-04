@@ -111,12 +111,6 @@ exports.inspectionPdfReport = functions.https.onRequest(
   )
 );
 
-exports.onCreateDeficientItemCompletedPhotoTrelloAttachement = functions.database
-  .ref(
-    '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/completedPhotos/{completedPhotoId}'
-  )
-  .onCreate(trello.createOnCreateDICompletedPhoto(db, fs));
-
 exports.userWrite = functions.database
   .ref('/users/{userId}')
   .onWrite(users.onWrite(fs));
