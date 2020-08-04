@@ -111,11 +111,6 @@ exports.inspectionPdfReport = functions.https.onRequest(
   )
 );
 
-// Template Category Delete
-exports.templateCategoryDelete = functions.database
-  .ref('/templateCategories/{categoryId}')
-  .onDelete(templateCategories.createOnDeleteWatcher(db, fs));
-
 // Template Category Create/Update
 exports.templateCategoryWrite = functions.database
   .ref('/templateCategories/{categoryId}')
