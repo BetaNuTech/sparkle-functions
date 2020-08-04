@@ -37,12 +37,6 @@ exports.latestCompleteInspection = functions.https.onRequest(
   inspections.getLatestCompleted(db)
 );
 
-// POST /integrations/trello/authorization
-// DEPRECATED in favor of router
-exports.upsertTrelloToken = functions.https.onRequest(
-  trello.createOnUpsertTrelloTokenHandler(db, auth)
-);
-
 // DELETE /integrations/trello/authorization
 // DEPRECATED in favor of router
 exports.deleteTrelloAuthorization = functions.https.onRequest(
