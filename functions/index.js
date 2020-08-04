@@ -43,17 +43,6 @@ exports.slackAppEvents = functions.https.onRequest(
   slack.slackEventsApiHandler(db)
 );
 
-//  POST /notifications
-//  NOTE: Deprecated in favor of router API
-exports.createSlackNotifications = functions.https.onRequest(
-  slack.createOnSlackNotificationHandler(
-    db,
-    auth,
-    pubsubClient,
-    'notifications-sync'
-  )
-);
-
 // GET Inspection PDF Report
 exports.inspectionPdfReport = functions.https.onRequest(
   inspections.createOnGetPDFReportHandler(
