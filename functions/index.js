@@ -111,18 +111,6 @@ exports.inspectionPdfReport = functions.https.onRequest(
   )
 );
 
-// Create Push Notifications From Source
-// DEPRECATED
-exports.onCreateSourcePushNotification = functions.database
-  .ref('/notifications/src/{notificationId}')
-  .onCreate(
-    notifications.createOnCreateSrcPushWatcher(
-      db,
-      pubsubClient,
-      'push-messages-sync'
-    )
-  );
-
 exports.onCreateDeficientItemProgressNoteTrelloComment = functions.database
   .ref(
     '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/progressNotes/{progressNoteId}'
