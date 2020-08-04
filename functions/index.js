@@ -111,16 +111,6 @@ exports.inspectionPdfReport = functions.https.onRequest(
   )
 );
 
-// Template onWrite
-exports.templateWrite = functions.database
-  .ref('/templates/{templateId}')
-  .onWrite(templates.createOnWriteWatcher(db, fs));
-
-// Inspection onCreate
-exports.inspectionCreate = functions.database
-  .ref('/inspections/{inspectionId}')
-  .onCreate(inspections.onCreateWatcher(fs));
-
 // Inspection onDelete
 exports.inspectionDelete = functions.database
   .ref('/inspections/{inspectionId}')
