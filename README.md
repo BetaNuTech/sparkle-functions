@@ -59,7 +59,7 @@ COBALT_DOMAIN=https://..
 ```
 
 8. Add environment variables to production for HTTP endpoints:
-  - inspectionPdfReport
+  - api
 
 **To add their ENV variables:**
   - In the Google Cloud Platform Console, select Cloud Functions from the left menu.
