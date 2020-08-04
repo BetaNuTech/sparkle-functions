@@ -37,12 +37,6 @@ exports.latestCompleteInspection = functions.https.onRequest(
   inspections.getLatestCompleted(db)
 );
 
-// DELETE /integrations/trello/authorization
-// DEPRECATED in favor of router
-exports.deleteTrelloAuthorization = functions.https.onRequest(
-  trello.createDeleteTrelloAuthHandler(db, auth)
-);
-
 // GET /integrations/trello/{propertyId}/boards
 // DEPRECATED: Remove when Firebase DB dropped
 exports.getAllTrelloBoards = functions.https.onRequest(
