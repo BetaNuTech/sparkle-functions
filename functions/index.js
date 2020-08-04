@@ -111,12 +111,6 @@ exports.inspectionPdfReport = functions.https.onRequest(
   )
 );
 
-exports.onCreateDeficientItemProgressNoteTrelloComment = functions.database
-  .ref(
-    '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/progressNotes/{progressNoteId}'
-  )
-  .onCreate(trello.createOnCreateDIProgressNote(db, fs));
-
 exports.onCreateDeficientItemCompletedPhotoTrelloAttachement = functions.database
   .ref(
     '/propertyInspectionDeficientItems/{propertyId}/{deficientItemId}/completedPhotos/{completedPhotoId}'
