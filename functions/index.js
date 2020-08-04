@@ -32,12 +32,6 @@ exports.latestVersion = functions.https.onRequest(
   versions.api.getClientAppVersions(fs)
 );
 
-// POST /slackApp
-// DEPRECATED: Remove when Firebase DB dropped
-exports.slackAppEvents = functions.https.onRequest(
-  slack.slackEventsApiHandler(db)
-);
-
 exports.deficientItemsPropertyMetaSyncV2 = functions.firestore
   .document('deficiencies/{deficiencyId}')
   .onUpdate(
