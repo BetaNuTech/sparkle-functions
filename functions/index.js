@@ -11,7 +11,6 @@ const trello = require('./trello');
 const slack = require('./slack');
 const notifications = require('./notifications');
 const regTokens = require('./reg-tokens');
-const users = require('./users');
 const config = require('./config');
 const versions = require('./versions');
 const createRouter = require('./router');
@@ -110,10 +109,6 @@ exports.inspectionPdfReport = functions.https.onRequest(
     config.clientApps.web.inspectionURL
   )
 );
-
-exports.userWrite = functions.database
-  .ref('/users/{userId}')
-  .onWrite(users.onWrite(fs));
 
 // Message Subscribers
 exports.propertyMetaSync = properties.pubsub.createSyncMeta(
