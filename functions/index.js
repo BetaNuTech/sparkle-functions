@@ -111,11 +111,6 @@ exports.inspectionPdfReport = functions.https.onRequest(
   )
 );
 
-// Inspection onDelete
-exports.inspectionDelete = functions.database
-  .ref('/inspections/{inspectionId}')
-  .onDelete(inspections.createOnDeleteWatcher(db, fs, storage));
-
 // Template Category Delete
 exports.templateCategoryDelete = functions.database
   .ref('/templateCategories/{categoryId}')

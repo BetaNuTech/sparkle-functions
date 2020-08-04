@@ -1,6 +1,5 @@
 const processWrite = require('./process-write');
 const onWriteV2 = require('./on-write-v2');
-const createOnDeleteWatcher = require('./on-delete-watcher');
 const onDeleteV2 = require('./on-delete-v2');
 const createOnGetPDFReportHandler = require('./on-get-pdf-report');
 const getLatestCompleted = require('./api/get-latest-completed');
@@ -15,7 +14,6 @@ module.exports = {
   getLatestCompleted,
   onDeleteV2,
   onWriteV2,
-  createOnDeleteWatcher,
   createOnGetPDFReportHandler,
 
   pubsub: {
