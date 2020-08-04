@@ -5,7 +5,7 @@ const templateCategories = require('./template-categories');
 const templates = require('./templates');
 const inspections = require('./inspections');
 const properties = require('./properties');
-const deficientItems = require('./deficient-items');
+const deficiency = require('./deficient-items');
 const teams = require('./teams');
 const trello = require('./trello');
 const slack = require('./slack');
@@ -110,6 +110,67 @@ exports.inspectionPdfReport = functions.https.onRequest(
   )
 );
 
+exports.deficientItemsPropertyMetaSyncV2 = functions.firestore
+  .document('deficiencies/{deficiencyId}')
+  .onUpdate(
+    deficiency.createOnUpdateStateV2(
+      fs,
+      pubsubClient,
+      'deficient-item-status-update'
+    )
+  );
+
+exports.deficientItemsArchivingV2 = functions.firestore
+  .document('deficiencies/{deficiencyId}')
+  .onUpdate(deficiency.createOnUpdateArchiveV2(db, fs));
+
+exports.deficientItemsUnarchivingV2 = functions.firestore
+  .document('archives/{deficiencyId}')
+  .onUpdate(deficiency.createOnUpdateArchiveV2(db, fs));
+
+exports.deficientItemsProgressNotesSyncV2 = functions.firestore
+  .document('deficiencies/{deficiencyId}')
+  .onUpdate(deficiency.onUpdateProgressNoteV2(fs));
+
+exports.deficiencyUpdateCompletedPhotos = functions.firestore
+  .document('deficiencies/{deficiencyId}')
+  .onUpdate(deficiency.onUpdateCompletedPhotoV2(fs));
+
+exports.templateCategoryDeleteV2 = functions.firestore
+  .document('/templateCategories/{categoryId}')
+  .onDelete(templateCategories.createOnDeleteWatcherV2(fs));
+
+exports.propertyDeleteV2 = functions.firestore
+  .document('/properties/{propertyId}')
+  .onDelete(properties.onDeleteWatcherV2(fs, storage));
+
+exports.propertyWriteV2 = functions.firestore
+  .document('/properties/{propertyId}')
+  .onWrite(properties.onWriteV2(fs));
+
+exports.inspectionDeleteV2 = functions.firestore
+  .document('/inspections/{inspectionId}')
+  .onDelete(inspections.onDeleteV2(db, fs));
+
+exports.inspectionWriteV2 = functions.firestore
+  .document('/inspections/{inspectionId}')
+  .onWrite(inspections.onWriteV2(db, fs));
+
+exports.teamDeleteV2 = functions.firestore
+  .document('/teams/{teamId}')
+  .onDelete(teams.onDeleteV2(fs));
+
+exports.createNotification = functions.firestore
+  .document('/notifications/{notificationId}')
+  .onCreate(
+    notifications.onCreate(
+      fs,
+      pubsubClient,
+      'notifications-slack-sync',
+      'push-messages-sync'
+    )
+  );
+
 // Message Subscribers
 exports.propertyMetaSync = properties.pubsub.createSyncMeta(
   'properties-sync',
@@ -156,7 +217,7 @@ exports.regTokensSync = regTokens.pubsub.createSyncOutdated(
 );
 
 // DEPRECATED
-exports.deficientItemsOverdueSync = deficientItems.pubsub.createSyncOverdue(
+exports.deficientItemsOverdueSync = deficiency.pubsub.createSyncOverdue(
   'deficient-items-sync',
   functions.pubsub,
   db,
