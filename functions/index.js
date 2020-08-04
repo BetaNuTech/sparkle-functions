@@ -111,18 +111,6 @@ exports.inspectionPdfReport = functions.https.onRequest(
   )
 );
 
-// Create Slack Notifications From Source
-// DEPRECATED
-exports.onCreateSourceSlackNotification = functions.database
-  .ref('/notifications/src/{notificationId}')
-  .onCreate(
-    notifications.createOnCreateSrcSlackWatcher(
-      db,
-      pubsubClient,
-      'notifications-slack-sync'
-    )
-  );
-
 // Create Push Notifications From Source
 // DEPRECATED
 exports.onCreateSourcePushNotification = functions.database
