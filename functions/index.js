@@ -37,12 +37,6 @@ exports.latestCompleteInspection = functions.https.onRequest(
   inspections.getLatestCompleted(db)
 );
 
-// GET /integrations/trello/{propertyId}/boards/{boardId}/lists
-// DEPRECATED: Remove when Firebase DB dropped
-exports.getAllTrelloBoardLists = functions.https.onRequest(
-  trello.createOnGetAllTrelloBoardListsHandler(db, auth)
-);
-
 // POST /properties/:propertyId/deficient-items/:deficientItemId/trello/card
 // DEPRECATED: in favor of router
 exports.createTrelloDeficientItemCard = functions.https.onRequest(
