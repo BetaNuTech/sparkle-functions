@@ -37,16 +37,6 @@ exports.latestCompleteInspection = functions.https.onRequest(
   inspections.getLatestCompleted(db)
 );
 
-// POST /properties/:propertyId/deficient-items/:deficientItemId/trello/card
-// DEPRECATED: in favor of router
-exports.createTrelloDeficientItemCard = functions.https.onRequest(
-  trello.createOnTrelloDeficientItemCardHandler(
-    db,
-    auth,
-    config.clientApps.web.deficientItemURL
-  )
-);
-
 // POST /slackApp
 // DEPRECATED: Remove when Firebase DB dropped
 exports.slackAppEvents = functions.https.onRequest(
