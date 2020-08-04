@@ -43,12 +43,6 @@ exports.slackAppEvents = functions.https.onRequest(
   slack.slackEventsApiHandler(db)
 );
 
-// DELETE /integrations/slack/authorization
-// NOTE: Deprecated: delete when firebase db dropped
-exports.deleteSlackAuthorization = functions.https.onRequest(
-  slack.createDeleteSlackAppHandler(db, auth)
-);
-
 //  POST /notifications
 //  NOTE: Deprecated in favor of router API
 exports.createSlackNotifications = functions.https.onRequest(
