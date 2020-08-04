@@ -32,11 +32,6 @@ exports.latestVersion = functions.https.onRequest(
   versions.api.getClientAppVersions(fs)
 );
 
-// Latest Completed Inspections
-exports.latestCompleteInspection = functions.https.onRequest(
-  inspections.getLatestCompleted(db)
-);
-
 // POST /slackApp
 // DEPRECATED: Remove when Firebase DB dropped
 exports.slackAppEvents = functions.https.onRequest(
