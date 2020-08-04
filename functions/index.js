@@ -43,16 +43,6 @@ exports.slackAppEvents = functions.https.onRequest(
   slack.slackEventsApiHandler(db)
 );
 
-// GET Inspection PDF Report
-exports.inspectionPdfReport = functions.https.onRequest(
-  inspections.createOnGetPDFReportHandler(
-    db,
-    fs,
-    auth,
-    config.clientApps.web.inspectionURL
-  )
-);
-
 exports.deficientItemsPropertyMetaSyncV2 = functions.firestore
   .document('deficiencies/{deficiencyId}')
   .onUpdate(
