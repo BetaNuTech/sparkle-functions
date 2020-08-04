@@ -43,12 +43,6 @@ exports.slackAppEvents = functions.https.onRequest(
   slack.slackEventsApiHandler(db)
 );
 
-// POST /integrations/slack/authorization
-// NOTE: Deprecate when firebase db dropped
-exports.createSlackAppAuth = functions.https.onRequest(
-  slack.createOnSlackAppAuthHandler(db, auth)
-);
-
 // DELETE /integrations/slack/authorization
 // NOTE: Deprecated: delete when firebase db dropped
 exports.deleteSlackAuthorization = functions.https.onRequest(
