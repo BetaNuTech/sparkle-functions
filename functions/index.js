@@ -6,14 +6,11 @@ const inspections = require('./inspections');
 const properties = require('./properties');
 const deficiency = require('./deficient-items');
 const teams = require('./teams');
-const trello = require('./trello');
-const slack = require('./slack');
 const notifications = require('./notifications');
 const regTokens = require('./reg-tokens');
 const config = require('./config');
 const versions = require('./versions');
 const createRouter = require('./router');
-const firestoreWatchers = require('./firestore-watchers');
 
 const { firebase: firebaseConfig } = config;
 const defaultApp = admin.initializeApp(firebaseConfig);
@@ -100,24 +97,53 @@ exports.regTokensSync = regTokens.pubsub.createSyncOutdated(
   db
 );
 
-// API
+exports.deficiencyTrelloCardStateComments = deficiency.pubsub.trelloCardStateComment(
+  fs,
+  functions.pubsub,
+  'deficient-item-status-update'
+);
+
+exports.deficiencyTrelloCardClose = deficiency.pubsub.trelloCardClose(
+  fs,
+  functions.pubsub,
+  'deficient-item-status-update'
+);
+
+exports.deficiencyTrelloCardDueDates = deficiency.pubsub.trelloCardDueDate(
+  fs,
+  functions.pubsub,
+  'deficient-item-status-update'
+);
+
+exports.deficiencySyncOverdue = deficiency.pubsub.syncOverdue(
+  fs,
+  functions.pubsub,
+  'deficient-items-sync'
+);
+
+exports.publishSlackNotificationsV2 = notifications.pubsub.publishSlack(
+  fs,
+  functions.pubsub,
+  'notifications-slack-sync'
+);
+
+exports.publishPushNotificationsV2 = notifications.pubsub.publishPush(
+  fs,
+  functions.pubsub,
+  'push-messages-sync',
+  messaging
+);
+
+exports.cleanupNotificationsV2 = notifications.pubsub.cleanPublished(
+  fs,
+  functions.pubsub,
+  'notifications-sync'
+);
+
+// HTTPS Router API
 
 exports.api = functions.https.onRequest(
   createRouter(db, fs, auth, {
     inspectionUrl: config.clientApps.web.inspectionURL,
   })
 );
-
-// Firestore Watchers
-
-const fsWatchers = firestoreWatchers(
-  db,
-  fs,
-  pubsubClient,
-  storage,
-  functions.pubsub,
-  messaging
-);
-Object.keys(fsWatchers).forEach(endpoint => {
-  exports[endpoint] = fsWatchers[endpoint];
-});
