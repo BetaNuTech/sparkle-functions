@@ -138,15 +138,6 @@ exports.regTokensSync = regTokens.pubsub.createSyncOutdated(
   db
 );
 
-// DEPRECATED
-exports.deficientItemsOverdueSync = deficiency.pubsub.createSyncOverdue(
-  'deficient-items-sync',
-  functions.pubsub,
-  db,
-  fs,
-  config.clientApps.web.deficientItemURL
-);
-
 exports.teamsSync = teams.pubsub.createSyncTeam(
   'teams-sync',
   functions.pubsub,

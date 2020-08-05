@@ -29,7 +29,6 @@ module.exports = (
       'deficient-item-status-update'
     ),
 
-    // Replaces: deficientItemsOverdueSync
     deficiencySyncOverdue: deficiency.pubsub.syncOverdue(
       fs,
       functions.pubsub,
