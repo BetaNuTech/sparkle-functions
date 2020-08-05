@@ -106,13 +106,6 @@ exports.regTokensSync = regTokens.pubsub.createSyncOutdated(
   db
 );
 
-exports.teamsSync = teams.pubsub.createSyncTeam(
-  'teams-sync',
-  functions.pubsub,
-  db,
-  fs
-);
-
 exports.userTeamsSync = teams.pubsub.createSyncUserTeam(
   'user-teams-sync',
   functions.pubsub,
