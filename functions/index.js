@@ -186,14 +186,6 @@ exports.cleanupNotifications = notifications.pubsub.createCleanup(
   'notifications-slack-sync'
 );
 
-// DEPRECATED
-exports.trelloCardDueDateUpdates = trello.pubsub.createUpdateDueDate(
-  'deficient-item-status-update',
-  functions.pubsub,
-  db,
-  fs
-);
-
 // API
 
 exports.api = functions.https.onRequest(

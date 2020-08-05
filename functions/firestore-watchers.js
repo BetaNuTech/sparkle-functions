@@ -23,7 +23,6 @@ module.exports = (
       'deficient-item-status-update'
     ),
 
-    // Replaces: trelloCardDueDateUpdates
     deficiencyTrelloCardDueDates: deficiency.pubsub.trelloCardDueDate(
       fs,
       functions.pubsub,
