@@ -35,7 +35,6 @@ module.exports = (
       'deficient-items-sync'
     ),
 
-    // Replaces: publishSlackNotifications
     publishSlackNotificationsV2: notifications.pubsub.publishSlack(
       fs,
       functionsPubSub,

@@ -153,13 +153,6 @@ exports.userTeamsSync = teams.pubsub.createSyncUserTeam(
 );
 
 // DEPRECATED
-exports.publishSlackNotifications = notifications.pubsub.createPublishSlack(
-  'notifications-slack-sync',
-  functions.pubsub,
-  db
-);
-
-// DEPRECATED
 exports.publishPushNotifications = notifications.pubsub.createPublishPush(
   'push-messages-sync',
   functions.pubsub,
