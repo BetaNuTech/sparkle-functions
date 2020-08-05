@@ -153,14 +153,6 @@ exports.userTeamsSync = teams.pubsub.createSyncUserTeam(
 );
 
 // DEPRECATED
-exports.publishPushNotifications = notifications.pubsub.createPublishPush(
-  'push-messages-sync',
-  functions.pubsub,
-  db,
-  messaging
-);
-
-// DEPRECATED
 exports.cleanupNotifications = notifications.pubsub.createCleanup(
   db,
   functions.pubsub,

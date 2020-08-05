@@ -41,7 +41,6 @@ module.exports = (
       'notifications-slack-sync'
     ),
 
-    // REPLACES: publishPushNotifications
     publishPushNotificationsV2: notifications.pubsub.publishPush(
       fs,
       functionsPubSub,
