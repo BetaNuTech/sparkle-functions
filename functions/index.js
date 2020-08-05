@@ -187,14 +187,6 @@ exports.cleanupNotifications = notifications.pubsub.createCleanup(
 );
 
 // DEPRECATED
-exports.trelloCommentsForDefItemStateUpdates = trello.pubsub.createCommentForDiState(
-  'deficient-item-status-update',
-  functions.pubsub,
-  db,
-  fs
-);
-
-// DEPRECATED
 exports.trelloCardDueDateUpdates = trello.pubsub.createUpdateDueDate(
   'deficient-item-status-update',
   functions.pubsub,
