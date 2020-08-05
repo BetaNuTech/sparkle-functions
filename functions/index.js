@@ -93,12 +93,6 @@ exports.createNotification = functions.firestore
   );
 
 // Message Subscribers
-exports.propertyMetaSync = properties.pubsub.createSyncMeta(
-  'properties-sync',
-  functions.pubsub,
-  db,
-  fs
-);
 
 exports.regTokensSync = regTokens.pubsub.createSyncOutdated(
   'registration-tokens-sync',
