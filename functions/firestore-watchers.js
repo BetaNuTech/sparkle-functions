@@ -11,7 +11,6 @@ module.exports = (
   messaging
 ) => {
   return {
-    // Replaces: trelloCommentsForDefItemStateUpdates
     deficiencyTrelloCardStateComments: deficiency.pubsub.trelloCardStateComment(
       fs,
       functions.pubsub,
