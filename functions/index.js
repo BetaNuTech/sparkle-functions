@@ -100,18 +100,6 @@ exports.propertyMetaSync = properties.pubsub.createSyncMeta(
   fs
 );
 
-exports.completedInspectionsListSync = inspections.pubsub.createSyncCompletedInspectionProxies(
-  'inspections-sync',
-  functions.pubsub,
-  db
-);
-
-exports.cleanupInspectionProxyOrphansSync = inspections.pubsub.createCleanupProxyOrphans(
-  'inspections-sync',
-  functions.pubsub,
-  db
-);
-
 exports.regTokensSync = regTokens.pubsub.createSyncOutdated(
   'registration-tokens-sync',
   functions.pubsub,
