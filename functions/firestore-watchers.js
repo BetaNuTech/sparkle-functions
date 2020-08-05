@@ -48,7 +48,6 @@ module.exports = (
       messaging
     ),
 
-    // Replaces: cleanupNotifications
     cleanupNotificationsV2: notifications.pubsub.cleanPublished(
       fs,
       functionsPubSub,
