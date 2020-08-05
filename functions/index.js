@@ -152,16 +152,6 @@ exports.userTeamsSync = teams.pubsub.createSyncUserTeam(
   fs
 );
 
-// DEPRECATED
-exports.cleanupNotifications = notifications.pubsub.createCleanup(
-  db,
-  functions.pubsub,
-  pubsubClient,
-  'notifications-sync',
-  'push-messages-sync',
-  'notifications-slack-sync'
-);
-
 // API
 
 exports.api = functions.https.onRequest(
