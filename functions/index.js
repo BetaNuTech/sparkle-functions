@@ -101,13 +101,6 @@ exports.propertyMetaSync = properties.pubsub.createSyncMeta(
   fs
 );
 
-exports.templatesListSync = templates.pubsub.createSyncTemplatesList(
-  'templates-sync',
-  functions.pubsub,
-  db,
-  fs
-);
-
 exports.propertyTemplatesListSync = templates.pubsub.createSyncPropertyTemplatesList(
   'templates-sync',
   functions.pubsub,
