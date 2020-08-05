@@ -3,7 +3,6 @@ const onWriteV2 = require('./on-write-v2');
 const onDeleteV2 = require('./on-delete-v2');
 const createAPIPatchProperty = require('./api/patch-property');
 const createCleanupProxyOrphans = require('./pubsub/cleanup-proxy-orphans');
-const createSyncPropertyInspectionProxies = require('./pubsub/sync-property-inspection-proxies');
 const createSyncCompletedInspectionProxies = require('./pubsub/sync-completed-inspection-proxies');
 const createAPIGetInspectionPDF = require('./on-get-pdf-report/get-pdf-handler');
 
@@ -14,7 +13,6 @@ module.exports = {
 
   pubsub: {
     createCleanupProxyOrphans,
-    createSyncPropertyInspectionProxies,
     createSyncCompletedInspectionProxies,
   },
 

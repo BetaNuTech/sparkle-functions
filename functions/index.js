@@ -2,7 +2,6 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const PubSub = require('@google-cloud/pubsub');
 const templateCategories = require('./template-categories');
-const templates = require('./templates');
 const inspections = require('./inspections');
 const properties = require('./properties');
 const deficiency = require('./deficient-items');
@@ -99,18 +98,6 @@ exports.propertyMetaSync = properties.pubsub.createSyncMeta(
   functions.pubsub,
   db,
   fs
-);
-
-exports.propertyTemplatesListSync = templates.pubsub.createSyncPropertyTemplatesList(
-  'templates-sync',
-  functions.pubsub,
-  db
-);
-
-exports.propertyInspectionsListSync = inspections.pubsub.createSyncPropertyInspectionProxies(
-  'inspections-sync',
-  functions.pubsub,
-  db
 );
 
 exports.completedInspectionsListSync = inspections.pubsub.createSyncCompletedInspectionProxies(
