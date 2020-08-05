@@ -17,7 +17,6 @@ module.exports = (
       'deficient-item-status-update'
     ),
 
-    // Replaces: trelloDiCardClose
     deficiencyTrelloCardClose: deficiency.pubsub.trelloCardClose(
       fs,
       functions.pubsub,
