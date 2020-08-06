@@ -50,9 +50,9 @@ module.exports = (db, fs, auth, settings) => {
 
   // Request Property's residents from Yardi
   app.get(
-    '/v1/properties/:propertyCode/latest-inspection',
+    '/v0/inspections/latest-completed',
     // TODO: auth?
-    properties.api.getLatestCompletedInspection(fs)
+    inspections.api.getLatestCompletedInspection(fs)
   );
 
   // Request Property's residents from Yardi

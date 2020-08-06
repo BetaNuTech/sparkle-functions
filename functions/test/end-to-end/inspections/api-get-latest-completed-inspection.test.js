@@ -4,7 +4,7 @@ const express = require('express');
 const config = require('../../../config');
 const propertiesModel = require('../../../models/properties');
 const inspectionsModel = require('../../../models/inspections');
-const handler = require('../../../properties/api/get-latest-completed-inspection');
+const handler = require('../../../inspections/api/get-latest-completed');
 const uuid = require('../../../test-helpers/uuid');
 const { cleanDb } = require('../../../test-helpers/firebase');
 const { fs } = require('../../setup');
@@ -16,7 +16,7 @@ const YESTURDAY_UNIX = TODAY_UNIX - UNIX_DAY;
 const TWO_DAYS_AGO_UNIX = TODAY_UNIX - UNIX_DAY * 2;
 const THREE_DAYS_AGO_UNIX = TODAY_UNIX - UNIX_DAY * 3;
 
-describe('Properties | API | GET Latest Inspections', () => {
+describe('Inspections | API | GET Latest Completed', () => {
   afterEach(() => cleanDb(null, fs));
 
   it('returns latest completed inspection', async () => {
@@ -42,7 +42,7 @@ describe('Properties | API | GET Latest Inspections', () => {
     // Execute
     const app = createApp();
     const { body: result } = await request(app)
-      .get(`/${propertyCode}`)
+      .get('/t')
       .send()
       .expect(200);
 
@@ -74,7 +74,7 @@ describe('Properties | API | GET Latest Inspections', () => {
     // Execute
     const app = createApp();
     const { body: result } = await request(app)
-      .get(`/${propertyCode}?other_date=${TWO_DAYS_AGO_UNIX}`)
+      .get(`/t?other_date=${TWO_DAYS_AGO_UNIX}`)
       .send()
       .expect(200);
 
@@ -86,7 +86,7 @@ describe('Properties | API | GET Latest Inspections', () => {
 
 function createApp() {
   const app = express();
-  app.get('/:propertyCode', handler(fs));
+  app.get('/t', handler(fs));
   return app;
 }
 
