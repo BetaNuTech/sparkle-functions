@@ -1037,7 +1037,7 @@ module.exports = modelSetup({
 
     let fsQuery = fs
       .collection(INSPECTION_COLLECTION)
-      .orderBy('completionDate', 'asc')
+      .orderBy('completionDate', 'desc')
       .where('completionDate', '<', before);
 
     if (query) {
