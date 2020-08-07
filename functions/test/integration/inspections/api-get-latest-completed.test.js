@@ -1,7 +1,6 @@
 const express = require('express');
 const request = require('supertest');
 const { expect } = require('chai');
-const moment = require('moment');
 const sinon = require('sinon');
 const config = require('../../../config');
 const uuid = require('../../../test-helpers/uuid');
@@ -10,17 +9,7 @@ const inspectionsModel = require('../../../models/inspections');
 const getLatest = require('../../../inspections/api/get-latest-completed');
 
 const INSP_URL_PATH = config.clientApps.web.inspectionURL;
-// const BLUESHIFT_TEMPLATE = config.inspections.blueshiftTemplateName;
-const UNIX_DAY = 86400;
 const TODAY_UNIX = Math.round(Date.now() / 1000);
-const YESTURDAY_UNIX = TODAY_UNIX - UNIX_DAY;
-const TWO_DAYS_AGO_UNIX = TODAY_UNIX - UNIX_DAY * 2;
-const THREE_DAYS_AGO_UNIX = TODAY_UNIX - UNIX_DAY * 3;
-const FOUR_DAYS_AGO_UNIX = TODAY_UNIX - UNIX_DAY * 3;
-const FIVE_DAYS_AGO_UNIX = TODAY_UNIX - UNIX_DAY * 5;
-const SEVEN_DAYS_AGO_UNIX = TODAY_UNIX - UNIX_DAY * 7;
-const ELEVEN_DAYS_AGO_UNIX = TODAY_UNIX - UNIX_DAY * 11;
-const FIFTEEN_DAYS_AGO_UNIX = TODAY_UNIX - UNIX_DAY * 15;
 
 describe('Inspections | API | GET Latest Completed', () => {
   afterEach(() => sinon.restore());
@@ -59,69 +48,128 @@ describe('Inspections | API | GET Latest Completed', () => {
       .catch(done);
   });
 
-  // it('returns latest completed inspection details for property', done => {
-  //   const latest = TODAY_UNIX;
-  //   const older = YESTURDAY_UNIX;
-  //   const oldest = TWO_DAYS_AGO_UNIX;
-  //   const property = createProperty();
-  //   const propertiesSnap = wrapSnapshot([property]);
-  //   const latestInspection = createInspection({
-  //     id: 'expected',
-  //     creationDate: latest - 1,
-  //     completionDate: latest,
-  //     score: 99,
-  //     property: property.id,
-  //   });
-  //   const olderInspection = createInspection({
-  //     id: 'older',
-  //     creationDate: older - 1,
-  //     completionDate: older,
-  //     property: property.id,
-  //   });
-  //   const oldestInspection = createInspection({
-  //     id: 'oldest',
-  //     creationDate: oldest - 1,
-  //     completionDate: oldest,
-  //     property: property.id,
-  //   });
-  //
-  //   const inspectionsSnap = wrapSnapshot([
-  //     olderInspection,
-  //     oldestInspection,
-  //     latestInspection,
-  //   ]);
-  //   const expected = {
-  //     data: {
-  //       id: 'expected',
-  //       type: 'inspection',
-  //       attributes: {
-  //         creationDate: latestInspection.creationDate,
-  //         completionDate: latestInspection.completionDate,
-  //         score: `${Math.round(latestInspection.score)}%`,
-  //         inspectionReportURL: latestInspection.inspectionReportURL,
-  //         inspectionURL: createInspectionUrl(
-  //           latestInspection.property,
-  //           'expected'
-  //         ),
-  //       },
-  //     },
-  //   };
-  //
-  //   // Stup requests
-  //   sinon.stub(propertiesModel, 'firestoreQuery').resolves(propertiesSnap);
-  //   sinon.stub(inspectionsModel, 'firestoreQuery').resolves(inspectionsSnap);
-  //
-  //   request(createApp())
-  //     .get('/t')
-  //     .send()
-  //     .expect('Content-Type', /application\/vnd.api\+json/)
-  //     .expect(200)
-  //     .then(res => {
-  //       expect(res.body).to.deep.equal(expected);
-  //       done();
-  //     })
-  //     .catch(done);
-  // });
+  it('applies custom before value to inspection query', done => {
+    const expected = Math.round(Date.now() / 1000) - 10000;
+    const inspectionsSnap = wrapSnapshot([]); // empty
+    let actual = 0;
+
+    // Stup requests
+    sinon
+      .stub(inspectionsModel, 'firestoreLatestCompletedQuery')
+      .callsFake((_, beforeQuery) => {
+        actual = beforeQuery;
+        return Promise.resolve(inspectionsSnap);
+      });
+
+    request(createApp())
+      .get(`/t?before=${expected}`)
+      .send()
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(404)
+      .then(() => {
+        expect(actual).to.equal(expected);
+        done();
+      })
+      .catch(done);
+  });
+
+  it('applies template name param to inspection query', done => {
+    const expected = 'test_name';
+    const inspectionsSnap = wrapSnapshot([]); // empty
+    let actual = '';
+
+    // Stup requests
+    sinon
+      .stub(inspectionsModel, 'firestoreLatestCompletedQuery')
+      .callsFake((_, before, query) => {
+        actual = query.templateName ? query.templateName[1] : 'error';
+        return Promise.resolve(inspectionsSnap);
+      });
+
+    request(createApp())
+      .get(`/t?templateName=${expected}`)
+      .send()
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(404)
+      .then(() => {
+        expect(actual).to.equal(expected);
+        done();
+      })
+      .catch(done);
+  });
+
+  it('applies discovered property from provided code to inspection query', done => {
+    const expected = uuid();
+    const propCode = 'propcode';
+    const property = createProperty({ id: expected, code: propCode });
+    const propertiesSnap = wrapSnapshot([property]);
+    const inspectionsSnap = wrapSnapshot([]); // empty
+    let actual = '';
+
+    // Stup requests
+    sinon.stub(propertiesModel, 'firestoreQuery').resolves(propertiesSnap);
+    sinon
+      .stub(inspectionsModel, 'firestoreLatestCompletedQuery')
+      .callsFake((_, before, query) => {
+        actual = query.property ? query.property[1] : 'error';
+        return Promise.resolve(inspectionsSnap);
+      });
+
+    request(createApp())
+      .get(`/t?propertyCode=${propCode}`)
+      .send()
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(404)
+      .then(() => {
+        expect(actual).to.equal(expected);
+        done();
+      })
+      .catch(done);
+  });
+
+  it('returns latest completed inspection as a JSON-API document', done => {
+    const latest = TODAY_UNIX;
+    const property = createProperty();
+    const propertiesSnap = wrapSnapshot([property]);
+    const inspection = createInspection({
+      id: 'expected',
+      creationDate: latest - 1,
+      completionDate: latest,
+      score: 99,
+      property: property.id,
+    });
+    const inspectionsSnap = wrapSnapshot([inspection]);
+    const expected = {
+      data: {
+        id: 'expected',
+        type: 'inspection',
+        attributes: {
+          creationDate: inspection.creationDate,
+          completionDate: inspection.completionDate,
+          score: `${Math.round(inspection.score)}%`,
+          inspectionReportURL: inspection.inspectionReportURL,
+          inspectionURL: createInspectionUrl(inspection.property, 'expected'),
+        },
+      },
+    };
+
+    // Stup requests
+    sinon.stub(propertiesModel, 'firestoreQuery').resolves(propertiesSnap);
+    sinon
+      .stub(inspectionsModel, 'firestoreLatestCompletedQuery')
+      .resolves(inspectionsSnap);
+
+    request(createApp())
+      .get('/t')
+      .send()
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(200)
+      .then(res => {
+        expect(res.body).to.deep.equal(expected);
+        done();
+      })
+      .catch(done);
+  });
 });
 
 function createApp() {
@@ -137,16 +185,16 @@ function wrapSnapshot(payload = {}, id) {
     );
   };
 
-  const result = {
-    id: id || uuid(),
-    exists: Boolean(payload),
-    data: () => payload,
-  };
+  const result = {};
 
   if (Array.isArray(payload)) {
     result.size = payload.length;
     result.docs = payload.map(pl => wrapSnapshot(pl, pl.id));
     result.forEach = forEach;
+  } else {
+    result.id = id || payload.id || uuid();
+    result.exists = Boolean(payload);
+    result.data = () => payload;
   }
 
   return result;

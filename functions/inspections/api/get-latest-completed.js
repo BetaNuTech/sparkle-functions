@@ -6,7 +6,6 @@ const inspectionsModel = require('../../models/inspections');
 
 const PREFIX = 'inspections: api: get-latest-completed:';
 const INSP_PATH = config.clientApps.web.inspectionURL;
-// const TEMP_NAME_LOOKUP = config.inspections.blueshiftTemplateName;
 
 /**
  * Factory for getting the latest completed
@@ -94,22 +93,23 @@ module.exports = function createGetLatestCompleted(fs) {
         inspQuery
       );
       if (snap.size === 0) {
-        throw Error('no completed inspections');
+        throw Error('no completed inspections found');
       }
-      inspection = { id: snap.docs[0].id, ...snap.docs[0].data() };
+      const [inspDoc] = snap.docs;
+      inspection = { ...inspDoc.data(), id: inspDoc.id };
     } catch (err) {
       log.error(`${PREFIX} inspections lookup failed | ${err}`);
       if (`${err}`.search('no completed inspections') > -1) {
         return res
           .status(404)
-          .send({ errors: [{ detail: 'no inspections exist yet.' }] });
+          .send({ errors: [{ detail: 'no inspection found for query' }] });
       }
       return res
         .status(500)
         .send({ errors: [{ detail: 'inspections lookup failed' }] });
     }
 
-    // Success
+    // Successful response
     res.status(200).send({ data: createJsonApiInspection(inspection) });
   };
 };
