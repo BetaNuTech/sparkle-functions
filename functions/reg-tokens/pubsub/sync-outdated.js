@@ -1,5 +1,6 @@
+const assert = require('assert');
 const log = require('../../utils/logger');
-const adminUtils = require('../../utils/firebase-admin');
+const tokensModel = require('../../models/registration-tokens');
 
 const PREFIX = 'reg-tokens: pubsub: sync-outdated:';
 const OUTDATED_OFFSET = 2629800; // seconds in 1 month
@@ -7,54 +8,24 @@ const OUTDATED_OFFSET = 2629800; // seconds in 1 month
 /**
  * Sync registration tokens with booleans
  * to timestamps and remove old unused tokens
- * @param  {String} topic
+ * @param  {admin.firestore} fs
  * @param  {functions.pubsub} pubSub
- * @param  {firebaseAdmin.database} db
+ * @param  {String} topic
  * @return {functions.CloudFunction}
  */
-module.exports = function createSyncOudated(topic = '', pubSub, db) {
-  return pubSub.topic(topic).onPublish(async () => {
-    const updates = {};
+module.exports = function createSyncOudated(fs, pubsub, topic) {
+  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  assert(pubsub && typeof pubsub.topic === 'function', 'has pubsub reference');
+  assert(topic && typeof topic === 'string', 'has pubsub topic');
 
-    // Collect boolean tokens to updates hash
-    await adminUtils.forEachChild(
-      db,
-      '/registrationTokens',
-      async function tokenTimestampWrite(userId, tokens) {
-        const now = Math.round(Date.now() / 1000);
-        const maxDate = now - OUTDATED_OFFSET;
-        const tokenIds = Object.keys(tokens);
-        const booleanTokenIds = tokenIds.filter(
-          tokenId => typeof tokens[tokenId] === 'boolean'
-        );
-        const expiredTokenIds = tokenIds.filter(tokenId => {
-          const tokenCreationDate = tokens[tokenId];
-          return (
-            typeof tokenCreationDate === 'number' &&
-            tokenCreationDate <= maxDate
-          );
-        });
+  return pubsub.topic(topic).onPublish(async () => {
+    const now = Math.round(Date.now() / 1000);
+    const maxTimestamp = now - OUTDATED_OFFSET;
 
-        // Replace boolean token with UNIX
-        // timestamp and append to updates hash
-        booleanTokenIds.forEach(tokenId => {
-          updates[`/registrationTokens/${userId}/${tokenId}`] = now;
-        });
-
-        // Append expired token removal to updates
-        expiredTokenIds.forEach(tokenId => {
-          updates[`/registrationTokens/${userId}/${tokenId}`] = null;
-        });
-      }
-    );
-
-    // Atomically write updates
     try {
-      await db.ref().update(updates);
+      await tokensModel.firestoreRemoveOutdated(fs, maxTimestamp);
     } catch (err) {
-      log.error(`${PREFIX} ${topic} update write failed | ${err}`);
+      log.error(`${PREFIX} failed to remove outdated failed | ${err}`);
     }
-
-    return updates;
   });
 };

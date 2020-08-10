@@ -92,9 +92,9 @@ exports.createNotification = functions.firestore
 // Message Subscribers
 
 exports.regTokensSync = regTokens.pubsub.createSyncOutdated(
-  'registration-tokens-sync',
+  fs,
   functions.pubsub,
-  db
+  'registration-tokens-sync'
 );
 
 exports.deficiencyTrelloCardStateComments = deficiency.pubsub.trelloCardStateComment(
