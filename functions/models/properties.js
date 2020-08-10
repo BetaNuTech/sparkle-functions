@@ -34,18 +34,6 @@ module.exports = modelSetup({
   },
 
   /**
-   * Remove property by ID
-   * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
-   * @param  {String} propertyId
-   * @return {Promise}
-   */
-  realtimeRemoveRecord(db, propertyId) {
-    assert(db && typeof db.ref === 'function', 'has realtime db');
-    assert(propertyId && typeof propertyId === 'string', 'has property id');
-    return db.ref(`${PROPERTIES_DB}/${propertyId}`).remove();
-  },
-
-  /**
    * Add/update Property
    * @param  {firebaseAdmin.database} db - Realtime DB Instance
    * @param  {String} propertyId
@@ -57,66 +45,6 @@ module.exports = modelSetup({
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(data && typeof data === 'object', `${PREFIX} has upsert data`);
     return db.ref(`${PROPERTIES_DB}/${propertyId}`).update(data);
-  },
-
-  /**
-   * Get all properties belonging to a team
-   * @param  {admin.database} db
-   * @param  {String} teamId
-   * @return {Promise} - resolves {DataSnapshot} teams snapshot
-   */
-  getPropertiesByTeamId(db, teamId) {
-    assert(db && typeof db.ref === 'function', 'has realtime db');
-    assert(teamId && typeof teamId === 'string', 'has team id');
-    return db
-      .ref('properties')
-      .orderByChild('team')
-      .equalTo(teamId)
-      .once('value');
-  },
-
-  /**
-   * Batch remove all property relationships
-   * to a deleted team
-   * @param  {admin.database} db
-   * @param  {String[]} propertyIds
-   * @return {Promise}
-   */
-  realtimeBatchRemoveTeam(db, propertyIds) {
-    assert(db && typeof db.ref === 'function', 'has realtime db');
-    assert(
-      propertyIds && Array.isArray(propertyIds),
-      'has property ids is an array'
-    );
-    assert(
-      propertyIds.every(id => id && typeof id === 'string'),
-      'property ids is an array of strings'
-    );
-    const batchRemove = {};
-
-    // Collect all updates to properties
-    propertyIds.forEach(propertyId => {
-      batchRemove[`${PROPERTIES_DB}/${propertyId}/team`] = null;
-    });
-
-    return db.ref().update(batchRemove);
-  },
-
-  /**
-   * Lookup property by its' code
-   * @param  {admin.firebase} db
-   * @param  {String} propertyCode
-   * @return {Promise} - resolves {DataSnapshot}
-   */
-  realtimeQueryByCode(db, propertyCode) {
-    assert(db && typeof db.ref === 'function', 'has realtime db');
-    assert(propertyCode, 'has property code');
-    return db
-      .ref('properties')
-      .orderByChild('code')
-      .equalTo(propertyCode)
-      .limitToFirst(1)
-      .once('value');
   },
 
   /**
