@@ -144,6 +144,7 @@ function createJsonApiInspection(data) {
       creationDate: data.creationDate,
       completionDate: data.completionDate,
       score: `${data.score}%`,
+      templateName: data.templateName,
       inspectionReportURL: data.inspectionReportURL,
       inspectionURL: createInspectionUrl(data.property, data.id),
     },
