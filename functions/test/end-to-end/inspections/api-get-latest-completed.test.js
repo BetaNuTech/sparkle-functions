@@ -85,7 +85,7 @@ describe('Inspections | API | GET Latest Completed', () => {
   });
 
   it('returns latest completed inspection scoped to a template name', async () => {
-    const templateName = 'test_1000_abc';
+    const templateName = 'test 1000 abc';
     const expected = uuid();
     const insp1Data = createInspection({
       completionDate: YESTURDAY_UNIX, // latest for all
@@ -107,7 +107,7 @@ describe('Inspections | API | GET Latest Completed', () => {
     // Execute
     const app = createApp();
     const { body: result } = await request(app)
-      .get(`/t?templateName=${templateName}`)
+      .get(`/t?templateName=${encodeURI(templateName)}`)
       .send()
       .expect(200);
 
@@ -147,7 +147,7 @@ describe('Inspections | API | GET Latest Completed', () => {
 
   it('returns latest completed inspection scoped to a property code and template name', async () => {
     const propertyCode = 'test';
-    const templateName = 'test_1000_abc';
+    const templateName = 'test 1000 abc';
     const propertyId = uuid();
     const expected = uuid();
     const propertyData = createProperty({ code: propertyCode });
@@ -185,7 +185,11 @@ describe('Inspections | API | GET Latest Completed', () => {
     // Execute
     const app = createApp();
     const { body: result } = await request(app)
-      .get(`/t?propertyCode=${propertyCode}&templateName=${templateName}`)
+      .get(
+        `/t?propertyCode=${propertyCode}&templateName=${encodeURI(
+          templateName
+        )}`
+      )
       .send()
       .expect(200);
 
@@ -196,7 +200,7 @@ describe('Inspections | API | GET Latest Completed', () => {
 
   it('returns latest completed inspection scoped to a property code, template name, and before a time', async () => {
     const propertyCode = 'test';
-    const templateName = 'test_1000_abc';
+    const templateName = 'test 1000 abc';
     const propertyId = uuid();
     const expected = uuid();
     const propertyData = createProperty({ code: propertyCode });
@@ -235,7 +239,9 @@ describe('Inspections | API | GET Latest Completed', () => {
     const app = createApp();
     const { body: result } = await request(app)
       .get(
-        `/t?before=${TWO_DAYS_AGO_UNIX}&propertyCode=${propertyCode}&templateName=${templateName}`
+        `/t?before=${TWO_DAYS_AGO_UNIX}&propertyCode=${propertyCode}&templateName=${encodeURI(
+          templateName
+        )}`
       )
       .send()
       .expect(200);
