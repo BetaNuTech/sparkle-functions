@@ -584,7 +584,6 @@ module.exports = modelSetup({
 
     try {
       const trelloResponse = await systemModel.archiveTrelloCard(
-        db,
         fs,
         propertyId,
         defItemId,
@@ -925,15 +924,13 @@ module.exports = modelSetup({
   },
 
   /**
-   * Archive a Firestore deficiency
-   * TODO: Remove `db` once system models migrated
-   * @param  {admin.database} db
+   * Archive a deficiency and
+   * any associated Trello card
    * @param  {admin.firestore} fs
    * @param  {String}  deficiencyId
    * @return {Promise}
    */
-  async firestoreDeactivateRecord(db, fs, deficiencyId) {
-    assert(db && typeof db.ref === 'function', 'has realtime db');
+  async firestoreDeactivateRecord(fs, deficiencyId) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       deficiencyId && typeof deficiencyId === 'string',
@@ -992,7 +989,6 @@ module.exports = modelSetup({
     // Archive Trello Card
     try {
       const trelloResponse = await systemModel.archiveTrelloCard(
-        db,
         fs,
         deficientItem.property,
         deficiencyId,
@@ -1015,14 +1011,11 @@ module.exports = modelSetup({
   /**
    * Unarchive a previously
    * archived Firestore deficiency
-   * TODO: Remove `db` once system models migrated
-   * @param  {admin.database} db
    * @param  {admin.firestore} fs
-   * @param  {String}  deficiencyId
+   * @param  {String} deficiencyId
    * @return {Promise}
    */
-  async firestoreActivateRecord(db, fs, deficiencyId) {
-    assert(db && typeof db.ref === 'function', 'has realtime db');
+  async firestoreActivateRecord(fs, deficiencyId) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       deficiencyId && typeof deficiencyId === 'string',
@@ -1081,7 +1074,6 @@ module.exports = modelSetup({
     // Archive Trello Card
     try {
       const trelloResponse = await systemModel.archiveTrelloCard(
-        db,
         fs,
         deficientItem.property,
         deficiencyId,
@@ -1089,7 +1081,9 @@ module.exports = modelSetup({
       );
       if (trelloResponse) updates.trelloCardChanged = trelloResponse.id;
     } catch (err) {
-      if (err.code !== 'ERR_TRELLO_CARD_DELETED') {
+      if (err.code === 'ERR_TRELLO_CARD_DELETED') {
+        throw err;
+      } else {
         const resultErr = Error(
           `${PREFIX} firestoreActivateRecord: failed to archive trello card | ${err}`
         );

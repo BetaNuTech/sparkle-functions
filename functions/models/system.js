@@ -4,6 +4,7 @@ const got = require('got');
 const archive = require('./_internal/archive');
 const modelSetup = require('./utils/model-setup');
 const config = require('../config');
+const trello = require('../services/trello');
 
 const PREFIX = 'models: system:';
 const SERVICE_ACCOUNT_CLIENT_ID =
@@ -308,33 +309,31 @@ module.exports = modelSetup({
   /**
    * Check trello for deficient item card
    * and archive if exists
-   * @param  {admin.database} db
    * @param  {admin.firestore} fs
    * @param  {String} propertyId
    * @param  {String} deficientItemId
-   * @param  {Boolean} archiving if the trello card should be archived or unarchived
+   * @param  {Boolean} archiving
    * @return {Promise} - resolves {Object} Trello API response
    */
-  async archiveTrelloCard(db, fs, propertyId, deficientItemId, archiving) {
-    assert(db && typeof db.ref === 'function', 'has realtime db');
+  async archiveTrelloCard(fs, propertyId, deficiencyId, archiving) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(
-      deficientItemId && typeof deficientItemId === 'string',
+      deficiencyId && typeof deficiencyId === 'string',
       'has deficient item id'
     );
     assert(typeof archiving === 'boolean', 'has archiving boolean');
 
     let trelloCardId = '';
     try {
-      trelloCardId = await this.findTrelloCardId(
-        db,
+      trelloCardId = await this.firestoreFindTrelloCardId(
+        fs,
         propertyId,
-        deficientItemId
+        deficiencyId
       );
     } catch (err) {
       throw Error(
-        `${PREFIX}: archiveTrelloCard: trello card lookup failed: ${err}`
+        `${PREFIX} archiveTrelloCard: trello card lookup failed: ${err}`
       );
     }
 
@@ -344,63 +343,49 @@ module.exports = modelSetup({
     }
 
     // Lookup Trello credentials
-    let apikey = '';
+    let apiKey = '';
     let authToken = '';
     try {
-      const trelloCredentialsSnap = await this.findTrelloCredentials(db);
-
-      if (!trelloCredentialsSnap.exists()) throw Error();
-      const trelloCredentials = trelloCredentialsSnap.val() || {};
-      apikey = trelloCredentials.apikey;
+      const trelloCredentialsSnap = await this.firestoreFindTrello(fs);
+      const trelloCredentials = trelloCredentialsSnap.data();
+      if (!trelloCredentials) {
+        throw Error('Organization has not authorized Trello');
+      }
+      apiKey = trelloCredentials.apikey;
       authToken = trelloCredentials.authToken;
     } catch (err) {
-      throw Error(`${PREFIX} failed to recover trello credentials: ${err}`);
+      throw Error(
+        `${PREFIX} archiveTrelloCard: failed to recover trello credentials: ${err}`
+      );
     }
 
-    if (!apikey || !authToken) {
+    if (!apiKey || !authToken) {
       return null;
     }
 
     let response = null;
     try {
-      response = await got(
-        `https://api.trello.com/1/cards/${trelloCardId}?key=${apikey}&token=${authToken}`,
-        {
-          headers: { 'content-type': 'application/json' },
-          body: { closed: archiving },
-          responseType: 'json',
-          method: 'PUT',
-          json: true,
-        }
+      response = await trello.archiveTrelloCard(
+        trelloCardId,
+        authToken,
+        apiKey,
+        archiving
       );
     } catch (err) {
-      const resultErr = Error(
-        `${PREFIX} archive PUT card ${trelloCardId} to trello API failed: ${err}`
-      );
-
       // Handle Deleted Trello card
-      if (err.statusCode === 404) {
-        resultErr.code = 'ERR_TRELLO_CARD_DELETED';
-
+      if (err.code === 'ERR_TRELLO_CARD_DELETED') {
         try {
-          await this._cleanupDeletedTrelloCard(
-            db,
-            propertyId,
-            deficientItemId,
-            trelloCardId
-          );
-
           await this.firestoreCleanupDeletedTrelloCard(
             fs,
-            deficientItemId,
+            deficiencyId,
             trelloCardId
           );
         } catch (cleanUpErr) {
-          resultErr.message += `${cleanUpErr}`; // append to primary error
+          err.message += ` ${cleanUpErr}`; // append to primary error
         }
       }
 
-      throw resultErr;
+      throw err;
     }
 
     return response;
