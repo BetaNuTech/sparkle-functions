@@ -6,10 +6,10 @@ const propertiesModel = require('../../../models/properties');
 const inspectionsModel = require('../../../models/inspections');
 const archiveModel = require('../../../models/_internal/archive');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { db, fs, test, cloudFunctions } = require('../../setup');
+const { fs, test, cloudFunctions } = require('../../setup');
 
 describe('Inspections | On Delete | V2', () => {
-  afterEach(() => cleanDb(db, fs));
+  afterEach(() => cleanDb(null, fs));
 
   it('archives inspection', async () => {
     const propertyId = uuid();

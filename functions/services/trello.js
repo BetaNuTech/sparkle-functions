@@ -360,4 +360,47 @@ module.exports = {
 
     return response;
   },
+
+  /**
+   * PUT archive/unarchive a Trello Card
+   * @param  {String} cardId
+   * @param  {String} authToken
+   * @param  {String} apiKey
+   * @param  {Boolean} archiving
+   * @return {Promise} - resolves {Object} response
+   */
+  async archiveTrelloCard(cardId, authToken, apiKey, archiving) {
+    assert(cardId && typeof cardId === 'string', 'has trello card id');
+    assert(authToken && typeof authToken === 'string', 'has auth token');
+    assert(apiKey && typeof apiKey === 'string', 'has api key');
+    assert(typeof archiving === 'boolean', 'has archive boolean');
+
+    // PUT Trello card updates
+    let response = null;
+    try {
+      response = await got(
+        `https://api.trello.com/1/cards/${cardId}?key=${apiKey}&token=${authToken}`,
+        {
+          headers: { 'content-type': 'application/json' },
+          body: { closed: archiving },
+          responseType: 'json',
+          method: 'PUT',
+          json: true,
+        }
+      );
+    } catch (err) {
+      const resultErr = Error(
+        `${PREFIX}: archiveTrelloCard: PUT to card: "${cardId}" request to trello API failed: ${err}`
+      );
+
+      // Set Deleted Trello card error code
+      if (err.statusCode === 404) {
+        resultErr.code = DELETED_TRELLO_CARD_ERR_CODE;
+      }
+
+      throw resultErr;
+    }
+
+    return response;
+  },
 };

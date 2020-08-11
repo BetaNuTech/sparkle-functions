@@ -8,12 +8,10 @@ const PREFIX = 'inspections: on-delete-v2:';
 
 /**
  * Factory for inspection onDelete handler
- * @param  {admin.firebase} db - Firebase Admin DB instance
  * @param  {admin.firestore} fs - Firestore Admin DB instance
  * @return {Function} - inspection onDelete handler
  */
-module.exports = function createOnDeleteHandler(db, fs) {
-  assert(db && typeof db.ref === 'function', 'has realtime db');
+module.exports = function createOnDeleteHandler(fs) {
   assert(fs && typeof fs.collection === 'function', 'has firestore db');
 
   return async (inspectionSnap, event) => {
@@ -72,7 +70,7 @@ module.exports = function createOnDeleteHandler(db, fs) {
       const deficiencyId = deficiencyRefs.docs[i].id;
 
       try {
-        await diModel.firestoreDeactivateRecord(db, fs, deficiencyId);
+        await diModel.firestoreDeactivateRecord(fs, deficiencyId);
       } catch (err) {
         log.error(
           `${PREFIX} failed to deactivate deficiency: "${deficiencyId}" | ${err}`
