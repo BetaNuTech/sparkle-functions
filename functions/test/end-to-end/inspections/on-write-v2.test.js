@@ -7,7 +7,7 @@ const diModel = require('../../../models/deficient-items');
 const archiveModel = require('../../../models/_internal/archive');
 const propertiesModel = require('../../../models/properties');
 const inspectionsModel = require('../../../models/inspections');
-const { db, fs, test, cloudFunctions } = require('../../setup');
+const { fs, test, cloudFunctions } = require('../../setup');
 
 const DEFICIENT_ITEM_PROXY_ATTRS =
   config.deficientItems.inspectionItemProxyAttrsV2;
@@ -15,7 +15,7 @@ const DEFICIENT_ITEM_ELIGIBLE = config.inspectionItems.deficientListEligible;
 const ITEM_VALUE_NAMES = config.inspectionItems.valueNames;
 
 describe('Inspections | On Write | V2', () => {
-  afterEach(() => cleanDb(db, fs));
+  afterEach(() => cleanDb(null, fs));
 
   it('should not update property meta when non-whitelist attribute changed', async () => {
     const insp1Id = uuid();

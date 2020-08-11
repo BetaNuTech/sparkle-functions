@@ -13,12 +13,10 @@ const DEFICIENT_ITEM_PROXY_ATTRS = Object.keys(
 
 /**
  * Factory for inspection onWrite handler
- * @param  {admin.firebase} db - Firestore Admin DB instance
  * @param  {admin.firestore} fs - Firestore Admin DB instance
  * @return {Function} - inspection onWrite handler
  */
-module.exports = function createOnWriteHandler(db, fs) {
-  assert(db && typeof db.ref === 'function', 'has realtime db');
+module.exports = function createOnWriteHandler(fs) {
   assert(fs && typeof fs.collection === 'function', 'has firestore db');
 
   return async function onWriteHandler(change, event) {
@@ -77,7 +75,7 @@ module.exports = function createOnWriteHandler(db, fs) {
 
         for (let i = 0; i < removeDeficiencyIds.length; i++) {
           const removeDeficiencyId = removeDeficiencyIds[i];
-          await diModel.firestoreDeactivateRecord(db, fs, removeDeficiencyId);
+          await diModel.firestoreDeactivateRecord(fs, removeDeficiencyId);
           log.info(`${PREFIX} deactivated deficiency "${removeDeficiencyId}"`);
         }
 

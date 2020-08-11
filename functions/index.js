@@ -72,7 +72,7 @@ exports.inspectionDeleteV2 = functions.firestore
 
 exports.inspectionWriteV2 = functions.firestore
   .document('/inspections/{inspectionId}')
-  .onWrite(inspections.onWriteV2(db, fs));
+  .onWrite(inspections.onWriteV2(fs));
 
 exports.teamDeleteV2 = functions.firestore
   .document('/teams/{teamId}')
