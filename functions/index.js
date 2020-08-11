@@ -40,11 +40,11 @@ exports.deficientItemsPropertyMetaSyncV2 = functions.firestore
 
 exports.deficientItemsArchivingV2 = functions.firestore
   .document('deficiencies/{deficiencyId}')
-  .onUpdate(deficiency.createOnUpdateArchiveV2(db, fs));
+  .onUpdate(deficiency.createOnUpdateArchiveV2(fs));
 
 exports.deficientItemsUnarchivingV2 = functions.firestore
   .document('archives/{deficiencyId}')
-  .onUpdate(deficiency.createOnUpdateArchiveV2(db, fs));
+  .onUpdate(deficiency.createOnUpdateArchiveV2(fs));
 
 exports.deficientItemsProgressNotesSyncV2 = functions.firestore
   .document('deficiencies/{deficiencyId}')
@@ -68,11 +68,11 @@ exports.propertyWriteV2 = functions.firestore
 
 exports.inspectionDeleteV2 = functions.firestore
   .document('/inspections/{inspectionId}')
-  .onDelete(inspections.onDeleteV2(db, fs));
+  .onDelete(inspections.onDeleteV2(fs));
 
 exports.inspectionWriteV2 = functions.firestore
   .document('/inspections/{inspectionId}')
-  .onWrite(inspections.onWriteV2(db, fs));
+  .onWrite(inspections.onWriteV2(fs));
 
 exports.teamDeleteV2 = functions.firestore
   .document('/teams/{teamId}')
@@ -92,9 +92,9 @@ exports.createNotification = functions.firestore
 // Message Subscribers
 
 exports.regTokensSync = regTokens.pubsub.createSyncOutdated(
-  'registration-tokens-sync',
+  fs,
   functions.pubsub,
-  db
+  'registration-tokens-sync'
 );
 
 exports.deficiencyTrelloCardStateComments = deficiency.pubsub.trelloCardStateComment(

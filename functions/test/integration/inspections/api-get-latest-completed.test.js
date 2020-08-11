@@ -147,6 +147,7 @@ describe('Inspections | API | GET Latest Completed', () => {
           creationDate: inspection.creationDate,
           completionDate: inspection.completionDate,
           score: `${Math.round(inspection.score)}%`,
+          templateName: inspection.templateName,
           inspectionReportURL: inspection.inspectionReportURL,
           inspectionURL: createInspectionUrl(inspection.property, 'expected'),
         },
