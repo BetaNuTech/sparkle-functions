@@ -52,6 +52,7 @@ module.exports = function createGetLatestCompleted(fs) {
 
     // Lookup property ID with code
     // when propertyCode provided
+    let property = null;
     if (propertyCode) {
       try {
         const snap = await propertiesModel.firestoreQuery(fs, {
@@ -60,7 +61,9 @@ module.exports = function createGetLatestCompleted(fs) {
         if (snap.size === 0) {
           throw Error('property does not exist');
         }
-        inspQuery.property = ['==', snap.docs[0].id];
+        const [doc] = snap.docs;
+        inspQuery.property = ['==', doc.id];
+        property = { id: doc.id, ...doc.data() };
       } catch (err) {
         log.error(
           `${PREFIX} property lookup failed for code: "${propertyCode}" | ${err}`
@@ -96,7 +99,7 @@ module.exports = function createGetLatestCompleted(fs) {
         throw Error('no completed inspections found');
       }
       const [inspDoc] = snap.docs;
-      inspection = { ...inspDoc.data(), id: inspDoc.id };
+      inspection = { id: inspDoc.id, ...inspDoc.data() };
     } catch (err) {
       log.error(`${PREFIX} inspections lookup failed | ${err}`);
       if (`${err}`.search('no completed inspections') > -1) {
@@ -109,8 +112,28 @@ module.exports = function createGetLatestCompleted(fs) {
         .send({ errors: [{ detail: 'inspections lookup failed' }] });
     }
 
+    // Lookup inspection property
+    // when not previously discovered
+    if (!property) {
+      try {
+        const propertySnap = await propertiesModel.firestoreFindRecord(
+          fs,
+          inspection.property
+        );
+        property = { id: propertySnap.id, ...propertySnap.data() };
+      } catch (err) {
+        // Allow failure
+        log.error(
+          `${PREFIX} property lookup failed for: "${inspection.property}" | ${err}`
+        );
+      }
+    }
+
     // Successful response
-    res.status(200).send({ data: createJsonApiInspection(inspection) });
+    res.status(200).send({
+      included: property ? [createJsonApiProperty(property)] : [],
+      data: createJsonApiInspection(inspection),
+    });
   };
 };
 
@@ -136,17 +159,47 @@ function createInspectionUrl(propertyId, inspectionId) {
  */
 function createJsonApiInspection(data) {
   assert(data && typeof data === 'object', 'has inspection data');
+  assert(data.id && typeof data.id === 'string', 'has inspection id');
+  assert(
+    data.property && typeof data.property === 'string',
+    'has data property association'
+  );
 
   return {
     id: data.id,
     type: 'inspection',
     attributes: {
-      creationDate: data.creationDate,
-      completionDate: data.completionDate,
-      score: `${data.score}%`,
-      templateName: data.templateName,
-      inspectionReportURL: data.inspectionReportURL,
+      creationDate: data.creationDate || 0,
+      completionDate: data.completionDate || 0,
+      score: `${data.score || 0}%`,
+      templateName: data.templateName || '',
+      inspectionReportURL: data.inspectionReportURL || '',
       inspectionURL: createInspectionUrl(data.property, data.id),
+    },
+  };
+}
+
+/**
+ * Create a JSON API property document
+ * @param  {Object} data
+ * @return {Object}
+ */
+function createJsonApiProperty(data) {
+  assert(data && typeof data === 'object', 'has property data');
+  assert(data.id && typeof data.id === 'string', 'has property id');
+
+  return {
+    id: data.id,
+    type: 'property',
+    attributes: {
+      name: data.name || '',
+      code: data.code || '',
+      lastInspectionDate: data.lastInspectionDate || 0,
+      lastInspectionScore: data.lastInspectionScore || 0,
+      numOfInspections: data.numOfInspections || 0,
+      numOfDeficientItems: data.numOfDeficientItems || 0,
+      numOfFollowUpActionsForDeficientItems:
+        data.numOfFollowUpActionsForDeficientItems || 0,
     },
   };
 }
