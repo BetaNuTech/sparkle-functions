@@ -1021,6 +1021,43 @@ module.exports = modelSetup({
   },
 
   /**
+   * Find latest completed inspection for
+   * a property before a specified timestamp
+   * @param  {admin.firestore} fs
+   * @param  {Number} before
+   * @param  {Object?} query
+   * @return {Promise} - resolves {DataSnapshot}
+   */
+  firestoreLatestCompletedQuery(fs, before, query = {}) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(
+      typeof before === 'number' && before === before,
+      'has numberic before'
+    );
+
+    let fsQuery = fs
+      .collection(INSPECTION_COLLECTION)
+      .orderBy('completionDate', 'desc')
+      .where('completionDate', '<', before);
+
+    if (query) {
+      assert(typeof query === 'object', 'has query');
+
+      // Append each query as where clause
+      Object.keys(query).forEach(attr => {
+        const queryArgs = query[attr];
+        assert(
+          queryArgs && Array.isArray(queryArgs),
+          'has query arguments array'
+        );
+        fsQuery = fsQuery.where(attr, ...queryArgs);
+      });
+    }
+
+    return fsQuery.limit(1).get();
+  },
+
+  /**
    * Delete all inspections active
    * and archived, associated with
    * a property

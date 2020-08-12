@@ -9,14 +9,10 @@ const diModel = require('../../../models/deficient-items');
 const archiveModel = require('../../../models/_internal/archive');
 const propertiesModel = require('../../../models/properties');
 const inspectionsModel = require('../../../models/inspections');
+const integrationsModel = require('../../../models/integrations');
+const systemModel = require('../../../models/system');
 const TRELLO_API_CARD_PAYLOAD = require('../../../test-helpers/mocks/get-trello-card.json');
-const {
-  db,
-  fs,
-  test,
-  cloudFunctions,
-  uid: SERVICE_ACCOUNT_ID,
-} = require('../../setup');
+const { fs, test, cloudFunctions } = require('../../setup');
 
 const PROPERTY_ID = uuid();
 const DEFICIENT_ITEM_ID = uuid();
@@ -38,24 +34,15 @@ const TRELLO_SYSTEM_PROPERTY_CARDS_DATA = {
 };
 const INTEGRATIONS_DATA = {
   grantedBy: USER_ID,
-  grantedAt: Date.now() / 1000,
+  grantedAt: Math.round(Date.now() / 1000),
   openBoard: '5d0ab7754066f880369a4d97',
   openBoardName: 'Test Board',
   openList: '5d0ab7754066f880369a4d99',
   opentListName: 'TO DO',
 };
-const TRELLO_CREDENTIAL_DB_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/organization`;
-const TRELLO_PROPERTY_CARDS_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}/trello/properties/${PROPERTY_ID}/cards`;
-const TRELLO_INTEGRATIONS_DB_PATH = `/integrations/trello/properties/${PROPERTY_ID}`;
-const DEFICIENT_ITEM_DB_PATH = `/propertyInspectionDeficientItems/${PROPERTY_ID}/${DEFICIENT_ITEM_ID}`;
-const DEFICIENT_ITEM_ARCHIVE_DB_PATH = `/archive${DEFICIENT_ITEM_DB_PATH}`;
 
 describe('Deficient Items | Archiving | V2', () => {
-  afterEach(async () => {
-    await cleanDb(db, fs);
-    await db.ref(`/system/integrations/${SERVICE_ACCOUNT_ID}`).remove();
-    return db.ref(TRELLO_INTEGRATIONS_DB_PATH).remove();
-  });
+  afterEach(() => cleanDb(null, fs));
 
   it("should not archive a deficient item when its' archive is set to false", async () => {
     const expected = null;
@@ -307,21 +294,17 @@ describe('Deficient Items | Archiving | V2', () => {
     await wrapped(changeSnap, { params: { deficiencyId } });
 
     // Assertions
-    // TODO: Replace with fireabase record assertions
-    return trelloTest.hasRemovedDiCardReferences(
-      db,
-      `${TRELLO_PROPERTY_CARDS_PATH}/${TRELLO_CARD_ID}`,
-      DEFICIENT_ITEM_ARCHIVE_DB_PATH
+    return trelloTest.hasRemovedDeficiencyCardReferences(
+      fs,
+      PROPERTY_ID,
+      DEFICIENT_ITEM_ID,
+      TRELLO_CARD_ID
     );
   });
 });
 
 describe('Deficient Items | Unarchiving | V2', () => {
-  afterEach(async () => {
-    await cleanDb(db, fs);
-    await db.ref(`/system/integrations/${SERVICE_ACCOUNT_ID}`).remove();
-    return db.ref(TRELLO_INTEGRATIONS_DB_PATH).remove();
-  });
+  afterEach(() => cleanDb(null, fs));
 
   it('should not unarchive a deficient item when archival requested', async () => {
     const expected = null;
@@ -605,19 +588,23 @@ describe('Deficient Items | Unarchiving | V2', () => {
     await wrapped(changeSnap, { params: { deficiencyId } });
 
     // Assertions
-    // TODO replace with firestore record assertions
-    return trelloTest.hasRemovedDiCardReferences(
-      db,
-      `${TRELLO_PROPERTY_CARDS_PATH}/${TRELLO_CARD_ID}`,
-      DEFICIENT_ITEM_DB_PATH
+    return trelloTest.hasRemovedDeficiencyCardReferences(
+      fs,
+      PROPERTY_ID,
+      DEFICIENT_ITEM_ID,
+      TRELLO_CARD_ID
     );
   });
 });
 
 async function createTrelloCardDiSystemRecord() {
-  await db.ref(TRELLO_CREDENTIAL_DB_PATH).set(TRELLO_SYSTEM_INTEGRATION_DATA);
-  await db
-    .ref(TRELLO_PROPERTY_CARDS_PATH)
-    .set(TRELLO_SYSTEM_PROPERTY_CARDS_DATA);
-  await db.ref(TRELLO_INTEGRATIONS_DB_PATH).set(INTEGRATIONS_DATA);
+  await systemModel.firestoreUpsertTrello(fs, TRELLO_SYSTEM_INTEGRATION_DATA);
+  await systemModel.firestoreCreateTrelloProperty(fs, PROPERTY_ID, {
+    cards: TRELLO_SYSTEM_PROPERTY_CARDS_DATA,
+  });
+  await integrationsModel.firestoreCreateTrelloProperty(
+    fs,
+    PROPERTY_ID,
+    INTEGRATIONS_DATA
+  );
 }

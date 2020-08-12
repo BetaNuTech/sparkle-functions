@@ -9,12 +9,10 @@ const DEFICIENT_COLLECTION = config.deficientItems.collection;
 /**
  * Factory for client requested Deficiency
  * archiving on DI state updates
- * @param  {admin.database} db
  * @param  {admin.firestore} fs
  * @return {Function} - property onWrite handler
  */
-module.exports = function createOnDiToggleArchiveUpdateHandler(db, fs) {
-  assert(db && typeof db.ref === 'function', 'has realtime db');
+module.exports = function createOnDiToggleArchiveUpdateHandler(fs) {
   assert(
     fs && typeof fs.collection === 'function',
     'has firestore DB instance'
@@ -44,14 +42,9 @@ module.exports = function createOnDiToggleArchiveUpdateHandler(db, fs) {
 
     try {
       if (isArchived) {
-        archiveUpdates = await model.firestoreActivateRecord(
-          db,
-          fs,
-          deficiencyId
-        );
+        archiveUpdates = await model.firestoreActivateRecord(fs, deficiencyId);
       } else {
         archiveUpdates = await model.firestoreDeactivateRecord(
-          db,
           fs,
           deficiencyId
         );
@@ -70,7 +63,7 @@ module.exports = function createOnDiToggleArchiveUpdateHandler(db, fs) {
     }
 
     // Log archived Trello card
-    if (archiveUpdates.trelloCardChanged) {
+    if (archiveUpdates && archiveUpdates.trelloCardChanged) {
       log.info(
         `${PREFIX} ${archivePastTense} Trello card ${archiveUpdates.trelloCardChanged}`
       );

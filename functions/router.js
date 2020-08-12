@@ -38,21 +38,21 @@ module.exports = (db, fs, auth, settings) => {
   app.patch(
     '/v0/inspections/:inspectionId',
     authUser(fs, auth, true), // admin only
-    inspections.api.createPatchProperty(db, fs)
+    inspections.api.createPatchProperty(fs)
   );
 
   // Generate Inspection PDF report
   app.get(
     '/v0/inspections/:inspection/pdf-report',
     authUser(fs, auth),
-    inspections.api.createGetInspectionPDF(db, fs, inspectionUrl)
+    inspections.api.createGetInspectionPDF(fs, inspectionUrl)
   );
 
   // Request Property's residents from Yardi
   app.get(
-    '/v1/properties/:propertyCode/latest-inspection',
+    '/v0/inspections/latest-completed',
     // TODO: auth?
-    properties.api.getLatestCompletedInspection(fs)
+    inspections.api.getLatestCompletedInspection(fs)
   );
 
   // Request Property's residents from Yardi

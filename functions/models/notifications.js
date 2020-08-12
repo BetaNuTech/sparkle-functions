@@ -275,6 +275,16 @@ module.exports = modelSetup({
    * @param  {admin.firestore} fs
    * @return {Promise}
    */
+  firestoreFindAll(fs) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    return fs.collection(NOTIFICATIONS_COLLECTION).get();
+  },
+
+  /**
+   * Find all slack notifications
+   * @param  {admin.firestore} fs
+   * @return {Promise}
+   */
   firestoreFindAllSlack(fs) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     return fs
@@ -328,10 +338,9 @@ module.exports = modelSetup({
   firestoreAddRecord(fs, data, batch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(data && typeof data === 'object', 'has data');
-    assert(
-      data.message && typeof data.message === 'string',
-      'data has property id'
-    );
+    if (data.message) {
+      assert(typeof data.message === 'string', 'data has message string');
+    }
     if (data.title) {
       assert(typeof data.title === 'string', 'data has title string');
     }

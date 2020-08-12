@@ -1,13 +1,17 @@
 const { expect } = require('chai');
+const cors = require('cors');
+const express = require('express');
 const request = require('supertest');
-const createApp = require('../../../inspections/on-get-pdf-report');
 const uuid = require('../../../test-helpers/uuid');
 const mocking = require('../../../test-helpers/mocking');
 const inspectionsModel = require('../../../models/inspections');
 const propertiesModel = require('../../../models/properties');
 const usersModel = require('../../../models/users');
+const notificationsModel = require('../../../models/notifications');
+const authUser = require('../../../utils/auth-firebase-user');
+const getInspectionPDFHandler = require('../../../inspections/on-get-pdf-report');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { db, fs, auth, deletePDFInspection } = require('../../setup');
+const { fs, auth, deletePDFInspection } = require('../../setup');
 
 // Avoid creating lots of PDF's
 const INSP_ID = uuid();
@@ -32,23 +36,22 @@ const INSP_URL = '{{propertyId}}/{{inspectionId}}';
 
 describe('Inspections | PDF Report', () => {
   afterEach(async () => {
-    const reportURL = await db
-      .ref(`/inspections/${INSP_ID}/inspectionReportURL`)
-      .once('value');
+    const inspDoc = await inspectionsModel.firestoreFindRecord(fs, INSP_ID);
+    const reportURL = (inspDoc.data() || {}).inspectionReportURL || '';
 
     // Delete any generated PDF
-    if (reportURL.val()) {
+    if (reportURL) {
       try {
-        await deletePDFInspection(reportURL.val());
+        await deletePDFInspection(reportURL);
       } catch (e) {} // eslint-disable-line no-empty
     }
 
-    return cleanDb(db, fs);
+    return cleanDb(null, fs);
   });
 
   it('should reject request without authorization', async function() {
     // Execute & Get Result
-    const app = createApp(db, fs, auth, INSP_URL); // auth required when given
+    const app = createApp(fs, auth, INSP_URL); // auth required when given
     return request(app)
       .get(`/${PROPERTY_ID}/${INSP_ID}`)
       .set('Accept', 'application/json')
@@ -67,7 +70,7 @@ describe('Inspections | PDF Report', () => {
     await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
 
     // Execute & Get Result
-    const app = createApp(db, fs, null, INSP_URL);
+    const app = createApp(fs, null, INSP_URL);
     return request(app)
       .get(`/${PROPERTY_ID}/${INSP_ID}`)
       .set('Accept', 'application/json')
@@ -81,7 +84,7 @@ describe('Inspections | PDF Report', () => {
     await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
 
     // Execute & Get Result
-    const app = createApp(db, fs, null, INSP_URL);
+    const app = createApp(fs, null, INSP_URL);
     const result = await request(app)
       .get(`/${PROPERTY_ID}/${INSP_ID}`)
       .set('Accept', 'application/json')
@@ -98,7 +101,7 @@ describe('Inspections | PDF Report', () => {
     await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
 
     // Execute
-    const app = createApp(db, fs, null, INSP_URL);
+    const app = createApp(fs, null, INSP_URL);
     await request(app)
       .get(`/${PROPERTY_ID}/${INSP_ID}`)
       .set('Accept', 'application/json')
@@ -106,7 +109,6 @@ describe('Inspections | PDF Report', () => {
       .expect(200);
 
     // Get Result
-    const resultFirebase = await inspectionsModel.findRecord(db, INSP_ID);
     const resultFirestore = await inspectionsModel.firestoreFindRecord(
       fs,
       INSP_ID
@@ -114,11 +116,6 @@ describe('Inspections | PDF Report', () => {
 
     // Assertions
     [
-      {
-        actual:
-          (resultFirebase.val() || {}).inspectionReportUpdateLastDate || 0,
-        msg: 'set firebase inspection report update last date',
-      },
       {
         actual:
           (resultFirestore.data() || {}).inspectionReportUpdateLastDate || 0,
@@ -139,7 +136,7 @@ describe('Inspections | PDF Report', () => {
     await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
 
     // Execute
-    const app = createApp(db, fs, null, INSP_URL);
+    const app = createApp(fs, null, INSP_URL);
     const response = await request(app)
       .get(`/${PROPERTY_ID}/${INSP_ID}`)
       .set('Accept', 'application/json')
@@ -147,7 +144,6 @@ describe('Inspections | PDF Report', () => {
       .expect(200);
 
     // Get Result
-    const resultFirebase = await inspectionsModel.findRecord(db, INSP_ID);
     const resultFirestore = await inspectionsModel.firestoreFindRecord(
       fs,
       INSP_ID
@@ -155,11 +151,6 @@ describe('Inspections | PDF Report', () => {
 
     // Assertions
     [
-      {
-        actual: (resultFirebase.val() || {}).inspectionReportURL || '',
-        expected: response.body.inspectionReportURL,
-        msg: 'set firebase inspection report URL',
-      },
       {
         actual: (resultFirestore.data() || {}).inspectionReportURL || '',
         expected: response.body.inspectionReportURL,
@@ -178,7 +169,7 @@ describe('Inspections | PDF Report', () => {
     await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
 
     // Execute
-    const app = createApp(db, fs, null, INSP_URL);
+    const app = createApp(fs, null, INSP_URL);
     await request(app)
       .get(`/${PROPERTY_ID}/${INSP_ID}`)
       .set('Accept', 'application/json')
@@ -186,7 +177,6 @@ describe('Inspections | PDF Report', () => {
       .expect(200);
 
     // Get Result
-    const resultFirebase = await inspectionsModel.findRecord(db, INSP_ID);
     const resultFirestore = await inspectionsModel.firestoreFindRecord(
       fs,
       INSP_ID
@@ -194,11 +184,6 @@ describe('Inspections | PDF Report', () => {
 
     // Assertions
     [
-      {
-        actual: (resultFirebase.val() || {}).inspectionReportStatus || '',
-        expected: final,
-        msg: 'set firebase record report status',
-      },
       {
         actual: (resultFirestore.data() || {}).inspectionReportStatus || '',
         expected: final,
@@ -209,7 +194,7 @@ describe('Inspections | PDF Report', () => {
     });
   });
 
-  it('should create a source notification after successfully creating report', async function() {
+  it('should create notifications after successfully creating report', async function() {
     const userId = uuid();
     const expected = true; // Source notification exists
     const userData = {
@@ -226,7 +211,6 @@ describe('Inspections | PDF Report', () => {
 
     // Execute
     const app = createApp(
-      db,
       fs,
       {
         verifyIdToken: () => Promise.resolve({ uid: userId }),
@@ -241,8 +225,8 @@ describe('Inspections | PDF Report', () => {
       .expect(200);
 
     // Get Result
-    const snap = await db.ref('/notifications/src').once('value');
-    const actual = snap.exists();
+    const snap = await notificationsModel.firestoreFindAll(fs);
+    const actual = Boolean(snap.size);
 
     // Assertions
     expect(actual).to.equal(expected);
@@ -259,7 +243,7 @@ describe('Inspections | PDF Report', () => {
     await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
 
     // Execute & Get Result
-    const app = createApp(db, fs, null, INSP_URL);
+    const app = createApp(fs, null, INSP_URL);
     const result = await request(app)
       .get(`/${PROPERTY_ID}/${INSP_ID}`)
       .set('Accept', 'application/json')
@@ -284,33 +268,30 @@ describe('Inspections | PDF Report', () => {
     await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
 
     // Execute, get result, and assertion
-    const app = createApp(db, fs, null, INSP_URL);
+    const app = createApp(fs, null, INSP_URL);
     await request(app)
       .get(`/${PROPERTY_ID}/${INSP_ID}`)
       .set('Accept', 'application/json')
       .expect(304);
   });
-
-  it('should use firebase records when firestore records do not exist', async function() {
-    const expected = 'completed_success';
-
-    // Setup database
-    await inspectionsModel.realtimeUpsertRecord(db, INSP_ID, INSPECTION_DATA);
-    await propertiesModel.realtimeUpsertRecord(db, PROPERTY_ID, PROPERTY_DATA);
-
-    // Execute
-    const app = createApp(db, fs, null, INSP_URL);
-    await request(app)
-      .get(`/${PROPERTY_ID}/${INSP_ID}`)
-      .set('Accept', 'application/json')
-      .expect('Content-Type', /json/)
-      .expect(200);
-
-    // Get Result
-    const result = await inspectionsModel.findRecord(db, INSP_ID);
-    const actual = (result.val() || {}).inspectionReportStatus || '';
-
-    // Assertions
-    expect(actual).to.equal(expected);
-  });
 });
+
+/**
+ * Factory for inspection PDF generator endpoint
+ * @param  {admin.firestore} fsDb - Firestore Admin DB instance
+ * @param  {admin.auth?} fbAuth - Firebase Admin auth service instance (optional for testing)
+ * @param  {String} inspectionUrl - template for an inspection's URL
+ * @return {Function} - onRequest handler
+ */
+function createApp(fsDb, fbAuth, inspectionUrl) {
+  // Create express app with single endpoint
+  // that configures required url params
+  const app = express();
+  app.use(cors());
+  const middleware = [
+    fbAuth ? authUser(fsDb, fbAuth) : null,
+    getInspectionPDFHandler(fsDb, inspectionUrl),
+  ].filter(Boolean);
+  app.get('/:property/:inspection', ...middleware);
+  return app;
+}
