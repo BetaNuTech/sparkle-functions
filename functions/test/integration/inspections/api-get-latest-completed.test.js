@@ -130,7 +130,7 @@ describe('Inspections | API | GET Latest Completed', () => {
   it('returns latest completed inspection as a JSON-API document', done => {
     const latest = TODAY_UNIX;
     const property = createProperty();
-    const propertiesSnap = wrapSnapshot([property]);
+    const propertySnap = wrapSnapshot(property);
     const inspection = createInspection({
       id: 'expected',
       creationDate: latest - 1,
@@ -155,7 +155,7 @@ describe('Inspections | API | GET Latest Completed', () => {
     };
 
     // Stup requests
-    sinon.stub(propertiesModel, 'firestoreQuery').resolves(propertiesSnap);
+    sinon.stub(propertiesModel, 'firestoreFindRecord').resolves(propertySnap);
     sinon
       .stub(inspectionsModel, 'firestoreLatestCompletedQuery')
       .resolves(inspectionsSnap);
@@ -166,7 +166,92 @@ describe('Inspections | API | GET Latest Completed', () => {
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(200)
       .then(res => {
+        delete res.body.included; // ignore included property
         expect(res.body).to.deep.equal(expected);
+        done();
+      })
+      .catch(done);
+  });
+
+  it("returns inspection's property as an included JSON-API document", done => {
+    const latest = TODAY_UNIX;
+    const propertyId = 'expected';
+    const inspection = createInspection({
+      creationDate: latest - 1,
+      completionDate: latest,
+      score: 99,
+      property: propertyId,
+    });
+    const inspectionsSnap = wrapSnapshot([inspection]);
+    const property = createProperty({
+      id: propertyId,
+      lastInspectionDate: inspection.creationDate,
+      lastInspectionScore: inspection.score,
+    });
+    const propertySnap = wrapSnapshot(property);
+    const expected = {
+      included: [
+        {
+          id: propertyId,
+          type: 'property',
+          attributes: {
+            name: property.name,
+            code: property.code,
+            lastInspectionDate: property.lastInspectionDate,
+            lastInspectionScore: property.lastInspectionScore,
+            numOfInspections: property.numOfInspections,
+            numOfDeficientItems: property.numOfDeficientItems,
+            numOfFollowUpActionsForDeficientItems:
+              property.numOfFollowUpActionsForDeficientItems,
+          },
+        },
+      ],
+    };
+
+    // Stup requests
+    sinon.stub(propertiesModel, 'firestoreFindRecord').resolves(propertySnap);
+    sinon
+      .stub(inspectionsModel, 'firestoreLatestCompletedQuery')
+      .resolves(inspectionsSnap);
+
+    request(createApp())
+      .get('/t')
+      .send()
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(200)
+      .then(res => {
+        delete res.body.data; // ignore primary data
+        expect(res.body).to.deep.equal(expected);
+        done();
+      })
+      .catch(done);
+  });
+
+  it('does not re-request a property that has been previously discovered', done => {
+    const expected = false;
+    const inspection = createInspection();
+    const inspectionsSnap = wrapSnapshot([inspection]);
+    const property = createProperty();
+    const propertySnap = wrapSnapshot(property);
+    const propertiesQuerySnap = wrapSnapshot([property]);
+
+    // Stup requests
+    sinon.stub(propertiesModel, 'firestoreQuery').resolves(propertiesQuerySnap);
+    sinon
+      .stub(inspectionsModel, 'firestoreLatestCompletedQuery')
+      .resolves(inspectionsSnap);
+    const propertyLookup = sinon
+      .stub(propertiesModel, 'firestoreFindRecord')
+      .resolves(propertySnap);
+
+    request(createApp())
+      .get(`/t?propertyCode=${encodeURI(property.code)}`)
+      .send()
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(200)
+      .then(() => {
+        const actual = propertyLookup.called;
+        expect(actual).to.equal(expected);
         done();
       })
       .catch(done);
@@ -204,7 +289,13 @@ function wrapSnapshot(payload = {}, id) {
 function createProperty(propConfig = {}) {
   return {
     id: uuid(),
-    name: 'property',
+    name: 'name',
+    code: 'code',
+    lastInspectionDate: 0,
+    lastInspectionScore: 0,
+    numOfInspections: 0,
+    numOfDeficientItems: 0,
+    numOfFollowUpActionsForDeficientItems: 0,
     ...propConfig,
   };
 }
