@@ -45,7 +45,7 @@ module.exports = (db, fs, auth, settings) => {
   app.get(
     '/v0/inspections/:inspection/pdf-report',
     authUser(fs, auth),
-    inspections.api.createGetInspectionPDF(db, fs, inspectionUrl)
+    inspections.api.createGetInspectionPDF(fs, inspectionUrl)
   );
 
   // Request Property's residents from Yardi
