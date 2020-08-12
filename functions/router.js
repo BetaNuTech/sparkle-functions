@@ -38,7 +38,7 @@ module.exports = (db, fs, auth, settings) => {
   app.patch(
     '/v0/inspections/:inspectionId',
     authUser(fs, auth, true), // admin only
-    inspections.api.createPatchProperty(db, fs)
+    inspections.api.createPatchProperty(fs)
   );
 
   // Generate Inspection PDF report
