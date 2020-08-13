@@ -13,13 +13,12 @@ const authTrelloReq = require('./utils/auth-trello-request');
 /**
  * Configure Express app with
  * all API endpoints
- * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
- * @param  {firebaseAdmin.auth} auth - Firebase Admin auth instance
+ * @param  {admin.firestore} fs - Firestore Admin DB instance
+ * @param  {admin.auth} auth - Firebase Admin auth instance
  * @param  {Object} settings
  * @return {Express}
  */
-module.exports = (db, fs, auth, settings) => {
-  assert(Boolean(db), 'has firebase database instance');
+module.exports = (fs, auth, settings) => {
   assert(Boolean(fs), 'has firestore database instance');
   assert(Boolean(auth), 'has firebase auth instance');
 
@@ -70,7 +69,7 @@ module.exports = (db, fs, auth, settings) => {
     authUser(fs, auth),
     properties.middleware.propertyCode(fs),
     properties.middleware.yardiIntegration(fs),
-    properties.api.getPropertyYardiWorkOrders(db)
+    properties.api.getPropertyYardiWorkOrders()
   );
 
   // Authorize Slack API credentials

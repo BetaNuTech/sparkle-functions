@@ -8,12 +8,9 @@ const PREFIX = 'properties: api: get-property-yardi-work-orders:';
 /**
  * Factory for creating a GET endpoint
  * that fetches a properties Yardi Work Orders
- * @param {admin.firestore} db
  * @return {Function} - onRequest handler
  */
-module.exports = function createGetYardiWorkOrders(db) {
-  assert(Boolean(db), 'has firebase database');
-
+module.exports = function createGetYardiWorkOrders() {
   /**
    * Handle GET request
    * @param  {Object} req Express req
