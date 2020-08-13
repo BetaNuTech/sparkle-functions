@@ -105,7 +105,7 @@ function createApp(property) {
     stubAuth,
     stubPropertyCode(property),
     stubYardiConfig(),
-    getPropertyWorkOrders({})
+    getPropertyWorkOrders()
   );
   return app;
 }
