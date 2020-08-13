@@ -100,7 +100,8 @@ describe('Inspections | On Write | V2', () => {
     const inspOne = mocking.createInspection({
       property: propertyId,
       inspectionCompleted: true,
-      creationDate: newest,
+      creationDate: newest - 1,
+      completionDate: newest,
       updatedLastDate: oldest,
       score: 65,
     });
@@ -108,7 +109,8 @@ describe('Inspections | On Write | V2', () => {
     const inspTwo = mocking.createInspection({
       property: propertyId,
       inspectionCompleted: true,
-      creationDate: oldest,
+      creationDate: oldest - 1,
+      completionDate: oldest,
       score: 25,
     });
     const propData = mocking.createProperty({
@@ -118,7 +120,7 @@ describe('Inspections | On Write | V2', () => {
     const final = {
       numOfInspections: 2,
       lastInspectionScore: inspOne.score,
-      lastInspectionDate: inspOne.creationDate,
+      lastInspectionDate: inspOne.completionDate,
     };
 
     // Setup database
@@ -172,7 +174,8 @@ describe('Inspections | On Write | V2', () => {
     const inspOne = mocking.createInspection({
       property: propertyId,
       inspectionCompleted: true,
-      creationDate: newest,
+      creationDate: newest - 1,
+      completionDate: newest,
       migrationDate: oldest,
       score: 65,
     });
@@ -180,7 +183,8 @@ describe('Inspections | On Write | V2', () => {
     const inspTwo = mocking.createInspection({
       property: propertyId,
       inspectionCompleted: true,
-      creationDate: oldest,
+      creationDate: oldest - 1,
+      completionDate: oldest,
       score: 25,
     });
     const propData = mocking.createProperty({
@@ -190,7 +194,7 @@ describe('Inspections | On Write | V2', () => {
     const final = {
       numOfInspections: 2,
       lastInspectionScore: inspOne.score,
-      lastInspectionDate: inspOne.creationDate,
+      lastInspectionDate: inspOne.completionDate,
     };
 
     // Setup database
