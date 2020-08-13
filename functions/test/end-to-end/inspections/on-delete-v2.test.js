@@ -66,13 +66,15 @@ describe('Inspections | On Delete | V2', () => {
     const inspectionOne = mocking.createInspection({
       property: propertyId,
       inspectionCompleted: true,
-      creationDate: newest,
+      creationDate: newest - 1,
+      completionDate: newest,
       score: 65,
     });
     const inspectionTwo = mocking.createInspection({
       property: propertyId,
       inspectionCompleted: true,
-      creationDate: oldest,
+      creationDate: oldest - 1,
+      completionDate: oldest,
       score: 25,
       template: {
         trackDeficientItems: true,
@@ -116,7 +118,7 @@ describe('Inspections | On Delete | V2', () => {
         msg: "updated property's last inspection score",
       },
       {
-        expected: inspectionTwo.creationDate,
+        expected: inspectionTwo.completionDate,
         actual: result.lastInspectionDate,
         msg: "updated property's last inspection date",
       },
