@@ -3,7 +3,6 @@ const { db, fs } = require('./setup'); // eslint-disable-line
 const utils = require('../utils/firebase-admin');
 const propertiesModel = require('../models/properties');
 const templatesModel = require('../models/templates');
-const properties = require('../properties');
 
 (async () => {
   await utils.forEachChild(db, '/properties', async (id, data) => {
@@ -19,12 +18,6 @@ const properties = require('../properties');
       await propertiesModel.updateMetaData(fs, id);
     } catch (err) {
       log.error(`Failed to sync firestore property "${id}" meta data | ${err}`);
-    }
-
-    try {
-      await properties.utils.processMeta(db, id);
-    } catch (err) {
-      log.error(`Failed to sync realtime property "${id}" meta data | ${err}`);
     }
 
     try {
