@@ -1223,4 +1223,17 @@ module.exports = modelSetup({
       .doc('cobalt')
       .create(data);
   },
+
+  /**
+   * Lookup Yardi system credentials
+   * @param  {admin.firestore} fs
+   * @return {Promise} - resolves {DocumentSnapshot}
+   */
+  firestoreFindYardi(fs) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    return fs
+      .collection(SYSTEM_COLLECTION)
+      .doc('yardi')
+      .get();
+  },
 });

@@ -60,7 +60,7 @@ module.exports = (db, fs, auth, settings) => {
     '/v0/properties/:propertyId/yardi/residents',
     authUser(fs, auth),
     properties.middleware.propertyCode(fs),
-    properties.middleware.yardiIntegration(db),
+    properties.middleware.yardiIntegration(fs),
     properties.api.getPropertyYardiResidents(db)
   );
 
@@ -69,7 +69,7 @@ module.exports = (db, fs, auth, settings) => {
     '/v0/properties/:propertyId/yardi/work-orders',
     authUser(fs, auth),
     properties.middleware.propertyCode(fs),
-    properties.middleware.yardiIntegration(db),
+    properties.middleware.yardiIntegration(fs),
     properties.api.getPropertyYardiWorkOrders(db)
   );
 

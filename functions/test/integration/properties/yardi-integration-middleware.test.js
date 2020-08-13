@@ -10,7 +10,7 @@ describe('Properties | Middleware | Yardi Integration', () => {
 
   it('rejects request when organization yardi configuration is not set', done => {
     // Stup requests
-    sinon.stub(systemModel, 'findYardiCredentials').resolves(createEmptyDoc());
+    sinon.stub(systemModel, 'firestoreFindYardi').resolves(createEmptyDoc());
 
     request(createApp())
       .get('/t/123')
@@ -28,7 +28,7 @@ describe('Properties | Middleware | Yardi Integration', () => {
 
   it('continues pipeline when yardi integration exists', done => {
     // Stup requests
-    sinon.stub(systemModel, 'findYardiCredentials').resolves(
+    sinon.stub(systemModel, 'firestoreFindYardi').resolves(
       createDoc({
         code: 'test',
       })
@@ -45,8 +45,10 @@ describe('Properties | Middleware | Yardi Integration', () => {
 
 function createApp() {
   const app = express();
-  app.get('/t/:propertyId', yardiIntegration({}), (_, res) =>
-    res.status(200).send()
+  app.get(
+    '/t/:propertyId',
+    yardiIntegration({ collection: () => {} }),
+    (_, res) => res.status(200).send()
   );
   return app;
 }

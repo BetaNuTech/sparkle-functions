@@ -7,19 +7,19 @@ const PREFIX = 'properties: middleware: yardi-integration:';
 /**
  * Factory for middleware to lookup
  * a yardi configuration for the organization
- * @param {admin.database} db
+ * @param {admin.firestore} fs
  * @return {Function} - onRequest handler
  */
-module.exports = db => {
-  assert(Boolean(db), 'has realtime DB instance');
+module.exports = fs => {
+  assert(fs && typeof fs.collection === 'function', 'has firestore db');
 
   return async (req, res, next) => {
     let yardiConfig = null;
 
     // Lookup Yardi Integration
     try {
-      const yardiSnap = await systemModel.findYardiCredentials(db);
-      yardiConfig = yardiSnap.val();
+      const yardiSnap = await systemModel.firestoreFindYardi(fs);
+      yardiConfig = yardiSnap.data() || null;
       if (!yardiConfig) throw Error('Yardi not configured for organization');
     } catch (err) {
       log.error(`${PREFIX} | ${err}`);
