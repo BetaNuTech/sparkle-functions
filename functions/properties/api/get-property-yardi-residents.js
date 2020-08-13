@@ -9,11 +9,11 @@ const PREFIX = 'properties: api: get-property-yardi-residents:';
 /**
  * Factory for creating a GET endpoint
  * that fetches a properties Yardi residents
- * @param {admin.database} db
+ * @param {admin.firestore} fs
  * @return {Function} - onRequest handler
  */
-module.exports = function createGetYardiResidents(db) {
-  assert(Boolean(db), 'has firebase database');
+module.exports = function createGetYardiResidents(fs) {
+  assert(fs && typeof fs.collection === 'function', 'has firestore db');
 
   /**
    * Handle GET request
@@ -36,7 +36,7 @@ module.exports = function createGetYardiResidents(db) {
     try {
       const [result, cobaltData] = await Promise.all([
         yardi.getYardiPropertyResidents(property.code, yardiConfig),
-        requestCobaltTenants(db, property.code),
+        requestCobaltTenants(fs, property.code),
       ]);
       residents = result.residents;
       occupants = result.occupants;
@@ -145,12 +145,12 @@ module.exports = function createGetYardiResidents(db) {
 /**
  * Request Cobalt Tenant data
  * allowing for request to fail
- * @param {admin.database} db
+ * @param {admin.firestore} fs
  * @param  {String} propertyCode
  * @return {Promise} - resolves {Object}
  */
-function requestCobaltTenants(db, propertyCode) {
-  return cobalt.getPropertyTenants(db, propertyCode).catch(err => {
+function requestCobaltTenants(fs, propertyCode) {
+  return cobalt.getPropertyTenants(fs, propertyCode).catch(err => {
     log.error(`${PREFIX} Cobalt tenant request failed: ${err}`);
     return { data: [] }; // ignore failure
   });

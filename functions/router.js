@@ -61,7 +61,7 @@ module.exports = (db, fs, auth, settings) => {
     authUser(fs, auth),
     properties.middleware.propertyCode(fs),
     properties.middleware.yardiIntegration(fs),
-    properties.api.getPropertyYardiResidents(db)
+    properties.api.getPropertyYardiResidents(fs)
   );
 
   // Request Property's work orders from Yardi
