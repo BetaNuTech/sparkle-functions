@@ -272,10 +272,10 @@ module.exports = modelSetup({
     // Lookup all property's inspections
     const inspections = [];
     try {
-      const inspectionsSnap = await inspectionsModel.firestoreQueryByProperty(
-        fs,
-        propertyId
-      );
+      const inspectionsSnap = await inspectionsModel.firestoreQuery(fs, {
+        property: ['==', propertyId],
+        completionDate: ['>', 0],
+      });
       inspectionsSnap.docs.forEach(doc => {
         inspections.push({ id: doc.id, ...doc.data() });
       });
@@ -380,12 +380,12 @@ function updateLastInspectionAttrs(
   config = { propertyId: '', inspections: [], updates: {} }
 ) {
   const [latestInspection] = config.inspections.sort(
-    (a, b) => b.creationDate - a.creationDate
+    (a, b) => b.completionDate - a.completionDate
   ); // DESC
 
   if (latestInspection && latestInspection.inspectionCompleted) {
     config.updates.lastInspectionScore = latestInspection.score;
-    config.updates.lastInspectionDate = latestInspection.creationDate;
+    config.updates.lastInspectionDate = latestInspection.completionDate;
   }
 
   return config;

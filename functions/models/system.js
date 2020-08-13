@@ -1223,4 +1223,30 @@ module.exports = modelSetup({
       .doc('cobalt')
       .create(data);
   },
+
+  /**
+   * Lookup Yardi system credentials
+   * @param  {admin.firestore} fs
+   * @return {Promise} - resolves {DocumentSnapshot}
+   */
+  firestoreFindYardi(fs) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    return fs
+      .collection(SYSTEM_COLLECTION)
+      .doc('yardi')
+      .get();
+  },
+
+  /**
+   * Lookup Cobalt system credentials
+   * @param  {admin.firestore} fs
+   * @return {Promise} - resolves {DocumentSnapshot}
+   */
+  firestoreFindCobalt(fs) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    return fs
+      .collection(SYSTEM_COLLECTION)
+      .doc('cobalt')
+      .get();
+  },
 });

@@ -83,6 +83,7 @@ module.exports = {
     return Object.assign(
       {
         creationDate: now - offset,
+        completionDate: completed ? now - offset + 1000 : 0,
         deficienciesExist: Math.random() > 0.5,
         inspectionCompleted: completed,
         inspector: `user-${offset * 2}`,

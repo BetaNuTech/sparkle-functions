@@ -9,12 +9,12 @@ const PREFIX = 'services: cobalt:';
 module.exports = {
   /**
    * Request all Cobalt Tenant data for a property
-   * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
+   * @param  {admin.firestore} fs - Firestore Admin DB instance
    * @param  {String} propertyCode
    * @returns {Promise} - resolves {Object}
    */
-  async getPropertyTenants(db, propertyCode) {
-    assert(Boolean(db), 'has database instance');
+  async getPropertyTenants(fs, propertyCode) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       propertyCode && typeof propertyCode === 'string',
       'has property code'
@@ -27,9 +27,10 @@ module.exports = {
     let token = '';
 
     // Lookup Cobalt credentials
+    // TODO: move to parent scopes
     try {
-      const credentialsSnap = await systemModel.findCobaltCredentials(db);
-      const credentials = credentialsSnap.val();
+      const credentialsSnap = await systemModel.firestoreFindCobalt(fs);
+      const credentials = credentialsSnap.data() || null;
 
       if (!credentials || !credentials.token) {
         throw Error('Missing Credentials');

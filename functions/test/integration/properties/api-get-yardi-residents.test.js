@@ -201,7 +201,7 @@ function createApp(property) {
     stubAuth,
     stubPropertyCode(property),
     stubYardiConfig(),
-    getPropertyResidents({})
+    getPropertyResidents({ collection: () => {} })
   );
   return app;
 }

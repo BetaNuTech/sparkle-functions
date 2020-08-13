@@ -13,13 +13,12 @@ const authTrelloReq = require('./utils/auth-trello-request');
 /**
  * Configure Express app with
  * all API endpoints
- * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
- * @param  {firebaseAdmin.auth} auth - Firebase Admin auth instance
+ * @param  {admin.firestore} fs - Firestore Admin DB instance
+ * @param  {admin.auth} auth - Firebase Admin auth instance
  * @param  {Object} settings
  * @return {Express}
  */
-module.exports = (db, fs, auth, settings) => {
-  assert(Boolean(db), 'has firebase database instance');
+module.exports = (fs, auth, settings) => {
   assert(Boolean(fs), 'has firestore database instance');
   assert(Boolean(auth), 'has firebase auth instance');
 
@@ -38,14 +37,14 @@ module.exports = (db, fs, auth, settings) => {
   app.patch(
     '/v0/inspections/:inspectionId',
     authUser(fs, auth, true), // admin only
-    inspections.api.createPatchProperty(db, fs)
+    inspections.api.createPatchProperty(fs)
   );
 
   // Generate Inspection PDF report
   app.get(
     '/v0/inspections/:inspection/pdf-report',
     authUser(fs, auth),
-    inspections.api.createGetInspectionPDF(db, fs, inspectionUrl)
+    inspections.api.createGetInspectionPDF(fs, inspectionUrl)
   );
 
   // Request Property's residents from Yardi
@@ -60,8 +59,8 @@ module.exports = (db, fs, auth, settings) => {
     '/v0/properties/:propertyId/yardi/residents',
     authUser(fs, auth),
     properties.middleware.propertyCode(fs),
-    properties.middleware.yardiIntegration(db),
-    properties.api.getPropertyYardiResidents(db)
+    properties.middleware.yardiIntegration(fs),
+    properties.api.getPropertyYardiResidents(fs)
   );
 
   // Request Property's work orders from Yardi
@@ -69,8 +68,8 @@ module.exports = (db, fs, auth, settings) => {
     '/v0/properties/:propertyId/yardi/work-orders',
     authUser(fs, auth),
     properties.middleware.propertyCode(fs),
-    properties.middleware.yardiIntegration(db),
-    properties.api.getPropertyYardiWorkOrders(db)
+    properties.middleware.yardiIntegration(fs),
+    properties.api.getPropertyYardiWorkOrders()
   );
 
   // Authorize Slack API credentials

@@ -31,7 +31,6 @@ describe('Inspections | API | Patch Property Relationship', () => {
 
     // Stub Requests
     sinon.stub(propertiesModel, 'firestoreFindRecord').rejects(Error('ignore'));
-    sinon.stub(propertiesModel, 'findRecord').rejects(Error('ignore'));
 
     request(createApp())
       .patch('/t/123')
@@ -54,7 +53,6 @@ describe('Inspections | API | Patch Property Relationship', () => {
     sinon
       .stub(inspectionsModel, 'firestoreFindRecord')
       .rejects(Error('not found'));
-    sinon.stub(inspectionsModel, 'findRecord').rejects(Error('not found'));
 
     // Execute & Get Result
     const app = createApp();
@@ -76,7 +74,7 @@ function createApp() {
     '/t/:inspectionId',
     bodyParser.json(),
     stubAuth,
-    patchInspProperty({ ref: () => {} }, { collection: () => {} })
+    patchInspProperty({ collection: () => {} })
   );
   return app;
 }
