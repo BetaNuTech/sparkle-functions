@@ -9,7 +9,7 @@ const deficiencyModel = require('../../../models/deficient-items');
 const TRELLO_PUT_CARD_RESPONSE = require('../../../test-helpers/mocks/put-trello-card.json');
 const { fs, test, cloudFunctions } = require('../../setup');
 
-describe('Deficiencies | Pubsub | Trello Card Close V2', function() {
+describe('Deficiency |  Pubsub | Trello Card Close V2', function() {
   afterEach(async () => {
     nock.cleanAll();
     await cleanDb(null, fs);
