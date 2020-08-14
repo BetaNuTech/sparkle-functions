@@ -8,7 +8,6 @@ const updateDeficientItemsAttrs = require('../properties/utils/update-deficient-
 
 const PREFIX = 'models: properties:';
 const PROPERTY_COLLECTION = 'properties';
-const PROPERTIES_DB = '/properties';
 const PROPERTY_BUCKET_NAME = `propertyImages${
   process.env.NODE_ENV === 'test' ? 'Test' : ''
 }`;
@@ -21,32 +20,6 @@ const propertyMetaUpdates = pipe([
 ]);
 
 module.exports = modelSetup({
-  /**
-   * Find property by ID
-   * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
-   * @param  {String} propertyId
-   * @return {Promise} - resolves {DataSnapshot} snapshot
-   */
-  findRecord(db, propertyId) {
-    assert(db && typeof db.ref === 'function', 'has realtime db');
-    assert(propertyId && typeof propertyId === 'string', 'has property id');
-    return db.ref(`${PROPERTIES_DB}/${propertyId}`).once('value');
-  },
-
-  /**
-   * Add/update Property
-   * @param  {firebaseAdmin.database} db - Realtime DB Instance
-   * @param  {String} propertyId
-   * @param  {Object} data
-   * @return {Promise}
-   */
-  realtimeUpsertRecord(db, propertyId, data) {
-    assert(db && typeof db.ref === 'function', 'has realtime db');
-    assert(propertyId && typeof propertyId === 'string', 'has property id');
-    assert(data && typeof data === 'object', `${PREFIX} has upsert data`);
-    return db.ref(`${PROPERTIES_DB}/${propertyId}`).update(data);
-  },
-
   /**
    * Batch remove all firestore property
    * relationships to a deleted team
@@ -323,6 +296,7 @@ module.exports = modelSetup({
 
   /**
    * Delete a property's image uploads
+   * TODO: Move to properties service
    * @param  {admin.storage} storage
    * @param  {String} url
    * @return {Promise}
