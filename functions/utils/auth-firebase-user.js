@@ -8,8 +8,8 @@ const PREFIX = 'utils: auth-firebase-user:';
  * Creates a middleware instance to handle
  * verifying Firebase auth tokens and setting `req.user`
  * NOTE: Side effect sets `req.user` upon successful lookup or rejects request
- * @param  {admin.database|admin.firestore} db - Firebase/Firestore Admin DB instance
- * @param  {admin.Auth} auth - Firebase service for user auth
+ * @param  {admin.firestore} db - Firebase/Firestore Admin DB instance
+ * @param  {admin.auth} auth - Firebase service for user auth
  * @param  {Boolean?} shouldBeAdmin
  * @param  {Object?} permissionLevels
  * @return {Promise} verification & lookup requests
@@ -20,12 +20,11 @@ module.exports = function authFirebaseUser(
   shouldBeAdmin = false,
   permissionLevels = {}
 ) {
-  assert(Boolean(db), 'has firebase database instance');
-  assert(Boolean(auth), 'has firebase auth instance');
-  const userLookup = (typeof db.ref === 'function'
-    ? usersModel.getUser
-    : usersModel.firestoreFindRecord
-  ).bind(usersModel);
+  assert(db && typeof db.collection === 'function', 'has firestore db');
+  assert(
+    auth && typeof auth.verifyIdToken === 'function',
+    'has firebase auth instance'
+  );
 
   // User permissions levels instead
   // of "shouldBeAdmin"
@@ -55,7 +54,10 @@ module.exports = function authFirebaseUser(
 
     try {
       const decodedToken = await auth.verifyIdToken(idToken);
-      const userSnap = await userLookup(db, decodedToken.uid);
+      const userSnap = await usersModel.firestoreFindRecord(
+        db,
+        decodedToken.uid
+      );
       const user =
         typeof userSnap.val === 'function' ? userSnap.val() : userSnap.data();
 
