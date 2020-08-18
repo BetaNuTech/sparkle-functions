@@ -58,8 +58,7 @@ module.exports = function authFirebaseUser(
         db,
         decodedToken.uid
       );
-      const user =
-        typeof userSnap.val === 'function' ? userSnap.val() : userSnap.data();
+      const user = userSnap.data() || {};
 
       if (shouldBeAdmin && !user.admin) {
         throw Error('Non-admin users cannot access this route');
