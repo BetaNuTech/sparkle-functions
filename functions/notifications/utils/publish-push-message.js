@@ -1,7 +1,7 @@
 const assert = require('assert');
 const config = require('../../config');
 
-const PREFIX = 'notifications: utils: push-to-users-devices:';
+const PREFIX = 'notifications: utils: publish-push-message:';
 const PUSH_NOTIFICATION_ICON = config.notifications.pushMessageIcon;
 
 /**
