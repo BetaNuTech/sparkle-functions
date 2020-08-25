@@ -9,18 +9,14 @@ const PREFIX = 'utils: auth-trello-request:';
  * lookup of Trello credentials and making sure
  * that requesting user has permission to acces them
  * before setting `req.trelloCredentials`
- * @param  {admin.database|admin.firestore} db - Firebase/Firestore Admin DB instance
+ * @param  {admin.firestore} db - Firestore Admin DB instance
  * @return {Function} - Express middleware
  */
 module.exports = function authTrelloRequest(db) {
-  assert(Boolean(db), 'has database instance');
+  assert(db && typeof db.collection === 'function', 'has firestore db');
 
   return async function middleware(req, res, next) {
     const { user } = req;
-    const lookupTrelloCredentials = (typeof db.ref === 'function'
-      ? systemModel.findTrelloCredentials
-      : systemModel.firestoreFindTrello
-    ).bind(systemModel);
 
     if (!user) {
       log.error(`${PREFIX} user not defined on request`);
@@ -30,21 +26,15 @@ module.exports = function authTrelloRequest(db) {
 
     let trelloCredentials = null;
     try {
-      const trelloCredentialsSnap = await lookupTrelloCredentials(db);
-      const isTrelloAuthorized =
-        typeof trelloCredentialsSnap.exists === 'function'
-          ? trelloCredentialsSnap.exists()
-          : trelloCredentialsSnap.exists;
+      const trelloCredentialsSnap = await systemModel.firestoreFindTrello(db);
+      const isTrelloAuthorized = trelloCredentialsSnap.exists;
 
       if (!isTrelloAuthorized) {
         res.status(409).send({ message: 'Trello credentials not created' });
         return next(Error('Database not populated'));
       }
 
-      trelloCredentials =
-        typeof trelloCredentialsSnap.val === 'function'
-          ? trelloCredentialsSnap.val()
-          : trelloCredentialsSnap.data();
+      trelloCredentials = trelloCredentialsSnap.data() || null;
     } catch (err) {
       log.error(`${PREFIX} Error accessing trello token: ${err}`);
       res.status(500).send({ message: 'Error accessing trello token' });

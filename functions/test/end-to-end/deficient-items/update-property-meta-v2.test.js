@@ -6,24 +6,13 @@ const diModel = require('../../../models/deficient-items');
 const propertiesModel = require('../../../models/properties');
 const inspectionsModel = require('../../../models/inspections');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const {
-  db,
-  fs,
-  test,
-  pubsub,
-  cloudFunctions,
-  uid: SERVICE_ACCOUNT_ID,
-} = require('../../setup');
+const { fs, test, pubsub, cloudFunctions } = require('../../setup');
 
 const REQUIRED_ACTIONS_VALUES = config.deficientItems.requiredActionStates;
 const FOLLOW_UP_ACTION_VALUES = config.deficientItems.followUpActionStates;
-const SYSTEM_INTEGRATION_PATH = `/system/integrations/${SERVICE_ACCOUNT_ID}`;
 
-describe('Version 2 | Deficient Items Property Meta Sync', () => {
-  afterEach(async () => {
-    await cleanDb(db, fs);
-    return db.ref(SYSTEM_INTEGRATION_PATH).remove();
-  });
+describe('Deficiency | Property Meta Sync', () => {
+  afterEach(() => cleanDb(null, fs));
 
   it("should not update property meta when an item's required action status does not change", async () => {
     const expected = false;

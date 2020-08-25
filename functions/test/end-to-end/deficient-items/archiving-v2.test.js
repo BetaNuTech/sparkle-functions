@@ -41,7 +41,7 @@ const INTEGRATIONS_DATA = {
   opentListName: 'TO DO',
 };
 
-describe('Deficient Items | Archiving | V2', () => {
+describe('Deficiency |  Archiving | V2', () => {
   afterEach(() => cleanDb(null, fs));
 
   it("should not archive a deficient item when its' archive is set to false", async () => {
@@ -303,7 +303,7 @@ describe('Deficient Items | Archiving | V2', () => {
   });
 });
 
-describe('Deficient Items | Unarchiving | V2', () => {
+describe('Deficiency | Unarchiving | V2', () => {
   afterEach(() => cleanDb(null, fs));
 
   it('should not unarchive a deficient item when archival requested', async () => {

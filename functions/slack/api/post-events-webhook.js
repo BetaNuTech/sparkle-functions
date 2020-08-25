@@ -37,7 +37,6 @@ module.exports = function createDeleteSlackAppHandler(fs) {
       let wasAuthorized = false;
       try {
         wasAuthorized = await integrationsModel.isAuthorizedSlackTeam(
-          null,
           fs,
           teamId
         );
