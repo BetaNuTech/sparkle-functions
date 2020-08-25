@@ -2,29 +2,10 @@ const assert = require('assert');
 const modelSetup = require('../../utils/model-setup');
 
 // const PREFIX = 'models: internal: archive: inspection:';
-const ARCHIVE_PATH = '/archive';
 const ARCHIVE_COLLECTION = 'archives';
-const INSPECTIONS_PATH = '/inspections';
 const INSPECTION_COLLECTION = 'inspections';
 
 module.exports = modelSetup({
-  /**
-   * Find inspection by ID
-   * @param  {firebaseAdmin.database} db - Firebase Admin DB instance
-   * @param  {String} inspectionId
-   * @return {Promise} - resolves {DataSnapshot} deficient item snapshot
-   */
-  realtimeFindRecord(db, inspectionId) {
-    assert(db && typeof db.ref === 'function', 'has realtime db');
-    assert(
-      inspectionId && typeof inspectionId === 'string',
-      'has inspection id'
-    );
-    return db
-      .ref(`${ARCHIVE_PATH}${INSPECTIONS_PATH}/${inspectionId}`)
-      .once('value');
-  },
-
   /**
    * Find an archived inspection
    * @param  {admin.firestore} fs - Firestore DB instance

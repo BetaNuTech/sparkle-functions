@@ -248,11 +248,13 @@ function createApp(...middleware) {
 function createDbStub(config = {}, userConfig = {}) {
   return Object.assign(
     {
-      ref: () => ({
-        once: () =>
-          Promise.resolve({
-            val: () => Object.assign({ id: uuid() }, userConfig),
-          }),
+      collection: () => ({
+        doc: () => ({
+          get: () =>
+            Promise.resolve({
+              data: () => Object.assign({ id: uuid() }, userConfig),
+            }),
+        }),
       }),
     },
     config

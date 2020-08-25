@@ -13,8 +13,7 @@ const versions = require('./versions');
 const createRouter = require('./router');
 
 const { firebase: firebaseConfig } = config;
-const defaultApp = admin.initializeApp(firebaseConfig);
-const db = defaultApp.database();
+admin.initializeApp(firebaseConfig);
 const fs = admin.firestore();
 const auth = admin.auth();
 const storage = admin.storage();
@@ -143,7 +142,7 @@ exports.cleanupNotificationsV2 = notifications.pubsub.cleanPublished(
 // HTTPS Router API
 
 exports.api = functions.https.onRequest(
-  createRouter(db, fs, auth, {
+  createRouter(fs, auth, {
     inspectionUrl: config.clientApps.web.inspectionURL,
   })
 );
