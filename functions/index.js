@@ -13,6 +13,7 @@ const versions = require('./versions');
 const createRouter = require('./router');
 
 const { firebase: firebaseConfig } = config;
+admin.initializeApp(firebaseConfig);
 const fs = admin.firestore();
 const auth = admin.auth();
 const storage = admin.storage();
