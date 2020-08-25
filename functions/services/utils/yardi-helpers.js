@@ -226,7 +226,7 @@ module.exports = {
       result.origin = `${src.Origin[0]}`;
     }
 
-    if (isYardiValue(src.Origin)) {
+    if (isYardiValue(src.Priority)) {
       result.priority = `${src.Priority[0]}`.toLowerCase();
     }
 
