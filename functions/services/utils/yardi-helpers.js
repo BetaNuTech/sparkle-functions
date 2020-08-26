@@ -196,12 +196,8 @@ module.exports = {
    * @return {Boolean}
    */
   isValidYardiWorkOrder(record = {}) {
-    const { ServiceRequestId: id, TenantCode: tenant, UnitCode: unit } = record;
-    return (
-      Boolean(id && id[0]) &&
-      Boolean(tenant && tenant[0]) &&
-      Boolean(unit && unit[0])
-    );
+    const { ServiceRequestId: id, UnitCode: unit } = record;
+    return Boolean(id && id[0]) && Boolean(unit && unit[0]);
   },
 
   /**
