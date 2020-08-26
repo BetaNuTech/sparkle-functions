@@ -368,8 +368,8 @@ describe('Service | Utils | Yardi Helpers', () => {
         },
         {
           actual: isValidYardiWorkOrder(invalidTenant),
-          expected: false,
-          msg: 'rejects missing tenant/resident reference',
+          expected: true,
+          msg: 'allows missing tenant/resident reference',
         },
         {
           actual: isValidYardiWorkOrder(invalidUnit),

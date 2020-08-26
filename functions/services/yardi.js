@@ -241,19 +241,12 @@ module.exports = {
       throw err;
     }
 
-    console.log(
-      '>>> valid yardi work orders:',
-      parsed.filter(helpers.isValidYardiWorkOrder).length
-    );
-
-    return parsed;
-
-    // // Map parsed into usable JSON
-    // return {
-    //   workOrders: parsed
-    //     .filter(helpers.isValidYardiWorkOrder)
-    //     .map(helpers.createWorkOrderFromYardi),
-    // };
+    // Map parsed into usable JSON
+    return {
+      workOrders: parsed
+        .filter(helpers.isValidYardiWorkOrder)
+        .map(helpers.createWorkOrderFromYardi),
+    };
   },
 };
 
