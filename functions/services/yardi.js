@@ -226,8 +226,8 @@ module.exports = {
       );
     }
 
-    // Abandon when error discovered
-    // within response body
+    // // Abandon when error discovered
+    // // within response body
     if (errorMsg) {
       const err = Error(
         `${PREFIX} getYardiPropertyWorkOrders: bad request: ${errorMsg}`
@@ -241,12 +241,19 @@ module.exports = {
       throw err;
     }
 
-    // Map parsed into usable JSON
-    return {
-      workOrders: parsed
-        .filter(helpers.isValidYardiWorkOrder)
-        .map(helpers.createWorkOrderFromYardi),
-    };
+    console.log(
+      '>>> valid yardi work orders:',
+      parsed.filter(helpers.isValidYardiWorkOrder).length
+    );
+
+    return parsed;
+
+    // // Map parsed into usable JSON
+    // return {
+    //   workOrders: parsed
+    //     .filter(helpers.isValidYardiWorkOrder)
+    //     .map(helpers.createWorkOrderFromYardi),
+    // };
   },
 };
 

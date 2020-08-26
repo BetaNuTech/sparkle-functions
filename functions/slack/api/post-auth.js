@@ -1,6 +1,7 @@
 const assert = require('assert');
 const slack = require('../../services/slack');
 const systemModel = require('../../models/system');
+const globalApi = require('../../services/global-api');
 const integrationsModel = require('../../models/integrations');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
 const log = require('../../utils/logger');
@@ -63,6 +64,21 @@ module.exports = function createPatchProperty(fs) {
         err,
         `error retrieved from Slack API: ${err}`,
         `Error from slack API: ${err}`
+      );
+    }
+
+    // Publish Slack ID to Global API
+    // for proxying Slack events
+    try {
+      await globalApi.updateSlackTeam(slackResponse.team_id);
+      log.info(
+        `${PREFIX} successfully authorized Slack app auth with Global API`
+      );
+    } catch (err) {
+      return send500Error(
+        err,
+        `error retrieved from Global API: ${err}`,
+        `Error from global API: ${err}`
       );
     }
 

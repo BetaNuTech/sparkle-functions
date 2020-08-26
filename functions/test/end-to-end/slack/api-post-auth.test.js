@@ -5,13 +5,15 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const handler = require('../../../slack/api/post-auth');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { slackApp } = require('../../../config');
+const { slackApp, globalApi } = require('../../../config');
 const systemModel = require('../../../models/system');
 const integrationsModel = require('../../../models/integrations');
 const { fs } = require('../../setup');
 
 const SLACK_APP_CLIENT_ID = slackApp.clientId;
 const SLACK_APP_CLIENT_SECRET = slackApp.clientSecret;
+const GLOBAL_API_DOMAIN = globalApi.domain;
+const GLOBAL_API_PATCH_PATH = globalApi.patchSlackTeam;
 
 describe('Slack | API | POST Auth', () => {
   afterEach(() => {
@@ -49,8 +51,10 @@ describe('Slack | API | POST Auth', () => {
           url: 'https://hooks.slack.com/services/SERVICEID/FAKEID123/NOTHING',
         },
       });
-
-    // setup database
+    nock(GLOBAL_API_DOMAIN)
+      .persist()
+      .patch(GLOBAL_API_PATCH_PATH)
+      .reply(204, {});
 
     // Execute
     const app = createApp();
