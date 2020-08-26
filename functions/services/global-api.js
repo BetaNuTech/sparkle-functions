@@ -24,10 +24,12 @@ module.exports = {
         {
           headers: {
             authorization: `fb-jwt ${globalApiConfig.authToken}`,
+            'content-type': 'application/json',
           },
           responseType: 'json',
           method: 'PATCH',
           json: true,
+          body: { slackTeam: slackTeamId || null },
         }
       );
 
