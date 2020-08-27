@@ -104,7 +104,7 @@ module.exports = {
 
     const queryParams = `?client_id=${SLACK_APP_CLIENT_ID}&client_secret=${SLACK_APP_CLIENT_SECRET}&code=${slackCode}&redirect_uri=${redirectUri}`;
     const response = await got(
-      `https://slack.com/api/oauth.access${queryParams}`,
+      `https://slack.com/api/oauth.v2.access${queryParams}`,
       {
         headers: {
           'content-type': 'application/x-www-form-urlencoded',

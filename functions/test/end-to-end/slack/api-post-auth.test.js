@@ -35,7 +35,7 @@ describe('Slack | API | POST Auth', () => {
     nock('https://slack.com')
       .persist()
       .post(
-        `/api/oauth.access?client_id=${SLACK_APP_CLIENT_ID}&client_secret=${SLACK_APP_CLIENT_SECRET}&code=${slackCode}&redirect_uri=${redirectUri}`
+        `/api/oauth.v2.access?client_id=${SLACK_APP_CLIENT_ID}&client_secret=${SLACK_APP_CLIENT_SECRET}&code=${slackCode}&redirect_uri=${redirectUri}`
       )
       .reply(200, {
         ok: true,
