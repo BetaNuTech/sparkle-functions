@@ -8,7 +8,6 @@ on:
 
 jobs:
   deploy:
-    needs: test
     runs-on: ubuntu-latest
     container:
       image: mj3000/firebase-tools
