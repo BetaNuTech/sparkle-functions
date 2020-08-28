@@ -25,8 +25,8 @@ describe('Slack | API | POST Auth', () => {
     const result = {
       accessToken: 'xoxp-access-token',
       scope: 'identify,incoming-webhook',
-      team_name: 'Slack Team Name',
-      team_id: '2131',
+      teamName: 'Slack Team Name',
+      team: '2131',
     };
     const slackCode = 'code';
     const redirectUri = '/test';
@@ -42,8 +42,10 @@ describe('Slack | API | POST Auth', () => {
         access_token: result.accessToken,
         scope: result.scope,
         user_id: 'U0FAKEID',
-        team_name: result.team_name,
-        team_id: result.team_id,
+        team: {
+          id: result.team,
+          name: result.teamName,
+        },
         incoming_webhook: {
           channel: '#channel_name',
           channel_id: 'C0HANNELID',
@@ -82,12 +84,12 @@ describe('Slack | API | POST Auth', () => {
       },
       {
         actual: (integrationDoc.data() || {}).team,
-        expected: result.team_id,
+        expected: result.team,
         msg: 'stored slack team id in integration collection',
       },
       {
         actual: (integrationDoc.data() || {}).teamName,
-        expected: result.team_name,
+        expected: result.teamName,
         msg: 'stored slack team name in integration collection',
       },
     ].forEach(({ actual, expected, msg }) => {

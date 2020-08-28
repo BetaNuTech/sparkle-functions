@@ -48,8 +48,10 @@ describe('Slack | API | POST Slack Authorization', () => {
     const expected = 'test-team-id';
     sinon.stub(slackService, 'authorizeCredentials').resolves({
       access_token: 'token',
-      team_name: 'team',
-      team_id: expected,
+      team: {
+        name: 'team',
+        id: expected,
+      },
       scope: 'test',
     });
 
@@ -75,8 +77,10 @@ describe('Slack | API | POST Slack Authorization', () => {
     const expected = 'test-token';
     sinon.stub(slackService, 'authorizeCredentials').resolves({
       access_token: expected,
-      team_name: 'team',
-      team_id: '123',
+      team: {
+        name: 'team',
+        id: '123',
+      },
       scope: 'test',
     });
     sinon.stub(globalApiService, 'updateSlackTeam').resolves();
@@ -105,8 +109,10 @@ describe('Slack | API | POST Slack Authorization', () => {
     const expected = '4825';
     sinon.stub(slackService, 'authorizeCredentials').resolves({
       access_token: 'token',
-      team_name: 'team',
-      team_id: expected,
+      team: {
+        name: 'team',
+        id: expected,
+      },
       scope: 'test',
     });
     sinon.stub(globalApiService, 'updateSlackTeam').resolves();
@@ -147,7 +153,9 @@ describe('Slack | API | POST Slack Authorization', () => {
       },
     };
     sinon.stub(globalApiService, 'updateSlackTeam').resolves();
-    sinon.stub(slackService, 'authorizeCredentials').resolves({});
+    sinon.stub(slackService, 'authorizeCredentials').resolves({
+      team: { id: '456', name: 'test' },
+    });
     sinon.stub(systemModel, 'firestoreUpsertSlack').resolves();
     sinon
       .stub(integrationsModel, 'firestoreSetSlack')
