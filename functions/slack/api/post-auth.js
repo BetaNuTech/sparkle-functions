@@ -112,8 +112,8 @@ module.exports = function createPostAuth(db) {
         db,
         {
           grantedBy: user.id,
-          team: slackResponse.team_id,
-          teamName: slackResponse.team_name,
+          team: slackResponse.team.id,
+          teamName: slackResponse.team.name,
         },
         batch
       );
