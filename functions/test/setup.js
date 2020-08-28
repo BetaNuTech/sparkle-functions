@@ -6,9 +6,9 @@ try {
   const cwd = process.cwd();
 
   // Consume any `.env` in cwd and/or 2 parent directories
-  dotenv.config();
-  dotenv.config({ path: path.resolve(`${cwd}/..`, '.env') });
-  dotenv.config({ path: path.resolve(`${cwd}/../..`, '.env') });
+  dotenv.config({ path: path.resolve(cwd, '.env.test') });
+  dotenv.config({ path: path.resolve(`${cwd}/..`, '.env.test') });
+  dotenv.config({ path: path.resolve(`${cwd}/../..`, '.env.test') });
 } catch (err) {} // eslint-disable-line no-empty
 
 // Force `NODE_ENV` to "test"
@@ -22,6 +22,12 @@ const CONFIG = require('../config');
 const { firebase: testConfig } = CONFIG;
 const test = require('firebase-functions-test')(testConfig); // eslint-disable-line
 const s3Client = require('../utils/s3-client');
+
+// Firebase Project ID must contain
+// "test" to be used by the E2E test suite
+if (`${testConfig.projectId}`.search('test') === -1) {
+  throw Error('Must only provide test project credentials to E2E test suite');
+}
 
 admin.initializeApp(testConfig);
 const db = admin.database();

@@ -4,6 +4,7 @@ const sinon = require('sinon');
 const express = require('express');
 const bodyParser = require('body-parser');
 const slackService = require('../../../services/slack');
+const globalApiService = require('../../../services/global-api');
 const systemModel = require('../../../models/system');
 const integrationsModel = require('../../../models/integrations');
 const postSlackAuth = require('../../../slack/api/post-auth');
@@ -43,14 +44,46 @@ describe('Slack | API | POST Slack Authorization', () => {
       .catch(done);
   });
 
+  it('publishes Slack team id to Global API after successful auth', done => {
+    const expected = 'test-team-id';
+    sinon.stub(slackService, 'authorizeCredentials').resolves({
+      access_token: 'token',
+      team: {
+        name: 'team',
+        id: expected,
+      },
+      scope: 'test',
+    });
+
+    let actual = '';
+    sinon.stub(globalApiService, 'updateSlackTeam').callsFake(slackTeamId => {
+      actual = slackTeamId;
+      return Promise.reject(Error('fail'));
+    });
+
+    request(createApp())
+      .post('/t')
+      .send({ slackCode: 'test', redirectUri: '/test' })
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(500)
+      .then(() => {
+        expect(actual).to.equal(expected);
+        done();
+      })
+      .catch(done);
+  });
+
   it('stores access token from successful slack authorization', done => {
     const expected = 'test-token';
     sinon.stub(slackService, 'authorizeCredentials').resolves({
       access_token: expected,
-      team_name: 'team',
-      team_id: '123',
+      team: {
+        name: 'team',
+        id: '123',
+      },
       scope: 'test',
     });
+    sinon.stub(globalApiService, 'updateSlackTeam').resolves();
 
     let actual = '';
     sinon
@@ -76,10 +109,13 @@ describe('Slack | API | POST Slack Authorization', () => {
     const expected = '4825';
     sinon.stub(slackService, 'authorizeCredentials').resolves({
       access_token: 'token',
-      team_name: 'team',
-      team_id: expected,
+      team: {
+        name: 'team',
+        id: expected,
+      },
       scope: 'test',
     });
+    sinon.stub(globalApiService, 'updateSlackTeam').resolves();
     sinon.stub(systemModel, 'firestoreUpsertSlack').resolves();
 
     let actual = '';
@@ -116,7 +152,10 @@ describe('Slack | API | POST Slack Authorization', () => {
         attributes: JSON.parse(JSON.stringify(integrationData)),
       },
     };
-    sinon.stub(slackService, 'authorizeCredentials').resolves({});
+    sinon.stub(globalApiService, 'updateSlackTeam').resolves();
+    sinon.stub(slackService, 'authorizeCredentials').resolves({
+      team: { id: '456', name: 'test' },
+    });
     sinon.stub(systemModel, 'firestoreUpsertSlack').resolves();
     sinon
       .stub(integrationsModel, 'firestoreSetSlack')
