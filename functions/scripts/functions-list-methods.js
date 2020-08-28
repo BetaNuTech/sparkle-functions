@@ -1,4 +1,5 @@
-const cloudFunctions = require('../functions/index');
+const { cloudFunctions } = require('./setup');
+
 const functionNames = Object.keys(cloudFunctions);
 
 // Write matched functions to STDOUT
