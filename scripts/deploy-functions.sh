@@ -1,4 +1,5 @@
-FIREBASE_DEPLOY_FUNCTIONS="$(node ./scripts/functions-list-methods.js)"
+FIREBASE_DEPLOY_FUNCTIONS="$(node ./functions/scripts/functions-list-methods.js)"
+echo $FIREBASE_DEPLOY_FUNCTIONS
 
 firebase functions:config:set auth.firebase=${FIREBASE_FUNCTIONS_AUTH}
 firebase functions:config:set slack.secret=${SLACK_CLIENT_SECRET}
