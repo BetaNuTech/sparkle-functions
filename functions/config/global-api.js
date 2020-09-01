@@ -2,12 +2,9 @@ const firebaseConfig = require('./firebase');
 const log = require('../utils/logger');
 
 const PREFIX = 'config: global-api:';
-const GLOBAL_API_DOMAIN = process.env.GLOBAL_API_DOMAIN || '';
-const GLOBAL_API_TOKEN = process.env.GLOBAL_API_TOKEN || '';
-
-if (!GLOBAL_API_DOMAIN) {
-  log.warn(`${PREFIX} missing environment variable: "GLOBAL_API_DOMAIN"`);
-}
+const GLOBAL_API_TOKEN =
+  process.env.GLOBAL_API_TOKEN ||
+  (firebaseConfig.globalApi && firebaseConfig.globalApi.token);
 
 if (!GLOBAL_API_TOKEN) {
   log.warn(`${PREFIX} missing environment variable: "GLOBAL_API_TOKEN"`);
@@ -18,7 +15,7 @@ module.exports = {
    * Domain name of Global API
    * @type {String}
    */
-  domain: GLOBAL_API_DOMAIN,
+  domain: 'https://us-central1-sparkle-global-functions.cloudfunctions.net',
 
   /**
    * Firebase user token
