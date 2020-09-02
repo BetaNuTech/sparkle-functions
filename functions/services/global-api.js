@@ -29,7 +29,7 @@ module.exports = {
           responseType: 'json',
           method: 'PATCH',
           json: true,
-          body: { slackTeam: slackTeamId || null },
+          body: { team: slackTeamId || null },
         }
       );
 
