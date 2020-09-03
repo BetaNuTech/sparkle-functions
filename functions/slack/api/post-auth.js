@@ -28,6 +28,7 @@ module.exports = function createPostAuth(db) {
     const { user, body = {} } = req;
     const { slackCode, redirectUri } = body;
     const send500Error = create500ErrHandler(PREFIX, res);
+    console.log('>>> auth body', JSON.stringify(body));
 
     // Set JSON API formatted response
     res.set('Content-Type', 'application/vnd.api+json');
