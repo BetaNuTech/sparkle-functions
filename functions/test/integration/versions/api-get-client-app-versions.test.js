@@ -35,6 +35,36 @@ describe('Versions | API | GET Client App Versions', () => {
       })
       .catch(done);
   });
+
+  it('returns a required ios version when set', done => {
+    const expected = {
+      ios: 'v2',
+      required_ios_version: 'v0.1',
+    };
+
+    // Setup requests
+    sinon.stub(integrationsModel, 'getClientApps').resolves({
+      exists: true,
+      docs: [
+        {
+          id: 'ios',
+          data: () => ({ version: 'v2', requiredVersion: 'v0.1' }),
+        },
+      ],
+    });
+
+    request(createApp())
+      .get('/t/versions')
+      .send()
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .then(res => {
+        const actual = res.body;
+        expect(actual).to.deep.equal(expected);
+        done();
+      })
+      .catch(done);
+  });
 });
 
 function createApp() {
