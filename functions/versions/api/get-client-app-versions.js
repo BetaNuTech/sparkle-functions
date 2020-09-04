@@ -33,6 +33,7 @@ module.exports = function createGetClientApps(fs) {
           clientApps.push({
             id: clientAppDoc.id,
             version: (clientAppDoc.data() || {}).version || '',
+            requiredVersion: (clientAppDoc.data() || {}).requiredVersion || '',
           });
         });
       }
@@ -46,8 +47,12 @@ module.exports = function createGetClientApps(fs) {
 
     // Add versions to payload
     const payload = {};
-    clientApps.forEach(({ id: clientName, version }) => {
+    clientApps.forEach(({ id: clientName, version, requiredVersion }) => {
       payload[clientName] = version;
+
+      if (clientName === 'ios' && requiredVersion) {
+        payload.required_ios_version = requiredVersion;
+      }
     });
 
     // Success

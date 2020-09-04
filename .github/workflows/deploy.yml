@@ -7,61 +7,7 @@ on:
       - staging
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    container:
-      image: node:10.15-alpine
-
-    steps:
-      - uses: actions/checkout@v1
-
-      - name: Cache NPM dependencies
-        uses: actions/cache@v1
-        with:
-          path: functions/node_modules
-          key: ${{ runner.OS }}-npm-cache-${{ hashFiles('functions/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.OS }}-npm-cache-
-
-      - name: Install dependencies
-        run: yarn install
-        working-directory: ./functions
-
-      - name: Run unit tests
-        run: yarn test-unit
-        working-directory: ./functions
-        env:
-          AWS_S3_ACCESS_KEY_ID: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
-          AWS_S3_SECRET_ACCESS_KEY: ${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}
-          FIREBASE_FUNCTIONS_AUTH: ${{ secrets.TEST_FIREBASE_FUNCTIONS_AUTH }}
-          FIREBASE_TEST_DB_URL: ${{ secrets.TEST_FIREBASE_TEST_DB_URL }}
-          SLACK_CLIENT_SECRET: ${{ secrets.PRODUCTION_SLACK_CLIENT_SECRET }}
-
-      - name: Run integration tests
-        run: yarn test-int
-        working-directory: ./functions
-        env:
-          AWS_S3_ACCESS_KEY_ID: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
-          AWS_S3_SECRET_ACCESS_KEY: ${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}
-          FIREBASE_FUNCTIONS_AUTH: ${{ secrets.TEST_FIREBASE_FUNCTIONS_AUTH }}
-          FIREBASE_TEST_DB_URL: ${{ secrets.TEST_FIREBASE_TEST_DB_URL }}
-          SLACK_CLIENT_SECRET: ${{ secrets.PRODUCTION_SLACK_CLIENT_SECRET }}
-
-      - name: Run End to End Staging Tests
-        run: yarn test-e2e
-        working-directory: ./functions
-        env:
-          FIREBASE_FUNCTIONS_AUTH: ${{ secrets.TEST_FIREBASE_FUNCTIONS_AUTH }}
-          SLACK_CLIENT_SECRET: ${{ secrets.PRODUCTION_SLACK_CLIENT_SECRET }}
-          GOOGLE_CLOUD_PROJECT: sapphire-inspections-testing
-          AWS_S3_ACCESS_KEY_ID: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
-          AWS_S3_SECRET_ACCESS_KEY: ${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}
-          FIREBASE_TEST_DB_URL: ${{ secrets.TEST_FIREBASE_TEST_DB_URL }}
-          FIREBASE_STORAGE_BUCKET: ${{ secrets.TEST_FIREBASE_STORAGE_BUCKET }}
-          CLIENT_DOMAIN: https://staging.sapphire-standard.com
-
   deploy:
-    needs: test
     runs-on: ubuntu-latest
     container:
       image: mj3000/firebase-tools
@@ -96,6 +42,7 @@ jobs:
           FIREBASE_STORAGE_BUCKET: ${{ secrets.STAGING_FIREBASE_STORAGE_BUCKET }}
           COBALT_DOMAIN: ${{ secrets.STAGING_COBALT_DOMAIN }}
           CLIENT_DOMAIN: https://staging.sapphire-standard.com
+          GLOBAL_API_TOKEN: ${{ secrets.STAGING_GLOBAL_API_TOKEN }}
         run: ./scripts/deploy-functions.sh production
 
       - name: Deploy production functions
@@ -113,4 +60,5 @@ jobs:
           FIREBASE_STORAGE_BUCKET: ${{ secrets.PRODUCTION_FIREBASE_STORAGE_BUCKET }}
           COBALT_DOMAIN: ${{ secrets.PRODUCTION_COBALT_DOMAIN }}
           CLIENT_DOMAIN: https://sapphire-standard.com
+          GLOBAL_API_TOKEN: ${{ secrets.PRODUCTION_GLOBAL_API_TOKEN }}
         run: ./scripts/deploy-functions.sh production

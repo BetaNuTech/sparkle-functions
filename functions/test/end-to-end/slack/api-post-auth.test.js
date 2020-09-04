@@ -5,13 +5,15 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const handler = require('../../../slack/api/post-auth');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { slackApp } = require('../../../config');
+const { slackApp, globalApi } = require('../../../config');
 const systemModel = require('../../../models/system');
 const integrationsModel = require('../../../models/integrations');
 const { fs } = require('../../setup');
 
 const SLACK_APP_CLIENT_ID = slackApp.clientId;
 const SLACK_APP_CLIENT_SECRET = slackApp.clientSecret;
+const GLOBAL_API_DOMAIN = globalApi.domain;
+const GLOBAL_API_PATCH_PATH = globalApi.patchSlackTeam;
 
 describe('Slack | API | POST Auth', () => {
   afterEach(() => {
@@ -23,8 +25,8 @@ describe('Slack | API | POST Auth', () => {
     const result = {
       accessToken: 'xoxp-access-token',
       scope: 'identify,incoming-webhook',
-      team_name: 'Slack Team Name',
-      team_id: '2131',
+      teamName: 'Slack Team Name',
+      team: '2131',
     };
     const slackCode = 'code';
     const redirectUri = '/test';
@@ -33,15 +35,17 @@ describe('Slack | API | POST Auth', () => {
     nock('https://slack.com')
       .persist()
       .post(
-        `/api/oauth.access?client_id=${SLACK_APP_CLIENT_ID}&client_secret=${SLACK_APP_CLIENT_SECRET}&code=${slackCode}&redirect_uri=${redirectUri}`
+        `/api/oauth.v2.access?client_id=${SLACK_APP_CLIENT_ID}&client_secret=${SLACK_APP_CLIENT_SECRET}&code=${slackCode}&redirect_uri=${redirectUri}`
       )
       .reply(200, {
         ok: true,
         access_token: result.accessToken,
         scope: result.scope,
         user_id: 'U0FAKEID',
-        team_name: result.team_name,
-        team_id: result.team_id,
+        team: {
+          id: result.team,
+          name: result.teamName,
+        },
         incoming_webhook: {
           channel: '#channel_name',
           channel_id: 'C0HANNELID',
@@ -49,8 +53,10 @@ describe('Slack | API | POST Auth', () => {
           url: 'https://hooks.slack.com/services/SERVICEID/FAKEID123/NOTHING',
         },
       });
-
-    // setup database
+    nock(GLOBAL_API_DOMAIN)
+      .persist()
+      .patch(GLOBAL_API_PATCH_PATH)
+      .reply(204, {});
 
     // Execute
     const app = createApp();
@@ -78,12 +84,12 @@ describe('Slack | API | POST Auth', () => {
       },
       {
         actual: (integrationDoc.data() || {}).team,
-        expected: result.team_id,
+        expected: result.team,
         msg: 'stored slack team id in integration collection',
       },
       {
         actual: (integrationDoc.data() || {}).teamName,
-        expected: result.team_name,
+        expected: result.teamName,
         msg: 'stored slack team name in integration collection',
       },
     ].forEach(({ actual, expected, msg }) => {

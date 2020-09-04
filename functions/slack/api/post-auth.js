@@ -1,6 +1,7 @@
 const assert = require('assert');
 const slack = require('../../services/slack');
 const systemModel = require('../../models/system');
+const globalApi = require('../../services/global-api');
 const integrationsModel = require('../../models/integrations');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
 const log = require('../../utils/logger');
@@ -11,11 +12,11 @@ const PREFIX = 'slack: api: post-auth:';
  * Factory for creating a POST endpoint for
  * creating Slack authorization credentials
  * for the system
- * @param  {firebase.firestore} fs - Firestore Admin DB instance
+ * @param  {admin.firestore} db - Firestore Admin DB instance
  * @return {Function} - onRequest handler
  */
-module.exports = function createPatchProperty(fs) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function createPostAuth(db) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
 
   /**
    * Write slack app auth to integration/slack
@@ -54,9 +55,12 @@ module.exports = function createPatchProperty(fs) {
     let slackResponse = null;
     try {
       slackResponse = await slack.authorizeCredentials(slackCode, redirectUri);
+      if (!slackResponse.team) {
+        throw Error('unexpected Slack response payload');
+      }
       log.info(
-        `${PREFIX} slack app authentication success for Slack team name: "${slackResponse.team_name ||
-          'Unknown'}" by user: "${user.id}"`
+        `${PREFIX} slack app authentication success for Slack team name: "${slackResponse
+          .team.name || 'Unknown'}" by user: "${user.id}"`
       );
     } catch (err) {
       return send500Error(
@@ -66,12 +70,27 @@ module.exports = function createPatchProperty(fs) {
       );
     }
 
-    const batch = fs.batch();
+    // Publish Slack ID to Global API
+    // for proxying Slack events
+    try {
+      await globalApi.updateSlackTeam(slackResponse.team.id);
+      log.info(
+        `${PREFIX} successfully authorized Slack app auth with Global API`
+      );
+    } catch (err) {
+      return send500Error(
+        err,
+        `error retrieved from Global API: ${err}`,
+        `Error from global API: ${err}`
+      );
+    }
+
+    const batch = db.batch();
 
     try {
       // Set private credentials
       await systemModel.firestoreUpsertSlack(
-        fs,
+        db,
         {
           token: slackResponse.access_token,
           scope: slackResponse.scope,
@@ -90,11 +109,11 @@ module.exports = function createPatchProperty(fs) {
     try {
       // Set public integration details
       integrationDetails = await integrationsModel.firestoreSetSlack(
-        fs,
+        db,
         {
           grantedBy: user.id,
-          team: slackResponse.team_id,
-          teamName: slackResponse.team_name,
+          team: slackResponse.team.id,
+          teamName: slackResponse.team.name,
         },
         batch
       );

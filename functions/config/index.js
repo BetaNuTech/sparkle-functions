@@ -6,6 +6,7 @@ const slackApp = require('./slack-app');
 const clientApps = require('./client-apps');
 const cobalt = require('./cobalt');
 const notifications = require('./notifications');
+const globalApi = require('./global-api');
 
 const env = process.env.NODE_ENV || 'production';
 
@@ -26,5 +27,6 @@ module.exports = Object.assign(
   { firebase: firebaseConfig },
   { clientApps },
   { cobalt },
-  { notifications }
+  { notifications },
+  { globalApi }
 );

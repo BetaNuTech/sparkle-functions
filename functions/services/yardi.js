@@ -226,8 +226,8 @@ module.exports = {
       );
     }
 
-    // Abandon when error discovered
-    // within response body
+    // // Abandon when error discovered
+    // // within response body
     if (errorMsg) {
       const err = Error(
         `${PREFIX} getYardiPropertyWorkOrders: bad request: ${errorMsg}`
