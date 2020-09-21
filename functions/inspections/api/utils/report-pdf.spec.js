@@ -52,4 +52,30 @@ describe('Inspections | API | Utils | Report PDF', function() {
     const actual = instance.creationDate;
     expect(actual).to.equal(expected);
   });
+
+  it('creates PDF metadata', () => {
+    const creationDate = 1577880000;
+    const formattedDate = moment(creationDate * 1000).format(
+      'ddd, MMM D, YYYY'
+    );
+    const expected = {
+      title: `prop: ${formattedDate}`,
+      subject: 'Sparkle Report',
+      author: 'test user',
+    };
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const inspection = mocking.createInspection({
+      property: propertyId,
+      inspectorName: 'test user',
+      creationDate,
+    });
+    const property = mocking.createProperty({
+      name: 'prop',
+      inspections: [inspectionId],
+    });
+    const instance = createReportPdf(inspection, property);
+    const actual = instance.metaData;
+    expect(actual).to.deep.equal(expected);
+  });
 });

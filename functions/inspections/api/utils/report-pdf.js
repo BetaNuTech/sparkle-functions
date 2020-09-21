@@ -25,6 +25,18 @@ const fontDescriptors = {
 const pdfPrinter = new PdfMake(fontDescriptors);
 const prototype = {
   /**
+   * Generate PDF report's meta data
+   * @return {Object}
+   */
+  get metaData() {
+    return {
+      title: `${this._property.name || 'Property'}: ${this.creationDate}`,
+      subject: 'Sparkle Report',
+      author: `${this._inspection.inspectorName || 'Inspector Unknown'}`,
+    };
+  },
+
+  /**
    * Create Binary PDF document
    * @return {Promise} - resolves {Buffer} PDF binary
    */
@@ -37,6 +49,7 @@ const prototype = {
       // TODO: Header
       // TODO: Footer
       ...{
+        info: this.metaData,
         content: this.content,
       },
     };
@@ -74,9 +87,9 @@ module.exports = function createReportPdf(inspection, property) {
     content: {
       get() {
         return [
-          // TODO: ...this.scoreContent(),
-          // TODO: ...this.sectionsContent(),
-          // TODO: ...this.adminActivitySummaryContent()
+          // TODO: ...this.createScoreContent(),
+          // TODO: ...this.createSectionsContent(),
+          // TODO: ...this.createAdminActivitySummaryContent()
         ];
       },
     },
