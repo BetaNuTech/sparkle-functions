@@ -5,6 +5,12 @@ module.exports = {
     width: 612,
     height: 792,
     defaultFont: 'helvetica',
+    margin: [30, 71, 30, 0],
+  },
+
+  header: {
+    logoSize: 30,
+    margin: [30, 32, 30, 0],
   },
 
   /**
@@ -79,6 +85,7 @@ module.exports = {
   fonts: Object.freeze({
     header: {
       fontSize: 13.85,
+      lineHeight: 1.4,
     },
 
     score: {
@@ -130,7 +137,10 @@ module.exports = {
   colors: Object.freeze({
     blue: [0, 0, 255],
     red: [255, 0, 0],
-    black: [0, 0, 0],
+    black: {
+      hex: '#000000',
+      rgb: [0, 0, 0],
+    },
     lightBlue: [82, 152, 242],
     lightGray: [134, 134, 134],
   }),

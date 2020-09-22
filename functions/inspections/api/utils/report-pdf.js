@@ -10,9 +10,13 @@ const DOC_SETTINGS = Object.freeze({
     height: settings.page.height,
   },
 
+  pageMargins: settings.page.margin,
+
   defaultStyle: {
     font: settings.page.defaultFont,
   },
+
+  styles: settings.fonts,
 });
 const fontDescriptors = {
   helvetica: {
@@ -20,6 +24,9 @@ const fontDescriptors = {
     bold: path.join(__dirname, '/fonts/Helvetica-Bold.ttf'),
     italics: path.join(__dirname, '/fonts/Helvetica-Italic.ttf'),
     bolditalics: path.join(__dirname, '/fonts/Helvetica-BoldItalic.ttf'),
+  },
+  helveticaMedium: {
+    normal: path.join(__dirname, '/fonts/Helvetica-Medium.ttf'),
   },
 };
 const pdfPrinter = new PdfMake(fontDescriptors);
@@ -37,6 +44,53 @@ const prototype = {
   },
 
   /**
+   * Generate Page Headers
+   * @return {Object[]}
+   */
+  get header() {
+    const propertyName = this._property.name || 'Unknown Property';
+    const inspectorName = this._inspection.inspectorName || 'Inspector Unknown';
+    const templateName = this._inspection.templateName || 'Unknown Template';
+    const topGutter = settings.header.margin[1] || 0;
+    const bottomGutter = settings.header.margin[3] || 0;
+    const leftGutter = settings.header.margin[0] || 0;
+    const rightGutter = settings.header.margin[2] || 0;
+    return [
+      {
+        columns: [
+          {
+            text: `${propertyName} | ${inspectorName} | ${this.creationDate}
+  Template: ${templateName}`,
+            style: 'header',
+            width: settings.page.width - settings.header.logoSize - rightGutter,
+            margin: [leftGutter, topGutter, rightGutter, bottomGutter],
+          },
+          {
+            image: settings.images.appIcon,
+            margin: [0, topGutter, rightGutter, bottomGutter],
+            width: settings.header.logoSize,
+            height: settings.header.logoSize,
+          },
+        ],
+      },
+      {
+        canvas: [
+          {
+            type: 'line',
+            x1: leftGutter + 2,
+            x2: settings.page.width - rightGutter - 2,
+            y1: 0,
+            y2: 0,
+            lineColor: settings.colors.black.hex,
+            lineWidth: 3,
+            lineCap: 'square',
+          },
+        ],
+      },
+    ];
+  },
+
+  /**
    * Create Binary PDF document
    * @return {Promise} - resolves {Buffer} PDF binary
    */
@@ -44,12 +98,10 @@ const prototype = {
     const chunks = [];
     const docDefinition = {
       ...DOC_SETTINGS,
-      // TODO: Styles => Global Fonts
-      // TODO: Metadata
-      // TODO: Header
-      // TODO: Footer
       ...{
         info: this.metaData,
+        header: this.header,
+        // TODO: Footer
         content: this.content,
       },
     };
