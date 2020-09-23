@@ -67,7 +67,7 @@ const prototype = {
           },
           {
             image: settings.images.appIcon,
-            margin: [0, topGutter, rightGutter, bottomGutter],
+            margin: [0, topGutter - 4, rightGutter, bottomGutter],
             width: settings.header.logoSize,
             height: settings.header.logoSize,
           },
@@ -79,8 +79,8 @@ const prototype = {
             type: 'line',
             x1: leftGutter + 2,
             x2: settings.page.width - rightGutter - 2,
-            y1: 0,
-            y2: 0,
+            y1: 2,
+            y2: 2,
             lineColor: settings.colors.black.hex,
             lineWidth: 3,
             lineCap: 'square',
@@ -112,9 +112,29 @@ const prototype = {
    */
   get content() {
     return [
-      // TODO: ...this.createScoreContent(),
-      // TODO: ...this.createSectionsContent(),
-      // TODO: ...this.createAdminActivitySummaryContent()
+      ...this.scoreContent,
+      // TODO: ...this.sectionsContent,
+      // TODO: ...this.adminActivitySummaryContent
+    ];
+  },
+
+  /**
+   * Create Score for
+   * content section
+   * @return {Object[]}
+   */
+  get scoreContent() {
+    const text = `Score: ${decimate(this._inspection.score)}%`;
+    const color = this._inspection.deficienciesExist
+      ? settings.colors.red.hex
+      : settings.colors.blue.hex;
+    return [
+      {
+        text,
+        color,
+        style: 'score',
+        margin: settings.fonts.score.margin,
+      },
     ];
   },
 
@@ -184,3 +204,14 @@ module.exports = function createReportPdf(inspection, property) {
     _property: { value: property },
   });
 };
+
+/**
+ * Convert a number to a percentage string
+ * @param  {Number} factor
+ * @param  {Number} divisor
+ * @param  {Number} accuracy
+ * @return {String} transfomed
+ */
+function decimate(factor, divisor = 100, accuracy = 1) {
+  return ((factor / divisor) * 100).toFixed(accuracy || 0);
+}
