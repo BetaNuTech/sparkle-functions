@@ -106,6 +106,43 @@ const prototype = {
   },
 
   /**
+   * PDF non-duplicate content
+   * content unique to each page
+   * @type {Object}
+   */
+  get content() {
+    return [
+      // TODO: ...this.createScoreContent(),
+      // TODO: ...this.createSectionsContent(),
+      // TODO: ...this.createAdminActivitySummaryContent()
+    ];
+  },
+
+  /**
+   * Name of inspection
+   * @type {String}
+   */
+  get filename() {
+    const date = new Date(parseInt(this._inspection.creationDate * 1000, 10)); // eslint-disable-line
+    const creationDate = moment(date).format('YYYY-MM-DD');
+    return `${this._property.name}_-_SparkleReport_-_${creationDate}.pdf`.replace(
+      /\s/g,
+      '_'
+    ); // eslint-disable-line
+  },
+
+  /**
+   * Formatted creation date
+   * @type {String}
+   */
+  get creationDate() {
+    const creationDate = new Date(
+      parseInt(this._inspection.creationDate * 1000, 10)
+    ); // eslint-disable-line
+    return moment(creationDate).format('ddd, MMM D, YYYY');
+  },
+
+  /**
    * Create Binary PDF document
    * @return {Promise} - resolves {Buffer} PDF binary
    */
@@ -145,50 +182,5 @@ module.exports = function createReportPdf(inspection, property) {
   return Object.create(prototype, {
     _inspection: { value: inspection },
     _property: { value: property },
-
-    /**
-     * PDF non-duplicate content
-     * content unique to each page
-     * @type {Object}
-     */
-    content: {
-      get() {
-        return [
-          // TODO: ...this.createScoreContent(),
-          // TODO: ...this.createSectionsContent(),
-          // TODO: ...this.createAdminActivitySummaryContent()
-        ];
-      },
-    },
-
-    /**
-     * Name of inspection
-     * @type {String}
-     */
-    filename: {
-      get() {
-        const date = new Date(
-          parseInt(this._inspection.creationDate * 1000, 10)
-        ); // eslint-disable-line
-        const creationDate = moment(date).format('YYYY-MM-DD');
-        return `${this._property.name}_-_SparkleReport_-_${creationDate}.pdf`.replace(
-          /\s/g,
-          '_'
-        ); // eslint-disable-line
-      },
-    },
-
-    /**
-     * Formatted creation date
-     * @type {String}
-     */
-    creationDate: {
-      get() {
-        const creationDate = new Date(
-          parseInt(this._inspection.creationDate * 1000, 10)
-        ); // eslint-disable-line
-        return moment(creationDate).format('ddd, MMM D, YYYY');
-      },
-    },
   });
 };
