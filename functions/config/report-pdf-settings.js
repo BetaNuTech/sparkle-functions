@@ -5,16 +5,16 @@ module.exports = {
     width: 612,
     height: 792,
     defaultFont: 'helvetica',
-    margin: [30, 71, 30, 73],
+    margin: [33, 69, 33, 73],
   },
 
   header: {
-    logoSize: 30,
-    margin: [30, 32, 30, 0],
+    logoSize: 31,
+    margin: [33, 32, 33, 0],
   },
 
   footer: {
-    margin: [30, 16, 32, 0],
+    margin: [33, 16, 33, 0],
   },
 
   /**
@@ -88,12 +88,13 @@ module.exports = {
    */
   fonts: Object.freeze({
     header: {
-      fontSize: 13.85,
-      lineHeight: 1.4,
+      fontSize: 14,
+      lineHeight: 1.2,
     },
 
     score: {
       fontSize: 28,
+      margin: [0, 30, 0, 30],
     },
 
     sectionHeader: {
@@ -139,13 +140,25 @@ module.exports = {
    * @type {Object}
    */
   colors: Object.freeze({
-    blue: [0, 0, 255],
-    red: [255, 0, 0],
+    blue: {
+      hex: '#0000ff',
+      rgb: [0, 0, 255],
+    },
+    red: {
+      hex: '#ff0000',
+      rgb: [255, 0, 0],
+    },
     black: {
       hex: '#000000',
       rgb: [0, 0, 0],
     },
-    lightBlue: [82, 152, 242],
-    lightGray: [134, 134, 134],
+    lightBlue: {
+      hex: '#5297f2',
+      rgb: [82, 152, 242],
+    },
+    lightGray: {
+      hex: '#868686',
+      rgb: [134, 134, 134],
+    },
   }),
 };
