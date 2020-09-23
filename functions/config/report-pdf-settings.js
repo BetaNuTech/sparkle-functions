@@ -5,12 +5,16 @@ module.exports = {
     width: 612,
     height: 792,
     defaultFont: 'helvetica',
-    margin: [30, 71, 30, 0],
+    margin: [30, 71, 30, 73],
   },
 
   header: {
     logoSize: 30,
     margin: [30, 32, 30, 0],
+  },
+
+  footer: {
+    margin: [30, 16, 32, 0],
   },
 
   /**
@@ -125,8 +129,8 @@ module.exports = {
       fontSize: 22,
     },
 
-    pageNumber: {
-      fontSize: 13,
+    footer: {
+      fontSize: 14,
     },
   }),
 

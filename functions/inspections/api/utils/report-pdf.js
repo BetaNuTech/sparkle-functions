@@ -91,6 +91,21 @@ const prototype = {
   },
 
   /**
+   * PDF Footer (page number) text
+   * @return {Function}
+   */
+  get footer() {
+    return (currentPage /* , pageCount */) => [
+      {
+        text: `${currentPage}`,
+        style: 'footer',
+        alignment: 'right',
+        margin: settings.footer.margin,
+      },
+    ];
+  },
+
+  /**
    * Create Binary PDF document
    * @return {Promise} - resolves {Buffer} PDF binary
    */
@@ -101,7 +116,7 @@ const prototype = {
       ...{
         info: this.metaData,
         header: this.header,
-        // TODO: Footer
+        footer: this.footer,
         content: this.content,
       },
     };
@@ -161,17 +176,6 @@ module.exports = function createReportPdf(inspection, property) {
           '_'
         ); // eslint-disable-line
       },
-    },
-
-    /**
-     * Page counter
-     * @type {Number}
-     */
-    page: {
-      get: (function() {
-        let page = 0;
-        return () => (page += 1); // eslint-disable-line
-      })(),
     },
 
     /**
