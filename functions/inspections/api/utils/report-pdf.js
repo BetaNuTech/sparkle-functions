@@ -18,6 +18,8 @@ const DOC_SETTINGS = Object.freeze({
 
   styles: settings.fonts,
 });
+const LINE_LEFT_GUTTER = Math.max((settings.page.margin[0] || 0) + 2, 0);
+const LINE_RIGHT_GUTTER = Math.max((settings.page.margin[3] || 0) - 2, 0);
 const fontDescriptors = {
   helvetica: {
     normal: path.join(__dirname, '/fonts/Helvetica.ttf'),
@@ -77,8 +79,8 @@ const prototype = {
         canvas: [
           {
             type: 'line',
-            x1: leftGutter + 2,
-            x2: settings.page.width - rightGutter - 2,
+            x1: LINE_LEFT_GUTTER,
+            x2: settings.page.width - LINE_RIGHT_GUTTER,
             y1: 2,
             y2: 2,
             lineColor: settings.colors.black.hex,
@@ -113,7 +115,7 @@ const prototype = {
   get content() {
     return [
       ...this.scoreContent,
-      // TODO: ...this.sectionsContent,
+      ...this.sectionsContent,
       // TODO: ...this.adminActivitySummaryContent
     ];
   },
@@ -134,6 +136,79 @@ const prototype = {
         color,
         style: 'score',
         margin: settings.fonts.score.margin,
+      },
+    ];
+  },
+
+  /**
+   * PDF steps for each inspection section
+   * @return {Object[]}
+   */
+  get sectionsContent() {
+    const template = Object.assign({}, this._inspection.template);
+    const items = Object.keys(template.items).map(id =>
+      Object.assign({ id }, template.items[id])
+    );
+    const sections = Object.keys(template.sections)
+      .map(id => {
+        const s = Object.assign({}, template.sections[id]);
+        s.id = id;
+        s.items = items
+          .filter(({ sectionId }) => id === sectionId)
+          .sort((a, b) => a.index - b.index);
+        return s;
+      })
+      .sort((a, b) => a.index - b.index)
+      .map(section => {
+        const itemsContent = section.items.map(item =>
+          []
+            .concat
+            // this.getItemHeader(item),
+            // this.getItemBody(item),
+            // this.getItemInspectorNotes(item),
+            // this.getItemAdminUpdates(item),
+            // this.getItemPhotos(item),
+            ()
+        );
+
+        return [].concat(
+          this.getContentSectionHeader(section.title),
+          ...itemsContent
+        );
+      });
+
+    // flatten sections steps
+    return [].concat(...sections);
+  },
+
+  /**
+   * Create section header content
+   * for a group of inspection items
+   * @param  {String} text
+   * @return {Object[]}
+   */
+  getContentSectionHeader(text) {
+    const bottomMargin = settings.fonts.sectionHeader.margin[3] || 0;
+    const lineY = -1 * Math.max(bottomMargin - 1, 0);
+    return [
+      {
+        text: `${(text || 'Unknown Section Name').toUpperCase()}`,
+        style: 'sectionHeader',
+        margin: settings.fonts.sectionHeader.margin,
+      },
+      {
+        canvas: [
+          {
+            type: 'line',
+            x1: 0,
+            x2: settings.page.width - LINE_RIGHT_GUTTER,
+            y1: lineY,
+            y2: lineY,
+            lineColor: settings.colors.lightGray.hex,
+            lineWidth: 0.5,
+            lineCap: 'square',
+          },
+        ],
       },
     ];
   },

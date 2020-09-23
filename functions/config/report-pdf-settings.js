@@ -99,7 +99,8 @@ module.exports = {
 
     sectionHeader: {
       fontSize: 20,
-      bold: true,
+      font: 'helveticaMedium',
+      margin: [0, 13, 0, 13],
     },
 
     noteTitle: {
