@@ -165,8 +165,8 @@ const prototype = {
           .map(
             item =>
               [].concat(
-                this.getContentItemHeader(item)
-                // this.getContentItemBody(item)
+                this.getContentItemHeader(item),
+                this.getContentItemBody(item)
               )
             // this.getItemInspectorNotes(item),
             // this.getItemAdminUpdates(item),
@@ -252,12 +252,78 @@ const prototype = {
 
     commands.push(itemHeader);
 
-    // TODO: move to item body content
+    // TODO: move to item body content?
     if (!item.isTextInputItem && item.isItemNA) {
       commands.push({ text: 'NA', style: 'na' });
     }
 
     return commands;
+  },
+
+  /**
+   * PDF steps for content's
+   * inspection item body
+   * @param  {Object} item
+   * @return {Object[]}
+   */
+  getContentItemBody(item) {
+    assert(item && typeof item === 'object', 'has inspection item');
+    const itemId = item.id;
+    const type = `${item.mainInputType || item.itemType}`.toLowerCase();
+    const selectionIndex = item.mainInputSelection;
+    // const addImage = ['', 'PNG', LEFT_GUTTER + 3, 0, 8, 8];
+    const itemBody = { image: '' };
+
+    if (type === 'twoactions_checkmarkx') {
+      itemBody.image =
+        selectionIndex === 0
+          ? settings.images.checkmarkItemIcon
+          : settings.images.xItemIcon; // eslint-disable-line
+    } else if (type === 'twoactions_thumbs') {
+      itemBody.image =
+        selectionIndex === 0
+          ? settings.images.thumbsUpItemIcon
+          : settings.images.thumbsDownItemIcon; // eslint-disable-line
+    } else if (type === 'threeactions_checkmarkexclamationx') {
+      if (selectionIndex === 0) {
+        itemBody.image = settings.images.checkmarkItemIcon;
+      } else if (selectionIndex === 1) {
+        itemBody.image = settings.images.exclamationItemIcon;
+      } else {
+        itemBody.image = settings.images.xItemIcon;
+      }
+    } else if (type === 'threeactions_abc') {
+      if (selectionIndex === 0) {
+        itemBody.image = settings.images.aItemIcon;
+      } else if (selectionIndex === 1) {
+        itemBody.image = settings.images.bItemIcon;
+      } else {
+        itemBody.image = settings.images.cItemIcon;
+      }
+    } else if (type === 'fiveactions_onetofive') {
+      if (selectionIndex === 0) {
+        itemBody.image = settings.images.oneItemIcon;
+      } else if (selectionIndex === 1) {
+        itemBody.image = settings.images.twoItemIcon;
+      } else if (selectionIndex === 2) {
+        itemBody.image = settings.images.threeItemIcon;
+      } else if (selectionIndex === 3) {
+        itemBody.image = settings.images.fourItemIcon;
+      } else {
+        itemBody.image = settings.images.fiveItemIcon;
+      }
+    } else if (
+      type === 'signature' &&
+      this._itemAttachments[itemId] &&
+      this._itemAttachments[itemId].signatureData
+    ) {
+      itemBody.image = this._itemAttachments[itemId].signatureData.datauri;
+    } else {
+      // Notes do not have an item body
+      return [];
+    }
+
+    return [itemBody];
   },
 
   /**
@@ -315,15 +381,31 @@ const prototype = {
  * of an inspection record
  * @param  {Object} inspection
  * @param  {Object} property
+ * @param  {Object?} itemAttachments
  * @return {Object} - inspection PDF instance
  */
-module.exports = function createReportPdf(inspection, property) {
-  assert(Boolean(inspection), 'reportPdf requires inspection model');
-  assert(Boolean(property), 'reportPdf requires a property model');
+module.exports = function createReportPdf(
+  inspection,
+  property,
+  itemAttachments = {}
+) {
+  assert(
+    inspection && typeof inspection === 'object',
+    'reportPdf requires inspection model'
+  );
+  assert(
+    property && typeof property === 'object',
+    'reportPdf requires a property model'
+  );
+  assert(
+    itemAttachments && typeof itemAttachments === 'object',
+    'has item attachment data object'
+  );
 
   return Object.create(prototype, {
     _inspection: { value: inspection },
     _property: { value: property },
+    _itemAttachments: { value: itemAttachments },
   });
 };
 
