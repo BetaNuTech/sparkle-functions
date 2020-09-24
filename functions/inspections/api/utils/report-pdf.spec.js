@@ -124,4 +124,53 @@ describe('Inspections | API | Utils | Report PDF', function() {
     const actual = [defaultColor, deficientColor];
     expect(actual).to.deep.equal(expected);
   });
+
+  it('creates an item header for all item types', () => {
+    const tests = [
+      {
+        data: { isTextInputItem: true, isItemNA: true, title: 'txt' },
+        expected: 'text: Txt NA | style: item',
+        msg: 'created text item NA header',
+      },
+      {
+        data: { isTextInputItem: true, textInputValue: 'value', title: 'txt' },
+        expected: 'text: Txt value | style: item',
+        msg: 'created text item header',
+      },
+      {
+        data: { isItemNA: true, title: 'na' },
+        expected: 'text: Na | style: item',
+        msg: 'created text item header',
+      },
+      {
+        data: { itemType: 'signature' },
+        expected: 'text: SIGNATURE | style: signatureItem',
+        msg: 'created signature item header',
+      },
+      {
+        data: { mainInputType: 'oneaction_notes', mainInputNotes: 'Main Note' },
+        expected: 'text: Main Note | style: note',
+        msg: 'created main input note item header',
+      },
+      {
+        data: { title: 'default main item' },
+        expected: 'text: Default Main Item | style: item',
+        msg: 'created default main item header',
+      },
+    ];
+
+    for (let i = 0; i < tests.length; i++) {
+      const { data, expected, msg } = tests[i];
+      const item = data.isTextInputItem
+        ? mocking.createItem({ ...data, sectionId: '1' })
+        : mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            false,
+            data
+          );
+      const [result] = createReportPdf._proto.getContentItemHeader(item);
+      const actual = `text: ${result.text} | style: ${result.style}`;
+      expect(actual).to.equal(expected, msg);
+    }
+  });
 });
