@@ -111,28 +111,34 @@ module.exports = {
     note: {
       fontSize: 10,
       italics: true,
+      margin: [],
     },
 
     item: {
       fontSize: 15,
+      margin: [0, 8, 0, 25],
     },
 
     signatureItem: {
       fontSize: 15,
       bold: true,
+      margin: [],
     },
 
     na: {
       fontSize: 20,
       italic: true,
+      margin: [],
     },
 
     summaryHeader: {
       fontSize: 22,
+      margin: [],
     },
 
     footer: {
       fontSize: 14,
+      margin: [],
     },
   }),
 

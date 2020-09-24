@@ -160,16 +160,15 @@ const prototype = {
       })
       .sort((a, b) => a.index - b.index)
       .map(section => {
-        const itemsContent = section.items.map(item =>
-          []
-            .concat
-            // this.getItemHeader(item),
+        const itemsContent = section.items
+          .sort((a, b) => a.index - b.index)
+          .map(
+            item => [].concat(this.getContentItemHeader(item))
             // this.getItemBody(item),
             // this.getItemInspectorNotes(item),
             // this.getItemAdminUpdates(item),
             // this.getItemPhotos(item),
-            ()
-        );
+          );
 
         return [].concat(
           this.getContentSectionHeader(section.title),
@@ -188,6 +187,7 @@ const prototype = {
    * @return {Object[]}
    */
   getContentSectionHeader(text) {
+    assert(text && typeof text === 'string', 'has section header string');
     const bottomMargin = settings.fonts.sectionHeader.margin[3] || 0;
     const lineY = -1 * Math.max(bottomMargin - 1, 0);
     return [
@@ -211,6 +211,50 @@ const prototype = {
         ],
       },
     ];
+  },
+
+  /**
+   * Create inspection item's header
+   * @param  {Object} item
+   * @return {Object[]}
+   */
+  getContentItemHeader(item) {
+    assert(item && typeof item === 'object', 'has inspection item');
+    const commands = [];
+    const itemHeader = {
+      text: '',
+      style: 'item',
+      margin: settings.fonts.item.margin,
+    };
+
+    if (item.isTextInputItem && item.isItemNA) {
+      itemHeader.text = `${capitalize(item.title) || 'Untitled:'} NA`;
+    } else if (item.isTextInputItem) {
+      itemHeader.text = `${capitalize(item.title) || 'Untitled:'} ${
+        item.textInputValue
+      }`;
+    } else if (item.isItemNA) {
+      itemHeader.text = `${item.title || 'Untitled:'}`;
+    } else if (item.itemType === 'signature') {
+      // steps[0].setFontSize = pdfFonts.signatureItem.size;
+      itemHeader.text = 'SIGNATURE';
+      itemHeader.style = 'signatureItem';
+    } else if (`${item.mainInputType}`.toLowerCase() === 'oneaction_notes') {
+      // steps[0].setFontSize = pdfFonts.note.size;
+      itemHeader.text = item.mainInputNotes;
+      itemHeader.style = 'note';
+    } else {
+      itemHeader.text = `${capitalize(item.title) || 'Untitled'}`;
+    }
+
+    commands.push(itemHeader);
+
+    // TODO: move to item body content
+    if (!item.isTextInputItem && item.isItemNA) {
+      commands.push({ text: 'NA', style: 'na' });
+    }
+
+    return commands;
   },
 
   /**
@@ -271,8 +315,8 @@ const prototype = {
  * @return {Object} - inspection PDF instance
  */
 module.exports = function createReportPdf(inspection, property) {
-  assert(Boolean(inspection), 'inspectionPdf requires inspection model');
-  assert(Boolean(property), 'inspectionPdf requires a property model');
+  assert(Boolean(inspection), 'reportPdf requires inspection model');
+  assert(Boolean(property), 'reportPdf requires a property model');
 
   return Object.create(prototype, {
     _inspection: { value: inspection },
@@ -289,4 +333,17 @@ module.exports = function createReportPdf(inspection, property) {
  */
 function decimate(factor, divisor = 100, accuracy = 1) {
   return ((factor / divisor) * 100).toFixed(accuracy || 0);
+}
+
+/**
+ * Convert a string: Into A Title
+ * @param  {String} str input
+ * @return {String} transformed
+ */
+function capitalize(str) {
+  return `${str}`
+    .toLowerCase()
+    .split(' ')
+    .map(s => `${s.slice(0, 1).toUpperCase()}${s.slice(1)}`)
+    .join(' ');
 }
