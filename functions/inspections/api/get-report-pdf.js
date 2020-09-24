@@ -1,6 +1,7 @@
 const assert = require('assert');
 const propertiesModel = require('../../models/properties');
 const inspectionsModel = require('../../models/inspections');
+// const insertInspectionItemImageUris = require('./utils/download-inspection-images');
 const log = require('../../utils/logger');
 
 const PREFIX = 'inspections: api: get-report-pdf:';
@@ -93,6 +94,19 @@ module.exports = function createOnGetReportPdfHandler(db) {
     }
 
     property.id = propertyId;
+
+    // Create item photo data hash
+    // let inspPhotoData = null;
+    // try {
+    //   const inspClone = JSON.parse(JSON.stringify(inspection));
+    //   const inspectionUris = await insertInspectionItemImageUris(inspClone);
+    //   inspPhotoData = inspectionUris.template.items;
+    // } catch (err) {
+    //   log.error(`${PREFIX} inspection item photo lookup failed | ${err}`);
+    //   return res.status(500).send({
+    //     errors: [{ detail: 'Inspection Attachment data Error' }],
+    //   });
+    // }
 
     // Send updated inspection
     res.status(200).send({

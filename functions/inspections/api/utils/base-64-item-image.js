@@ -13,12 +13,11 @@ module.exports = function base64Image(
   scale = [200, 200],
   jimpFormat = Jimp.MIME_JPEG
 ) {
-  assert('has image url', imgUrl && typeof imgUrl === 'string');
+  assert(imgUrl && typeof imgUrl === 'string', 'has image url');
   assert(
-    'has numeric scale array',
-    Array.isArray(scale) && scale.every(s => typeof s === 'number')
+    Array.isArray(scale) && scale.every(s => typeof s === 'number'),
+    'has numeric scale array'
   );
-  assert('has JIMP file format', jimpFormat && Jimp.hasOwnProperty(jimpFormat));
 
   return new Promise(resolve => {
     Jimp.read(imgUrl, (err, img) => {
@@ -27,8 +26,8 @@ module.exports = function base64Image(
       img
         .scaleToFit(...scale)
         .quality(100)
-        .getBase64(jimpFormat, (err, datauri) => {
-          if (err || !datauri) return resolve('');
+        .getBase64(jimpFormat, (base64Err, datauri) => {
+          if (base64Err || !datauri) return resolve('');
 
           resolve({
             datauri,

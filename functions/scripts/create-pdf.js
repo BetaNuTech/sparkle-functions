@@ -4,6 +4,7 @@ const { fs: db } = require('./setup'); // eslint-disable-line
 const createReportPdf = require('../inspections/api/utils/report-pdf');
 const propertiesModel = require('../models/properties');
 const inspectionsModel = require('../models/inspections');
+const insertInspectionItemImageUris = require('../inspections/api/utils/download-inspection-images');
 
 const [, , inspectionId] = process.argv; // eslint-disable-line
 if (!inspectionId) {
@@ -39,7 +40,19 @@ if (!inspectionId) {
     throw err;
   }
 
-  const reportPdf = createReportPdf(inspection, property);
+  // Append item photo data
+  // to inspection record
+  let inspPhotoData = null;
+  try {
+    const inspClone = JSON.parse(JSON.stringify(inspection));
+    const inspectionUris = await insertInspectionItemImageUris(inspClone);
+    inspPhotoData = inspectionUris.template.items;
+  } catch (err) {
+    log.error(`inspection item photo download failed | ${err}`);
+    throw err;
+  }
+
+  const reportPdf = createReportPdf(inspection, property, inspPhotoData);
 
   let pdfBuffer = '';
   try {
