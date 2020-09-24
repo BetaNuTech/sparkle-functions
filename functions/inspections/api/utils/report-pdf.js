@@ -163,8 +163,11 @@ const prototype = {
         const itemsContent = section.items
           .sort((a, b) => a.index - b.index)
           .map(
-            item => [].concat(this.getContentItemHeader(item))
-            // this.getItemBody(item),
+            item =>
+              [].concat(
+                this.getContentItemHeader(item)
+                // this.getContentItemBody(item)
+              )
             // this.getItemInspectorNotes(item),
             // this.getItemAdminUpdates(item),
             // this.getItemPhotos(item),
@@ -234,7 +237,7 @@ const prototype = {
         item.textInputValue
       }`;
     } else if (item.isItemNA) {
-      itemHeader.text = `${item.title || 'Untitled:'}`;
+      itemHeader.text = `${capitalize(item.title) || 'Untitled:'}`;
     } else if (item.itemType === 'signature') {
       // steps[0].setFontSize = pdfFonts.signatureItem.size;
       itemHeader.text = 'SIGNATURE';
@@ -323,6 +326,8 @@ module.exports = function createReportPdf(inspection, property) {
     _property: { value: property },
   });
 };
+
+module.exports._proto = prototype;
 
 /**
  * Convert a number to a percentage string
