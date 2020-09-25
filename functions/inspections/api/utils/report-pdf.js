@@ -19,7 +19,7 @@ const DOC_SETTINGS = Object.freeze({
   styles: settings.fonts,
 });
 const LINE_LEFT_GUTTER = Math.max((settings.page.margin[0] || 0) + 2, 0);
-const LINE_RIGHT_GUTTER = Math.max((settings.page.margin[3] || 0) - 2, 0);
+const LINE_RIGHT_GUTTER = Math.max((settings.page.margin[2] || 0) - 2, 0);
 const fontDescriptors = {
   helvetica: {
     normal: path.join(__dirname, '/fonts/Helvetica.ttf'),
@@ -70,7 +70,7 @@ const prototype = {
           },
           {
             image: settings.images.appIcon.src,
-            margin: [0, topGutter - 4, rightGutter, bottomGutter],
+            margin: settings.images.appIcon.margin,
             width: logoSize,
             height: logoSize,
           },
@@ -168,7 +168,7 @@ const prototype = {
             ...this.getContentItemBody(item),
             ...this.getContentItemBodyNotes(item),
             ...this.getContentItemAdminUpdates(item),
-            // this.getItemPhotos(item),
+            ...this.getContentItemPhotos(item),
           ]);
 
         return [].concat(
@@ -202,7 +202,7 @@ const prototype = {
           {
             type: 'line',
             x1: 0,
-            x2: settings.page.width - LINE_RIGHT_GUTTER,
+            x2: settings.page.width - LINE_LEFT_GUTTER - LINE_RIGHT_GUTTER,
             y1: lineY,
             y2: lineY,
             lineColor: settings.colors.lightGray.hex,
@@ -394,6 +394,50 @@ const prototype = {
         margin: settings.fonts.noteTitle.margin,
       }, // eslint-disable-line
       ...adminEdits,
+    ];
+  },
+
+  /**
+   * Steps to render PDF item photos
+   * @param  {Object} item
+   * @return {Object[]}
+   */
+  getContentItemPhotos(item) {
+    assert(item && typeof item === 'object', 'has inspection item');
+
+    const itemId = item.id;
+    const photos = Object.keys(item.photosData || {})
+      .map(timestamp => {
+        const photo = Object.assign({}, item.photosData[timestamp]);
+        photo.id = timestamp;
+        timestamp = parseInt(timestamp, 10);
+        photo.timestamp = timestamp ? timestamp * 1000 : Date.now();
+        return photo;
+      })
+      // Item photo requirements
+      .filter(
+        photo =>
+          Boolean(photo.downloadURL) &&
+          this._itemAttachments[itemId] &&
+          this._itemAttachments[itemId].photosData &&
+          this._itemAttachments[itemId].photosData[photo.id]
+      )
+      .sort((a, b) => a.timestamp - b.timestamp); // oldest to newest
+
+    if (!photos.length) {
+      return [];
+    }
+
+    return [
+      ...photos.map(photo => {
+        const attachment = this._itemAttachments[itemId].photosData[photo.id];
+        return {
+          image: attachment.datauri,
+          width: attachment.width,
+          height: attachment.height,
+          margin: settings.images.itemAttachment.margin,
+        };
+      }),
     ];
   },
 

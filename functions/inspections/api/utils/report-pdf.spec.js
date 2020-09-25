@@ -351,4 +351,43 @@ describe('Inspections | API | Utils | Report PDF', function() {
     ].join(' | ');
     expect(actual).to.equal(expected);
   });
+
+  it('renders item attachment images from attachment data', () => {
+    const expected = 'datauri-old | datauri-new';
+    const older = 1601067472000;
+    const newer = 1601067480000;
+    const itemId = uuid();
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const inspection = mocking.createInspection({ property: propertyId });
+    const property = mocking.createProperty({ inspections: [inspectionId] });
+    const item = mocking.createCompletedMainInputItem(
+      MAIN_INPUTS.checkmark,
+      false,
+      {
+        photosData: {
+          [newer]: { downloadURL: 'ok' },
+          [older]: { downloadURL: 'ok' },
+        },
+      }
+    );
+    item.id = itemId;
+    inspection.template.items[itemId] = item;
+
+    const instance = createReportPdf(inspection, property, {
+      [itemId]: {
+        photosData: {
+          [newer]: {
+            datauri: 'datauri-new',
+          },
+          [older]: {
+            datauri: 'datauri-old',
+          },
+        },
+      },
+    });
+    const result = instance.getContentItemPhotos(item);
+    const actual = result.map(({ image }) => image).join(' | ');
+    expect(actual).to.equal(expected);
+  });
 });
