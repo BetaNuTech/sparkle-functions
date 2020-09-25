@@ -167,7 +167,7 @@ const prototype = {
             ...this.getContentItemHeader(item),
             ...this.getContentItemBody(item),
             ...this.getContentItemBodyNotes(item),
-            // this.getItemAdminUpdates(item),
+            ...this.getContentItemAdminUpdates(item),
             // this.getItemPhotos(item),
           ]);
 
@@ -348,6 +348,52 @@ const prototype = {
         margin: settings.fonts.noteTitle.margin,
       },
       { text: notes, style: 'note', margin: settings.fonts.note.margin },
+    ];
+  },
+
+  /**
+   * Format an edit timestamp
+   * as a date string
+   * @param  {Number} timestamp
+   * @return {String}
+   */
+  _formatAdminEditDate(timestamp) {
+    assert(timestamp && typeof timestamp === 'number', 'has timestamp');
+    const date = new Date(parseInt(timestamp * 1000, 10));
+    return moment(date).format('M/D/YY, h:mm A:');
+  },
+
+  /**
+   * Steps to render PDF item admin updates
+   * @param  {Object} item
+   * @return {Object[]}
+   */
+  getContentItemAdminUpdates(item) {
+    assert(item && typeof item === 'object', 'has inspection item');
+
+    const adminEdits = Object.keys(item.adminEdits || {})
+      .map(id => item.adminEdits[id])
+      .sort((a, b) => a.edit_date - b.edit_date)
+      .map(edit => {
+        const formattedDate = this._formatAdminEditDate(edit.edit_date);
+        return {
+          text: `${formattedDate} ${edit.admin_name} ${edit.action}.`,
+          style: 'note',
+          margin: settings.fonts.note.margin,
+        };
+      });
+
+    if (!adminEdits.length) {
+      return [];
+    }
+
+    return [
+      {
+        text: 'Admin Edits:',
+        style: 'noteTitle',
+        margin: settings.fonts.noteTitle.margin,
+      }, // eslint-disable-line
+      ...adminEdits,
     ];
   },
 
