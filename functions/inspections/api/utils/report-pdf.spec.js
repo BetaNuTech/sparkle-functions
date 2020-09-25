@@ -279,4 +279,39 @@ describe('Inspections | API | Utils | Report PDF', function() {
       expect(actual).to.equal(expected, msg);
     }
   });
+
+  it('renders item signatures images from attachment data', () => {
+    const expected = 'sig-data';
+    const itemId = uuid();
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const inspection = mocking.createInspection({ property: propertyId });
+    const property = mocking.createProperty({ inspections: [inspectionId] });
+    const item = mocking.createCompletedMainInputItem('signature', false, {
+      itemType: 'signature',
+    });
+    item.id = itemId;
+    inspection.template.items[itemId] = item;
+
+    const instance = createReportPdf(inspection, property, {
+      [itemId]: { signatureData: { datauri: expected } },
+    });
+    const [result] = instance.getContentItemBody(item);
+    const actual = result.image;
+    expect(actual).to.equal(expected);
+  });
+
+  it('creates inspector notes when item has them configured', () => {
+    const expected = 'heading: Inspector Notes: | text: test notes';
+    const item = mocking.createCompletedMainInputItem(
+      MAIN_INPUTS.checkmark,
+      false,
+      { inspectorNotes: 'test notes' }
+    );
+    const [heading, body] = createReportPdf._proto.getContentItemBodyNotes(
+      item
+    );
+    const actual = `heading: ${heading.text} | text: ${body.text}`;
+    expect(actual).to.equal(expected);
+  });
 });
