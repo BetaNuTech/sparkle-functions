@@ -149,7 +149,7 @@ module.exports = Object.freeze({
     note: {
       fontSize: 10,
       italics: true,
-      margin: [29, 0, 0, 0],
+      margin: [29, 0, 0, 13],
     },
 
     item: {

@@ -314,4 +314,41 @@ describe('Inspections | API | Utils | Report PDF', function() {
     const actual = `heading: ${heading.text} | text: ${body.text}`;
     expect(actual).to.equal(expected);
   });
+
+  it('creates admin edits when item has them configured', () => {
+    const older = 1601067472;
+    const newer = 1601067480;
+    const formatTime = createReportPdf._proto._formatAdminEditDate;
+    const olderFtm = formatTime(older);
+    const newerFtm = formatTime(newer);
+    const expected = `heading: Admin Edits: | text: ${olderFtm} a-1 e-1. | text: ${newerFtm} a-2 e-2.`;
+    const item = mocking.createCompletedMainInputItem(
+      MAIN_INPUTS.checkmark,
+      false,
+      {
+        adminEdits: {
+          newer: {
+            edit_date: newer,
+            admin_name: 'a-2',
+            action: 'e-2',
+          },
+
+          older: {
+            edit_date: older,
+            admin_name: 'a-1',
+            action: 'e-1',
+          },
+        },
+      }
+    );
+    const [
+      heading,
+      ...bodies
+    ] = createReportPdf._proto.getContentItemAdminUpdates(item);
+    const actual = [
+      `heading: ${heading.text}`,
+      ...bodies.map(({ text }) => `text: ${text}`),
+    ].join(' | ');
+    expect(actual).to.equal(expected);
+  });
 });
