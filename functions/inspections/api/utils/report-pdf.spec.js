@@ -5,6 +5,14 @@ const uuid = require('../../../test-helpers/uuid');
 const settings = require('../../../config/report-pdf-settings');
 const mocking = require('../../../test-helpers/mocking');
 
+const MAIN_INPUTS = {
+  checkmark: 'twoactions_checkmarkx',
+  thumbs: 'twoactions_thumbs',
+  exclamation: 'threeactions_checkmarkexclamationx',
+  abc: 'threeactions_abc',
+  oneToFive: 'fiveactions_onetofive',
+};
+
 describe('Inspections | API | Utils | Report PDF', function() {
   it('generates a pdf buffer of inspection', async () => {
     const propertyId = uuid();
@@ -164,12 +172,110 @@ describe('Inspections | API | Utils | Report PDF', function() {
       const item = data.isTextInputItem
         ? mocking.createItem({ ...data, sectionId: '1' })
         : mocking.createCompletedMainInputItem(
-            'twoactions_checkmarkx',
+            MAIN_INPUTS.checkmark,
             false,
             data
           );
       const [result] = createReportPdf._proto.getContentItemHeader(item);
       const actual = `text: ${result.text} | style: ${result.style}`;
+      expect(actual).to.equal(expected, msg);
+    }
+  });
+
+  it('creates an item body content for all item types', () => {
+    const tests = [
+      {
+        data: { mainInputType: MAIN_INPUTS.checkmark, mainInputSelection: 0 },
+        expected: settings.images.checkmarkItemIcon.src,
+        msg: 'created checkmark image for 1st checkmarkx selection',
+      },
+      {
+        data: { mainInputType: MAIN_INPUTS.checkmark, mainInputSelection: 1 },
+        expected: settings.images.xItemIcon.src,
+        msg: 'created x image for 2nd checkmarkx selection',
+      },
+      {
+        data: { mainInputType: MAIN_INPUTS.thumbs, mainInputSelection: 0 },
+        expected: settings.images.thumbsUpItemIcon.src,
+        msg: 'created thumbs up image for 1st thumbs selection',
+      },
+      {
+        data: { mainInputType: MAIN_INPUTS.thumbs, mainInputSelection: 1 },
+        expected: settings.images.thumbsDownItemIcon.src,
+        msg: 'created thumbs down image for 2nd thumbs selection',
+      },
+      {
+        data: { mainInputType: MAIN_INPUTS.exclamation, mainInputSelection: 0 },
+        expected: settings.images.checkmarkItemIcon.src,
+        msg: 'created checkmark image for 1st exclamation selection',
+      },
+      {
+        data: { mainInputType: MAIN_INPUTS.exclamation, mainInputSelection: 1 },
+        expected: settings.images.exclamationItemIcon.src,
+        msg: 'created exclaimation image for 2nd exclamation selection',
+      },
+      {
+        data: { mainInputType: MAIN_INPUTS.exclamation, mainInputSelection: 2 },
+        expected: settings.images.xItemIcon.src,
+        msg: 'created X image for 3rd exclamation selection',
+      },
+      {
+        data: { mainInputType: MAIN_INPUTS.abc, mainInputSelection: 0 },
+        expected: settings.images.aItemIcon.src,
+        msg: 'created A image for 1st ABC selection',
+      },
+      {
+        data: { mainInputType: MAIN_INPUTS.abc, mainInputSelection: 1 },
+        expected: settings.images.bItemIcon.src,
+        msg: 'created B image for 2nd ABC selection',
+      },
+      {
+        data: { mainInputType: MAIN_INPUTS.abc, mainInputSelection: 2 },
+        expected: settings.images.cItemIcon.src,
+        msg: 'created C image for 3rd ABC selection',
+      },
+
+      {
+        data: { mainInputType: MAIN_INPUTS.oneToFive, mainInputSelection: 0 },
+        expected: settings.images.oneItemIcon.src,
+        msg: 'created #1 image for 1st 1-5 selection',
+      },
+      {
+        data: { mainInputType: MAIN_INPUTS.oneToFive, mainInputSelection: 1 },
+        expected: settings.images.twoItemIcon.src,
+        msg: 'created #2 image for 2nd 1-5 selection',
+      },
+      {
+        data: { mainInputType: MAIN_INPUTS.oneToFive, mainInputSelection: 2 },
+        expected: settings.images.threeItemIcon.src,
+        msg: 'created #3 image for 3rd 1-5 selection',
+      },
+      {
+        data: { mainInputType: MAIN_INPUTS.oneToFive, mainInputSelection: 3 },
+        expected: settings.images.fourItemIcon.src,
+        msg: 'created #4 image for 4th 1-5 selection',
+      },
+      {
+        data: { mainInputType: MAIN_INPUTS.oneToFive, mainInputSelection: 4 },
+        expected: settings.images.fiveItemIcon.src,
+        msg: 'created #5 image for 5th 1-5 selection',
+      },
+      {
+        data: { mainInputType: MAIN_INPUTS.abc, isItemNA: true },
+        expected: 'NA',
+        msg: 'Added text "NA" to non-applicable item',
+      },
+    ];
+
+    for (let i = 0; i < tests.length; i++) {
+      const { data, expected, msg } = tests[i];
+      const item = mocking.createCompletedMainInputItem(
+        MAIN_INPUTS.checkmark,
+        false,
+        data
+      );
+      const [result] = createReportPdf._proto.getContentItemBody(item);
+      const actual = result.image || result.text;
       expect(actual).to.equal(expected, msg);
     }
   });
