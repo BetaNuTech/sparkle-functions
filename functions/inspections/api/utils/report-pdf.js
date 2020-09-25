@@ -163,16 +163,13 @@ const prototype = {
       .map(section => {
         const itemsContent = section.items
           .sort((a, b) => a.index - b.index)
-          .map(
-            item =>
-              [].concat(
-                this.getContentItemHeader(item),
-                this.getContentItemBody(item)
-              )
-            // this.getItemInspectorNotes(item),
+          .map(item => [
+            ...this.getContentItemHeader(item),
+            ...this.getContentItemBody(item),
+            ...this.getContentItemBodyNotes(item),
             // this.getItemAdminUpdates(item),
             // this.getItemPhotos(item),
-          );
+          ]);
 
         return [].concat(
           this.getContentSectionHeader(section.title),
@@ -268,11 +265,15 @@ const prototype = {
     const itemId = item.id;
     const type = `${item.mainInputType || item.itemType}`.toLowerCase();
     const selectionIndex = item.mainInputSelection;
-    const itemBody = {};
+    const itemBody = {
+      fit: settings.images.itemIcon.fit,
+      margin: settings.images.itemIcon.margin,
+    };
 
     if (!item.isTextInputItem && item.isItemNA) {
       itemBody.text = 'NA';
       itemBody.style = 'na';
+      delete itemBody.margin;
     } else if (type === 'twoactions_checkmarkx') {
       itemBody.image =
         selectionIndex === 0
@@ -325,6 +326,29 @@ const prototype = {
     }
 
     return [itemBody];
+  },
+
+  /**
+   * Steps to render PDF inspection notes
+   * @param  {Object} item
+   * @return {Object[]}
+   */
+  getContentItemBodyNotes(item) {
+    assert(item && typeof item === 'object', 'has inspection item');
+    const notes = item.inspectorNotes;
+
+    if (!notes) {
+      return [];
+    }
+
+    return [
+      {
+        text: 'Inspector Notes:',
+        style: 'noteTitle',
+        margin: settings.fonts.noteTitle.margin,
+      },
+      { text: notes, style: 'note', margin: settings.fonts.note.margin },
+    ];
   },
 
   /**
