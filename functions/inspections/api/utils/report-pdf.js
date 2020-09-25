@@ -57,6 +57,7 @@ const prototype = {
     const bottomGutter = settings.header.margin[3] || 0;
     const leftGutter = settings.header.margin[0] || 0;
     const rightGutter = settings.header.margin[2] || 0;
+    const logoSize = settings.images.appIcon.size;
     return [
       {
         columns: [
@@ -64,14 +65,14 @@ const prototype = {
             text: `${propertyName} | ${inspectorName} | ${this.creationDate}
   Template: ${templateName}`,
             style: 'header',
-            width: settings.page.width - settings.header.logoSize - rightGutter,
+            width: settings.page.width - logoSize - rightGutter,
             margin: [leftGutter, topGutter, rightGutter, bottomGutter],
           },
           {
-            image: settings.images.appIcon,
+            image: settings.images.appIcon.src,
             margin: [0, topGutter - 4, rightGutter, bottomGutter],
-            width: settings.header.logoSize,
-            height: settings.header.logoSize,
+            width: logoSize,
+            height: logoSize,
           },
         ],
       },
@@ -242,6 +243,7 @@ const prototype = {
       // steps[0].setFontSize = pdfFonts.signatureItem.size;
       itemHeader.text = 'SIGNATURE';
       itemHeader.style = 'signatureItem';
+      itemHeader.margin = settings.fonts.signatureItem.margin;
     } else if (`${item.mainInputType}`.toLowerCase() === 'oneaction_notes') {
       // steps[0].setFontSize = pdfFonts.note.size;
       itemHeader.text = item.mainInputNotes;
@@ -251,11 +253,6 @@ const prototype = {
     }
 
     commands.push(itemHeader);
-
-    // TODO: move to item body content?
-    if (!item.isTextInputItem && item.isItemNA) {
-      commands.push({ text: 'NA', style: 'na' });
-    }
 
     return commands;
   },
@@ -271,46 +268,48 @@ const prototype = {
     const itemId = item.id;
     const type = `${item.mainInputType || item.itemType}`.toLowerCase();
     const selectionIndex = item.mainInputSelection;
-    // const addImage = ['', 'PNG', LEFT_GUTTER + 3, 0, 8, 8];
-    const itemBody = { image: '' };
+    const itemBody = {};
 
-    if (type === 'twoactions_checkmarkx') {
+    if (!item.isTextInputItem && item.isItemNA) {
+      itemBody.text = 'NA';
+      itemBody.style = 'na';
+    } else if (type === 'twoactions_checkmarkx') {
       itemBody.image =
         selectionIndex === 0
-          ? settings.images.checkmarkItemIcon
-          : settings.images.xItemIcon; // eslint-disable-line
+          ? settings.images.checkmarkItemIcon.src
+          : settings.images.xItemIcon.src; // eslint-disable-line
     } else if (type === 'twoactions_thumbs') {
       itemBody.image =
         selectionIndex === 0
-          ? settings.images.thumbsUpItemIcon
-          : settings.images.thumbsDownItemIcon; // eslint-disable-line
+          ? settings.images.thumbsUpItemIcon.src
+          : settings.images.thumbsDownItemIcon.src; // eslint-disable-line
     } else if (type === 'threeactions_checkmarkexclamationx') {
       if (selectionIndex === 0) {
-        itemBody.image = settings.images.checkmarkItemIcon;
+        itemBody.image = settings.images.checkmarkItemIcon.src;
       } else if (selectionIndex === 1) {
-        itemBody.image = settings.images.exclamationItemIcon;
+        itemBody.image = settings.images.exclamationItemIcon.src;
       } else {
-        itemBody.image = settings.images.xItemIcon;
+        itemBody.image = settings.images.xItemIcon.src;
       }
     } else if (type === 'threeactions_abc') {
       if (selectionIndex === 0) {
-        itemBody.image = settings.images.aItemIcon;
+        itemBody.image = settings.images.aItemIcon.src;
       } else if (selectionIndex === 1) {
-        itemBody.image = settings.images.bItemIcon;
+        itemBody.image = settings.images.bItemIcon.src;
       } else {
-        itemBody.image = settings.images.cItemIcon;
+        itemBody.image = settings.images.cItemIcon.src;
       }
     } else if (type === 'fiveactions_onetofive') {
       if (selectionIndex === 0) {
-        itemBody.image = settings.images.oneItemIcon;
+        itemBody.image = settings.images.oneItemIcon.src;
       } else if (selectionIndex === 1) {
-        itemBody.image = settings.images.twoItemIcon;
+        itemBody.image = settings.images.twoItemIcon.src;
       } else if (selectionIndex === 2) {
-        itemBody.image = settings.images.threeItemIcon;
+        itemBody.image = settings.images.threeItemIcon.src;
       } else if (selectionIndex === 3) {
-        itemBody.image = settings.images.fourItemIcon;
+        itemBody.image = settings.images.fourItemIcon.src;
       } else {
-        itemBody.image = settings.images.fiveItemIcon;
+        itemBody.image = settings.images.fiveItemIcon.src;
       }
     } else if (
       type === 'signature' &&
@@ -318,6 +317,8 @@ const prototype = {
       this._itemAttachments[itemId].signatureData
     ) {
       itemBody.image = this._itemAttachments[itemId].signatureData.datauri;
+      itemBody.fit = [200, 125];
+      itemBody.margin = settings.images.signature.margin;
     } else {
       // Notes do not have an item body
       return [];
