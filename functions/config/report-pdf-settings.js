@@ -64,7 +64,7 @@ module.exports = Object.freeze({
     },
 
     itemAttachment: {
-      margin: [29, 16, 0, 4],
+      margin: [29, 4, 0, 4],
     },
 
     aItemIcon: {
@@ -132,6 +132,13 @@ module.exports = Object.freeze({
     header: {
       fontSize: 14,
       lineHeight: 1.2,
+      marginAdminSummary: [13, 0, 0, 4],
+      marginAdminSummaryFirst: [13, 13, 0, 4],
+    },
+
+    summaryHeader: {
+      fontSize: 22,
+      margin: [0, 60, 0, 4],
     },
 
     score: {
@@ -155,11 +162,13 @@ module.exports = Object.freeze({
       fontSize: 10,
       italics: true,
       margin: [29, 0, 0, 13],
+      marginList: [29, 0, 0, 0],
     },
 
     item: {
       fontSize: 15,
       margin: [0, 21, 0, 0],
+      marginTextInput: [0, 21, 0, 13],
     },
 
     signatureItem: {
@@ -171,11 +180,6 @@ module.exports = Object.freeze({
     na: {
       fontSize: 20,
       italic: true,
-      margin: [],
-    },
-
-    summaryHeader: {
-      fontSize: 22,
       margin: [],
     },
 

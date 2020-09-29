@@ -390,4 +390,35 @@ describe('Inspections | API | Utils | Report PDF', function() {
     const actual = result.map(({ image }) => image).join(' | ');
     expect(actual).to.equal(expected);
   });
+
+  it("renders admin edit summary for each administrator's activities", () => {
+    const expected = `Summary of Admin Activity
+Testor Two made a total of 2 edits.
+Testor One made a total of 1 edit.`;
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const admin1Name = 'Testor One';
+    const admin2Name = 'Testor Two';
+    const inspection = mocking.createInspection({ property: propertyId });
+    const property = mocking.createProperty({ inspections: [inspectionId] });
+    const items = [admin1Name, admin2Name, admin2Name].map(adminName =>
+      mocking.createCompletedMainInputItem(MAIN_INPUTS.checkmark, false, {
+        adminEdits: {
+          [uuid()]: mocking.createInspItemAdminEdit({ admin_name: adminName }),
+        },
+      })
+    );
+    items.forEach(item => {
+      inspection.template.items[uuid()] = item;
+    });
+
+    const instance = createReportPdf(inspection, property);
+    const result = instance.adminActivitySummaryContent;
+    const actual = result
+      .map(r => r.text || '')
+      .filter(Boolean)
+      .join('\n');
+
+    expect(actual).to.equal(expected);
+  });
 });
