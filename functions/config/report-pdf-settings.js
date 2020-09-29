@@ -162,7 +162,7 @@ module.exports = Object.freeze({
       fontSize: 10,
       italics: true,
       margin: [29, 0, 0, 13],
-      marginList: [29, 0, 0, 0],
+      marginList: [29, 0, 0, 4],
     },
 
     item: {

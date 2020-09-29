@@ -1,11 +1,12 @@
 const assert = require('assert');
 const moment = require('moment');
-const insertInspectionItemImageUris = require('../api/utils/download-inspection-images');
+const inspImages = require('../api/utils/inspection-images');
 const createAndUploadInspection = require('./create-and-upload-inspection-pdf');
 const propertiesModel = require('../../models/properties');
 const inspectionsModel = require('../../models/inspections');
 const notificationsModel = require('../../models/notifications');
 const notifyTemplate = require('../../utils/src-notification-templates');
+const { capitalize } = require('../../utils/strings');
 const log = require('../../utils/logger');
 
 const HTTPS_URL = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_+.~#?&//=]*)/; // eslint-disable-line max-len
@@ -91,7 +92,7 @@ module.exports = function createOnGETPDFReportHandler(fs, inspectionUrl) {
     // to inspection record
     let inspection = null;
     try {
-      inspection = await insertInspectionItemImageUris(inspectionData);
+      inspection = await inspImages.download(inspectionData);
       inspection.id = inspectionId;
     } catch (err) {
       log.error(`${PREFIX} inspection item photo lookup failed | ${err}`);
@@ -255,19 +256,6 @@ module.exports = function createOnGETPDFReportHandler(fs, inspectionUrl) {
     res.status(200).send({ inspectionReportURL });
   };
 };
-
-/**
- * Convert a string: Into A Title
- * @param  {String} str input
- * @return {String} - str transformed
- */
-function capitalize(str) {
-  return `${str}`
-    .toLowerCase()
-    .split(' ')
-    .map(s => `${s.slice(0, 1).toUpperCase()}${s.slice(1)}`)
-    .join(' ');
-}
 
 /**
  * Inspections' PDF report is up to
