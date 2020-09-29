@@ -422,5 +422,21 @@ module.exports = {
     return notification;
   },
 
+  /**
+   * Create mock admin edit entry
+   * for an inspection item
+   * @param  {Object} config
+   * @return {Object}
+   */
+  createInspItemAdminEdit(adminEditConfig = {}) {
+    return {
+      action: 'selected X',
+      admin_name: 'Test Admin',
+      admin_uid: uuid(),
+      edit_date: nowUnix(),
+      ...adminEditConfig,
+    };
+  },
+
   nowUnix,
 };

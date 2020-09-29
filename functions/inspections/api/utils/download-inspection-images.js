@@ -19,7 +19,7 @@ module.exports = async function insertInspectionItemImageUris(inspection) {
   const imagePhotoUrls = []
     .concat(
       ...items.map(item => {
-        if (item.photosData) {
+        if (item.photosData && keys(item.photosData).length) {
           // Create list of item's upload(s) configs
           return keys(item.photosData).map(id => ({
             id,
@@ -28,13 +28,17 @@ module.exports = async function insertInspectionItemImageUris(inspection) {
           }));
         }
         // Create signature image configs
-        return [
-          {
-            id: item.signatureTimestampKey,
-            itemId: item.id,
-            url: item.signatureDownloadURL,
-          },
-        ];
+        if (item.signatureDownloadURL) {
+          return [
+            {
+              id: item.signatureTimestampKey,
+              itemId: item.id,
+              url: item.signatureDownloadURL,
+            },
+          ];
+        }
+
+        return [{}];
       })
     )
     .filter(({ url }) => Boolean(url)); // remove empty uploads

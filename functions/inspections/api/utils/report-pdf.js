@@ -117,7 +117,7 @@ const prototype = {
     return [
       ...this.scoreContent,
       ...this.sectionsContent,
-      // TODO: ...this.adminActivitySummaryContent
+      ...this.adminActivitySummaryContent,
     ];
   },
 
@@ -182,6 +182,73 @@ const prototype = {
   },
 
   /**
+   * Admin edit summary section
+   * @return {Object[]}
+   */
+  get adminActivitySummaryContent() {
+    const template = Object.assign({}, this._inspection.template);
+    const items = Object.keys(template.items || {}).map(
+      id => template.items[id]
+    );
+    const adminEdits = items.reduce((acc, item) => {
+      Object.keys(item.adminEdits || {}).forEach(id => {
+        acc.push(item.adminEdits[id]);
+      });
+      return acc;
+    }, []);
+    const adminEditCounts = adminEdits.reduce((acc, adminEdit) => {
+      const author = adminEdit.admin_name;
+      acc[author] = acc[author] || 0;
+      acc[author]++;
+      return acc;
+    }, {});
+    const adminEditSummaries = Object.keys(adminEditCounts)
+      .sort((a, b) => adminEditCounts[b] - adminEditCounts[a]) // Descending
+      .map((adminName, i) => ({
+        text: `${adminName} made a total of ${adminEditCounts[adminName]} edit${
+          adminEditCounts[adminName] > 1 ? 's' : ''
+        }.`,
+        style: 'header',
+        margin:
+          i === 0
+            ? settings.fonts.header.marginAdminSummaryFirst
+            : settings.fonts.header.marginAdminSummary,
+      }));
+    const hasAdminEdits = Boolean(Object.keys(adminEditCounts));
+
+    if (!hasAdminEdits) {
+      return [];
+    }
+
+    const bottomMargin = settings.fonts.summaryHeader.margin[3] || 0;
+    const lineY = -1 * Math.max(bottomMargin - 1, 0);
+
+    return [
+      {
+        text: 'Summary of Admin Activity',
+        style: 'summaryHeader',
+        color: settings.colors.lightBlue.hex,
+        margin: settings.fonts.summaryHeader.margin,
+      },
+      {
+        canvas: [
+          {
+            type: 'line',
+            x1: 0,
+            x2: settings.page.width - LINE_LEFT_GUTTER - LINE_RIGHT_GUTTER,
+            y1: lineY,
+            y2: lineY,
+            lineColor: settings.colors.lightGray.hex,
+            lineWidth: 0.5,
+            lineCap: 'square',
+          },
+        ],
+      },
+      ...adminEditSummaries,
+    ];
+  },
+
+  /**
    * Create section header content
    * for a group of inspection items
    * @param  {String} text
@@ -221,7 +288,6 @@ const prototype = {
    */
   getContentItemHeader(item) {
     assert(item && typeof item === 'object', 'has inspection item');
-    const commands = [];
     const itemHeader = {
       text: '',
       style: 'item',
@@ -234,24 +300,21 @@ const prototype = {
       itemHeader.text = `${capitalize(item.title) || 'Untitled:'} ${
         item.textInputValue
       }`;
+      itemHeader.margin = settings.fonts.item.marginTextInput;
     } else if (item.isItemNA) {
       itemHeader.text = `${capitalize(item.title) || 'Untitled:'}`;
     } else if (item.itemType === 'signature') {
-      // steps[0].setFontSize = pdfFonts.signatureItem.size;
       itemHeader.text = 'SIGNATURE';
       itemHeader.style = 'signatureItem';
       itemHeader.margin = settings.fonts.signatureItem.margin;
     } else if (`${item.mainInputType}`.toLowerCase() === 'oneaction_notes') {
-      // steps[0].setFontSize = pdfFonts.note.size;
       itemHeader.text = item.mainInputNotes;
       itemHeader.style = 'note';
     } else {
       itemHeader.text = `${capitalize(item.title) || 'Untitled'}`;
     }
 
-    commands.push(itemHeader);
-
-    return commands;
+    return [itemHeader];
   },
 
   /**
@@ -371,15 +434,21 @@ const prototype = {
   getContentItemAdminUpdates(item) {
     assert(item && typeof item === 'object', 'has inspection item');
 
+    const hasPhotos = Boolean(Object.keys(item.photosData || {}).length);
     const adminEdits = Object.keys(item.adminEdits || {})
       .map(id => item.adminEdits[id])
       .sort((a, b) => a.edit_date - b.edit_date)
-      .map(edit => {
+      .map((edit, i, arr) => {
+        const isLast = arr.length - 1 === i;
+        const itemMargin = settings.fonts.note.marginList;
+        const lastItemMargin = hasPhotos
+          ? itemMargin
+          : settings.fonts.note.margin;
         const formattedDate = this._formatAdminEditDate(edit.edit_date);
         return {
           text: `${formattedDate} ${edit.admin_name} ${edit.action}.`,
           style: 'note',
-          margin: settings.fonts.note.margin,
+          margin: isLast ? lastItemMargin : itemMargin,
         };
       });
 
