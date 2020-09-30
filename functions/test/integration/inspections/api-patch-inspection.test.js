@@ -86,7 +86,7 @@ function stubAuth(req, res, next) {
 
 function createSnap(data) {
   return {
-    exists: true,
+    exists: Boolean(data),
     data: () => data,
   };
 }
