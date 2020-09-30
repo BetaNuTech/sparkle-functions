@@ -415,7 +415,7 @@ describe('Inspections | API | PATCH Report PDF', () => {
 
 function createApp() {
   const app = express();
-  app.patch('/:inspection', patchPdf({ collection: () => {} }));
+  app.patch('/:inspectionId', patchPdf({ collection: () => {} }));
   return app;
 }
 
