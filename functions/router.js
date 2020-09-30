@@ -46,6 +46,11 @@ module.exports = (fs, auth, settings) => {
     authUser(fs, auth),
     inspections.api.createGetInspectionPDF(fs, inspectionUrl)
   );
+  app.patch(
+    '/v0/inspections/:inspectionId/report-pdf',
+    authUser(fs, auth),
+    inspections.api.createPatchReportPDF(fs)
+  );
 
   // Request Property's residents from Yardi
   app.get(
