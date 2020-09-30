@@ -195,7 +195,7 @@ module.exports = function createOnGetReportPdfHandler(db) {
     try {
       inspectionReportURL = await uploader.s3(
         pdfBuffer,
-        `reports/${inspection.id}/${reportPdf.filename}`
+        `reports/${inspectionId}/${reportPdf.filename}`
       );
       [inspectionReportURL] = inspectionReportURL
         .split(/\n/)
