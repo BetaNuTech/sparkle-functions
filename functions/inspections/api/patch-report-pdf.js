@@ -29,7 +29,7 @@ module.exports = function createOnGetReportPdfHandler(db) {
    * @return {Promise}
    */
   return async (req, res) => {
-    const { inspection: inspectionId } = req.params;
+    const { inspectionId } = req.params;
 
     // Optional incognito mode query
     // defaults to false
