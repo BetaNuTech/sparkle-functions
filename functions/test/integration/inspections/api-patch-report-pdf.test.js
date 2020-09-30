@@ -411,6 +411,45 @@ describe('Inspections | API | PATCH Report PDF', () => {
     const actual = result.called;
     expect(actual).to.equal(expected);
   });
+
+  it('does not send notification in incognito mode', async () => {
+    const expected = false;
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const inspection = createInspection({ property: propertyId });
+    const property = mocking.createProperty();
+
+    // Stubs
+    sinon
+      .stub(inspectionsModel, 'firestoreFindRecord')
+      .resolves(createSnap(inspection));
+    sinon
+      .stub(propertiesModel, 'firestoreFindRecord')
+      .resolves(createSnap(property));
+    sinon
+      .stub(inspectionsModel, 'firestoreUpsertRecord')
+      .onFirstCall()
+      .resolves()
+      .onSecondCall()
+      .resolves();
+    sinon.stub(inspImages, 'download').resolves({ template: { items: {} } });
+    sinon
+      .stub(createReportPdf._proto, 'generatePdf')
+      .resolves(Buffer.from([0]));
+    sinon.stub(uploader, 's3').resolves('/url/test');
+    const result = sinon
+      .stub(notificationsModel, 'firestoreAddRecord')
+      .resolves();
+
+    await request(createApp())
+      .patch(`/${inspectionId}?incognitoMode=true`)
+      .send()
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(201);
+
+    const actual = result.called;
+    expect(actual).to.equal(expected);
+  });
 });
 
 function createApp() {
