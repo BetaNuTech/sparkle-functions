@@ -421,4 +421,25 @@ Testor One made a total of 1 edit.`;
 
     expect(actual).to.equal(expected);
   });
+
+  it('does not render admin edit summary when none exist', () => {
+    const expected = 0;
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const inspection = mocking.createInspection({ property: propertyId });
+    const property = mocking.createProperty({ inspections: [inspectionId] });
+    const item = mocking.createCompletedMainInputItem(
+      MAIN_INPUTS.checkmark,
+      false,
+      {
+        adminEdits: {},
+      }
+    );
+    inspection.template.items[uuid()] = item;
+    const instance = createReportPdf(inspection, property);
+    const result = instance.adminActivitySummaryContent;
+    const actual = result.length;
+
+    expect(actual).to.equal(expected);
+  });
 });
