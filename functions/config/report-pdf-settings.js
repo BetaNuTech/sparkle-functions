@@ -17,37 +17,6 @@ module.exports = Object.freeze({
   },
 
   /**
-   * PDF vertical settings
-   * @type {Object}
-   */
-  verticals: {
-    pageHeight: 268,
-    pageCutoffBuffer: 0,
-    headerTitle: { top: 15, height: 6 },
-    headerSubTitle: { height: 2 },
-    headerLine: { top: 1, height: 1 },
-    pageCutBuffer: { height: 8 },
-    score: { top: 17, height: 23 },
-    sectionHeader: { height: 8 },
-    sectionHeaderLine: { top: -6, height: 8 },
-    sectionEnd: { height: 7 },
-    itemHeader: { top: 3, height: 4 },
-    itemNAHeader: { top: 5, height: 10 },
-    itemBodyImage: { height: 12 },
-    itemPhoto: { top: 3 },
-    itemSignature: { top: -2 },
-    inspectionNoteHeader: { height: 1 },
-    inspectionNoteHeaderPost: { height: 4 },
-    inspectionNote: { height: 3 },
-    itemAdminEditHeader: { top: 6, height: 6 },
-    itemAdminEdit: { height: 5 },
-    itemEnd: { height: 10 },
-    adminSummaryHeader: { top: 20, height: 8 },
-    adminSummaryLine: { top: -5, height: 7 },
-    adminSummaryItem: { height: 9 },
-  },
-
-  /**
    * Singleton of PDF images
    * @type {Object}
    */
@@ -200,23 +169,18 @@ module.exports = Object.freeze({
   colors: {
     blue: {
       hex: '#0000ff',
-      rgb: [0, 0, 255],
     },
     red: {
       hex: '#ff0000',
-      rgb: [255, 0, 0],
     },
     black: {
       hex: '#000000',
-      rgb: [0, 0, 0],
     },
     lightBlue: {
       hex: '#5297f2',
-      rgb: [82, 152, 242],
     },
     lightGray: {
       hex: '#868686',
-      rgb: [134, 134, 134],
     },
   },
 });
