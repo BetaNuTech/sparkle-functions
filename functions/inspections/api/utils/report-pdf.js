@@ -214,7 +214,7 @@ const prototype = {
             ? settings.fonts.header.marginAdminSummaryFirst
             : settings.fonts.header.marginAdminSummary,
       }));
-    const hasAdminEdits = Boolean(Object.keys(adminEditCounts));
+    const hasAdminEdits = Boolean(Object.keys(adminEditCounts).length);
 
     if (!hasAdminEdits) {
       return [];
@@ -475,6 +475,7 @@ const prototype = {
     assert(item && typeof item === 'object', 'has inspection item');
 
     const itemId = item.id;
+    const photoCaptionMargin = settings.fonts.photoCaption.margin;
     const photos = Object.keys(item.photosData || {})
       .map(timestamp => {
         const photo = Object.assign({}, item.photosData[timestamp]);
@@ -498,15 +499,29 @@ const prototype = {
     }
 
     return [
-      ...photos.map(photo => {
-        const attachment = this._itemAttachments[itemId].photosData[photo.id];
-        return {
-          image: attachment.datauri,
-          width: attachment.width,
-          height: attachment.height,
-          margin: settings.images.itemAttachment.margin,
-        };
-      }),
+      ...photos
+        .map(photo => {
+          const attachment = this._itemAttachments[itemId].photosData[photo.id];
+          const { caption } = photo;
+          const result = [
+            {
+              image: attachment.datauri,
+              width: attachment.width,
+              height: attachment.height,
+              margin: settings.images.itemAttachment.margin,
+            },
+          ];
+
+          if (caption) {
+            result.push({
+              text: caption,
+              margin: photoCaptionMargin,
+            });
+          }
+
+          return result;
+        })
+        .reduce((acc, val) => acc.concat(val), []), // flatten
     ];
   },
 
