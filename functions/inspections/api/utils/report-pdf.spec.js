@@ -391,6 +391,43 @@ describe('Inspections | API | Utils | Report PDF', function() {
     expect(actual).to.equal(expected);
   });
 
+  it('adds any caption after the attachment image', () => {
+    const expected = 'test caption';
+    const itemId = uuid();
+    const photoId = '1601067480000';
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const inspection = mocking.createInspection({ property: propertyId });
+    const property = mocking.createProperty({ inspections: [inspectionId] });
+    const item = mocking.createCompletedMainInputItem(
+      MAIN_INPUTS.checkmark,
+      false,
+      {
+        photosData: {
+          [photoId]: {
+            downloadURL: 'ok',
+            caption: expected,
+          },
+        },
+      }
+    );
+    item.id = itemId;
+    inspection.template.items[itemId] = item;
+
+    const instance = createReportPdf(inspection, property, {
+      [itemId]: {
+        photosData: {
+          [photoId]: {
+            datauri: 'datauri',
+          },
+        },
+      },
+    });
+    const [, result] = instance.getContentItemPhotos(item);
+    const actual = result ? result.text : '';
+    expect(actual).to.equal(expected);
+  });
+
   it("renders admin edit summary for each administrator's activities", () => {
     const expected = `Summary of Admin Activity
 Testor Two made a total of 2 edits.

@@ -183,6 +183,10 @@ module.exports = Object.freeze({
       margin: [],
     },
 
+    photoCaption: {
+      margin: [225, 0, 0, 13],
+    },
+
     footer: {
       fontSize: 14,
       margin: [],
