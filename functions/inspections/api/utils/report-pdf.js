@@ -214,7 +214,7 @@ const prototype = {
             ? settings.fonts.header.marginAdminSummaryFirst
             : settings.fonts.header.marginAdminSummary,
       }));
-    const hasAdminEdits = Boolean(Object.keys(adminEditCounts));
+    const hasAdminEdits = Boolean(Object.keys(adminEditCounts).length);
 
     if (!hasAdminEdits) {
       return [];
