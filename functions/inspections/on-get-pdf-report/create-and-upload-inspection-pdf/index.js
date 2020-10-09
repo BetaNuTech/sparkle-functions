@@ -1,7 +1,7 @@
 const assert = require('assert');
 const JsPDF = require('./js-pdf');
 const inspectionPdf = require('./inspection-pdf');
-const inspectionUpload = require('./inspection-upload');
+const inspectionUpload = require('../../api/utils/uploader');
 
 /**
  * Generate a PDF from a property and inspection record
@@ -10,8 +10,8 @@ const inspectionUpload = require('./inspection-upload');
  * @return {Promise} - resolve {String} report download url
  */
 module.exports = function createAndUploadInspection(property, inspection) {
-  assert('has property', Boolean(property));
-  assert('has inspection with id', Boolean(inspection) && inspection.id);
+  assert(Boolean(property), 'has property');
+  assert(Boolean(inspection) && inspection.id, 'has inspection with id');
 
   const src = inspectionPdf(inspection, property);
   const steps = src.toSteps();
@@ -30,7 +30,10 @@ module.exports = function createAndUploadInspection(property, inspection) {
   const output = toBuffer(pdf.output('arraybuffer'));
 
   // Upload tmp PDF file to S3
-  return inspectionUpload(output, `reports/${inspection.id}/${src.filename}`);
+  return inspectionUpload.s3(
+    output,
+    `reports/${inspection.id}/${src.filename}`
+  );
 };
 
 /**

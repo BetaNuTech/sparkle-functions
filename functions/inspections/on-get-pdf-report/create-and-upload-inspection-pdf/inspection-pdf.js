@@ -691,7 +691,7 @@ module.exports = function createInspectionPdf(inspection, property) {
           parseInt(this._inspection.creationDate * 1000, 10)
         ); // eslint-disable-line
         const creationDate = moment(date).format('YYYY-MM-DD');
-        return `${this._property.name}_-_InspectionReport_-_${creationDate}.pdf`.replace(
+        return `${this._property.name}_-_SparkleReport_-_${creationDate}.pdf`.replace(
           /\s/g,
           '_'
         ); // eslint-disable-line

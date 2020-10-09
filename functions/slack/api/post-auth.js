@@ -107,14 +107,29 @@ module.exports = function createPostAuth(db) {
 
     let integrationDetails = null;
     try {
+      const integrationUpdate = {
+        grantedBy: user.id,
+        team: slackResponse.team.id,
+        teamName: slackResponse.team.name,
+      };
+
+      // Add user's channel selected
+      // during OAuth process
+      if (
+        slackResponse.incoming_webhook &&
+        typeof slackResponse.incoming_webhook.channel === 'string'
+      ) {
+        // Remove any channel "#" prefix
+        integrationUpdate.defaultChannelName = slackResponse.incoming_webhook.channel.replace(
+          /^#/,
+          ''
+        );
+      }
+
       // Set public integration details
       integrationDetails = await integrationsModel.firestoreSetSlack(
         db,
-        {
-          grantedBy: user.id,
-          team: slackResponse.team.id,
-          teamName: slackResponse.team.name,
-        },
+        integrationUpdate,
         batch
       );
     } catch (err) {
