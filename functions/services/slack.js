@@ -168,11 +168,13 @@ module.exports = {
           },
           responseType: 'json',
           method: 'GET',
+          json: true,
         }
       );
 
       if (!response || !response.body || !response.body.ok) {
-        const respErrMsg = response && response.body && response.body.error;
+        let respErrMsg = response && response.body && response.body.error;
+        if (response.body.needed) respErrMsg += ` ${response.body.needed}`;
         throw Error(
           `Slack API Request failed: ${respErrMsg || 'Unknown Error'}`
         );
@@ -180,6 +182,8 @@ module.exports = {
     } catch (err) {
       throw Error(`${PREFIX} listChannels: ${err}`); // wrap error
     }
+
+    return response.body;
   },
 
   /**
