@@ -62,7 +62,6 @@ module.exports = function createPostAuth(db) {
         `${PREFIX} slack app authentication success for Slack team name: "${slackResponse
           .team.name || 'Unknown'}" by user: "${user.id}"`
       );
-      console.log('>>> Slack Response', slackResponse);
     } catch (err) {
       return send500Error(
         err,
@@ -120,8 +119,11 @@ module.exports = function createPostAuth(db) {
         slackResponse.incoming_webhook &&
         typeof slackResponse.incoming_webhook.channel === 'string'
       ) {
-        integrationUpdate.defaultChannelName =
-          slackResponse.incoming_webhook.channel;
+        // Remove any channel "#" prefix
+        integrationUpdate.defaultChannelName = slackResponse.incoming_webhook.channel.replace(
+          /^#/,
+          ''
+        );
       }
 
       // Set public integration details

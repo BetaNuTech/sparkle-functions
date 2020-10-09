@@ -27,6 +27,7 @@ describe('Slack | API | POST Auth', () => {
       scope: 'identify,incoming-webhook',
       teamName: 'Slack Team Name',
       team: '2131',
+      defaultChannelName: 'test_channel',
     };
     const slackCode = 'code';
     const redirectUri = '/test';
@@ -47,7 +48,7 @@ describe('Slack | API | POST Auth', () => {
           name: result.teamName,
         },
         incoming_webhook: {
-          channel: '#channel_name',
+          channel: `#${result.defaultChannelName}`,
           channel_id: 'C0HANNELID',
           configuration_url: 'https://orgname.slack.com/services/SERVICEID',
           url: 'https://hooks.slack.com/services/SERVICEID/FAKEID123/NOTHING',
@@ -75,22 +76,27 @@ describe('Slack | API | POST Auth', () => {
       {
         actual: (systemDoc.data() || {}).accessToken || '',
         expected: result.accessToken,
-        msg: 'stored access token in system collection',
+        msg: 'stored access token in system credentials',
       },
       {
         actual: (systemDoc.data() || {}).scope || '',
         expected: result.scope,
-        msg: 'stored slack scope in system collection',
+        msg: 'stored slack scope in system credentials',
       },
       {
         actual: (integrationDoc.data() || {}).team,
         expected: result.team,
-        msg: 'stored slack team id in integration collection',
+        msg: 'stored slack team id in integration details',
       },
       {
         actual: (integrationDoc.data() || {}).teamName,
         expected: result.teamName,
-        msg: 'stored slack team name in integration collection',
+        msg: 'stored slack team name in integration details',
+      },
+      {
+        actual: (integrationDoc.data() || {}).defaultChannelName,
+        expected: result.defaultChannelName,
+        msg: 'stored users channel selection in integration details',
       },
     ].forEach(({ actual, expected, msg }) => {
       expect(actual).to.equal(expected, msg);
