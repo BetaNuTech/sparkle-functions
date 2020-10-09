@@ -33,8 +33,6 @@ module.exports = function createDeleteSlackAppHandler(fs) {
       return res.status(200).send({ challenge: body.challenge });
     }
 
-    console.log('>>> event type', eventType);
-    console.log('>>> team id', teamId);
     if (eventType === 'app_uninstalled' && teamId) {
       let wasAuthorized = false;
       try {
