@@ -63,6 +63,7 @@ module.exports = function createPostAuth(db) {
         `${PREFIX} slack app authentication success for Slack team name: "${slackResponse
           .team.name || 'Unknown'}" by user: "${user.id}"`
       );
+      console.log('>>> Slack Response', slackResponse);
     } catch (err) {
       return send500Error(
         err,
@@ -108,14 +109,26 @@ module.exports = function createPostAuth(db) {
 
     let integrationDetails = null;
     try {
+      const integrationUpdate = {
+        grantedBy: user.id,
+        team: slackResponse.team.id,
+        teamName: slackResponse.team.name,
+      };
+
+      // Add user's channel selected
+      // during OAuth process
+      if (
+        slackResponse.incoming_webhook &&
+        typeof slackResponse.incoming_webhook.channel === 'string'
+      ) {
+        integrationUpdate.defaultChannelName =
+          slackResponse.incoming_webhook.channel;
+      }
+
       // Set public integration details
       integrationDetails = await integrationsModel.firestoreSetSlack(
         db,
-        {
-          grantedBy: user.id,
-          team: slackResponse.team.id,
-          teamName: slackResponse.team.name,
-        },
+        integrationUpdate,
         batch
       );
     } catch (err) {
