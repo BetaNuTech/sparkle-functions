@@ -151,42 +151,6 @@ module.exports = {
   },
 
   /**
-   * List channels in Slack team
-   * @param   {String} accessToken
-   * @returns {Promise} - resolves {Object} response body
-   */
-  async listChannels(accessToken) {
-    assert(accessToken && typeof accessToken === 'string', 'has access token');
-
-    let response = null;
-    try {
-      response = await got(
-        `https://slack.com/api/conversations.list?token=${accessToken}&type=public_channel,private_channel&exclude_archived=true`,
-        {
-          headers: {
-            'content-type': 'application/x-www-form-urlencoded',
-          },
-          responseType: 'json',
-          method: 'GET',
-          json: true,
-        }
-      );
-
-      if (!response || !response.body || !response.body.ok) {
-        let respErrMsg = response && response.body && response.body.error;
-        if (response.body.needed) respErrMsg += ` ${response.body.needed}`;
-        throw Error(
-          `Slack API Request failed: ${respErrMsg || 'Unknown Error'}`
-        );
-      }
-    } catch (err) {
-      throw Error(`${PREFIX} listChannels: ${err}`); // wrap error
-    }
-
-    return response.body;
-  },
-
-  /**
    * Request to join a Slack channel
    * @param   {String} accessToken
    * @param   {String} channelName

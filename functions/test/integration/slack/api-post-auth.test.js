@@ -144,6 +144,7 @@ describe('Slack | API | POST Slack Authorization', () => {
       grantedBy: '123',
       team: '8000',
       teamName: 'test',
+      defaultChannelName: 'test_chan',
     };
     const expected = {
       data: {
