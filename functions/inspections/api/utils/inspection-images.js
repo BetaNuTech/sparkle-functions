@@ -20,14 +20,6 @@ module.exports = {
     const imagePhotoUrls = []
       .concat(
         ...items.map(item => {
-          if (item.photosData && keys(item.photosData).length) {
-            // Create list of item's upload(s) configs
-            return keys(item.photosData).map(id => ({
-              id,
-              itemId: item.id,
-              url: item.photosData[id].downloadURL,
-            }));
-          }
           // Create signature image configs
           if (item.signatureDownloadURL) {
             return [
@@ -37,6 +29,15 @@ module.exports = {
                 url: item.signatureDownloadURL,
               },
             ];
+          }
+
+          if (item.photosData && keys(item.photosData).length) {
+            // Create list of item's upload(s) configs
+            return keys(item.photosData).map(id => ({
+              id,
+              itemId: item.id,
+              url: item.photosData[id].downloadURL,
+            }));
           }
 
           return [{}];
