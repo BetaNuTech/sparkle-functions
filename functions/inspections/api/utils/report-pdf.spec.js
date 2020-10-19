@@ -391,6 +391,34 @@ describe('Inspections | API | Utils | Report PDF', function() {
     expect(actual).to.equal(expected);
   });
 
+  it('does not add attachment images for signature items', () => {
+    const expected = 'sig-data';
+    const itemId = uuid();
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const attachmentId = uuid();
+    const inspection = mocking.createInspection({ property: propertyId });
+    const property = mocking.createProperty({ inspections: [inspectionId] });
+    const item = mocking.createCompletedMainInputItem('signature', false, {
+      itemType: 'signature',
+      photosData: {
+        [attachmentId]: { downloadURL: 'not-expected' },
+      },
+    });
+    item.id = itemId;
+    inspection.template.items[itemId] = item;
+
+    const instance = createReportPdf(inspection, property, {
+      [itemId]: {
+        signatureData: { datauri: expected },
+        photosData: { [attachmentId]: 'not-expected' },
+      },
+    });
+    const [result] = instance.getContentItemPhotos(item);
+    const actual = Boolean(result);
+    expect(actual).to.equal(false);
+  });
+
   it('adds any caption after the attachment image', () => {
     const expected = 'test caption';
     const itemId = uuid();
