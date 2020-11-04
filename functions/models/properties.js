@@ -21,6 +21,15 @@ const propertyMetaUpdates = pipe([
 
 module.exports = modelSetup({
   /**
+   * Lookup all properties
+   * @param  {firebaseAdmin.firestore} fs
+   * @return {Promise} - resolves {DocumentSnapshot[]}
+   */
+  findAll(fs) {
+    return fs.collection(PROPERTY_COLLECTION).get();
+  },
+
+  /**
    * Batch remove all firestore property
    * relationships to a deleted team
    * @param  {admin.firestore} fs

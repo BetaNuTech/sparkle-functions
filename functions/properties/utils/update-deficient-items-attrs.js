@@ -5,14 +5,16 @@ const REQUIRED_ACTIONS_VALUES = deficientItems.requiredActionStates;
 const FOLLOW_UP_ACTION_VALUES = deficientItems.followUpActionStates;
 const EXCLUDED_DI_COUNTER_VALUES =
   deficientItems.excludedPropertyNumOfDeficientItemsStates;
+const OVERDUE_DI_COUNTER_VALUES = deficientItems.overdueCounterStates;
+const REQUIREMENT_COUNTER_VALUES = deficientItems.requirementCounterStates;
 
 /**
  * Configure update for a property's
  * inspection's deficient items attrs
  *
  * NOTE: property's deficient items are first calculated from
- * inspections to mitigate race conditions with `/propertyInspectionDeficientItems`,
- * which is also used if available
+ * inspections to mitigate race conditions with existing deficiencies,
+ * which are used when available
  *
  * @param  {Object[]} inspections
  * @param  {Object[]} deficientItems
@@ -50,6 +52,16 @@ module.exports = function updateDeficientItemsAttrs(
   // Count all deficient items where state requires follow up
   config.updates.numOfFollowUpActionsForDeficientItems = deficientItemsLatest.filter(
     ({ state }) => FOLLOW_UP_ACTION_VALUES.includes(state)
+  ).length;
+
+  // Count all deficiencies that are overdue
+  config.updates.numOfOverdueDeficientItems = deficientItemsLatest.filter(
+    ({ state }) => OVERDUE_DI_COUNTER_VALUES.includes(state)
+  ).length;
+
+  // Count all deficiencies that are requirements
+  config.updates.numOfRequirementsForDeficientItems = deficientItemsLatest.filter(
+    ({ state }) => REQUIREMENT_COUNTER_VALUES.includes(state)
   ).length;
 
   return config;
