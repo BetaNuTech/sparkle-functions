@@ -60,6 +60,7 @@ module.exports = {
   requiredActionStates: ['requires-action', 'go-back', 'overdue'],
   followUpActionStates: ['completed', 'incomplete'],
   overdueEligibleStates: ['pending', 'requires-progress-update'],
+  overdueCounterStates: ['overdue'],
   excludedPropertyNumOfDeficientItemsStates: ['closed'],
   allStates: [
     'requires-action',
