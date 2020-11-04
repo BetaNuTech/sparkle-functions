@@ -61,6 +61,7 @@ module.exports = {
   followUpActionStates: ['completed', 'incomplete'],
   overdueEligibleStates: ['pending', 'requires-progress-update'],
   overdueCounterStates: ['overdue'],
+  requirementCounterStates: ['requires-action', 'requires-progress-update'],
   excludedPropertyNumOfDeficientItemsStates: ['closed'],
   allStates: [
     'requires-action',
