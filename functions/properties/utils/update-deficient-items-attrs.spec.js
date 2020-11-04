@@ -9,6 +9,7 @@ const FOLLOW_UP_ACTION_VALUES = deficientItems.followUpActionStates;
 const EXCLUDED_DI_COUNTER_VALUES =
   deficientItems.excludedPropertyNumOfDeficientItemsStates;
 const OVERDUE_DI_COUNTER_VALUES = deficientItems.overdueCounterStates;
+const REQUIREMENT_COUNTER_VALUES = deficientItems.requirementCounterStates;
 
 describe('Properties | Utils | Update Deficient Items Attrs', () => {
   it('counts the total number of inspections deficient items', () => {
@@ -186,6 +187,40 @@ describe('Properties | Utils | Update Deficient Items Attrs', () => {
         msg: `found 2 & ignored ${
           nonOverdueStates.length
         } for 2 inspections with ${nonOverdueStates.length + 2} DI`,
+      },
+    ].forEach(({ actual, expected, msg }) => {
+      expect(actual).equal(expected, msg);
+    });
+  });
+
+  it('counts the total number of deficient items that denote a requirment', () => {
+    const reqStates = REQUIREMENT_COUNTER_VALUES;
+    const nonReqStates = ALL_STATES.filter(
+      s => !REQUIREMENT_COUNTER_VALUES.includes(s)
+    );
+
+    [
+      {
+        actual: update(createConfig([reqStates[0], nonReqStates[0]])).updates
+          .numOfRequirementsForDeficientItems,
+        expected: 1,
+        msg: 'found 1 & ignored 1 for 1 inspection with 2 DI',
+      },
+      {
+        actual: update(
+          createConfig([reqStates[0], reqStates[0], nonReqStates[0]])
+        ).updates.numOfRequirementsForDeficientItems,
+        expected: 2,
+        msg: 'found 2 & ignored 1 for 1 inspection with 3 DI',
+      },
+      {
+        actual: update(
+          createConfig([reqStates[0]], [...nonReqStates, reqStates[0]])
+        ).updates.numOfRequirementsForDeficientItems,
+        expected: 2,
+        msg: `found 2 & ignored ${
+          nonReqStates.length
+        } for 2 inspections with ${nonReqStates.length + 2} DI`,
       },
     ].forEach(({ actual, expected, msg }) => {
       expect(actual).equal(expected, msg);
