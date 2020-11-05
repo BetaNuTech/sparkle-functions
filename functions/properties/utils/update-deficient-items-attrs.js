@@ -6,7 +6,6 @@ const FOLLOW_UP_ACTION_VALUES = deficientItems.followUpActionStates;
 const EXCLUDED_DI_COUNTER_VALUES =
   deficientItems.excludedPropertyNumOfDeficientItemsStates;
 const OVERDUE_DI_COUNTER_VALUES = deficientItems.overdueCounterStates;
-const REQUIREMENT_COUNTER_VALUES = deficientItems.requirementCounterStates;
 
 /**
  * Configure update for a property's
@@ -57,11 +56,6 @@ module.exports = function updateDeficientItemsAttrs(
   // Count all deficiencies that are overdue
   config.updates.numOfOverdueDeficientItems = deficientItemsLatest.filter(
     ({ state }) => OVERDUE_DI_COUNTER_VALUES.includes(state)
-  ).length;
-
-  // Count all deficiencies that are requirements
-  config.updates.numOfRequirementsForDeficientItems = deficientItemsLatest.filter(
-    ({ state }) => REQUIREMENT_COUNTER_VALUES.includes(state)
   ).length;
 
   return config;
