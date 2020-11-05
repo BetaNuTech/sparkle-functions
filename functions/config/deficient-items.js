@@ -57,11 +57,15 @@ module.exports = {
   collection: 'deficiencies',
   initialState: 'requires-action',
   defaultTimezone: 'America/New_York',
-  requiredActionStates: ['requires-action', 'go-back', 'overdue'],
+  requiredActionStates: [
+    'requires-action',
+    'go-back',
+    'overdue',
+    'requires-progress-update',
+  ],
   followUpActionStates: ['completed', 'incomplete'],
   overdueEligibleStates: ['pending', 'requires-progress-update'],
   overdueCounterStates: ['overdue'],
-  requirementCounterStates: ['requires-action', 'requires-progress-update'],
   excludedPropertyNumOfDeficientItemsStates: ['closed'],
   allStates: [
     'requires-action',

@@ -10,8 +10,6 @@ const { fs, test, pubsub, cloudFunctions } = require('../../setup');
 
 const REQUIRED_ACTIONS_VALUES = config.deficientItems.requiredActionStates;
 const FOLLOW_UP_ACTION_VALUES = config.deficientItems.followUpActionStates;
-const REQUIREMENT_COUNTER_VALUES =
-  config.deficientItems.requirementCounterStates;
 
 describe('Deficiency | Property Meta Sync', () => {
   afterEach(() => cleanDb(null, fs));
@@ -265,59 +263,6 @@ describe('Deficiency | Property Meta Sync', () => {
       expected,
       "updated property's number of follow up actions counter"
     );
-  });
-
-  it('should update property requirement counter when an deficiency is required', async () => {
-    const expected = 1;
-    const propertyId = uuid();
-    const inspectionId = uuid();
-    const deficiencyId = uuid();
-    const itemId = uuid();
-    const inspData = mocking.createInspection({
-      deficienciesExist: true,
-      inspectionCompleted: true,
-      property: propertyId,
-      template: {
-        trackDeficientItems: true,
-        items: {
-          // Create single deficient item on inspection
-          [itemId]: mocking.createCompletedMainInputItem(
-            'twoactions_checkmarkx',
-            true
-          ),
-        },
-      },
-    });
-    const propertyData = { name: 'test' };
-    const beforeData = {
-      state: 'incomplete', // no required action
-      inspection: inspectionId,
-      item: itemId,
-      property: propertyId,
-    };
-    const afterData = {
-      state: REQUIREMENT_COUNTER_VALUES[0], // NOT requiring action
-    };
-
-    // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
-    await inspectionsModel.firestoreCreateRecord(fs, inspectionId, inspData); // Add inspection
-    await diModel.firestoreCreateRecord(fs, deficiencyId, beforeData);
-    const beforeSnap = await diModel.firestoreFindRecord(fs, deficiencyId); // Create before
-    await diModel.firestoreUpdateRecord(fs, deficiencyId, afterData);
-    const afterSnap = await diModel.firestoreFindRecord(fs, deficiencyId); // Create after
-
-    // Execute
-    const changeSnap = test.makeChange(beforeSnap, afterSnap);
-    const wrapped = test.wrap(cloudFunctions.deficientItemsPropertyMetaSyncV2);
-    await wrapped(changeSnap, { params: { deficiencyId } });
-
-    // Test result
-    const result = await propertiesModel.firestoreFindRecord(fs, propertyId);
-    const actual = result.data().numOfRequirementsForDeficientItems;
-
-    // Assertions
-    expect(actual).to.equal(expected);
   });
 
   it("should decrement property's total DI counter when they become closed", async () => {
