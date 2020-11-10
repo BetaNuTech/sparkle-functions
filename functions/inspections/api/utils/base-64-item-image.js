@@ -10,7 +10,7 @@ const assert = require('assert');
  */
 module.exports = function base64Image(
   imgUrl,
-  scale = [200, 200],
+  scale = [500, 500],
   jimpFormat = Jimp.MIME_JPEG
 ) {
   assert(imgUrl && typeof imgUrl === 'string', 'has image url');
