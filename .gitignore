@@ -23,6 +23,7 @@ coverage
 # Test coverage
 .nyc_output
 functions/report.pdf
+functions/tmp
 
 # Grunt intermediate storage (http://gruntjs.com/creating-plugins#storing-task-files)
 .grunt

@@ -516,6 +516,7 @@ const prototype = {
               image: attachment.datauri,
               width: attachment.width,
               height: attachment.height,
+              fit: [200, 200],
               margin: settings.images.itemAttachment.margin,
             },
           ];
