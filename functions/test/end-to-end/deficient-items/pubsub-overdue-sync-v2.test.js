@@ -86,8 +86,10 @@ describe('Deficiency |  Pubsub | Overdue Sync V2', () => {
     const deficienciesSnap = await deficiencyModel.firestoreQuery(fs, {
       property: ['==', propertyId],
     });
+    const propertyData = propertySnap.data() || {};
     const requiredActions =
-      (propertySnap.data() || {}).numOfRequiredActionsForDeficientItems || 0;
+      propertyData.numOfRequiredActionsForDeficientItems || 0;
+    const overdueCounter = propertyData.numOfOverdueDeficientItems || 0;
     const deficiencyStates = deficienciesSnap.docs.map(
       doc => (doc.data() || {}).state || ''
     );
@@ -105,7 +107,13 @@ describe('Deficiency |  Pubsub | Overdue Sync V2', () => {
         actual: requiredActions,
         expected: OVERDUE_ELIGIBLE_STATES.length,
         msg:
-          'update property meta data to count all required action deficiencies',
+          'updates property meta data to count all required action deficiencies',
+      },
+      {
+        actual: overdueCounter,
+        expected: OVERDUE_ELIGIBLE_STATES.length,
+        msg:
+          'updates property meta data with the latest overdue deficiency count',
       },
       {
         actual: deficiencyStates.join(','),

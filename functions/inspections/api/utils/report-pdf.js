@@ -475,7 +475,15 @@ const prototype = {
     assert(item && typeof item === 'object', 'has inspection item');
 
     const itemId = item.id;
+    const type = `${item.mainInputType || item.itemType}`.toLowerCase();
     const photoCaptionMargin = settings.fonts.photoCaption.margin;
+
+    // Ignore signature items
+    // with invalid photo data
+    if (type === 'signature') {
+      return [];
+    }
+
     const photos = Object.keys(item.photosData || {})
       .map(timestamp => {
         const photo = Object.assign({}, item.photosData[timestamp]);
@@ -508,6 +516,7 @@ const prototype = {
               image: attachment.datauri,
               width: attachment.width,
               height: attachment.height,
+              fit: [200, 200],
               margin: settings.images.itemAttachment.margin,
             },
           ];
