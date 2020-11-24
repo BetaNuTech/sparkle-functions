@@ -187,6 +187,8 @@ describe('Inspections | API | GET Latest Completed', () => {
       id: propertyId,
       lastInspectionDate: inspection.creationDate,
       lastInspectionScore: inspection.score,
+      numOfDeficientItems: 1,
+      numOfOverdueDeficientItems: 1,
     });
     const propertySnap = wrapSnapshot(property);
     const expected = {
@@ -201,6 +203,9 @@ describe('Inspections | API | GET Latest Completed', () => {
             lastInspectionScore: property.lastInspectionScore,
             numOfInspections: property.numOfInspections,
             numOfDeficientItems: property.numOfDeficientItems,
+            numOfOverdueDeficientItems: property.numOfOverdueDeficientItems,
+            numOfRequiredActionsForDeficientItems:
+              property.numOfRequiredActionsForDeficientItems,
             numOfFollowUpActionsForDeficientItems:
               property.numOfFollowUpActionsForDeficientItems,
           },
@@ -295,6 +300,8 @@ function createProperty(propConfig = {}) {
     lastInspectionScore: 0,
     numOfInspections: 0,
     numOfDeficientItems: 0,
+    numOfOverdueDeficientItems: 0,
+    numOfRequiredActionsForDeficientItems: 0,
     numOfFollowUpActionsForDeficientItems: 0,
     ...propConfig,
   };
