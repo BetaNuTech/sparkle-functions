@@ -198,6 +198,9 @@ function createJsonApiProperty(data) {
       lastInspectionScore: data.lastInspectionScore || 0,
       numOfInspections: data.numOfInspections || 0,
       numOfDeficientItems: data.numOfDeficientItems || 0,
+      numOfOverdueDeficientItems: data.numOfOverdueDeficientItems || 0,
+      numOfRequiredActionsForDeficientItems:
+        data.numOfRequiredActionsForDeficientItems || 0,
       numOfFollowUpActionsForDeficientItems:
         data.numOfFollowUpActionsForDeficientItems || 0,
     },
