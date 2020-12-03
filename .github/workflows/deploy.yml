@@ -59,6 +59,6 @@ jobs:
           FIREBASE_TEST_DB_URL: ${{ secrets.PRODUCTION_FIREBASE_TEST_DB_URL }}
           FIREBASE_STORAGE_BUCKET: ${{ secrets.PRODUCTION_FIREBASE_STORAGE_BUCKET }}
           COBALT_DOMAIN: ${{ secrets.PRODUCTION_COBALT_DOMAIN }}
-          CLIENT_DOMAIN: https://sapphire-standard.com
+          CLIENT_DOMAIN: https://bluestone-prop.sapphire-standard.com
           GLOBAL_API_TOKEN: ${{ secrets.PRODUCTION_GLOBAL_API_TOKEN }}
         run: ./scripts/deploy-functions.sh production
