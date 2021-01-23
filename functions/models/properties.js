@@ -26,6 +26,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {DocumentSnapshot[]}
    */
   findAll(fs) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
     return fs.collection(PROPERTY_COLLECTION).get();
   },
 

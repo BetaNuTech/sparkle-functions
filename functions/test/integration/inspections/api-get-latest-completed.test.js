@@ -4,6 +4,7 @@ const { expect } = require('chai');
 const sinon = require('sinon');
 const config = require('../../../config');
 const uuid = require('../../../test-helpers/uuid');
+const stubs = require('../../../test-helpers/stubs');
 const propertiesModel = require('../../../models/properties');
 const inspectionsModel = require('../../../models/inspections');
 const getLatest = require('../../../inspections/api/get-latest-completed');
@@ -30,7 +31,7 @@ describe('Inspections | API | GET Latest Completed', () => {
   });
 
   it('rejects request with bad property code', done => {
-    const propertiesSnap = wrapSnapshot([]); // empty
+    const propertiesSnap = stubs.wrapSnapshot([]); // empty
 
     sinon.stub(propertiesModel, 'firestoreQuery').resolves(propertiesSnap);
 
@@ -50,7 +51,7 @@ describe('Inspections | API | GET Latest Completed', () => {
 
   it('applies custom before value to inspection query', done => {
     const expected = Math.round(Date.now() / 1000) - 10000;
-    const inspectionsSnap = wrapSnapshot([]); // empty
+    const inspectionsSnap = stubs.wrapSnapshot([]); // empty
     let actual = 0;
 
     // Stup requests
@@ -75,7 +76,7 @@ describe('Inspections | API | GET Latest Completed', () => {
 
   it('applies template name param to inspection query', done => {
     const expected = 'test_name';
-    const inspectionsSnap = wrapSnapshot([]); // empty
+    const inspectionsSnap = stubs.wrapSnapshot([]); // empty
     let actual = '';
 
     // Stup requests
@@ -102,8 +103,8 @@ describe('Inspections | API | GET Latest Completed', () => {
     const expected = uuid();
     const propCode = 'propcode';
     const property = createProperty({ id: expected, code: propCode });
-    const propertiesSnap = wrapSnapshot([property]);
-    const inspectionsSnap = wrapSnapshot([]); // empty
+    const propertiesSnap = stubs.wrapSnapshot([property]);
+    const inspectionsSnap = stubs.wrapSnapshot([]); // empty
     let actual = '';
 
     // Stup requests
@@ -130,7 +131,7 @@ describe('Inspections | API | GET Latest Completed', () => {
   it('returns latest completed inspection as a JSON-API document', done => {
     const latest = TODAY_UNIX;
     const property = createProperty();
-    const propertySnap = wrapSnapshot(property);
+    const propertySnap = stubs.wrapSnapshot(property);
     const inspection = createInspection({
       id: 'expected',
       creationDate: latest - 1,
@@ -138,7 +139,7 @@ describe('Inspections | API | GET Latest Completed', () => {
       score: 99,
       property: property.id,
     });
-    const inspectionsSnap = wrapSnapshot([inspection]);
+    const inspectionsSnap = stubs.wrapSnapshot([inspection]);
     const expected = {
       data: {
         id: 'expected',
@@ -182,7 +183,7 @@ describe('Inspections | API | GET Latest Completed', () => {
       score: 99,
       property: propertyId,
     });
-    const inspectionsSnap = wrapSnapshot([inspection]);
+    const inspectionsSnap = stubs.wrapSnapshot([inspection]);
     const property = createProperty({
       id: propertyId,
       lastInspectionDate: inspection.creationDate,
@@ -190,7 +191,7 @@ describe('Inspections | API | GET Latest Completed', () => {
       numOfDeficientItems: 1,
       numOfOverdueDeficientItems: 1,
     });
-    const propertySnap = wrapSnapshot(property);
+    const propertySnap = stubs.wrapSnapshot(property);
     const expected = {
       included: [
         {
@@ -235,10 +236,10 @@ describe('Inspections | API | GET Latest Completed', () => {
   it('does not re-request a property that has been previously discovered', done => {
     const expected = false;
     const inspection = createInspection();
-    const inspectionsSnap = wrapSnapshot([inspection]);
+    const inspectionsSnap = stubs.wrapSnapshot([inspection]);
     const property = createProperty();
-    const propertySnap = wrapSnapshot(property);
-    const propertiesQuerySnap = wrapSnapshot([property]);
+    const propertySnap = stubs.wrapSnapshot(property);
+    const propertiesQuerySnap = stubs.wrapSnapshot([property]);
 
     // Stup requests
     sinon.stub(propertiesModel, 'firestoreQuery').resolves(propertiesQuerySnap);
@@ -267,28 +268,6 @@ function createApp() {
   const app = express();
   app.get('/t', getLatest({ collection: () => {} }));
   return app;
-}
-
-function wrapSnapshot(payload = {}, id) {
-  const forEach = fn => {
-    return Object.keys(payload).forEach(plId =>
-      fn(wrapSnapshot(payload[plId], plId))
-    );
-  };
-
-  const result = {};
-
-  if (Array.isArray(payload)) {
-    result.size = payload.length;
-    result.docs = payload.map(pl => wrapSnapshot(pl, pl.id));
-    result.forEach = forEach;
-  } else {
-    result.id = id || payload.id || uuid();
-    result.exists = Boolean(payload);
-    result.data = () => payload;
-  }
-
-  return result;
 }
 
 function createProperty(propConfig = {}) {
