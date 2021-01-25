@@ -10,7 +10,7 @@ const pipe = require('../../utils/pipe');
  * @param  {Number?} createdAt
  * @param  {String?} progressNote
  * @param  {Object?} completedPhoto
- * @return {Object} - Deficient Item updates
+ * @return {Object?} - Deficient Item updates
  */
 module.exports = function updateDeficientItem(
   deficientItem,
@@ -18,7 +18,7 @@ module.exports = function updateDeficientItem(
   authorID = '',
   createdAt = Math.round(Date.now() / 1000),
   progressNote = '',
-  completedPhoto
+  completedPhoto = null
 ) {
   assert(
     deficientItem && typeof deficientItem === 'object',
@@ -29,6 +29,7 @@ module.exports = function updateDeficientItem(
   return pipe(
     applyGoBackState,
     setPendingState,
+    setDeferredState,
     setWillRequireProgressNote,
     setIncompleteState,
     setCurrentDueDateDay,
@@ -65,7 +66,7 @@ module.exports = function updateDeficientItem(
 function applyGoBackState(config) {
   const { updates, changes } = config;
 
-  if (changes.state && changes.state[1] === 'go-back') {
+  if (changes.state === 'go-back') {
     updates.currentPlanToFix = null;
     updates.currentReasonIncomplete = null;
     updates.currentDueDate = null;
@@ -93,7 +94,7 @@ function applyGoBackState(config) {
 function setPendingState(config) {
   const { updates, deficientItem, changes, progressNote } = config;
 
-  // Return early if state updated
+  // Return early if state already updated
   if (changes.state || updates.state) {
     return config;
   }
@@ -102,11 +103,13 @@ function setPendingState(config) {
   const currentState = deficientItem.state;
 
   if (currentState === 'requires-action' || currentState === 'go-back') {
-    const {
-      currentPlanToFix,
-      currentResponsibilityGroup,
-      currentDueDate,
-    } = deficientItem;
+    const currentPlanToFix =
+      deficientItem.currentPlanToFix || changes.currentPlanToFix;
+    const currentResponsibilityGroup =
+      deficientItem.currentResponsibilityGroup ||
+      changes.currentResponsibilityGroup;
+    const currentDueDate =
+      deficientItem.currentDueDate || changes.currentDueDate;
 
     if (currentPlanToFix && currentResponsibilityGroup && currentDueDate) {
       updates.state = 'pending';
@@ -119,7 +122,49 @@ function setPendingState(config) {
 
   // Add change
   if (isPending) {
-    changes.state = [currentState, 'pending'];
+    changes.state = 'pending';
+  }
+
+  return config;
+}
+
+/**
+ * Progress to deferred state
+ * when provided a valid deferred date
+ * @param  {Object} updates
+ * @param  {Object} deficientItem
+ * @param  {Object} changes
+ * @return {Object} - config
+ */
+function setDeferredState(config) {
+  const { updates, deficientItem, changes } = config;
+
+  // Return early if state already updated
+  if (updates.state) {
+    return config;
+  }
+
+  const isRequestingDefer = changes.state === 'deferred';
+  const isValidCurrentState = [
+    'requires-action',
+    'go-back',
+    'pending',
+  ].includes(deficientItem.state);
+  const deferredDate =
+    changes.currentDeferredDate || deficientItem.currentDeferredDate || 0;
+
+  // 23 hours provides buffer for user to
+  // send an update w/ minimum date of 24
+  // hours from now
+  const twentyThreeHoursFromNow = Math.round(Date.now() / 1000) + 23 * 60 * 60;
+  const hasValidDeferredDate = Boolean(
+    deferredDate &&
+      typeof deferredDate === 'number' &&
+      deferredDate > twentyThreeHoursFromNow
+  );
+
+  if (isRequestingDefer && isValidCurrentState && hasValidDeferredDate) {
+    updates.state = 'deferred';
   }
 
   return config;
@@ -138,8 +183,7 @@ function setPendingState(config) {
 function setWillRequireProgressNote(config) {
   const { updates, deficientItem, changes, progressNote } = config;
   const currentState = deficientItem.state;
-  const isProgressingToPending =
-    changes && changes.state && changes.state[1] === 'pending';
+  const isProgressingToPending = changes && changes.state === 'pending';
 
   if (
     (isProgressingToPending && currentState === 'requires-action') ||
@@ -151,10 +195,8 @@ function setWillRequireProgressNote(config) {
     // Lookup any relevant current due date
     // prioritizing current due date change
     // then reverting to DI's current due date
-    if (changes.currentDueDate && changes.currentDueDate[1] instanceof Date) {
-      currentDueDate = changes.currentDueDate[1];
-    } else if (deficientItem.currentDueDate instanceof Date) {
-      currentDueDate = deficientItem.currentDueDate;
+    if (changes.currentDueDate && typeof changes.currentDueDate === 'number') {
+      currentDueDate = new Date(changes.currentDueDate * 1000);
     } else if (
       deficientItem.currentDueDate &&
       typeof deficientItem.currentDueDate === 'number'
@@ -210,7 +252,7 @@ function setIncompleteState(config) {
 
   if (currentState === 'overdue' && hasCurrentReasonIncomplete) {
     updates.state = 'incomplete';
-    changes.state = [currentState, 'incomplete'];
+    changes.state = 'incomplete';
   }
 
   return config;
@@ -225,12 +267,13 @@ function setIncompleteState(config) {
  */
 function setCurrentDueDateDay(config) {
   const { updates, changes } = config;
-  const updateDate = changes.currentDueDate ? changes.currentDueDate[1] : null;
+  const updateDate = changes.currentDueDate || 0;
 
-  if (updateDate && updateDate instanceof Date) {
-    const year = updateDate.getFullYear();
-    const month = updateDate.getMonth() + 1;
-    const day = updateDate.getDate();
+  if (updateDate && typeof updateDate === 'number') {
+    const date = new Date(updateDate * 1000);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
     updates.currentDueDateDay = `${month < 10 ? '0' : ''}${month}/${
       day < 10 ? '0' : ''
     }${day}/${year}`;
@@ -267,16 +310,16 @@ function setCurrentStartDate(config) {
  * @return {Object} - config
  */
 function appendStateHistory(config) {
-  const { updates, changes, authorID, createdAt } = config;
-  const update = changes.state ? changes.state[1] : '';
+  const { updates, deficientItem, changes, authorID, createdAt } = config;
+  const newState = changes.state || '';
 
-  if (update && update !== changes.state[0]) {
+  if (newState && newState !== deficientItem.state) {
     const id = uuid();
 
     updates.stateHistory = Object.create(null);
     updates.stateHistory[id] = {
       createdAt,
-      state: update,
+      state: newState,
     };
 
     // Add optional user
@@ -299,26 +342,31 @@ function appendStateHistory(config) {
  */
 function appendDueDate(config) {
   const { updates, deficientItem, changes, authorID, createdAt } = config;
-  const update = changes.currentDueDate ? changes.currentDueDate[1] : 0;
-  const updateDay = changes.currentDueDateDay
-    ? changes.currentDueDateDay[1]
-    : updates.currentDueDateDay || '';
+  const dueTime = changes.currentDueDate || 0;
+  const dueDay = changes.currentDueDateDay || updates.currentDueDateDay || '';
 
-  if (update && update !== changes.currentDueDate[0]) {
+  if (
+    dueTime &&
+    typeof dueTime === 'number' &&
+    dueTime !== deficientItem.currentDueDate
+  ) {
     const id = uuid();
+    const startDate = findFirstUnix(
+      updates.currentStartDate,
+      deficientItem.currentStartDate
+    );
 
     updates.dueDates = Object.create(null);
-    updates.dueDates[id] = {
-      createdAt,
-      dueDate: toUnixTimestamp(update),
-      startDate: toUnixTimestamp(
-        updates.currentStartDate || deficientItem.currentStartDate
-      ),
-    };
+    updates.dueDates[id] = { createdAt, dueDate: dueTime };
+
+    // Append current start date
+    if (startDate) {
+      updates.dueDates[id].startDate = startDate;
+    }
 
     // Add optional due date day
-    if (updateDay) {
-      updates.dueDates[id].dueDateDay = updateDay;
+    if (dueDay) {
+      updates.dueDates[id].dueDateDay = dueDay;
     }
 
     // Add optional user
@@ -339,14 +387,13 @@ function appendDueDate(config) {
  */
 function setCurrentDeferredDateDay(config) {
   const { updates, changes } = config;
-  const updateDate = changes.currentDeferredDate
-    ? changes.currentDeferredDate[1]
-    : null;
+  const deferDate = changes.currentDeferredDate || 0;
 
-  if (updateDate && updateDate instanceof Date) {
-    const year = updateDate.getFullYear();
-    const month = updateDate.getMonth() + 1;
-    const day = updateDate.getDate();
+  if (deferDate && typeof deferDate === 'number') {
+    const date = new Date(deferDate * 1000);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
     updates.currentDeferredDateDay = `${month < 10 ? '0' : ''}${month}/${
       day < 10 ? '0' : ''
     }${day}/${year}`;
@@ -365,26 +412,27 @@ function setCurrentDeferredDateDay(config) {
  * @return {Object} - config
  */
 function appendDeferredDate(config) {
-  const { updates, changes, authorID, createdAt } = config;
-  const update = changes.currentDeferredDate
-    ? changes.currentDeferredDate[1]
-    : 0;
-  const updateDay = changes.currentDeferredDateDay
-    ? changes.currentDeferredDateDay[1]
-    : updates.currentDeferredDateDay || '';
+  const { updates, changes, deficientItem, authorID, createdAt } = config;
+  const deferTime = changes.currentDeferredDate || 0;
+  const deferDay =
+    changes.currentDeferredDateDay || updates.currentDeferredDateDay || '';
 
-  if (update && update !== changes.currentDeferredDate[0]) {
+  if (
+    deferTime &&
+    typeof deferTime === 'number' &&
+    deferTime !== deficientItem.currentDeferredDate
+  ) {
     const id = uuid();
 
     updates.deferredDates = Object.create(null);
     updates.deferredDates[id] = {
       createdAt,
-      deferredDate: toUnixTimestamp(update),
+      deferredDate: deferTime,
     };
 
     // Add optional deferred day
-    if (updateDay) {
-      updates.deferredDates[id].deferredDateDay = updateDay;
+    if (deferDay) {
+      updates.deferredDates[id].deferredDateDay = deferDay;
     }
 
     // Add optional user
@@ -407,19 +455,25 @@ function appendDeferredDate(config) {
  */
 function appendPlanToFix(config) {
   const { updates, deficientItem, changes, authorID, createdAt } = config;
-  const update = changes.currentPlanToFix ? changes.currentPlanToFix[1] : '';
+  const planToFix = changes.currentPlanToFix || '';
 
-  if (update && update !== changes.currentPlanToFix[0]) {
+  if (planToFix && planToFix !== deficientItem.currentPlanToFix) {
     const id = uuid();
+    const startDate = findFirstUnix(
+      updates.currentStartDate,
+      deficientItem.currentStartDate
+    );
 
     updates.plansToFix = Object.create(null);
     updates.plansToFix[id] = {
       createdAt,
-      planToFix: update,
-      startDate: toUnixTimestamp(
-        updates.currentStartDate || deficientItem.currentStartDate
-      ),
+      planToFix,
     };
+
+    // Append any start date
+    if (startDate) {
+      updates.plansToFix[id].startDate = startDate;
+    }
 
     // Add optional user
     if (authorID) {
@@ -440,18 +494,19 @@ function appendPlanToFix(config) {
  * @return {Object} - config
  */
 function appendCompleteNowReasons(config) {
-  const { updates, changes, authorID, createdAt } = config;
-  const update = changes.currentCompleteNowReason
-    ? changes.currentCompleteNowReason[1]
-    : '';
+  const { updates, changes, deficientItem, authorID, createdAt } = config;
+  const completeNowReason = changes.currentCompleteNowReason || '';
 
-  if (update && update !== changes.currentCompleteNowReason[0]) {
+  if (
+    completeNowReason &&
+    completeNowReason !== deficientItem.currentCompleteNowReason
+  ) {
     const id = uuid();
 
     updates.completeNowReasons = Object.create(null);
     updates.completeNowReasons[id] = {
       createdAt,
-      completeNowReason: update,
+      completeNowReason,
     };
 
     // Add optional user
@@ -474,21 +529,28 @@ function appendCompleteNowReasons(config) {
  */
 function appendResponsibilityGroup(config) {
   const { updates, deficientItem, changes, authorID, createdAt } = config;
-  const update = changes.currentResponsibilityGroup
-    ? changes.currentResponsibilityGroup[1]
-    : 0;
+  const groupResponsible = changes.currentResponsibilityGroup || '';
 
-  if (update && update !== changes.currentResponsibilityGroup[0]) {
+  if (
+    groupResponsible &&
+    groupResponsible !== deficientItem.currentResponsibilityGroup
+  ) {
     const id = uuid();
+    const startDate = findFirstUnix(
+      updates.currentStartDate,
+      deficientItem.currentStartDate
+    );
 
     updates.responsibilityGroups = Object.create(null);
     updates.responsibilityGroups[id] = {
       createdAt,
-      groupResponsible: update,
-      startDate: toUnixTimestamp(
-        updates.currentStartDate || deficientItem.currentStartDate
-      ),
+      groupResponsible,
     };
+
+    // Append start date
+    if (startDate) {
+      updates.responsibilityGroups[id].startDate = startDate;
+    }
 
     // Add optional user
     if (authorID) {
@@ -510,21 +572,25 @@ function appendResponsibilityGroup(config) {
  */
 function appendReasonIncomplete(config) {
   const { updates, deficientItem, changes, authorID, createdAt } = config;
-  const update = changes.currentReasonIncomplete
-    ? changes.currentReasonIncomplete[1]
-    : 0;
+  const newReason = changes.currentReasonIncomplete || '';
 
-  if (update && update !== changes.currentReasonIncomplete[0]) {
+  if (newReason && newReason !== deficientItem.currentReasonIncomplete) {
     const id = uuid();
+    const startDate = findFirstUnix(
+      updates.currentStartDate,
+      deficientItem.currentStartDate
+    );
 
     updates.reasonsIncomplete = Object.create(null);
     updates.reasonsIncomplete[id] = {
       createdAt,
-      reasonIncomplete: update,
-      startDate: toUnixTimestamp(
-        updates.currentStartDate || deficientItem.currentStartDate
-      ),
+      reasonIncomplete: newReason,
     };
+
+    // Append start date
+    if (startDate) {
+      updates.reasonsIncomplete[id].startDate = startDate;
+    }
 
     // Add optional user
     if (authorID) {
@@ -545,15 +611,16 @@ function appendReasonIncomplete(config) {
  * @return {Object} - config
  */
 function appendStartDate(config) {
-  const { updates, changes } = config;
-  const original = changes.currentStartDate ? changes.currentStartDate[0] : 0;
-  const update = changes.currentStartDate
-    ? changes.currentStartDate[1]
-    : updates.currentStartDate || 0;
+  const { updates, deficientItem, changes } = config;
+  const startDate = changes.currentStartDate || updates.currentStartDate || 0;
 
-  if (update && update !== original) {
+  if (
+    startDate &&
+    typeof startDate === 'number' &&
+    startDate !== deficientItem.currentStartDate
+  ) {
     updates.startDates = Object.create(null);
-    updates.startDates[uuid()] = { startDate: toUnixTimestamp(update) };
+    updates.startDates[uuid()] = { startDate };
   }
 
   return config;
@@ -574,15 +641,21 @@ function appendProgressNote(config) {
 
   if (progressNote) {
     const id = uuid();
+    const startDate = findFirstUnix(
+      updates.currentStartDate,
+      deficientItem.currentStartDate
+    );
 
     updates.progressNotes = Object.create(null);
     updates.progressNotes[id] = {
       createdAt,
       progressNote,
-      startDate: toUnixTimestamp(
-        updates.currentStartDate || deficientItem.currentStartDate
-      ),
     };
+
+    // Append start date
+    if (startDate) {
+      updates.progressNotes[id].startDate = startDate;
+    }
 
     // Add optional user
     if (authorID) {
@@ -634,7 +707,7 @@ function setUpdatedAt(config) {
  */
 function toUnixTimestamp(dateOrTimestamp) {
   if (dateOrTimestamp instanceof Date) {
-    return dateOrTimestamp.getTime() / 1000; // is date
+    return Math.round(dateOrTimestamp.getTime() / 1000); // is date
   }
   if (dateOrTimestamp) {
     return dateOrTimestamp; // already number
@@ -666,4 +739,13 @@ function generateChar(c) {
   const r = (Math.random() * 16) | 0; // eslint-disable-line
   const v = c === 'x' ? r : (r & 0x3) | 0x8; // eslint-disable-line
   return v.toString(16);
+}
+
+/**
+ * Return first timestamp like argument
+ * @param  {Any[]} args
+ * @return {Number}
+ */
+function findFirstUnix(...args) {
+  return args.filter(d => Boolean(d && typeof d === 'number'))[0] || 0;
 }

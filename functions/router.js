@@ -141,7 +141,6 @@ module.exports = (fs, auth, settings) => {
   // Update 1 or more deficiencies
   app.put(
     '/v0/deficiencies',
-    // TODO: Re-enable
     authUser(fs, auth, {
       admin: true,
       corporate: true,
