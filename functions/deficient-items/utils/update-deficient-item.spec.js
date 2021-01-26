@@ -21,9 +21,36 @@ const STORAGE_PATH = [
 ];
 
 describe('Deficiency | Utils | Update Deficient Item', () => {
+  it('it sets go-back state only when specific states are active', function() {
+    [
+      { data: 'completed', expected: true },
+      { data: 'incomplete', expected: true },
+      { data: 'overdue', expected: false },
+      { data: 'requires-action', expected: false },
+      { data: 'go-back', expected: false },
+      { data: 'requires-progress-update', expected: false },
+      { data: 'closed', expected: false },
+      { data: 'deferred', expected: true },
+    ].forEach(({ data, expected }) => {
+      const model = createDeficientItem({
+        state: data,
+        currentDueDate: nowUnix(),
+        currentResponsibilityGroup: 'corporate_manages_vendor',
+        currentPlanToFix: 'fix',
+      });
+      const changes = { state: 'go-back' };
+      const updates = updateDeficientItem(model, changes);
+      const actual = updates.state === 'go-back';
+      expect(actual).to.equal(
+        expected,
+        `state: ${data} was expected to ${expected ? '' : 'not '}equal go-back`
+      );
+    });
+  });
+
   it('it removes "current" DI attributes when set as go-back', function() {
     const model = createDeficientItem({
-      state: 'requires-action',
+      state: 'deferred',
       currentPlanToFix: 'test',
       currentReasonIncomplete: 'test',
       currentDueDateDay: '1/2/20',
@@ -46,7 +73,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       'currentStartDate',
     ].forEach(attr => {
       const actual = updates[attr];
-      expect(actual).to.equal(null, `removed any ${attr}`);
+      expect(actual).to.equal(null, `removed attribute ${attr}`);
     });
   });
 
@@ -111,7 +138,14 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
         currentResponsibilityGroup: 'corporate_manages_vendor',
         currentPlanToFix: 'fix',
       });
-      const updates = updateDeficientItem(model, {}, '', createdAt, 'note');
+      const changes = { state: 'pending' };
+      const updates = updateDeficientItem(
+        model,
+        changes,
+        '',
+        createdAt,
+        'note'
+      );
       const actual = updates.state === 'pending';
       expect(actual).to.equal(
         expected,
@@ -126,6 +160,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     const expected = { state: 'pending', user, createdAt };
     const model = createDeficientItem({ state: 'requires-action' });
     const changes = {
+      state: 'pending',
       currentDueDate: nowUnix(),
       currentResponsibilityGroup: 'corporate_manages_vendor',
       currentPlanToFix: 'fix',
@@ -147,6 +182,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     const createdAt = nowUnix();
     const model = createDeficientItem({ state: 'requires-action' });
     const changes = {
+      state: 'pending',
       currentDueDate: nowUnix(),
       currentResponsibilityGroup: 'corporate_manages_vendor',
       currentPlanToFix: 'fix',
@@ -164,6 +200,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     const createdAt = nowUnix();
     const model = createDeficientItem({ state: 'requires-action' });
     const changes = {
+      state: 'pending',
       currentDueDate: nowUnix(),
       currentResponsibilityGroup: 'corporate_manages_vendor',
       currentPlanToFix: 'fix',
@@ -180,7 +217,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     );
   });
 
-  it('it sets pending state on go-back or requires-action only when model requirements met', function() {
+  it('it sets pending state only when update meets requirements', function() {
     const createdAt = nowUnix();
     [
       { data: [], expected: false },
@@ -204,7 +241,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       },
     ].forEach(({ data, expected }) => {
       const model = createDeficientItem({ state: 'requires-action' });
-      const changes = {};
+      const changes = { state: 'pending' };
       if (data.includes('currentDueDate')) {
         changes.currentDueDate = nowUnix();
       }
@@ -229,7 +266,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it sets when progress note is required for a pending state transition', function() {
+  it('it sets pending state when progress note is required', function() {
     const pendingReadyDI = {
       currentResponsibilityGroup: 'corporate_manages_vendor',
       currentPlanToFix: 'fix',
@@ -316,9 +353,10 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       },
     ].forEach(({ data, expected, msg, progressNote = '' }) => {
       const model = createDeficientItem(data);
+      const changes = { state: 'pending' };
       const updates = updateDeficientItem(
         model,
-        {},
+        changes,
         '',
         createdAt,
         progressNote
@@ -340,7 +378,10 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       { data: 'closed', expected: false },
     ].forEach(({ data, expected }) => {
       const model = createDeficientItem({ state: data });
-      const changes = { currentReasonIncomplete: 'woopsy' };
+      const changes = {
+        state: 'incomplete',
+        currentReasonIncomplete: 'woopsy',
+      };
       const updates = updateDeficientItem(
         model,
         changes,
@@ -365,7 +406,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       { data: ['currentReasonIncomplete'], expected: true },
     ].forEach(({ data, expected }) => {
       const model = createDeficientItem({ state: 'overdue' });
-      const changes = {};
+      const changes = { state: 'incomplete' };
       if (data.includes('currentReasonIncomplete')) {
         changes.currentReasonIncomplete = 'woopsy';
       }
@@ -391,7 +432,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     const createdAt = nowUnix() - 1;
     const expected = { state: 'incomplete', user, createdAt };
     const model = createDeficientItem({ state: 'overdue' });
-    const changes = { currentReasonIncomplete: 'woopsy' };
+    const changes = { state: 'incomplete', currentReasonIncomplete: 'woopsy' };
     delete model.stateHistory; // sanity check
     const updates = updateDeficientItem(
       model,
@@ -419,7 +460,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       {
         expected: { state: 'go-back', createdAt },
         update: 'go-back',
-        data: { state: 'requires-action' },
+        data: { state: 'deferred' },
         args: ['', createdAt],
         message: 'recorded state change',
       },
@@ -430,7 +471,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
           user: userID,
         },
         update: 'go-back',
-        data: { state: 'requires-action' },
+        data: { state: 'deferred' },
         args: [userID, createdAt],
         message: 'added user when present',
       },
