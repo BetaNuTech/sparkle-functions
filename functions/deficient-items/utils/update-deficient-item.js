@@ -27,11 +27,12 @@ module.exports = function updateDeficientItem(
   assert(changes && typeof changes === 'object', 'has changes object');
 
   return pipe(
-    applyGoBackState,
     setPendingState,
     setDeferredState,
-    setWillRequireProgressNote,
     setIncompleteState,
+    setGoBackState,
+    setWillRequireProgressNote,
+    applyGoBackStateSideEffects,
     setCurrentDueDateDay,
     setCurrentStartDate,
     appendStateHistory,
@@ -63,10 +64,11 @@ module.exports = function updateDeficientItem(
  * @param  {Object} changes
  * @return {Object} - config
  */
-function applyGoBackState(config) {
-  const { updates, changes } = config;
+function applyGoBackStateSideEffects(config) {
+  const { updates } = config;
+  const isProgressingToGoBack = updates.state === 'go-back';
 
-  if (changes.state === 'go-back') {
+  if (isProgressingToGoBack) {
     updates.currentPlanToFix = null;
     updates.currentReasonIncomplete = null;
     updates.currentDueDate = null;
@@ -93,16 +95,21 @@ function applyGoBackState(config) {
  */
 function setPendingState(config) {
   const { updates, deficientItem, changes, progressNote } = config;
+  const isRequestingPending = changes.state === 'pending';
 
   // Return early if state already updated
-  if (changes.state || updates.state) {
+  // or pending state change not requested
+  if (updates.state || !isRequestingPending) {
     return config;
   }
 
-  let isPending = false;
   const currentState = deficientItem.state;
+  const isValidCurrentState = ['requires-action', 'go-back'].includes(
+    currentState
+  );
+  const isValidProgNoteState = currentState === 'requires-progress-update';
 
-  if (currentState === 'requires-action' || currentState === 'go-back') {
+  if (isValidCurrentState) {
     const currentPlanToFix =
       deficientItem.currentPlanToFix || changes.currentPlanToFix;
     const currentResponsibilityGroup =
@@ -113,16 +120,9 @@ function setPendingState(config) {
 
     if (currentPlanToFix && currentResponsibilityGroup && currentDueDate) {
       updates.state = 'pending';
-      isPending = true;
     }
-  } else if (currentState === 'requires-progress-update' && progressNote) {
+  } else if (isValidProgNoteState && progressNote) {
     updates.state = 'pending';
-    isPending = true;
-  }
-
-  // Add change
-  if (isPending) {
-    changes.state = 'pending';
   }
 
   return config;
@@ -138,13 +138,14 @@ function setPendingState(config) {
  */
 function setDeferredState(config) {
   const { updates, deficientItem, changes } = config;
+  const isRequestingDefer = changes.state === 'deferred';
 
   // Return early if state already updated
-  if (updates.state) {
+  // or not requesting deferred state change
+  if (updates.state || !isRequestingDefer) {
     return config;
   }
 
-  const isRequestingDefer = changes.state === 'deferred';
   const isValidCurrentState = [
     'requires-action',
     'go-back',
@@ -171,6 +172,35 @@ function setDeferredState(config) {
 }
 
 /**
+ * Set new state to go-back
+ * @param {Object} updates
+ * @param {Object} deficientItem
+ * @param {Object} changes
+ * @return {Object} - config
+ */
+function setGoBackState(config) {
+  const { updates, deficientItem, changes } = config;
+  const isRequestingGoBack = changes.state === 'go-back';
+
+  // Return early if state already updated
+  // or not requesting go back state change
+  if (updates.state || !isRequestingGoBack) {
+    return config;
+  }
+
+  const currentState = deficientItem.state;
+  const isValidCurrentState = ['deferred', 'incomplete', 'completed'].includes(
+    currentState
+  );
+
+  if (isValidCurrentState) {
+    updates.state = 'go-back';
+  }
+
+  return config;
+}
+
+/**
  * Determine if DI will require
  * a progress note in its' next
  * state change
@@ -183,7 +213,7 @@ function setDeferredState(config) {
 function setWillRequireProgressNote(config) {
   const { updates, deficientItem, changes, progressNote } = config;
   const currentState = deficientItem.state;
-  const isProgressingToPending = changes && changes.state === 'pending';
+  const isProgressingToPending = updates.state === 'pending';
 
   if (
     (isProgressingToPending && currentState === 'requires-action') ||
@@ -239,9 +269,11 @@ function setWillRequireProgressNote(config) {
  */
 function setIncompleteState(config) {
   const { updates, deficientItem, changes } = config;
+  const isRequestingIncomplete = changes.state === 'incomplete';
 
-  // Return early if state updated
-  if (changes.state || updates.state) {
+  // Return early if state updated or
+  // not requesting incomplete state change
+  if (updates.state || !isRequestingIncomplete) {
     return config;
   }
 
@@ -252,7 +284,6 @@ function setIncompleteState(config) {
 
   if (currentState === 'overdue' && hasCurrentReasonIncomplete) {
     updates.state = 'incomplete';
-    changes.state = 'incomplete';
   }
 
   return config;
@@ -310,8 +341,8 @@ function setCurrentStartDate(config) {
  * @return {Object} - config
  */
 function appendStateHistory(config) {
-  const { updates, deficientItem, changes, authorID, createdAt } = config;
-  const newState = changes.state || '';
+  const { updates, deficientItem, authorID, createdAt } = config;
+  const newState = updates.state || '';
 
   if (newState && newState !== deficientItem.state) {
     const id = uuid();
