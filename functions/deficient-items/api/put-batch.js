@@ -190,6 +190,18 @@ module.exports = function createPutDeficiencyBatch(fs) {
       });
     });
 
+    //
+    if (!updateResults.length) {
+      delete payload.data;
+      payload.errors = [
+        {
+          title: 'No Change',
+          detail: 'Bad Request: update had no affect',
+        },
+      ];
+      return res.status(409).send(payload);
+    }
+
     // Append all deficiency updates to response data
     updateResults.forEach(({ id, attributes }) =>
       payload.data.push({ id, type: 'deficient-item', attributes })
