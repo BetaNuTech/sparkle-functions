@@ -1,4 +1,6 @@
 const assert = require('assert');
+const FieldPath = require('firebase-admin').firestore.FieldPath;
+// const { FieldPath } = require('@google-cloud/firestore');
 const modelSetup = require('./utils/model-setup');
 const systemModel = require('./system');
 const archive = require('./_internal/archive');
@@ -9,6 +11,23 @@ const DEFICIENT_COLLECTION = config.deficientItems.collection;
 const STORAGE_PATH_TEMPLATE = config.deficientItems.storagePathTemplate;
 
 module.exports = modelSetup({
+  /**
+   * Lookup each deficiency by id
+   * @param  {firebaseAdmin.firestore} fs
+   * @param  {String[]} ids
+   * @return {Promise} - resolves {DocumentSnapshot[]}
+   */
+  findMany(fs, ...ids) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(Array.isArray(ids) && ids.length, 'has 1 or more lookup ids');
+    assert(ids.every(id => typeof id === 'string'), 'has array of string ids');
+
+    return fs
+      .collection(DEFICIENT_COLLECTION)
+      .where(FieldPath.documentId(), 'in', ids)
+      .get();
+  },
+
   /**
    * Update a deficiency's completed photo
    * trello card attachment identifier
