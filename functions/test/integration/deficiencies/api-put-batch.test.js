@@ -153,7 +153,7 @@ describe('Deficiencies | API | PUT Batch', () => {
       .put(`/t?id=${deficiencyId}`)
       .send({ state: 'requires-action' }) // non-sense update
       .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(200)
+      .expect(409)
       .then(res => {
         const { meta = {} } = res.body;
         const [warning] = meta.warnings || [];
@@ -163,6 +163,34 @@ describe('Deficiencies | API | PUT Batch', () => {
           'did not invoke update record'
         );
         expect(actual).to.deep.equal(expected);
+        done();
+      })
+      .catch(done);
+  });
+
+  it('sends an error when no deficiency was modified by user update', done => {
+    const deficiencyId = uuid();
+    const deficiency = mocking.createDeficiency({
+      state: 'requires-action',
+      inspection: uuid(),
+      property: uuid(),
+      item: uuid(),
+    });
+    deficiency.id = deficiencyId;
+    sinon
+      .stub(deficiencyModel, 'findMany')
+      .resolves(stubs.wrapSnapshot([deficiency]));
+    sinon.stub(log, 'warn').callsFake(() => {}); // silence
+    sinon.stub(deficiencyModel, 'firestoreUpdateRecord').resolves();
+
+    request(createApp())
+      .put(`/t?id=${deficiencyId}`)
+      .send({ state: 'requires-action' }) // non-sense update
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(409)
+      .then(res => {
+        const [error] = res.body.errors;
+        expect(error.title).to.equal('No Change');
         done();
       })
       .catch(done);
