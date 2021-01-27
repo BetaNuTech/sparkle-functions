@@ -7,24 +7,29 @@ const pipe = require('../../utils/pipe');
  * @param  {Object} deficientItem
  * @param  {Object} changes
  * @param  {String?} authorID
- * @param  {Number?} createdAt
+ * @param  {Number?} updatedAt
  * @param  {String?} progressNote
- * @param  {Object?} completedPhoto
+ * @param  {Object?} completedPhotos - hash tree of completed photos
  * @return {Object?} - Deficient Item updates
  */
 module.exports = function updateDeficientItem(
   deficientItem,
   changes,
   authorID = '',
-  createdAt = Math.round(Date.now() / 1000),
+  updatedAt = Math.round(Date.now() / 1000),
   progressNote = '',
-  completedPhoto = null
+  completedPhotos = null
 ) {
   assert(
     deficientItem && typeof deficientItem === 'object',
     'has deficient item'
   );
   assert(changes && typeof changes === 'object', 'has changes object');
+  assert(
+    updatedAt && typeof updatedAt === 'number',
+    'has numeric updated at timestamp'
+  );
+  assert(updatedAt > 0, 'has viable timestamp');
 
   return pipe(
     setPendingState,
@@ -48,17 +53,17 @@ module.exports = function updateDeficientItem(
     appendReasonIncomplete,
     appendStartDate,
     appendProgressNote,
-    appendCompletedPhoto,
-    setCompletedState, // NOTE: must be after appendCompletedPhoto
+    appendCompletedPhotos,
+    setCompletedState, // NOTE: must be after appendCompletedPhotos
     setUpdatedAt
   )({
     updates: Object.create(null),
     deficientItem: JSON.parse(JSON.stringify(deficientItem)),
     changes,
     authorID,
-    createdAt,
+    updatedAt,
     progressNote,
-    completedPhoto,
+    completedPhotos,
   }).updates;
 };
 
@@ -423,14 +428,14 @@ function setCurrentDueDateDay(config) {
  * Set current start state when
  * DI becomes pending
  * @param  {Object} updates
- * @param  {Number} createdAt
+ * @param  {Number} updatedAt
  * @return {Object} - config
  */
 function setCurrentStartDate(config) {
-  const { updates, createdAt } = config;
+  const { updates, updatedAt } = config;
 
   if (updates.state === 'pending') {
-    updates.currentStartDate = createdAt;
+    updates.currentStartDate = updatedAt;
   }
 
   return config;
@@ -443,11 +448,11 @@ function setCurrentStartDate(config) {
  * @param  {Object} deficientItem
  * @param  {Object} changes
  * @param  {String?} authorID,
- * @param  {Number} createdAt
+ * @param  {Number} updatedAt
  * @return {Object} - config
  */
 function appendStateHistory(config) {
-  const { updates, deficientItem, authorID, createdAt } = config;
+  const { updates, deficientItem, authorID, updatedAt } = config;
   const newState = updates.state || '';
 
   if (newState && newState !== deficientItem.state) {
@@ -455,7 +460,7 @@ function appendStateHistory(config) {
 
     updates.stateHistory = Object.create(null);
     updates.stateHistory[id] = {
-      createdAt,
+      createdAt: updatedAt,
       state: newState,
     };
 
@@ -475,10 +480,11 @@ function appendStateHistory(config) {
  * @param  {Object} deficientItem
  * @param  {Object} changes
  * @param  {String?} authorID
+ * @param  {Number} updatedAt
  * @return {Object} - config
  */
 function appendDueDate(config) {
-  const { updates, deficientItem, changes, authorID, createdAt } = config;
+  const { updates, deficientItem, changes, authorID, updatedAt } = config;
   const dueTime = changes.currentDueDate || 0;
   const dueDay = changes.currentDueDateDay || updates.currentDueDateDay || '';
 
@@ -494,7 +500,7 @@ function appendDueDate(config) {
     );
 
     updates.dueDates = Object.create(null);
-    updates.dueDates[id] = { createdAt, dueDate: dueTime };
+    updates.dueDates[id] = { createdAt: updatedAt, dueDate: dueTime };
 
     // Append current start date
     if (startDate) {
@@ -546,10 +552,11 @@ function setCurrentDeferredDateDay(config) {
  * @param  {Object} deficientItem
  * @param  {Object} changes
  * @param  {String?} authorID
+ * @param  {Number} updatedAt
  * @return {Object} - config
  */
 function appendDeferredDate(config) {
-  const { updates, changes, deficientItem, authorID, createdAt } = config;
+  const { updates, changes, deficientItem, authorID, updatedAt } = config;
   const deferTime = changes.currentDeferredDate || 0;
   const deferDay =
     changes.currentDeferredDateDay || updates.currentDeferredDateDay || '';
@@ -563,7 +570,7 @@ function appendDeferredDate(config) {
 
     updates.deferredDates = Object.create(null);
     updates.deferredDates[id] = {
-      createdAt,
+      createdAt: updatedAt,
       deferredDate: deferTime,
     };
 
@@ -588,10 +595,11 @@ function appendDeferredDate(config) {
  * @param  {Object} deficientItem
  * @param  {Object} changes
  * @param  {String?} authorID
+ * @param  {Number} updatedAt
  * @return {Object} - config
  */
 function appendPlanToFix(config) {
-  const { updates, deficientItem, changes, authorID, createdAt } = config;
+  const { updates, deficientItem, changes, authorID, updatedAt } = config;
   const planToFix = changes.currentPlanToFix || '';
 
   if (planToFix && planToFix !== deficientItem.currentPlanToFix) {
@@ -603,7 +611,7 @@ function appendPlanToFix(config) {
 
     updates.plansToFix = Object.create(null);
     updates.plansToFix[id] = {
-      createdAt,
+      createdAt: updatedAt,
       planToFix,
     };
 
@@ -628,10 +636,11 @@ function appendPlanToFix(config) {
  * @param  {Object} deficientItem
  * @param  {Object} changes
  * @param  {String?} authorID
+ * @param  {Number} updatedAt
  * @return {Object} - config
  */
 function appendCompleteNowReasons(config) {
-  const { updates, changes, deficientItem, authorID, createdAt } = config;
+  const { updates, changes, deficientItem, authorID, updatedAt } = config;
   const completeNowReason = changes.currentCompleteNowReason || '';
 
   if (
@@ -642,7 +651,7 @@ function appendCompleteNowReasons(config) {
 
     updates.completeNowReasons = Object.create(null);
     updates.completeNowReasons[id] = {
-      createdAt,
+      createdAt: updatedAt,
       completeNowReason,
     };
 
@@ -662,10 +671,11 @@ function appendCompleteNowReasons(config) {
  * @param  {Object} deficientItem
  * @param  {Object} changes
  * @param  {String?} authorID
+ * @param  {Number} updatedAt
  * @return {Object} - config
  */
 function appendResponsibilityGroup(config) {
-  const { updates, deficientItem, changes, authorID, createdAt } = config;
+  const { updates, deficientItem, changes, authorID, updatedAt } = config;
   const groupResponsible = changes.currentResponsibilityGroup || '';
 
   if (
@@ -680,7 +690,7 @@ function appendResponsibilityGroup(config) {
 
     updates.responsibilityGroups = Object.create(null);
     updates.responsibilityGroups[id] = {
-      createdAt,
+      createdAt: updatedAt,
       groupResponsible,
     };
 
@@ -705,10 +715,11 @@ function appendResponsibilityGroup(config) {
  * @param  {Object} deficientItem
  * @param  {Object} changes
  * @param  {String?} authorID
+ * @param  {Number} updatedAt
  * @return {Object} - config
  */
 function appendReasonIncomplete(config) {
-  const { updates, deficientItem, changes, authorID, createdAt } = config;
+  const { updates, deficientItem, changes, authorID, updatedAt } = config;
   const newReason = changes.currentReasonIncomplete || '';
 
   if (newReason && newReason !== deficientItem.currentReasonIncomplete) {
@@ -720,7 +731,7 @@ function appendReasonIncomplete(config) {
 
     updates.reasonsIncomplete = Object.create(null);
     updates.reasonsIncomplete[id] = {
-      createdAt,
+      createdAt: updatedAt,
       reasonIncomplete: newReason,
     };
 
@@ -769,12 +780,12 @@ function appendStartDate(config) {
  * @param  {Object} deficientItem
  * @param  {Object} changes
  * @param  {String?} authorID
- * @param  {Number} createdAt
+ * @param  {Number} updatedAt
  * @param  {String?} progressNote
  * @return {Object} - config
  */
 function appendProgressNote(config) {
-  const { updates, deficientItem, authorID, createdAt, progressNote } = config;
+  const { updates, deficientItem, authorID, updatedAt, progressNote } = config;
 
   if (progressNote) {
     const id = uuid();
@@ -785,7 +796,7 @@ function appendProgressNote(config) {
 
     updates.progressNotes = Object.create(null);
     updates.progressNotes[id] = {
-      createdAt,
+      createdAt: updatedAt,
       progressNote,
     };
 
@@ -807,15 +818,15 @@ function appendProgressNote(config) {
  * Add an optional completed photo to DI's
  * `completedPhotos` configuration
  * @param  {Object} updates
- * @param  {Object} completedPhoto
+ * @param  {Object} completedPhotos
  * @return {Object} - config
  */
-function appendCompletedPhoto(config) {
-  const { updates, completedPhoto } = config;
+function appendCompletedPhotos(config) {
+  const { updates, completedPhotos } = config;
 
-  if (completedPhoto) {
+  if (completedPhotos) {
     updates.completedPhotos = updates.completedPhotos || Object.create(null);
-    Object.assign(updates.completedPhotos, completedPhoto); // append photo JSON
+    Object.assign(updates.completedPhotos, completedPhotos); // append photo JSON
   }
 
   return config;
@@ -824,14 +835,14 @@ function appendCompletedPhoto(config) {
 /**
  * Set updated at if there's any updates
  * @param  {Object} changes
- * @param  {Number} createdAt
+ * @param  {Number} updatedAt
  * @return {Object} - config
  */
 function setUpdatedAt(config) {
-  const { updates, changes, createdAt, progressNote } = config;
+  const { updates, updatedAt } = config;
 
-  if (Object.keys(changes).length || progressNote) {
-    updates.updatedAt = createdAt;
+  if (Object.keys(updates).length) {
+    updates.updatedAt = updatedAt;
   }
 
   return config;

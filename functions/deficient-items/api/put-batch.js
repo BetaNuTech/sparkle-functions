@@ -1,6 +1,7 @@
 const assert = require('assert');
-// const log = require('../../utils/logger');
+const log = require('../../utils/logger');
 const deficiencyModel = require('../../models/deficient-items');
+const updateItem = require('../utils/update-deficient-item');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
 
 const PREFIX = 'deficient-items: api: put batch:';
@@ -25,7 +26,9 @@ module.exports = function createPutDeficiencyBatch(fs) {
     const { body = {} } = req;
     const send500Error = create500ErrHandler(PREFIX, res);
     const update = body;
-    // const userId = (req.user || {}).id || '';
+    const userId = (req.user || {}).id || '';
+    const srcUpdatedAt = req.query.updatedAt || '0';
+    const parsedUpdatedAt = parseInt(srcUpdatedAt, 10) || 0;
     const hasUpdates = Boolean(Object.keys(update || {}).length);
     const srcDeficiencyIds = (req.query || {}).id || '';
     const deficiencyIds = Array.isArray(srcDeficiencyIds)
@@ -110,7 +113,89 @@ module.exports = function createPutDeficiencyBatch(fs) {
       });
     }
 
+    // Collect all updates into individual parts
+    const updateCopy = JSON.parse(JSON.stringify(update));
+    const completedPhotos = updateCopy.completedPhotos || null;
+    delete updateCopy.completedPhotos;
+    const progressNote = updateCopy.progressNote || '';
+    delete updateCopy.progressNote;
+    const updatedAt = parsedUpdatedAt || Math.round(Date.now() / 1000);
+
+    // Collect updates to deficient items
+    const notUpdated = [];
+    const updateResults = [];
+    const batch = fs.batch();
+    for (let i = 0; i < deficiencies.length; i++) {
+      const deficiency = deficiencies[i];
+      const deficiencyId = deficiency.id;
+      const deficiencyUpdates = updateItem(
+        deficiency,
+        updateCopy,
+        userId,
+        updatedAt,
+        progressNote,
+        completedPhotos
+      );
+      const hasDeficiencyUpdates = Boolean(
+        Object.keys(deficiencyUpdates || {}).length
+      );
+
+      if (hasDeficiencyUpdates) {
+        try {
+          await deficiencyModel.firestoreUpdateRecord(
+            fs,
+            deficiencyId,
+            deficiencyUpdates,
+            batch
+          );
+          updateResults.push({
+            id: deficiencyId,
+            attributes: deficiencyUpdates,
+          });
+        } catch (err) {
+          return send500Error(
+            err,
+            `failed to update deficiency "${deficiencyId}"`,
+            'failed to persist updates'
+          );
+        }
+      } else {
+        log.warn(
+          `${PREFIX} attempted to modify deficiency "${deficiencyId}" with invalid update`
+        );
+        notUpdated.push(deficiencyId);
+      }
+    }
+
+    // Commit all updates in batched transation
+    try {
+      await batch.commit();
+    } catch (err) {
+      return send500Error(
+        err,
+        'batch updates failed to commit',
+        'unexpected error'
+      );
+    }
+
+    // Create JSON API response
+    const payload = { data: [], meta: { warnings: [] } };
+
+    // Append warnings for deficiencies thatwere not changed
+    notUpdated.forEach(deficiencyId => {
+      payload.meta.warnings.push({
+        id: deficiencyId,
+        type: 'deficient-item',
+        detail: 'update not applicable and no changes persisted for record',
+      });
+    });
+
+    // Append all deficiency updates to response data
+    updateResults.forEach(({ id, attributes }) =>
+      payload.data.push({ id, type: 'deficient-item', attributes })
+    );
+
     // Success response
-    res.status(200).send({ message: 'successful' });
+    res.status(200).send(payload);
   };
 };
