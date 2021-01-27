@@ -21,7 +21,7 @@ const STORAGE_PATH = [
 ];
 
 describe('Deficiency | Utils | Update Deficient Item', () => {
-  it('it sets go-back state only when specific states are active', function() {
+  it('it sets go back state only when specific states are active', function() {
     [
       { data: 'completed', expected: true },
       { data: 'incomplete', expected: true },
@@ -32,12 +32,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       { data: 'closed', expected: false },
       { data: 'deferred', expected: true },
     ].forEach(({ data, expected }) => {
-      const model = createDeficientItem({
-        state: data,
-        currentDueDate: nowUnix(),
-        currentResponsibilityGroup: 'corporate_manages_vendor',
-        currentPlanToFix: 'fix',
-      });
+      const model = createDeficientItem({ state: data });
       const changes = { state: 'go-back' };
       const updates = updateDeficientItem(model, changes);
       const actual = updates.state === 'go-back';
@@ -122,19 +117,29 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
   });
 
   it('it sets pending state only when specific states are active', function() {
-    const createdAt = (Date.now() - 1000) / 1000;
+    const createdAt = nowUnix() - 1;
+    const tomorrow = nowUnix() + 24 * 60 * 60;
+    const progressNotes = {
+      [uuid()]: {
+        createdAt: nowUnix(),
+        progressNote: 'note',
+        startDate: tomorrow,
+      },
+    };
+
     [
       { data: 'completed', expected: false },
       { data: 'incomplete', expected: false },
       { data: 'overdue', expected: false },
       { data: 'requires-action', expected: true },
       { data: 'go-back', expected: true },
-      { data: 'requires-progress-update', expected: true },
+      { data: 'requires-progress-update', progressNotes, expected: true },
       { data: 'closed', expected: false },
-    ].forEach(({ data, expected }) => {
+    ].forEach(({ data, progressNotes: progressNotesArg, expected }) => {
       const model = createDeficientItem({
         state: data,
-        currentDueDate: nowUnix(),
+        currentDueDate: tomorrow,
+        progressNotes: progressNotesArg,
         currentResponsibilityGroup: 'corporate_manages_vendor',
         currentPlanToFix: 'fix',
       });
@@ -154,14 +159,99 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it appends a stateHistory entry when pending state is set', function() {
+  it('it sets completed state only when specific states are active', function() {
+    const tomorrow = nowUnix() + 24 * 60 * 60;
+    const completedPhotos = createCompletedPhotosTree(tomorrow, 1, '1');
+    [
+      { data: 'completed', expected: false },
+      { data: 'incomplete', expected: false },
+      { data: 'overdue', expected: false },
+      { data: 'requires-action', expected: false },
+      { data: 'go-back', expected: false },
+      { data: 'pending', expected: false },
+      { data: 'pending', completedPhotos, expected: true },
+      { data: 'requires-progress-update', expected: false },
+      { data: 'closed', expected: false },
+      { data: 'deferred', expected: false },
+    ].forEach(({ data, completedPhotos: completedPhotosArg, expected }) => {
+      const model = createDeficientItem({
+        state: data,
+        currentStartDate: tomorrow,
+        completedPhotos: completedPhotosArg,
+      });
+      const changes = { state: 'completed' };
+      const updates = updateDeficientItem(model, changes);
+      const actual = updates.state === 'completed';
+      expect(actual).to.equal(
+        expected,
+        `state: ${data} was expected to ${
+          expected ? '' : 'not '
+        }equal completed ${
+          completedPhotosArg ? 'with' : 'without'
+        } completed photo`
+      );
+    });
+  });
+
+  it('it sets closed state only when specific states are active', function() {
+    [
+      { data: 'completed', expected: true },
+      { data: 'incomplete', expected: true },
+      { data: 'overdue', expected: false },
+      { data: 'requires-action', expected: true },
+      { data: 'go-back', expected: false },
+      { data: 'requires-progress-update', expected: false },
+      { data: 'closed', expected: false },
+      { data: 'deferred', expected: true },
+    ].forEach(({ data, expected }) => {
+      const model = createDeficientItem({ state: data });
+      const changes = { state: 'closed' };
+      const updates = updateDeficientItem(model, changes);
+      const actual = updates.state === 'closed';
+      expect(actual).to.equal(
+        expected,
+        `state: ${data} was expected to ${expected ? '' : 'not '}equal closed`
+      );
+    });
+  });
+
+  it('it sets requires progress update state only when specific state(s) are active', function() {
+    [
+      { data: 'completed', expected: false },
+      { data: 'incomplete', expected: false },
+      { data: 'overdue', expected: false },
+      { data: 'pending', expected: true },
+      { data: 'requires-action', expected: false },
+      { data: 'go-back', expected: false },
+      { data: 'requires-progress-update', expected: false },
+      { data: 'closed', expected: false },
+      { data: 'deferred', expected: false },
+    ].forEach(({ data, expected }) => {
+      const model = createDeficientItem({ state: data });
+      const changes = { state: 'requires-progress-update' };
+      const updates = updateDeficientItem(model, changes);
+      const actual = updates.state === 'requires-progress-update';
+      expect(actual).to.equal(
+        expected,
+        `state: ${data} was expected to ${
+          expected ? '' : 'not '
+        }equal requires-progress-update`
+      );
+    });
+  });
+
+  // TODO:
+  // it('it only transitions to requires progress update when more than 1/2 way to due date', function() {});
+
+  it('it appends a state history entry when pending state is set', function() {
     const user = uuid();
     const createdAt = nowUnix();
+    const tomorrow = nowUnix() + 24 * 60 * 60;
     const expected = { state: 'pending', user, createdAt };
     const model = createDeficientItem({ state: 'requires-action' });
     const changes = {
       state: 'pending',
-      currentDueDate: nowUnix(),
+      currentDueDate: tomorrow,
       currentResponsibilityGroup: 'corporate_manages_vendor',
       currentPlanToFix: 'fix',
     };
@@ -180,10 +270,11 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
 
   it('it sets current start date when updated to pending', function() {
     const createdAt = nowUnix();
+    const tomorrow = nowUnix() + 24 * 60 * 60;
     const model = createDeficientItem({ state: 'requires-action' });
     const changes = {
       state: 'pending',
-      currentDueDate: nowUnix(),
+      currentDueDate: tomorrow,
       currentResponsibilityGroup: 'corporate_manages_vendor',
       currentPlanToFix: 'fix',
     };
@@ -198,10 +289,11 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
 
   it('it uses updated current start date setting history hash start dates', function() {
     const createdAt = nowUnix();
+    const tomorrow = nowUnix() + 24 * 60 * 60;
     const model = createDeficientItem({ state: 'requires-action' });
     const changes = {
       state: 'pending',
-      currentDueDate: nowUnix(),
+      currentDueDate: tomorrow,
       currentResponsibilityGroup: 'corporate_manages_vendor',
       currentPlanToFix: 'fix',
     };
@@ -219,6 +311,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
 
   it('it sets pending state only when update meets requirements', function() {
     const createdAt = nowUnix();
+    const tomorrow = nowUnix() + 24 * 60 * 60;
     [
       { data: [], expected: false },
       { data: ['currentDueDate'], expected: false },
@@ -243,7 +336,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       const model = createDeficientItem({ state: 'requires-action' });
       const changes = { state: 'pending' };
       if (data.includes('currentDueDate')) {
-        changes.currentDueDate = nowUnix();
+        changes.currentDueDate = tomorrow;
       }
       if (data.includes('currentResponsibilityGroup')) {
         changes.currentResponsibilityGroup = 'corporate_manages_vendor';
@@ -996,7 +1089,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it appends a new item to deferred dates when current deferred date changes', function() {
+  it('it appends a new deferred date when current deferred date changes', function() {
     const userID = '-123';
     const createdAt = nowUnix() - 1;
     const updates = Array.from({ length: 5 }, (_, i) =>
@@ -1057,6 +1150,8 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
 
   it('it transitions to each state when valid input provided', function() {
     const createdAt = nowUnix();
+    const tomorrow = nowUnix() + 24 * 60 * 60;
+    const completedPhoto = createCompletedPhotosTree(tomorrow, 1, '1');
     const tests = [
       {
         data: {
@@ -1064,12 +1159,10 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
         },
         changes: {
           state: 'deferred',
-          currentDeferredDate: nowUnix() + 86400,
+          currentDeferredDate: tomorrow,
         },
         expected: 'deferred',
       },
-
-      // TODO: Failing
       {
         data: { state: 'requires-action' },
         changes: {
@@ -1092,7 +1185,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
         data: { state: 'go-back' },
         changes: {
           state: 'pending',
-          currentDueDate: nowUnix() + 9999,
+          currentDueDate: tomorrow,
           currentPlanToFix: 'ok',
           currentResponsibilityGroup: 'site_level_in-house',
         },
@@ -1102,7 +1195,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
         data: { state: 'go-back' },
         changes: {
           state: 'deferred',
-          currentDeferredDate: nowUnix() + 9999,
+          currentDeferredDate: tomorrow,
         },
         expected: 'deferred',
       },
@@ -1110,7 +1203,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
         data: { state: 'pending' },
         changes: {
           state: 'deferred',
-          currentDeferredDate: nowUnix() + 9999,
+          currentDeferredDate: tomorrow,
         },
         expected: 'deferred',
       },
@@ -1126,9 +1219,9 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
         expected: 'requires-progress-update',
       },
       {
-        data: { state: 'pending' },
+        data: { state: 'pending', currentStartDate: tomorrow },
         changes: { state: 'completed' },
-        completedPhoto: createCompletedPhotosTree(nowUnix(), 1, '1'),
+        completedPhoto,
         expected: 'completed',
       },
       {
@@ -1137,6 +1230,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
         progressNote: 'progress',
         expected: 'pending',
       },
+
       // TODO: Move support here
       // {
       //   data: { state: 'requires-progress-update' },
@@ -1174,9 +1268,13 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     ];
 
     for (let i = 0; i < tests.length; i++) {
-      const { data, changes, progressNote, completedPhoto, expected } = tests[
-        i
-      ];
+      const {
+        data,
+        changes,
+        progressNote,
+        completedPhoto: completedPhotoArg,
+        expected,
+      } = tests[i];
       const model = createDeficientItem(data);
       const updates = updateDeficientItem(
         model,
@@ -1184,7 +1282,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
         '1',
         createdAt,
         progressNote || '',
-        completedPhoto || null
+        completedPhotoArg || null
       );
       const actual = updates.state;
       expect(actual).to.equal(
@@ -1214,11 +1312,13 @@ function createDeficientItem(config = {}) {
  * @return {String}
  */
 function toDate(unixTimestamp) {
-  const dateParts = new Date(parseFloat(unixTimestamp) * 1000)
-    .toISOString()
-    .split('T')[0]
-    .split('-');
-  return `${dateParts[1]}/${dateParts[2]}/${dateParts[0]}`;
+  const date = new Date(unixTimestamp * 1000);
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  return `${month < 10 ? '0' : ''}${month}/${
+    day < 10 ? '0' : ''
+  }${day}/${year}`;
 }
 
 /**
@@ -1239,15 +1339,15 @@ function toLocalDate(date) {
 
 /**
  * Create a completed photos history tree
- * @param  {Number} currentDueDate - Current due date of DI
+ * @param  {Number} startDate - Current due date of DI
  * @param  {Number?} count - Number of photos to create
  * @param  {String?} user - User identifier
  * @return {Object} - completed photos hash
  */
-function createCompletedPhotosTree(currentDueDate, count = 1, user = '') {
+function createCompletedPhotosTree(startDate, count = 1, user = '') {
   assert(
-    currentDueDate && typeof currentDueDate === 'number',
-    'has "currentDueDate" unix timestamp'
+    startDate && typeof startDate === 'number',
+    'has current due date unix timestamp'
   );
   assert(typeof count === 'number' && count > 0, 'has numeric count');
 
@@ -1262,10 +1362,10 @@ function createCompletedPhotosTree(currentDueDate, count = 1, user = '') {
     const id = uuid();
     result[id] = {
       caption: getRandom(PROGRESS_NOTES),
-      startDate: currentDueDate - i * 10000,
+      startDate,
       downloadURL: getRandom(DOWNLOAD_URL),
       storageDBPath: getRandom(STORAGE_PATH),
-      createdAt: (now + i) / 1000, // UNIX timestamp
+      createdAt: Math.round((now + i) / 1000), // UNIX timestamp
     };
 
     // Add optional user reference

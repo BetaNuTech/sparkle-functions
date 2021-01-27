@@ -31,6 +31,9 @@ module.exports = function updateDeficientItem(
     setDeferredState,
     setIncompleteState,
     setGoBackState,
+    setClosedState,
+    // TODO: setOverdueState,
+    setRequiresProgressUpdateState,
     setWillRequireProgressNote,
     applyGoBackStateSideEffects,
     setCurrentDueDateDay,
@@ -46,6 +49,7 @@ module.exports = function updateDeficientItem(
     appendStartDate,
     appendProgressNote,
     appendCompletedPhoto,
+    setCompletedState, // NOTE: must be after appendCompletedPhoto
     setUpdatedAt
   )({
     updates: Object.create(null),
@@ -104,10 +108,14 @@ function setPendingState(config) {
   }
 
   const currentState = deficientItem.state;
+  const currentStartDate = deficientItem.currentStartDate || 0;
   const isValidCurrentState = ['requires-action', 'go-back'].includes(
     currentState
   );
   const isValidProgNoteState = currentState === 'requires-progress-update';
+  const hasRequiredNoteUpdate =
+    Boolean(progressNote) ||
+    hasCurrentStartDate(currentStartDate, deficientItem.progressNotes || {});
 
   if (isValidCurrentState) {
     const currentPlanToFix =
@@ -116,12 +124,17 @@ function setPendingState(config) {
       deficientItem.currentResponsibilityGroup ||
       changes.currentResponsibilityGroup;
     const currentDueDate =
-      deficientItem.currentDueDate || changes.currentDueDate;
+      changes.currentDueDate || deficientItem.currentDueDate || 0;
 
-    if (currentPlanToFix && currentResponsibilityGroup && currentDueDate) {
+    // 23 hours provides buffer for user to
+    // send an update w/ minimum date of 24
+    // hours from now
+    const hasValidDueDate = isAfter23HoursFromNow(currentDueDate);
+
+    if (currentPlanToFix && currentResponsibilityGroup && hasValidDueDate) {
       updates.state = 'pending';
     }
-  } else if (isValidProgNoteState && progressNote) {
+  } else if (isValidProgNoteState && hasRequiredNoteUpdate) {
     updates.state = 'pending';
   }
 
@@ -157,12 +170,7 @@ function setDeferredState(config) {
   // 23 hours provides buffer for user to
   // send an update w/ minimum date of 24
   // hours from now
-  const twentyThreeHoursFromNow = Math.round(Date.now() / 1000) + 23 * 60 * 60;
-  const hasValidDeferredDate = Boolean(
-    deferredDate &&
-      typeof deferredDate === 'number' &&
-      deferredDate > twentyThreeHoursFromNow
-  );
+  const hasValidDeferredDate = isAfter23HoursFromNow(deferredDate);
 
   if (isRequestingDefer && isValidCurrentState && hasValidDeferredDate) {
     updates.state = 'deferred';
@@ -195,6 +203,67 @@ function setGoBackState(config) {
 
   if (isValidCurrentState) {
     updates.state = 'go-back';
+  }
+
+  return config;
+}
+
+/**
+ * Set new state to closed
+ * @param {Object} updates
+ * @param {Object} deficientItem
+ * @param {Object} changes
+ * @return {Object} - config
+ */
+function setClosedState(config) {
+  const { updates, deficientItem, changes } = config;
+  const isRequestingClosed = changes.state === 'closed';
+
+  // Return early if state already updated
+  // or not requesting closed state change
+  if (updates.state || !isRequestingClosed) {
+    return config;
+  }
+
+  const currentState = deficientItem.state;
+  const isValidCurrentState = [
+    'requires-action',
+    'incomplete',
+    'deferred',
+    'completed',
+  ].includes(currentState);
+
+  if (isValidCurrentState) {
+    updates.state = 'closed';
+  }
+
+  return config;
+}
+
+/**
+ * Set new state to requires progress update
+ * @param {Object} updates
+ * @param {Object} deficientItem
+ * @param {Object} changes
+ * @return {Object} - config
+ */
+function setRequiresProgressUpdateState(config) {
+  const { updates, deficientItem, changes } = config;
+  const isRequestingClosed = changes.state === 'requires-progress-update';
+
+  // Return early if state already updated
+  // or not requesting closed state change
+  if (updates.state || !isRequestingClosed) {
+    return config;
+  }
+
+  // TODO: check that more than 1/2 way to due date
+
+  const currentState = deficientItem.state;
+  const isValidCurrentState = currentState === 'pending';
+
+  if (isValidCurrentState) {
+    updates.state = 'requires-progress-update';
   }
 
   return config;
@@ -278,12 +347,49 @@ function setIncompleteState(config) {
   }
 
   const currentState = deficientItem.state;
+  const isValidCurrentState = currentState === 'overdue';
   const hasCurrentReasonIncomplete = Boolean(
     changes.currentReasonIncomplete ? changes.currentReasonIncomplete[1] : ''
   );
 
-  if (currentState === 'overdue' && hasCurrentReasonIncomplete) {
+  if (isValidCurrentState && hasCurrentReasonIncomplete) {
     updates.state = 'incomplete';
+  }
+
+  return config;
+}
+
+/**
+ * Progress to completed state
+ * when pending and a completed photo
+ * has been provided
+ * @param  {Object} updates
+ * @param  {Object} deficientItem
+ * @param  {Object} changes
+ * @return {Object} - config
+ */
+function setCompletedState(config) {
+  const { updates, deficientItem, changes } = config;
+  const isRequestingCompleted = changes.state === 'completed';
+
+  // Return early if state updated or
+  // not requesting completed state change
+  if (updates.state || !isRequestingCompleted) {
+    return config;
+  }
+
+  const currentState = deficientItem.state;
+  const isValidCurrentState = currentState === 'pending';
+  const currentStartDate = deficientItem.currentStartDate || 0;
+  const completedPhotos =
+    updates.completedPhotos || deficientItem.completedPhotos || {};
+  const hasRequiredUpdates = hasCurrentStartDate(
+    currentStartDate,
+    completedPhotos
+  );
+
+  if (isValidCurrentState && hasRequiredUpdates) {
+    updates.state = 'completed';
   }
 
   return config;
@@ -779,4 +885,42 @@ function generateChar(c) {
  */
 function findFirstUnix(...args) {
   return args.filter(d => Boolean(d && typeof d === 'number'))[0] || 0;
+}
+
+/**
+ * UNIX timestamp is after
+ * 23 hours from current moment
+ * @param  {Number?} timestamp
+ * @return {Boolean}
+ */
+function isAfter23HoursFromNow(timestamp = 0) {
+  let compare = typeof timestamp === 'number' ? timestamp : 0; // type check
+  compare = timestamp === timestamp ? timestamp : 0; // NaN check
+  const twentyThreeHoursFromNow = Math.round(Date.now() / 1000) + 23 * 60 * 60;
+  return compare > twentyThreeHoursFromNow;
+}
+
+/**
+ * Check that a hash has any
+ * start date that matches the
+ * provided current start date
+ * @param  {Number} currentStartDate
+ * @param  {Object?} hashTree
+ * @return {Boolean}
+ */
+function hasCurrentStartDate(currentStartDate, hashTree = {}) {
+  assert(
+    typeof currentStartDate === 'number' &&
+      currentStartDate === currentStartDate,
+    'has current start date'
+  );
+  assert(hashTree && typeof hashTree === 'object', 'has hash tree');
+
+  if (currentStartDate === 0 || Object.keys(hashTree).length === 0) {
+    return false;
+  }
+
+  return Object.keys(hashTree)
+    .map(id => hashTree[id].startDate)
+    .some(sd => sd === currentStartDate);
 }
