@@ -8,7 +8,7 @@ const { fs, test, cloudFunctions } = require('../../setup');
 describe('Notifications | Pubsub | Clean Published V2', () => {
   afterEach(() => cleanDb(null, fs));
 
-  it('should remove only notifications that are published to all mediums', async () => {
+  it('should remove all notifications that have been published to all mediums', async () => {
     const notification1Id = uuid();
     const notification2Id = uuid();
     const notification3Id = uuid();
