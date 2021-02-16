@@ -134,6 +134,39 @@ describe('Notifications | On Create V2', function() {
     expect(actual).to.equal(expected);
   });
 
+  it('marks notification as published to Slack when there is no Slack integration configured', async () => {
+    const expected = true;
+    const notificationId = uuid();
+    const notificiation = mocking.createNotification();
+
+    sinon
+      .stub(integrationsModel, 'firestoreFindSlack')
+      .resolves(createSnapshot('slack', null));
+    sinon.stub(usersModel, 'firestoreFindAll').resolves(createCollection());
+
+    let actual = false;
+    sinon
+      .stub(notificationsModel, 'firestoreUpdateRecord')
+      .onFirstCall()
+      .callsFake((_, id, update) => {
+        actual = update['publishedMediums.slack'];
+        return Promise.resolve();
+      })
+      .onSecondCall()
+      .resolves();
+
+    await createHandler(
+      createFirestore(),
+      createPubSub(),
+      'slack-topic',
+      'push-topic'
+    )(createSnapshot(notificationId, notificiation), {
+      params: { notificationId },
+    });
+
+    expect(actual).to.equal(expected);
+  });
+
   it('marks notification as published to Slack when there is no discoverable channel', async () => {
     const expected = true;
     const notificationId = uuid();
