@@ -1,12 +1,13 @@
 const uuid = require('./uuid');
 
 module.exports = {
-  createFirestore() {
+  createFirestore(firestoreConfig = {}) {
     return {
       collection: () => {},
       batch: () => ({
         commit: () => Promise.resolve(),
       }),
+      ...firestoreConfig,
     };
   },
 
@@ -24,16 +25,14 @@ module.exports = {
       );
     };
 
-    const result = {};
+    let result = {};
 
     if (Array.isArray(payload)) {
-      result.size = payload.length;
-      result.docs = payload.map(pl => this.wrapSnapshot(pl, pl.id));
+      const docs = payload.map(pl => this.wrapSnapshot(pl, pl.id));
+      result = this.createCollection(...docs);
       result.forEach = forEach;
     } else {
-      result.id = id || payload.id || uuid();
-      result.exists = Boolean(payload);
-      result.data = () => payload;
+      result = this.createSnapshot(id, payload);
     }
 
     return result;
