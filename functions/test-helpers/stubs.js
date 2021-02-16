@@ -1,13 +1,41 @@
 const uuid = require('./uuid');
 
 module.exports = {
-  createFirestore() {
+  createFirestore(firestoreConfig = {}) {
     return {
       collection: () => {},
       batch: () => ({
         commit: () => Promise.resolve(),
       }),
+      ...firestoreConfig,
     };
+  },
+
+  /**
+   * Create a snapshot of a
+   * payload or a group of payloads
+   * @param  {Object|Array}
+   * @param  {String} id
+   * @return {Object} - snapshot lookalike
+   */
+  wrapSnapshot(payload = {}, id) {
+    const forEach = fn => {
+      return Object.keys(payload).forEach(plId =>
+        fn(this.wrapSnapshot(payload[plId], plId))
+      );
+    };
+
+    let result = {};
+
+    if (Array.isArray(payload)) {
+      const docs = payload.map(pl => this.wrapSnapshot(pl, pl.id));
+      result = this.createCollection(...docs);
+      result.forEach = forEach;
+    } else {
+      result = this.createSnapshot(id, payload);
+    }
+
+    return result;
   },
 
   createSnapshot(id = uuid(), data = null) {

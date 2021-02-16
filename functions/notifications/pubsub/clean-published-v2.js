@@ -10,15 +10,26 @@ const PREFIX = 'notifications: pubsub: publish-push-v2:';
  * @param  {admin.firestore} fs
  * @param  {functions.pubsub} pubSub
  * @param  {String} topic
+ * @param  {Number?} batchSize - how many records to remove per batch
  * @return {functions.CloudFunction}
  */
-module.exports = function publishPushNotification(fs, pubsub, topic = '') {
+module.exports = function publishPushNotification(
+  fs,
+  pubsub,
+  topic = '',
+  batchSize = 499
+) {
   assert(fs && typeof fs.collection === 'function', 'has firestore db');
   assert(pubsub && typeof pubsub.topic === 'function', 'has pubsub reference');
   assert(topic && typeof topic === 'string', 'has pubsub topic');
+  assert(
+    batchSize && typeof batchSize === 'number' && batchSize >= 1,
+    'has valid batch size number'
+  );
 
   return pubsub.topic(topic).onPublish(async () => {
     const notificationIds = [];
+
     try {
       // Select all notifications
       // done publishing to both
@@ -35,29 +46,37 @@ module.exports = function publishPushNotification(fs, pubsub, topic = '') {
       );
     }
 
-    // Batch all notification deletes
-    const batch = fs.batch();
-    for (let i = 0; i < notificationIds.length; i++) {
-      const notificationId = notificationIds[i];
+    while (notificationIds.length) {
+      // All notification ID's to delete in batch
+      const notificationIdsSegment = notificationIds.splice(0, batchSize);
 
-      try {
-        await notificationsModel.firestoreDestroyRecord(
-          fs,
-          notificationId,
-          batch
-        );
-      } catch (err) {
-        log.error(
-          `${PREFIX} failed to delete notification: "${notificationId}" | ${err}`
-        );
-        continue; // eslint-disable-line
+      // Batch group notification deletes
+      const batch = fs.batch();
+
+      // Add segment delete to batch
+      for (let i = 0; i < notificationIdsSegment.length; i++) {
+        const notificationId = notificationIdsSegment[i];
+
+        try {
+          await notificationsModel.firestoreDestroyRecord(
+            fs,
+            notificationId,
+            batch
+          );
+        } catch (err) {
+          log.error(
+            `${PREFIX} failed to delete notification: "${notificationId}" | ${err}`
+          );
+          continue; // eslint-disable-line
+        }
       }
-    }
 
-    try {
-      await batch.commit();
-    } catch (err) {
-      throw Error(`${PREFIX} database writes failed to commit | ${err}`);
+      // Delete batch group
+      try {
+        await batch.commit();
+      } catch (err) {
+        throw Error(`${PREFIX} database writes failed to commit | ${err}`);
+      }
     }
   });
 };

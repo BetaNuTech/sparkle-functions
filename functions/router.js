@@ -4,6 +4,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const slack = require('./slack');
 const trello = require('./trello');
+const deficiencies = require('./deficient-items');
 const properties = require('./properties');
 const inspections = require('./inspections');
 const versions = require('./versions');
@@ -135,6 +136,16 @@ module.exports = (fs, auth, settings) => {
     }),
     authTrelloReq(fs),
     trello.api.postDeficiencyCard(fs)
+  );
+
+  // Update 1 or more deficiencies
+  app.put(
+    '/v0/deficiencies',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+    }),
+    deficiencies.api.putBatch(fs)
   );
 
   return app;
