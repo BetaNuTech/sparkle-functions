@@ -1125,6 +1125,33 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
+  it('allows updating current reason incomplete with a string', function() {
+    const model = createDeficientItem({ state: 'requires-action' });
+    const expected = 'reason incomplete';
+    const changes = { currentReasonIncomplete: expected };
+    const updates = updateDeficientItem(model, changes);
+    const actual = updates.currentReasonIncomplete;
+    expect(actual).to.equal(expected);
+  });
+
+  it('allows updating complete now reason with a string', function() {
+    const model = createDeficientItem({ state: 'requires-action' });
+    const expected = 'reason complete';
+    const changes = { currentCompleteNowReason: expected };
+    const updates = updateDeficientItem(model, changes);
+    const actual = updates.currentCompleteNowReason;
+    expect(actual).to.equal(expected);
+  });
+
+  it('allows updating is duplicate with a boolean', function() {
+    const model = createDeficientItem({ state: 'requires-action' });
+    const expected = false;
+    const changes = { isDuplicate: expected };
+    const updates = updateDeficientItem(model, changes);
+    const actual = updates.isDuplicate;
+    expect(actual).to.equal(expected);
+  });
+
   it('appends a new deferred date when current deferred date changes', function() {
     const userID = '-123';
     const createdAt = nowUnix() - 1;
