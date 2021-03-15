@@ -46,6 +46,7 @@ module.exports = function updateDeficientItem(
     setCurrentStartDate,
     appendStateHistory,
     appendDueDate,
+    // setCurrentDeferredDate,
     setCurrentDeferredDateDay,
     appendDeferredDate,
     setCurrentPlanToFix,
@@ -561,6 +562,23 @@ function setCurrentDeferredDateDay(config) {
     updates.currentDeferredDateDay = `${month < 10 ? '0' : ''}${month}/${
       day < 10 ? '0' : ''
     }${day}/${year}`;
+  }
+
+  return config;
+}
+
+/**
+ * Set the current deferred date
+ * @param   {Object} update
+ * @param   {Object} changes
+ * @return  {Object} - config
+ */
+function setCurrentDeferredDate(config) {
+  const { updates, changes } = config;
+  const updateDate = changes.currentDeferredDate || 0;
+
+  if (updateDate && typeof updateDate === 'number') {
+    updates.currentDeferredDate = updateDate;
   }
 
   return config;
