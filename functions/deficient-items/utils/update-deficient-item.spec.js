@@ -1072,6 +1072,15 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
+  it('allows updating current deferred date with a valid timestamp', function() {
+    const model = createDeficientItem({ state: 'requires-action' });
+    const expected = Math.round(Date.now() / 1000);
+    const changes = { currentDeferredDate: expected };
+    const updates = updateDeficientItem(model, changes);
+    const actual = updates.currentDeferredDate;
+    expect(actual).to.equal(expected);
+  });
+
   it('sets a current deferred due date day from current deferred date', function() {
     const updates = [
       1546300800,
