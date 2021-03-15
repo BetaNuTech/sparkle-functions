@@ -41,14 +41,17 @@ module.exports = function updateDeficientItem(
     setRequiresProgressUpdateState,
     setWillRequireProgressNote,
     applyGoBackStateSideEffects,
+    setCurrentDueDate,
     setCurrentDueDateDay,
     setCurrentStartDate,
     appendStateHistory,
     appendDueDate,
     setCurrentDeferredDateDay,
     appendDeferredDate,
+    setCurrentPlanToFix,
     appendPlanToFix,
     appendCompleteNowReasons,
+    setCurrentResponsibilityGroup,
     appendResponsibilityGroup,
     appendReasonIncomplete,
     appendStartDate,
@@ -401,6 +404,24 @@ function setCompletedState(config) {
 }
 
 /**
+ * Set the current due date
+ * from users updates
+ * @param  {Object} updates
+ * @param  {Object} changes
+ * @return {Object} - config
+ */
+function setCurrentDueDate(config) {
+  const { updates, changes } = config;
+  const updateDate = changes.currentDueDate || 0;
+
+  if (updateDate && typeof updateDate === 'number') {
+    updates.currentDueDate = updateDate;
+  }
+
+  return config;
+}
+
+/**
  * Set current due date day from
  * the updated date instance
  * @param  {Object} updates
@@ -589,6 +610,23 @@ function appendDeferredDate(config) {
 }
 
 /**
+ * Set valid current plan to fix
+ * @param {Object} updates
+ * @param {Object} changes
+ * @return {Object} config
+ */
+function setCurrentPlanToFix(config) {
+  const { updates, changes } = config;
+  const updatePlan = changes.currentPlanToFix || '';
+
+  if (updatePlan && typeof updatePlan === 'string') {
+    updates.currentPlanToFix = updatePlan;
+  }
+
+  return config;
+}
+
+/**
  * Add to plans to fix when current
  * plan to fix gets updated
  * @param  {Object} updates
@@ -659,6 +697,24 @@ function appendCompleteNowReasons(config) {
     if (authorID) {
       updates.completeNowReasons[id].user = authorID;
     }
+  }
+
+  return config;
+}
+
+/**
+ * Set valid current
+ * responsibility group
+ * @param {Object} updates
+ * @param {Object} changes
+ * @return {Object} config
+ */
+function setCurrentResponsibilityGroup(config) {
+  const { updates, changes } = config;
+  const updateGroup = changes.currentResponsibilityGroup || '';
+
+  if (updateGroup && typeof updateGroup === 'string') {
+    updates.currentResponsibilityGroup = updateGroup;
   }
 
   return config;
