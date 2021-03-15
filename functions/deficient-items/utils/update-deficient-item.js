@@ -46,19 +46,22 @@ module.exports = function updateDeficientItem(
     setCurrentStartDate,
     appendStateHistory,
     appendDueDate,
-    // setCurrentDeferredDate,
+    setCurrentDeferredDate,
     setCurrentDeferredDateDay,
     appendDeferredDate,
     setCurrentPlanToFix,
     appendPlanToFix,
+    setCompleteNowReasons,
     appendCompleteNowReasons,
     setCurrentResponsibilityGroup,
     appendResponsibilityGroup,
+    setCurrentReasonIncomplete,
     appendReasonIncomplete,
     appendStartDate,
     appendProgressNote,
     appendCompletedPhotos,
     setCompletedState, // NOTE: must be after appendCompletedPhotos
+    setIsDuplicate,
     setUpdatedAt
   )({
     updates: Object.create(null),
@@ -686,6 +689,23 @@ function appendPlanToFix(config) {
 }
 
 /**
+ * Set the complete now reason
+ * @param   {Object} update
+ * @param   {Object} changes
+ * @return  {Object} - config
+ */
+function setCompleteNowReasons(config) {
+  const { updates, changes } = config;
+  const updateReason = changes.currentCompleteNowReason || '';
+
+  if (updateReason && typeof updateReason === 'string') {
+    updates.currentCompleteNowReason = updateReason;
+  }
+
+  return config;
+}
+
+/**
  * Add to complete now reasons
  * when current complete now gets updated
  * @param  {Object} updates
@@ -777,6 +797,24 @@ function appendResponsibilityGroup(config) {
     if (authorID) {
       updates.responsibilityGroups[id].user = authorID;
     }
+  }
+
+  return config;
+}
+
+/**
+ * Set the current reason
+ * incomplete
+ * @param   {Object} update
+ * @param   {Object} changes
+ * @return  {Object} - config
+ */
+function setCurrentReasonIncomplete(config) {
+  const { updates, changes } = config;
+  const updateReason = changes.currentReasonIncomplete || '';
+
+  if (updateReason && typeof updateReason === 'string') {
+    updates.currentReasonIncomplete = updateReason;
   }
 
   return config;
@@ -901,6 +939,23 @@ function appendCompletedPhotos(config) {
   if (completedPhotos) {
     updates.completedPhotos = updates.completedPhotos || Object.create(null);
     Object.assign(updates.completedPhotos, completedPhotos); // append photo JSON
+  }
+
+  return config;
+}
+
+/**
+ * Set is duplicate
+ * @param   {Object} update
+ * @param   {Object} changes
+ * @return  {Object} - config
+ */
+function setIsDuplicate(config) {
+  const { updates, changes } = config;
+  const updateIsDuplicate = changes.isDuplicate;
+
+  if (typeof updateIsDuplicate === 'boolean') {
+    updates.isDuplicate = updateIsDuplicate;
   }
 
   return config;
