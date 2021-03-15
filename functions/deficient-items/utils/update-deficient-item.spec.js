@@ -21,7 +21,7 @@ const STORAGE_PATH = [
 ];
 
 describe('Deficiency | Utils | Update Deficient Item', () => {
-  it('it sets go back state only when specific states are active', function() {
+  it('sets go back state only when specific states are active', function() {
     [
       { data: 'completed', expected: true },
       { data: 'incomplete', expected: true },
@@ -43,7 +43,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it removes "current" DI attributes when set as go-back', function() {
+  it('removes "current" DI attributes when set as go-back', function() {
     const model = createDeficientItem({
       state: 'deferred',
       currentPlanToFix: 'test',
@@ -72,7 +72,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it sets a current due date day from current due date', function() {
+  it('sets a current due date day from current due date', function() {
     const updates = [
       1546300800000,
       1557446400000,
@@ -116,7 +116,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it sets pending state only when specific states are active', function() {
+  it('sets pending state only when specific states are active', function() {
     const createdAt = nowUnix() - 1;
     const tomorrow = nowUnix() + 24 * 60 * 60;
     const progressNotes = {
@@ -159,7 +159,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it sets completed state only when specific states are active', function() {
+  it('sets completed state only when specific states are active', function() {
     const tomorrow = nowUnix() + 24 * 60 * 60;
     const completedPhotos = createCompletedPhotosTree(tomorrow, 1, '1');
     [
@@ -193,7 +193,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it sets closed state only when specific states are active', function() {
+  it('sets closed state only when specific states are active', function() {
     [
       { data: 'completed', expected: true },
       { data: 'incomplete', expected: true },
@@ -215,7 +215,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it sets requires progress update state only when specific state(s) are active', function() {
+  it('sets requires progress update state only when specific state(s) are active', function() {
     [
       { data: 'completed', expected: false },
       { data: 'incomplete', expected: false },
@@ -241,9 +241,9 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
   });
 
   // TODO:
-  // it('it only transitions to requires progress update when more than 1/2 way to due date', function() {});
+  // it('only transitions to requires progress update when more than 1/2 way to due date', function() {});
 
-  it('it appends a state history entry when pending state is set', function() {
+  it('appends a state history entry when pending state is set', function() {
     const user = uuid();
     const createdAt = nowUnix();
     const tomorrow = nowUnix() + 24 * 60 * 60;
@@ -268,7 +268,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     expect(actual).to.deep.equal(expected);
   });
 
-  it('it sets current start date when updated to pending', function() {
+  it('sets current start date when updated to pending', function() {
     const createdAt = nowUnix();
     const tomorrow = nowUnix() + 24 * 60 * 60;
     const model = createDeficientItem({ state: 'requires-action' });
@@ -287,7 +287,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     );
   });
 
-  it('it uses updated current start date setting history hash start dates', function() {
+  it('uses updated current start date setting history hash start dates', function() {
     const createdAt = nowUnix();
     const tomorrow = nowUnix() + 24 * 60 * 60;
     const model = createDeficientItem({ state: 'requires-action' });
@@ -309,7 +309,34 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     );
   });
 
-  it('it sets pending state only when update meets requirements', function() {
+  it('allows updating current due date with a valid timestamp', function() {
+    const model = createDeficientItem({ state: 'requires-action' });
+    const expected = Math.round(Date.now() / 1000);
+    const changes = { currentDueDate: expected };
+    const updates = updateDeficientItem(model, changes);
+    const actual = updates.currentDueDate;
+    expect(actual).to.equal(expected);
+  });
+
+  it('allows updating current plan to fix with a valid string', function() {
+    const model = createDeficientItem({ state: 'requires-action' });
+    const expected = 'current plan';
+    const changes = { currentResponsibilityGroup: expected };
+    const updates = updateDeficientItem(model, changes);
+    const actual = updates.currentResponsibilityGroup;
+    expect(actual).to.equal(expected);
+  });
+
+  it('allows updating current responsibility group with a valid string', function() {
+    const model = createDeficientItem({ state: 'requires-action' });
+    const expected = 'corporate_manages_vendor';
+    const changes = { currentPlanToFix: expected };
+    const updates = updateDeficientItem(model, changes);
+    const actual = updates.currentPlanToFix;
+    expect(actual).to.equal(expected);
+  });
+
+  it('sets pending state only when update meets requirements', function() {
     const createdAt = nowUnix();
     const tomorrow = nowUnix() + 24 * 60 * 60;
     [
@@ -359,7 +386,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it sets pending state when progress note is required', function() {
+  it('sets pending state when progress note is required', function() {
     const pendingReadyDI = {
       currentResponsibilityGroup: 'corporate_manages_vendor',
       currentPlanToFix: 'fix',
@@ -459,7 +486,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it sets incomplete state only when specific state(s) are active', function() {
+  it('sets incomplete state only when specific state(s) are active', function() {
     const createdAt = nowUnix();
     [
       { data: 'completed', expected: false },
@@ -492,7 +519,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it sets incomplete state on overdue only when model requirements met', function() {
+  it('sets incomplete state on overdue only when model requirements met', function() {
     const createdAt = nowUnix();
     [
       { data: [], expected: false },
@@ -520,7 +547,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it appends a state history entry when incomplete state is set', function() {
+  it('appends a state history entry when incomplete state is set', function() {
     const user = uuid();
     const createdAt = nowUnix() - 1;
     const expected = { state: 'incomplete', user, createdAt };
@@ -539,7 +566,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     expect(actual).to.deep.equal(expected);
   });
 
-  it('it appends a new item to state history when state changes', function() {
+  it('appends a new item to state history when state changes', function() {
     const userID = '-123';
     const createdAt = nowUnix();
     const tests = [
@@ -582,7 +609,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     }
   });
 
-  it('it appends a new item to due dates when current due date changes', function() {
+  it('appends a new item to due dates when current due date changes', function() {
     const userID = '-123';
     const createdAt = nowUnix() - 1;
     const updates = Array.from(
@@ -658,7 +685,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     }
   });
 
-  it('it appends a new item to plans to fix when current plan changes', function() {
+  it('appends a new item to plans to fix when current plan changes', function() {
     const userID = '-123';
     const createdAt = nowUnix();
     const updates = Array.from({ length: 5 }, (_, i) => `${i}`);
@@ -710,7 +737,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     }
   });
 
-  it('it appends a new item to complete now reasons when current plan changes', function() {
+  it('appends a new item to complete now reasons when current plan changes', function() {
     const userID = '-123';
     const createdAt = nowUnix() - 1;
     const updates = Array.from({ length: 5 }, (_, i) => `${i}`);
@@ -761,7 +788,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     }
   });
 
-  it('it appends a new responsiblity group when current group changes', function() {
+  it('appends a new responsiblity group when current group changes', function() {
     const userID = '-123';
     const createdAt = nowUnix() - 1;
     const updates = Array.from({ length: 5 }, (_, i) => `${i}`);
@@ -821,7 +848,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     }
   });
 
-  it('it appends a new reason incomplete when current reason changes', function() {
+  it('appends a new reason incomplete when current reason changes', function() {
     const userID = '-123';
     const createdAt = nowUnix() - 1;
     const updates = Array.from({ length: 5 }, (_, i) => `${i}`);
@@ -881,7 +908,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     }
   });
 
-  it('it appends a new start date when current start date changes', function() {
+  it('appends a new start date when current start date changes', function() {
     const createdAt = nowUnix();
     const updates = Array.from(
       { length: 5 },
@@ -916,7 +943,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     }
   });
 
-  it('it appends a progress note to history when provided', function() {
+  it('appends a progress note to history when provided', function() {
     const userID = '-123';
     const createdAt = nowUnix();
     const updates = Array.from({ length: 5 }, (_, i) => `${i}`);
@@ -962,7 +989,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     }
   });
 
-  it('it appends a completed photo to when provided', function() {
+  it('appends a completed photo to when provided', function() {
     const createdAt = nowUnix() - 1;
     const currentStartDate = nowUnix();
     const updates = Array.from({ length: 2 }, (_, i) =>
@@ -995,7 +1022,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     }
   });
 
-  it('it sets deferred state only for specific states and valid dates', function() {
+  it('sets deferred state only for specific states and valid dates', function() {
     const createdAt = (Date.now() - 1000) / 1000;
     const badDate = nowUnix();
     const goodDate = nowUnix() + 24 * 60 * 60;
@@ -1045,7 +1072,16 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it sets a current deferred due date day from current deferred date', function() {
+  it('allows updating current deferred date with a valid timestamp', function() {
+    const model = createDeficientItem({ state: 'requires-action' });
+    const expected = Math.round(Date.now() / 1000);
+    const changes = { currentDeferredDate: expected };
+    const updates = updateDeficientItem(model, changes);
+    const actual = updates.currentDeferredDate;
+    expect(actual).to.equal(expected);
+  });
+
+  it('sets a current deferred due date day from current deferred date', function() {
     const updates = [
       1546300800,
       1557446400,
@@ -1089,7 +1125,34 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it appends a new deferred date when current deferred date changes', function() {
+  it('allows updating current reason incomplete with a string', function() {
+    const model = createDeficientItem({ state: 'requires-action' });
+    const expected = 'reason incomplete';
+    const changes = { currentReasonIncomplete: expected };
+    const updates = updateDeficientItem(model, changes);
+    const actual = updates.currentReasonIncomplete;
+    expect(actual).to.equal(expected);
+  });
+
+  it('allows updating complete now reason with a string', function() {
+    const model = createDeficientItem({ state: 'requires-action' });
+    const expected = 'reason complete';
+    const changes = { currentCompleteNowReason: expected };
+    const updates = updateDeficientItem(model, changes);
+    const actual = updates.currentCompleteNowReason;
+    expect(actual).to.equal(expected);
+  });
+
+  it('allows updating is duplicate with a boolean', function() {
+    const model = createDeficientItem({ state: 'requires-action' });
+    const expected = false;
+    const changes = { isDuplicate: expected };
+    const updates = updateDeficientItem(model, changes);
+    const actual = updates.isDuplicate;
+    expect(actual).to.equal(expected);
+  });
+
+  it('appends a new deferred date when current deferred date changes', function() {
     const userID = '-123';
     const createdAt = nowUnix() - 1;
     const updates = Array.from({ length: 5 }, (_, i) =>
@@ -1148,7 +1211,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     }
   });
 
-  it('it transitions to each state when valid input provided', function() {
+  it('transitions to each state when valid input provided', function() {
     const createdAt = nowUnix();
     const tomorrow = nowUnix() + 24 * 60 * 60;
     const completedPhoto = createCompletedPhotosTree(tomorrow, 1, '1');
