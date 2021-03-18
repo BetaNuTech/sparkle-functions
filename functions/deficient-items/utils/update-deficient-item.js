@@ -76,6 +76,8 @@ module.exports = function updateDeficientItem(
 
 /**
  * Removed all current content on go back
+ * TODO: drop this middleware after below
+ *       migration is completed
  * @param  {Object} updates
  * @param  {Object} changes
  * @return {Object} - config
@@ -85,15 +87,14 @@ function applyGoBackStateSideEffects(config) {
   const isProgressingToGoBack = updates.state === 'go-back';
 
   if (isProgressingToGoBack) {
-    updates.currentPlanToFix = null;
-    updates.currentReasonIncomplete = null;
-    updates.currentDueDate = null;
-    updates.currentDueDateDay = null;
-    updates.currentDeferredDate = null;
-    updates.currentDeferredDateDay = null;
-    updates.currentResponsibilityGroup = null;
-    updates.currentStartDate = null;
-    updates.currentCompleteNowReason = null;
+    updates.currentPlanToFix = null; // TODO move to setCurrentPlanToFix
+    updates.currentDueDate = null; // TODO move to setCurrentDueDate
+    updates.currentDueDateDay = null; // TODO move to setCurrentDueDateDay
+    updates.currentDeferredDate = null; // TODO move to setCurrentDeferredDate
+    updates.currentDeferredDateDay = null; // TODO move to setCurrentDeferredDateDay
+    updates.currentResponsibilityGroup = null; // TODO move to setCurrentResponsibilityGroup
+    updates.currentStartDate = null; // TODO move to setCurrentStartDate
+    updates.currentCompleteNowReason = null; // TODO move tosetCompleteNowReasons
   }
 
   return config;
@@ -360,11 +361,15 @@ function setIncompleteState(config) {
 
   const currentState = deficientItem.state;
   const isValidCurrentState = currentState === 'overdue';
+  const isUpdatingReasonIncomplete = Boolean(changes.currentReasonIncomplete);
   const hasCurrentReasonIncomplete = Boolean(
-    changes.currentReasonIncomplete ? changes.currentReasonIncomplete[1] : ''
+    deficientItem.currentReasonIncomplete
   );
 
-  if (isValidCurrentState && hasCurrentReasonIncomplete) {
+  if (
+    isValidCurrentState &&
+    (isUpdatingReasonIncomplete || hasCurrentReasonIncomplete)
+  ) {
     updates.state = 'incomplete';
   }
 
@@ -804,17 +809,28 @@ function appendResponsibilityGroup(config) {
 
 /**
  * Set the current reason
- * incomplete
- * @param   {Object} update
- * @param   {Object} changes
+ * incomplete when provided
+ * or remove it when deficiency
+ * exists the `incomplete` state
+ * @param  {Object} update
+ * @param  {Object} changes
+ * @param  {Object} deficientItem
  * @return  {Object} - config
  */
 function setCurrentReasonIncomplete(config) {
-  const { updates, changes } = config;
+  const { updates, changes, deficientItem } = config;
+  const isEnteringIncomplete = updates.state === 'incomplete';
+  const hasExistingReason = Boolean(deficientItem.currentReasonIncomplete);
   const updateReason = changes.currentReasonIncomplete || '';
 
-  if (updateReason && typeof updateReason === 'string') {
+  if (
+    isEnteringIncomplete &&
+    updateReason &&
+    typeof updateReason === 'string'
+  ) {
     updates.currentReasonIncomplete = updateReason;
+  } else if (!isEnteringIncomplete && hasExistingReason) {
+    updates.currentReasonIncomplete = null;
   }
 
   return config;
@@ -831,8 +847,8 @@ function setCurrentReasonIncomplete(config) {
  * @return {Object} - config
  */
 function appendReasonIncomplete(config) {
-  const { updates, deficientItem, changes, authorID, updatedAt } = config;
-  const newReason = changes.currentReasonIncomplete || '';
+  const { updates, deficientItem, authorID, updatedAt } = config;
+  const newReason = updates.currentReasonIncomplete || '';
 
   if (newReason && newReason !== deficientItem.currentReasonIncomplete) {
     const id = uuid();

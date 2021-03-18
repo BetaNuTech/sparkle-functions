@@ -43,6 +43,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
+  // TODO: remove
   it('removes "current" DI attributes when set as go-back', function() {
     const model = createDeficientItem({
       state: 'deferred',
@@ -894,8 +895,8 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
 
     for (let i = 0; i < tests.length; i++) {
       const { expected, update, data, args, message } = tests[i];
-      const model = createDeficientItem(data);
-      const changes = { currentReasonIncomplete: update };
+      const model = createDeficientItem({ ...data, state: 'overdue' });
+      const changes = { state: 'incomplete', currentReasonIncomplete: update };
       const { reasonsIncomplete } = updateDeficientItem(
         model,
         changes,
@@ -1125,13 +1126,75 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('allows updating current reason incomplete with a string', function() {
-    const model = createDeficientItem({ state: 'requires-action' });
-    const expected = 'reason incomplete';
-    const changes = { currentReasonIncomplete: expected };
-    const updates = updateDeficientItem(model, changes);
-    const actual = updates.currentReasonIncomplete;
-    expect(actual).to.equal(expected);
+  it('only updates current reason incomplete when transitioning to incomplete', function() {
+    const tests = [
+      {
+        state: 'deferred',
+        reason: 'oops',
+        expected: false,
+        msg: 'invalid state',
+      },
+      {
+        state: 'incomplete',
+        reason: '',
+        expected: false,
+        msg: 'invalid update',
+      },
+      {
+        state: 'incomplete',
+        reason: 'oops',
+        expected: true,
+        msg: 'valid update',
+      },
+    ];
+
+    for (let i = 0; i < tests.length; i++) {
+      const { state, reason, expected, msg } = tests[i];
+      const model = createDeficientItem({
+        state: 'overdue', // valid to transition to incomplete
+      });
+      const changes = { state, currentReasonIncomplete: reason };
+      const updates = updateDeficientItem(model, changes);
+      const actual = Boolean(updates.currentReasonIncomplete);
+      expect(actual).to.equal(expected, msg);
+    }
+  });
+
+  it('removes current reason incomplete when transitioning out of incomplete state', function() {
+    const tests = [
+      {
+        data: { state: 'incomplete', currentReasonIncomplete: 'exists' },
+        change: { state: 'go-back' },
+        expected: null,
+        msg: 'removed incompleted on normal transition',
+      },
+      {
+        data: { state: 'incomplete', currentReasonIncomplete: 'exists' },
+        change: { state: 'closed' },
+        expected: null,
+        msg: 'removed incompleted on normal transition',
+      },
+      {
+        data: { state: 'deferred', currentReasonIncomplete: 'exists' },
+        change: { state: 'closed' },
+        expected: null,
+        msg: 'removed incompleted on random transition',
+      },
+      {
+        data: { state: 'completed' },
+        change: { state: 'go-back' },
+        expected: undefined,
+        msg: 'did not remove unexistent reason',
+      },
+    ];
+
+    for (let i = 0; i < tests.length; i++) {
+      const { change, data, expected, msg } = tests[i];
+      const model = createDeficientItem(data);
+      const updates = updateDeficientItem(model, change);
+      const actual = updates.currentReasonIncomplete;
+      expect(actual).to.equal(expected, msg);
+    }
   });
 
   it('allows updating complete now reason with a string', function() {
