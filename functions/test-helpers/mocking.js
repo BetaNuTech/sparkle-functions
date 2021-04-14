@@ -276,6 +276,21 @@ module.exports = {
     };
   },
 
+  /**
+   * Create ap progress note
+   * history entry
+   * @param {Object?} histConfig
+   * @return {Object}
+   */
+  createDeficiencyProgressNoteHistory(histConfig = {}) {
+    return {
+      user: uuid(),
+      createdAt: nowUnix(),
+      progressNote: 'note',
+      ...histConfig,
+    };
+  },
+
   createSection(sectionConfig = {}) {
     return Object.assign(
       {
