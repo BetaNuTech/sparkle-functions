@@ -990,6 +990,22 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     }
   });
 
+  it('does not modify old progress note history', function() {
+    const expected = mocking.createDeficiencyProgressNoteHistory();
+    const model = createDeficientItem({
+      progressNotes: { expected },
+    });
+    const { progressNotes } = updateDeficientItem(
+      model,
+      {},
+      '',
+      nowUnix(),
+      'progress note'
+    );
+    const actual = progressNotes ? progressNotes.expected : {};
+    expect(actual).to.deep.equal(expected);
+  });
+
   it('appends a completed photo to when provided', function() {
     const createdAt = nowUnix() - 1;
     const currentStartDate = nowUnix();
