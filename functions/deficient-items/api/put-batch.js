@@ -3,6 +3,7 @@ const log = require('../../utils/logger');
 const deficiencyModel = require('../../models/deficient-items');
 const updateItem = require('../utils/update-deficient-item');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
+const unflatten = require('../../utils/unflatten-string-attrs');
 
 const PREFIX = 'deficient-items: api: put batch:';
 
@@ -150,7 +151,7 @@ module.exports = function createPutDeficiencyBatch(fs) {
           );
           updateResults.push({
             id: deficiencyId,
-            attributes: deficiencyUpdates,
+            attributes: unflatten(deficiencyUpdates),
           });
         } catch (err) {
           return send500Error(
