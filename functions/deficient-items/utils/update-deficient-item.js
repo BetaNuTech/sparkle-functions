@@ -398,8 +398,22 @@ function setCompletedState(config) {
   const currentState = deficientItem.state;
   const isValidCurrentState = currentState === 'pending';
   const currentStartDate = deficientItem.currentStartDate || 0;
-  const completedPhotos =
-    updates.completedPhotos || deficientItem.completedPhotos || {};
+
+  // Convert completed photos updates
+  // into history hash from flat firestore
+  // compatible "path.attributes"
+  // NOTE: defaults to `null`
+  const updatedPhotos = Object.keys(updates).reduce((acc, attr) => {
+    if (attr.search(/^completedPhotos\./) === 0) {
+      acc = acc || {};
+      const [, photoId] = attr.split('.');
+      acc[photoId] = updates[attr];
+    }
+
+    return acc;
+  }, null);
+
+  const completedPhotos = updatedPhotos || deficientItem.completedPhotos || {};
   const hasRequiredUpdates = hasCurrentStartDate(
     currentStartDate,
     completedPhotos
