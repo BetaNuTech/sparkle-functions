@@ -264,8 +264,10 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       createdAt,
       'note'
     );
-    const [stateHistoryKey] = Object.keys(updates.stateHistory);
-    const actual = updates.stateHistory[stateHistoryKey];
+    const [stateHistoryKey] = Object.keys(updates).filter(
+      update => update.search(/^stateHistory/) === 0
+    );
+    const actual = updates[stateHistoryKey];
     expect(actual).to.deep.equal(expected);
   });
 
@@ -299,10 +301,13 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       currentPlanToFix: 'fix',
     };
     const updates = updateDeficientItem(model, changes, '', createdAt, 'note');
+    const [startDateKey] = Object.keys(updates).filter(
+      update => update.search(/^startDates/) === 0
+    );
     assert.ok(updates.currentStartDate, 'has updated current start date');
-    assert.ok(updates.startDates, 'has updated start dates history hash');
-    const acutal =
-      updates.startDates[Object.keys(updates.startDates)[0]].startDate;
+    assert.ok(updates[startDateKey], 'has updated start dates history hash');
+
+    const acutal = updates[startDateKey].startDate;
     const expected = updates.currentStartDate;
     expect(acutal).to.equal(
       expected,
@@ -562,8 +567,10 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       createdAt,
       'note'
     );
-    const [stateHistoryKey] = Object.keys(updates.stateHistory);
-    const actual = updates.stateHistory[stateHistoryKey];
+    const [stateHistoryKey] = Object.keys(updates).filter(
+      update => update.search(/^stateHistory/) === 0
+    );
+    const actual = updates[stateHistoryKey];
     expect(actual).to.deep.equal(expected);
   });
 
@@ -602,10 +609,11 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       const { expected, update, data, args, message } = tests[i];
       const model = createDeficientItem(data);
       const changes = { state: update };
-      const { stateHistory } = updateDeficientItem(model, changes, ...args);
-      const actual = stateHistory
-        ? stateHistory[Object.keys(stateHistory)[0]]
-        : {};
+      const updates = updateDeficientItem(model, changes, ...args);
+      const [stateHistoryKey] = Object.keys(updates).filter(
+        updateKey => updateKey.search(/^stateHistory/) === 0
+      );
+      const actual = updates[stateHistoryKey] || {};
       expect(actual).to.deep.equal(expected, message);
     }
   });
@@ -680,8 +688,11 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
         currentDueDate: update.currentDueDate,
         currentDueDateDay: update.currentDueDateDay,
       };
-      const { dueDates } = updateDeficientItem(model, changes, ...args);
-      const actual = dueDates ? dueDates[Object.keys(dueDates)[0]] : {};
+      const defUpdates = updateDeficientItem(model, changes, ...args);
+      const [dueDateKey] = Object.keys(defUpdates).filter(
+        updateKey => updateKey.search(/^dueDates/) === 0
+      );
+      const actual = defUpdates[dueDateKey] || {};
       expect(actual).to.deep.equal(expected, message);
     }
   });
@@ -728,8 +739,12 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       const { expected, update, data, args, message } = tests[i];
       const model = createDeficientItem(data);
       const changes = { currentPlanToFix: update };
-      const { plansToFix } = updateDeficientItem(model, changes, ...args);
-      const actual = plansToFix ? plansToFix[Object.keys(plansToFix)[0]] : {};
+      const defUpdates = updateDeficientItem(model, changes, ...args);
+      const [planToFixKey] = Object.keys(defUpdates).filter(
+        updateKey => updateKey.search(/^plansToFix/) === 0
+      );
+      const actual = defUpdates[planToFixKey] || {};
+
       if (actual) {
         expect(actual).to.deep.equal(expected, message);
       } else {
@@ -777,14 +792,11 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       const { expected, update, data, args, message } = tests[i];
       const model = createDeficientItem(data);
       const changes = { currentCompleteNowReason: update };
-      const { completeNowReasons } = updateDeficientItem(
-        model,
-        changes,
-        ...args
+      const defUpdates = updateDeficientItem(model, changes, ...args);
+      const completeNowKey = Object.keys(defUpdates).filter(
+        updateKey => updateKey.search(/^completeNowReasons/) === 0
       );
-      const actual = completeNowReasons
-        ? Object.values(completeNowReasons)[0]
-        : {};
+      const actual = defUpdates[completeNowKey] || {};
       expect(actual).to.deep.equal(expected, message);
     }
   });
@@ -837,14 +849,11 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       const { expected, update, data, args, message } = tests[i];
       const model = createDeficientItem(data);
       const changes = { currentResponsibilityGroup: update };
-      const { responsibilityGroups } = updateDeficientItem(
-        model,
-        changes,
-        ...args
+      const defUpdates = updateDeficientItem(model, changes, ...args);
+      const respGroupKey = Object.keys(defUpdates).filter(
+        updateKey => updateKey.search(/^responsibilityGroups/) === 0
       );
-      const actual = responsibilityGroups
-        ? responsibilityGroups[Object.keys(responsibilityGroups)[0]]
-        : {};
+      const actual = defUpdates[respGroupKey] || {};
       expect(actual).to.deep.equal(expected, message);
     }
   });
@@ -897,14 +906,11 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       const { expected, update, data, args, message } = tests[i];
       const model = createDeficientItem({ ...data, state: 'overdue' });
       const changes = { state: 'incomplete', currentReasonIncomplete: update };
-      const { reasonsIncomplete } = updateDeficientItem(
-        model,
-        changes,
-        ...args
+      const defUpdates = updateDeficientItem(model, changes, ...args);
+      const [reasonsIncKey] = Object.keys(defUpdates).filter(
+        updateKey => updateKey.search(/^reasonsIncomplete/) === 0
       );
-      const actual = reasonsIncomplete
-        ? reasonsIncomplete[Object.keys(reasonsIncomplete)[0]]
-        : {};
+      const actual = defUpdates[reasonsIncKey] || {};
       expect(actual).to.deep.equal(expected, message);
     }
   });
@@ -938,8 +944,11 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       const { expected, update, data, args, message } = tests[i];
       const model = createDeficientItem(data);
       const changes = { currentStartDate: update };
-      const { startDates } = updateDeficientItem(model, changes, ...args);
-      const actual = startDates ? startDates[Object.keys(startDates)[0]] : {};
+      const defUpdates = updateDeficientItem(model, changes, ...args);
+      const startDatesKey = Object.keys(defUpdates).filter(
+        updateKey => updateKey.search(/^startDates/) === 0
+      );
+      const actual = defUpdates[startDatesKey] || {};
       expect(actual).to.deep.equal(expected, message);
     }
   });
@@ -982,10 +991,11 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     for (let i = 0; i < tests.length; i++) {
       const { expected, data, args, message } = tests[i];
       const model = createDeficientItem(data);
-      const { progressNotes } = updateDeficientItem(model, {}, ...args);
-      const actual = progressNotes
-        ? progressNotes[Object.keys(progressNotes)[0]]
-        : {};
+      const defUpdates = updateDeficientItem(model, {}, ...args);
+      const [progNoteKey] = Object.keys(defUpdates).filter(
+        updateKey => updateKey.search(/^progressNotes/) === 0
+      );
+      const actual = defUpdates[progNoteKey] || {};
       expect(actual).to.deep.equal(expected, message);
     }
   });
@@ -1004,7 +1014,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
         message: 'ignored unset completed photo',
       },
       {
-        expected: updates[0],
+        expected: Object.values(updates[0])[0],
         data: {},
         args: ['', createdAt, '', updates[0]],
         message: 'recorded provided completed photo',
@@ -1014,11 +1024,11 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     for (let i = 0; i < tests.length; i++) {
       const { expected, data, args, message } = tests[i];
       const model = createDeficientItem(data);
-      const { completedPhotos: actual = {} } = updateDeficientItem(
-        model,
-        {},
-        ...args
+      const defUpdates = updateDeficientItem(model, {}, ...args);
+      const [compPhotoKey] = Object.keys(defUpdates).filter(
+        updateKey => updateKey.search(/^completedPhotos/) === 0
       );
+      const actual = defUpdates[compPhotoKey] || {};
       expect(actual).to.deep.equal(expected, message);
     }
   });
@@ -1266,10 +1276,11 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
         currentDeferredDate: update.currentDeferredDate,
         currentDeferredDateDay: update.currentDeferredDateDay,
       };
-      const { deferredDates } = updateDeficientItem(model, changes, ...args);
-      const actual = deferredDates
-        ? deferredDates[Object.keys(deferredDates)[0]]
-        : {};
+      const defUpdates = updateDeficientItem(model, changes, ...args);
+      const [defDateKey] = Object.keys(defUpdates).filter(
+        updateKey => updateKey.search(/^deferredDates/) === 0
+      );
+      const actual = defUpdates[defDateKey] || {};
       expect(actual).to.deep.equal(expected, message);
     }
   });

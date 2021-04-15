@@ -398,8 +398,22 @@ function setCompletedState(config) {
   const currentState = deficientItem.state;
   const isValidCurrentState = currentState === 'pending';
   const currentStartDate = deficientItem.currentStartDate || 0;
-  const completedPhotos =
-    updates.completedPhotos || deficientItem.completedPhotos || {};
+
+  // Convert completed photos updates
+  // into history hash from flat firestore
+  // compatible "path.attributes"
+  // NOTE: defaults to `null`
+  const updatedPhotos = Object.keys(updates).reduce((acc, attr) => {
+    if (attr.search(/^completedPhotos\./) === 0) {
+      acc = acc || {};
+      const [, photoId] = attr.split('.');
+      acc[photoId] = updates[attr];
+    }
+
+    return acc;
+  }, null);
+
+  const completedPhotos = updatedPhotos || deficientItem.completedPhotos || {};
   const hasRequiredUpdates = hasCurrentStartDate(
     currentStartDate,
     completedPhotos
@@ -486,17 +500,16 @@ function appendStateHistory(config) {
   const newState = updates.state || '';
 
   if (newState && newState !== deficientItem.state) {
-    const id = uuid();
+    const updateKey = `stateHistory.${uuid()}`;
 
-    updates.stateHistory = Object.create(null);
-    updates.stateHistory[id] = {
+    updates[updateKey] = {
       createdAt: updatedAt,
       state: newState,
     };
 
     // Add optional user
     if (authorID) {
-      updates.stateHistory[id].user = authorID;
+      updates[updateKey].user = authorID;
     }
   }
 
@@ -523,28 +536,27 @@ function appendDueDate(config) {
     typeof dueTime === 'number' &&
     dueTime !== deficientItem.currentDueDate
   ) {
-    const id = uuid();
+    const updateKey = `dueDates.${uuid()}`;
     const startDate = findFirstUnix(
       updates.currentStartDate,
       deficientItem.currentStartDate
     );
 
-    updates.dueDates = Object.create(null);
-    updates.dueDates[id] = { createdAt: updatedAt, dueDate: dueTime };
+    updates[updateKey] = { createdAt: updatedAt, dueDate: dueTime };
 
     // Append current start date
     if (startDate) {
-      updates.dueDates[id].startDate = startDate;
+      updates[updateKey].startDate = startDate;
     }
 
     // Add optional due date day
     if (dueDay) {
-      updates.dueDates[id].dueDateDay = dueDay;
+      updates[updateKey].dueDateDay = dueDay;
     }
 
     // Add optional user
     if (authorID) {
-      updates.dueDates[id].user = authorID;
+      updates[updateKey].user = authorID;
     }
   }
 
@@ -613,22 +625,21 @@ function appendDeferredDate(config) {
     typeof deferTime === 'number' &&
     deferTime !== deficientItem.currentDeferredDate
   ) {
-    const id = uuid();
+    const updateKey = `deferredDates.${uuid()}`;
 
-    updates.deferredDates = Object.create(null);
-    updates.deferredDates[id] = {
+    updates[updateKey] = {
       createdAt: updatedAt,
       deferredDate: deferTime,
     };
 
     // Add optional deferred day
     if (deferDay) {
-      updates.deferredDates[id].deferredDateDay = deferDay;
+      updates[updateKey].deferredDateDay = deferDay;
     }
 
     // Add optional user
     if (authorID) {
-      updates.deferredDates[id].user = authorID;
+      updates[updateKey].user = authorID;
     }
   }
 
@@ -667,26 +678,25 @@ function appendPlanToFix(config) {
   const planToFix = changes.currentPlanToFix || '';
 
   if (planToFix && planToFix !== deficientItem.currentPlanToFix) {
-    const id = uuid();
+    const updateKey = `plansToFix.${uuid()}`;
     const startDate = findFirstUnix(
       updates.currentStartDate,
       deficientItem.currentStartDate
     );
 
-    updates.plansToFix = Object.create(null);
-    updates.plansToFix[id] = {
+    updates[updateKey] = {
       createdAt: updatedAt,
       planToFix,
     };
 
     // Append any start date
     if (startDate) {
-      updates.plansToFix[id].startDate = startDate;
+      updates[updateKey].startDate = startDate;
     }
 
     // Add optional user
     if (authorID) {
-      updates.plansToFix[id].user = authorID;
+      updates[updateKey].user = authorID;
     }
   }
 
@@ -728,17 +738,15 @@ function appendCompleteNowReasons(config) {
     completeNowReason &&
     completeNowReason !== deficientItem.currentCompleteNowReason
   ) {
-    const id = uuid();
-
-    updates.completeNowReasons = Object.create(null);
-    updates.completeNowReasons[id] = {
+    const updateKey = `completeNowReasons.${uuid()}`;
+    updates[updateKey] = {
       createdAt: updatedAt,
       completeNowReason,
     };
 
     // Add optional user
     if (authorID) {
-      updates.completeNowReasons[id].user = authorID;
+      updates[updateKey].user = authorID;
     }
   }
 
@@ -781,26 +789,25 @@ function appendResponsibilityGroup(config) {
     groupResponsible &&
     groupResponsible !== deficientItem.currentResponsibilityGroup
   ) {
-    const id = uuid();
+    const updateKey = `responsibilityGroups.${uuid()}`;
     const startDate = findFirstUnix(
       updates.currentStartDate,
       deficientItem.currentStartDate
     );
 
-    updates.responsibilityGroups = Object.create(null);
-    updates.responsibilityGroups[id] = {
+    updates[updateKey] = {
       createdAt: updatedAt,
       groupResponsible,
     };
 
     // Append start date
     if (startDate) {
-      updates.responsibilityGroups[id].startDate = startDate;
+      updates[updateKey].startDate = startDate;
     }
 
     // Add optional user
     if (authorID) {
-      updates.responsibilityGroups[id].user = authorID;
+      updates[updateKey].user = authorID;
     }
   }
 
@@ -857,20 +864,20 @@ function appendReasonIncomplete(config) {
       deficientItem.currentStartDate
     );
 
-    updates.reasonsIncomplete = Object.create(null);
-    updates.reasonsIncomplete[id] = {
+    const updateKey = `reasonsIncomplete.${id}`;
+    updates[updateKey] = {
       createdAt: updatedAt,
       reasonIncomplete: newReason,
     };
 
     // Append start date
     if (startDate) {
-      updates.reasonsIncomplete[id].startDate = startDate;
+      updates[updateKey].startDate = startDate;
     }
 
     // Add optional user
     if (authorID) {
-      updates.reasonsIncomplete[id].user = authorID;
+      updates[updateKey].user = authorID;
     }
   }
 
@@ -895,8 +902,7 @@ function appendStartDate(config) {
     typeof startDate === 'number' &&
     startDate !== deficientItem.currentStartDate
   ) {
-    updates.startDates = Object.create(null);
-    updates.startDates[uuid()] = { startDate };
+    updates[`startDates.${uuid()}`] = { startDate };
   }
 
   return config;
@@ -922,20 +928,20 @@ function appendProgressNote(config) {
       deficientItem.currentStartDate
     );
 
-    updates.progressNotes = Object.create(null);
-    updates.progressNotes[id] = {
+    const updateKey = `progressNotes.${id}`;
+    updates[updateKey] = {
       createdAt: updatedAt,
       progressNote,
     };
 
     // Append start date
     if (startDate) {
-      updates.progressNotes[id].startDate = startDate;
+      updates[updateKey].startDate = startDate;
     }
 
     // Add optional user
     if (authorID) {
-      updates.progressNotes[id].user = authorID;
+      updates[updateKey].user = authorID;
     }
   }
 
@@ -953,8 +959,10 @@ function appendCompletedPhotos(config) {
   const { updates, completedPhotos } = config;
 
   if (completedPhotos) {
-    updates.completedPhotos = updates.completedPhotos || Object.create(null);
-    Object.assign(updates.completedPhotos, completedPhotos); // append photo JSON
+    // Append completed photos as nested writes
+    Object.keys(completedPhotos).forEach(id => {
+      updates[`completedPhotos.${id}`] = completedPhotos[id];
+    });
   }
 
   return config;

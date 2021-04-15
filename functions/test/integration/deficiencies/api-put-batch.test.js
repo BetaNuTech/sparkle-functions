@@ -9,6 +9,7 @@ const stubs = require('../../../test-helpers/stubs');
 const mocking = require('../../../test-helpers/mocking');
 const deficiencyModel = require('../../../models/deficient-items');
 const updateDeficiency = require('../../../deficient-items/utils/update-deficient-item');
+const unflatten = require('../../../utils/unflatten-string-attrs');
 const putBatch = require('../../../deficient-items/api/put-batch');
 
 const USER_ID = '123';
@@ -215,7 +216,9 @@ describe('Deficiencies | API | PUT Batch', () => {
     const expected = {
       id: deficiencyId,
       type: 'deficient-item',
-      attributes: updateDeficiency(deficiency, changes, USER_ID, updatedAt),
+      attributes: unflatten(
+        updateDeficiency(deficiency, changes, USER_ID, updatedAt)
+      ),
     };
 
     request(createApp())
