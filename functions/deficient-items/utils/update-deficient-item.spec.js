@@ -553,71 +553,6 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('appends a state history entry when incomplete state is set', function() {
-    const user = uuid();
-    const createdAt = nowUnix() - 1;
-    const expected = { state: 'incomplete', user, createdAt };
-    const model = createDeficientItem({ state: 'overdue' });
-    const changes = { state: 'incomplete', currentReasonIncomplete: 'woopsy' };
-    delete model.stateHistory; // sanity check
-    const updates = updateDeficientItem(
-      model,
-      changes,
-      user,
-      createdAt,
-      'note'
-    );
-    const [stateHistoryKey] = Object.keys(updates).filter(
-      update => update.search(/^stateHistory/) === 0
-    );
-    const actual = updates[stateHistoryKey];
-    expect(actual).to.deep.equal(expected);
-  });
-
-  it('appends a new item to state history when state changes', function() {
-    const userID = '-123';
-    const createdAt = nowUnix();
-    const tests = [
-      {
-        expected: {},
-        update: 'requires-action',
-        data: { state: 'requires-action' },
-        args: [],
-        message: 'ignored same state change',
-      },
-      {
-        expected: { state: 'go-back', createdAt },
-        update: 'go-back',
-        data: { state: 'deferred' },
-        args: ['', createdAt],
-        message: 'recorded state change',
-      },
-      {
-        expected: {
-          state: 'go-back',
-          createdAt,
-          user: userID,
-        },
-        update: 'go-back',
-        data: { state: 'deferred' },
-        args: [userID, createdAt],
-        message: 'added user when present',
-      },
-    ];
-
-    for (let i = 0; i < tests.length; i++) {
-      const { expected, update, data, args, message } = tests[i];
-      const model = createDeficientItem(data);
-      const changes = { state: update };
-      const updates = updateDeficientItem(model, changes, ...args);
-      const [stateHistoryKey] = Object.keys(updates).filter(
-        updateKey => updateKey.search(/^stateHistory/) === 0
-      );
-      const actual = updates[stateHistoryKey] || {};
-      expect(actual).to.deep.equal(expected, message);
-    }
-  });
-
   it('appends a new item to due dates when current due date changes', function() {
     const userID = '-123';
     const createdAt = nowUnix() - 1;
@@ -1425,6 +1360,154 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       expect(actual).to.equal(
         expected,
         `transitioned from ${data.state} to ${expected}`
+      );
+    }
+  });
+
+  it('appends a history state record for each state transition', function() {
+    const createdAt = nowUnix();
+    const tomorrow = nowUnix() + 24 * 60 * 60;
+    const completedPhoto = createCompletedPhotosTree(tomorrow, 1, '1');
+    const tests = [
+      {
+        data: {
+          state: 'requires-action',
+        },
+        changes: {
+          state: 'deferred',
+          currentDeferredDate: tomorrow,
+        },
+        expected: 'deferred',
+      },
+      {
+        data: { state: 'requires-action' },
+        changes: {
+          state: 'closed',
+          currentCompleteNowReason: 'done', // AKA complete now
+        },
+        expected: 'closed',
+      },
+      {
+        data: { state: 'deferred' },
+        changes: { state: 'go-back' },
+        expected: 'go-back',
+      },
+      {
+        data: { state: 'deferred' },
+        changes: { state: 'closed' }, // AKA duplicate
+        expected: 'closed',
+      },
+      {
+        data: { state: 'go-back' },
+        changes: {
+          state: 'pending',
+          currentDueDate: tomorrow,
+          currentPlanToFix: 'ok',
+          currentResponsibilityGroup: 'site_level_in-house',
+        },
+        expected: 'pending',
+      },
+      {
+        data: { state: 'go-back' },
+        changes: {
+          state: 'deferred',
+          currentDeferredDate: tomorrow,
+        },
+        expected: 'deferred',
+      },
+      {
+        data: { state: 'pending' },
+        changes: {
+          state: 'deferred',
+          currentDeferredDate: tomorrow,
+        },
+        expected: 'deferred',
+      },
+      // TODO: Move support here
+      // {
+      //   data: { state: 'pending' },
+      //   changes: { state: 'overdue' },
+      //   expected: 'overdue',
+      // },
+      {
+        data: { state: 'pending' },
+        changes: { state: 'requires-progress-update' },
+        expected: 'requires-progress-update',
+      },
+      {
+        data: { state: 'pending', currentStartDate: tomorrow },
+        changes: { state: 'completed' },
+        completedPhoto,
+        expected: 'completed',
+      },
+      {
+        data: { state: 'requires-progress-update' },
+        changes: { state: 'pending' },
+        progressNote: 'progress',
+        expected: 'pending',
+      },
+
+      // TODO: Move support here
+      // {
+      //   data: { state: 'requires-progress-update' },
+      //   changes: { state: 'overdue' },
+      //   expected: 'overdue',
+      // },
+      {
+        data: { state: 'overdue' },
+        changes: {
+          state: 'incomplete',
+          currentReasonIncomplete: 'not ready',
+        },
+        expected: 'incomplete',
+      },
+      {
+        data: { state: 'completed' },
+        changes: { state: 'go-back' },
+        expected: 'go-back',
+      },
+      {
+        data: { state: 'completed' },
+        changes: { state: 'closed' },
+        expected: 'closed',
+      },
+      {
+        data: { state: 'incomplete' },
+        changes: { state: 'go-back' },
+        expected: 'go-back',
+      },
+      {
+        data: { state: 'incomplete' },
+        changes: { state: 'closed' },
+        expected: 'closed',
+      },
+    ];
+
+    for (let i = 0; i < tests.length; i++) {
+      const {
+        data,
+        changes,
+        progressNote,
+        completedPhoto: completedPhotoArg,
+        expected,
+      } = tests[i];
+      const model = createDeficientItem(data);
+      const updates = updateDeficientItem(
+        model,
+        changes,
+        '1',
+        createdAt,
+        progressNote || '',
+        completedPhotoArg || null
+      );
+      const [stateHistoryKey] = Object.keys(updates).filter(
+        updateKey => updateKey.search(/^stateHistory/) === 0
+      );
+      const stateHistoryEntry = updates[stateHistoryKey] || {};
+      const actual = stateHistoryEntry.state || '';
+      expect(actual).to.equal(
+        expected,
+        `has state history for transition to ${expected} from ${data.state}`
       );
     }
   });
