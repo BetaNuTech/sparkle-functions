@@ -21,7 +21,7 @@ const STORAGE_PATH = [
 ];
 
 describe('Deficiency | Utils | Update Deficient Item', () => {
-  it('it sets go back state only when specific states are active', function() {
+  it('sets go back state only when specific states are active', function() {
     [
       { data: 'completed', expected: true },
       { data: 'incomplete', expected: true },
@@ -43,7 +43,8 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it removes "current" DI attributes when set as go-back', function() {
+  // TODO: remove
+  it('removes "current" DI attributes when set as go-back', function() {
     const model = createDeficientItem({
       state: 'deferred',
       currentPlanToFix: 'test',
@@ -72,7 +73,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it sets a current due date day from current due date', function() {
+  it('sets a current due date day from current due date', function() {
     const updates = [
       1546300800000,
       1557446400000,
@@ -116,7 +117,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it sets pending state only when specific states are active', function() {
+  it('sets pending state only when specific states are active', function() {
     const createdAt = nowUnix() - 1;
     const tomorrow = nowUnix() + 24 * 60 * 60;
     const progressNotes = {
@@ -159,7 +160,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it sets completed state only when specific states are active', function() {
+  it('sets completed state only when specific states are active', function() {
     const tomorrow = nowUnix() + 24 * 60 * 60;
     const completedPhotos = createCompletedPhotosTree(tomorrow, 1, '1');
     [
@@ -193,7 +194,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it sets closed state only when specific states are active', function() {
+  it('sets closed state only when specific states are active', function() {
     [
       { data: 'completed', expected: true },
       { data: 'incomplete', expected: true },
@@ -215,7 +216,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it sets requires progress update state only when specific state(s) are active', function() {
+  it('sets requires progress update state only when specific state(s) are active', function() {
     [
       { data: 'completed', expected: false },
       { data: 'incomplete', expected: false },
@@ -241,9 +242,9 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
   });
 
   // TODO:
-  // it('it only transitions to requires progress update when more than 1/2 way to due date', function() {});
+  // it('only transitions to requires progress update when more than 1/2 way to due date', function() {});
 
-  it('it appends a state history entry when pending state is set', function() {
+  it('appends a state history entry when pending state is set', function() {
     const user = uuid();
     const createdAt = nowUnix();
     const tomorrow = nowUnix() + 24 * 60 * 60;
@@ -263,12 +264,14 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       createdAt,
       'note'
     );
-    const [stateHistoryKey] = Object.keys(updates.stateHistory);
-    const actual = updates.stateHistory[stateHistoryKey];
+    const [stateHistoryKey] = Object.keys(updates).filter(
+      update => update.search(/^stateHistory/) === 0
+    );
+    const actual = updates[stateHistoryKey];
     expect(actual).to.deep.equal(expected);
   });
 
-  it('it sets current start date when updated to pending', function() {
+  it('sets current start date when updated to pending', function() {
     const createdAt = nowUnix();
     const tomorrow = nowUnix() + 24 * 60 * 60;
     const model = createDeficientItem({ state: 'requires-action' });
@@ -287,7 +290,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     );
   });
 
-  it('it uses updated current start date setting history hash start dates', function() {
+  it('uses updated current start date setting history hash start dates', function() {
     const createdAt = nowUnix();
     const tomorrow = nowUnix() + 24 * 60 * 60;
     const model = createDeficientItem({ state: 'requires-action' });
@@ -298,10 +301,13 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       currentPlanToFix: 'fix',
     };
     const updates = updateDeficientItem(model, changes, '', createdAt, 'note');
+    const [startDateKey] = Object.keys(updates).filter(
+      update => update.search(/^startDates/) === 0
+    );
     assert.ok(updates.currentStartDate, 'has updated current start date');
-    assert.ok(updates.startDates, 'has updated start dates history hash');
-    const acutal =
-      updates.startDates[Object.keys(updates.startDates)[0]].startDate;
+    assert.ok(updates[startDateKey], 'has updated start dates history hash');
+
+    const acutal = updates[startDateKey].startDate;
     const expected = updates.currentStartDate;
     expect(acutal).to.equal(
       expected,
@@ -309,7 +315,34 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     );
   });
 
-  it('it sets pending state only when update meets requirements', function() {
+  it('allows updating current due date with a valid timestamp', function() {
+    const model = createDeficientItem({ state: 'requires-action' });
+    const expected = Math.round(Date.now() / 1000);
+    const changes = { currentDueDate: expected };
+    const updates = updateDeficientItem(model, changes);
+    const actual = updates.currentDueDate;
+    expect(actual).to.equal(expected);
+  });
+
+  it('allows updating current plan to fix with a valid string', function() {
+    const model = createDeficientItem({ state: 'requires-action' });
+    const expected = 'current plan';
+    const changes = { currentResponsibilityGroup: expected };
+    const updates = updateDeficientItem(model, changes);
+    const actual = updates.currentResponsibilityGroup;
+    expect(actual).to.equal(expected);
+  });
+
+  it('allows updating current responsibility group with a valid string', function() {
+    const model = createDeficientItem({ state: 'requires-action' });
+    const expected = 'corporate_manages_vendor';
+    const changes = { currentPlanToFix: expected };
+    const updates = updateDeficientItem(model, changes);
+    const actual = updates.currentPlanToFix;
+    expect(actual).to.equal(expected);
+  });
+
+  it('sets pending state only when update meets requirements', function() {
     const createdAt = nowUnix();
     const tomorrow = nowUnix() + 24 * 60 * 60;
     [
@@ -359,7 +392,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it sets pending state when progress note is required', function() {
+  it('sets pending state when progress note is required', function() {
     const pendingReadyDI = {
       currentResponsibilityGroup: 'corporate_manages_vendor',
       currentPlanToFix: 'fix',
@@ -459,7 +492,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it sets incomplete state only when specific state(s) are active', function() {
+  it('sets incomplete state only when specific state(s) are active', function() {
     const createdAt = nowUnix();
     [
       { data: 'completed', expected: false },
@@ -492,7 +525,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it sets incomplete state on overdue only when model requirements met', function() {
+  it('sets incomplete state on overdue only when model requirements met', function() {
     const createdAt = nowUnix();
     [
       { data: [], expected: false },
@@ -520,69 +553,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it appends a state history entry when incomplete state is set', function() {
-    const user = uuid();
-    const createdAt = nowUnix() - 1;
-    const expected = { state: 'incomplete', user, createdAt };
-    const model = createDeficientItem({ state: 'overdue' });
-    const changes = { state: 'incomplete', currentReasonIncomplete: 'woopsy' };
-    delete model.stateHistory; // sanity check
-    const updates = updateDeficientItem(
-      model,
-      changes,
-      user,
-      createdAt,
-      'note'
-    );
-    const [stateHistoryKey] = Object.keys(updates.stateHistory);
-    const actual = updates.stateHistory[stateHistoryKey];
-    expect(actual).to.deep.equal(expected);
-  });
-
-  it('it appends a new item to state history when state changes', function() {
-    const userID = '-123';
-    const createdAt = nowUnix();
-    const tests = [
-      {
-        expected: {},
-        update: 'requires-action',
-        data: { state: 'requires-action' },
-        args: [],
-        message: 'ignored same state change',
-      },
-      {
-        expected: { state: 'go-back', createdAt },
-        update: 'go-back',
-        data: { state: 'deferred' },
-        args: ['', createdAt],
-        message: 'recorded state change',
-      },
-      {
-        expected: {
-          state: 'go-back',
-          createdAt,
-          user: userID,
-        },
-        update: 'go-back',
-        data: { state: 'deferred' },
-        args: [userID, createdAt],
-        message: 'added user when present',
-      },
-    ];
-
-    for (let i = 0; i < tests.length; i++) {
-      const { expected, update, data, args, message } = tests[i];
-      const model = createDeficientItem(data);
-      const changes = { state: update };
-      const { stateHistory } = updateDeficientItem(model, changes, ...args);
-      const actual = stateHistory
-        ? stateHistory[Object.keys(stateHistory)[0]]
-        : {};
-      expect(actual).to.deep.equal(expected, message);
-    }
-  });
-
-  it('it appends a new item to due dates when current due date changes', function() {
+  it('appends a new item to due dates when current due date changes', function() {
     const userID = '-123';
     const createdAt = nowUnix() - 1;
     const updates = Array.from(
@@ -652,13 +623,16 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
         currentDueDate: update.currentDueDate,
         currentDueDateDay: update.currentDueDateDay,
       };
-      const { dueDates } = updateDeficientItem(model, changes, ...args);
-      const actual = dueDates ? dueDates[Object.keys(dueDates)[0]] : {};
+      const defUpdates = updateDeficientItem(model, changes, ...args);
+      const [dueDateKey] = Object.keys(defUpdates).filter(
+        updateKey => updateKey.search(/^dueDates/) === 0
+      );
+      const actual = defUpdates[dueDateKey] || {};
       expect(actual).to.deep.equal(expected, message);
     }
   });
 
-  it('it appends a new item to plans to fix when current plan changes', function() {
+  it('appends a new item to plans to fix when current plan changes', function() {
     const userID = '-123';
     const createdAt = nowUnix();
     const updates = Array.from({ length: 5 }, (_, i) => `${i}`);
@@ -700,8 +674,12 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       const { expected, update, data, args, message } = tests[i];
       const model = createDeficientItem(data);
       const changes = { currentPlanToFix: update };
-      const { plansToFix } = updateDeficientItem(model, changes, ...args);
-      const actual = plansToFix ? plansToFix[Object.keys(plansToFix)[0]] : {};
+      const defUpdates = updateDeficientItem(model, changes, ...args);
+      const [planToFixKey] = Object.keys(defUpdates).filter(
+        updateKey => updateKey.search(/^plansToFix/) === 0
+      );
+      const actual = defUpdates[planToFixKey] || {};
+
       if (actual) {
         expect(actual).to.deep.equal(expected, message);
       } else {
@@ -710,7 +688,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     }
   });
 
-  it('it appends a new item to complete now reasons when current plan changes', function() {
+  it('appends a new item to complete now reasons when current plan changes', function() {
     const userID = '-123';
     const createdAt = nowUnix() - 1;
     const updates = Array.from({ length: 5 }, (_, i) => `${i}`);
@@ -749,19 +727,16 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       const { expected, update, data, args, message } = tests[i];
       const model = createDeficientItem(data);
       const changes = { currentCompleteNowReason: update };
-      const { completeNowReasons } = updateDeficientItem(
-        model,
-        changes,
-        ...args
+      const defUpdates = updateDeficientItem(model, changes, ...args);
+      const completeNowKey = Object.keys(defUpdates).filter(
+        updateKey => updateKey.search(/^completeNowReasons/) === 0
       );
-      const actual = completeNowReasons
-        ? Object.values(completeNowReasons)[0]
-        : {};
+      const actual = defUpdates[completeNowKey] || {};
       expect(actual).to.deep.equal(expected, message);
     }
   });
 
-  it('it appends a new responsiblity group when current group changes', function() {
+  it('appends a new responsiblity group when current group changes', function() {
     const userID = '-123';
     const createdAt = nowUnix() - 1;
     const updates = Array.from({ length: 5 }, (_, i) => `${i}`);
@@ -809,19 +784,16 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       const { expected, update, data, args, message } = tests[i];
       const model = createDeficientItem(data);
       const changes = { currentResponsibilityGroup: update };
-      const { responsibilityGroups } = updateDeficientItem(
-        model,
-        changes,
-        ...args
+      const defUpdates = updateDeficientItem(model, changes, ...args);
+      const respGroupKey = Object.keys(defUpdates).filter(
+        updateKey => updateKey.search(/^responsibilityGroups/) === 0
       );
-      const actual = responsibilityGroups
-        ? responsibilityGroups[Object.keys(responsibilityGroups)[0]]
-        : {};
+      const actual = defUpdates[respGroupKey] || {};
       expect(actual).to.deep.equal(expected, message);
     }
   });
 
-  it('it appends a new reason incomplete when current reason changes', function() {
+  it('appends a new reason incomplete when current reason changes', function() {
     const userID = '-123';
     const createdAt = nowUnix() - 1;
     const updates = Array.from({ length: 5 }, (_, i) => `${i}`);
@@ -867,21 +839,18 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
 
     for (let i = 0; i < tests.length; i++) {
       const { expected, update, data, args, message } = tests[i];
-      const model = createDeficientItem(data);
-      const changes = { currentReasonIncomplete: update };
-      const { reasonsIncomplete } = updateDeficientItem(
-        model,
-        changes,
-        ...args
+      const model = createDeficientItem({ ...data, state: 'overdue' });
+      const changes = { state: 'incomplete', currentReasonIncomplete: update };
+      const defUpdates = updateDeficientItem(model, changes, ...args);
+      const [reasonsIncKey] = Object.keys(defUpdates).filter(
+        updateKey => updateKey.search(/^reasonsIncomplete/) === 0
       );
-      const actual = reasonsIncomplete
-        ? reasonsIncomplete[Object.keys(reasonsIncomplete)[0]]
-        : {};
+      const actual = defUpdates[reasonsIncKey] || {};
       expect(actual).to.deep.equal(expected, message);
     }
   });
 
-  it('it appends a new start date when current start date changes', function() {
+  it('appends a new start date when current start date changes', function() {
     const createdAt = nowUnix();
     const updates = Array.from(
       { length: 5 },
@@ -910,13 +879,16 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       const { expected, update, data, args, message } = tests[i];
       const model = createDeficientItem(data);
       const changes = { currentStartDate: update };
-      const { startDates } = updateDeficientItem(model, changes, ...args);
-      const actual = startDates ? startDates[Object.keys(startDates)[0]] : {};
+      const defUpdates = updateDeficientItem(model, changes, ...args);
+      const startDatesKey = Object.keys(defUpdates).filter(
+        updateKey => updateKey.search(/^startDates/) === 0
+      );
+      const actual = defUpdates[startDatesKey] || {};
       expect(actual).to.deep.equal(expected, message);
     }
   });
 
-  it('it appends a progress note to history when provided', function() {
+  it('appends a progress note to history when provided', function() {
     const userID = '-123';
     const createdAt = nowUnix();
     const updates = Array.from({ length: 5 }, (_, i) => `${i}`);
@@ -954,15 +926,16 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     for (let i = 0; i < tests.length; i++) {
       const { expected, data, args, message } = tests[i];
       const model = createDeficientItem(data);
-      const { progressNotes } = updateDeficientItem(model, {}, ...args);
-      const actual = progressNotes
-        ? progressNotes[Object.keys(progressNotes)[0]]
-        : {};
+      const defUpdates = updateDeficientItem(model, {}, ...args);
+      const [progNoteKey] = Object.keys(defUpdates).filter(
+        updateKey => updateKey.search(/^progressNotes/) === 0
+      );
+      const actual = defUpdates[progNoteKey] || {};
       expect(actual).to.deep.equal(expected, message);
     }
   });
 
-  it('it appends a completed photo to when provided', function() {
+  it('appends a completed photo to when provided', function() {
     const createdAt = nowUnix() - 1;
     const currentStartDate = nowUnix();
     const updates = Array.from({ length: 2 }, (_, i) =>
@@ -976,7 +949,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
         message: 'ignored unset completed photo',
       },
       {
-        expected: updates[0],
+        expected: Object.values(updates[0])[0],
         data: {},
         args: ['', createdAt, '', updates[0]],
         message: 'recorded provided completed photo',
@@ -986,16 +959,16 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     for (let i = 0; i < tests.length; i++) {
       const { expected, data, args, message } = tests[i];
       const model = createDeficientItem(data);
-      const { completedPhotos: actual = {} } = updateDeficientItem(
-        model,
-        {},
-        ...args
+      const defUpdates = updateDeficientItem(model, {}, ...args);
+      const [compPhotoKey] = Object.keys(defUpdates).filter(
+        updateKey => updateKey.search(/^completedPhotos/) === 0
       );
+      const actual = defUpdates[compPhotoKey] || {};
       expect(actual).to.deep.equal(expected, message);
     }
   });
 
-  it('it sets deferred state only for specific states and valid dates', function() {
+  it('sets deferred state only for specific states and valid dates', function() {
     const createdAt = (Date.now() - 1000) / 1000;
     const badDate = nowUnix();
     const goodDate = nowUnix() + 24 * 60 * 60;
@@ -1045,7 +1018,16 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it sets a current deferred due date day from current deferred date', function() {
+  it('allows updating current deferred date with a valid timestamp', function() {
+    const model = createDeficientItem({ state: 'requires-action' });
+    const expected = Math.round(Date.now() / 1000);
+    const changes = { currentDeferredDate: expected };
+    const updates = updateDeficientItem(model, changes);
+    const actual = updates.currentDeferredDate;
+    expect(actual).to.equal(expected);
+  });
+
+  it('sets a current deferred due date day from current deferred date', function() {
     const updates = [
       1546300800,
       1557446400,
@@ -1089,7 +1071,96 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  it('it appends a new deferred date when current deferred date changes', function() {
+  it('only updates current reason incomplete when transitioning to incomplete', function() {
+    const tests = [
+      {
+        state: 'deferred',
+        reason: 'oops',
+        expected: false,
+        msg: 'invalid state',
+      },
+      {
+        state: 'incomplete',
+        reason: '',
+        expected: false,
+        msg: 'invalid update',
+      },
+      {
+        state: 'incomplete',
+        reason: 'oops',
+        expected: true,
+        msg: 'valid update',
+      },
+    ];
+
+    for (let i = 0; i < tests.length; i++) {
+      const { state, reason, expected, msg } = tests[i];
+      const model = createDeficientItem({
+        state: 'overdue', // valid to transition to incomplete
+      });
+      const changes = { state, currentReasonIncomplete: reason };
+      const updates = updateDeficientItem(model, changes);
+      const actual = Boolean(updates.currentReasonIncomplete);
+      expect(actual).to.equal(expected, msg);
+    }
+  });
+
+  it('removes current reason incomplete when transitioning out of incomplete state', function() {
+    const tests = [
+      {
+        data: { state: 'incomplete', currentReasonIncomplete: 'exists' },
+        change: { state: 'go-back' },
+        expected: null,
+        msg: 'removed incompleted on normal transition',
+      },
+      {
+        data: { state: 'incomplete', currentReasonIncomplete: 'exists' },
+        change: { state: 'closed' },
+        expected: null,
+        msg: 'removed incompleted on normal transition',
+      },
+      {
+        data: { state: 'deferred', currentReasonIncomplete: 'exists' },
+        change: { state: 'closed' },
+        expected: null,
+        msg: 'removed incompleted on random transition',
+      },
+      {
+        data: { state: 'completed' },
+        change: { state: 'go-back' },
+        expected: undefined,
+        msg: 'did not remove unexistent reason',
+      },
+    ];
+
+    for (let i = 0; i < tests.length; i++) {
+      const { change, data, expected, msg } = tests[i];
+      const model = createDeficientItem(data);
+      const updates = updateDeficientItem(model, change);
+      const actual = updates.currentReasonIncomplete;
+      expect(actual).to.equal(expected, msg);
+    }
+  });
+
+  it('allows updating complete now reason with a string', function() {
+    const model = createDeficientItem({ state: 'requires-action' });
+    const expected = 'reason complete';
+    const changes = { currentCompleteNowReason: expected };
+    const updates = updateDeficientItem(model, changes);
+    const actual = updates.currentCompleteNowReason;
+    expect(actual).to.equal(expected);
+  });
+
+  it('allows updating is duplicate with a boolean', function() {
+    const model = createDeficientItem({ state: 'requires-action' });
+    const expected = false;
+    const changes = { isDuplicate: expected };
+    const updates = updateDeficientItem(model, changes);
+    const actual = updates.isDuplicate;
+    expect(actual).to.equal(expected);
+  });
+
+  it('appends a new deferred date when current deferred date changes', function() {
     const userID = '-123';
     const createdAt = nowUnix() - 1;
     const updates = Array.from({ length: 5 }, (_, i) =>
@@ -1140,15 +1211,16 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
         currentDeferredDate: update.currentDeferredDate,
         currentDeferredDateDay: update.currentDeferredDateDay,
       };
-      const { deferredDates } = updateDeficientItem(model, changes, ...args);
-      const actual = deferredDates
-        ? deferredDates[Object.keys(deferredDates)[0]]
-        : {};
+      const defUpdates = updateDeficientItem(model, changes, ...args);
+      const [defDateKey] = Object.keys(defUpdates).filter(
+        updateKey => updateKey.search(/^deferredDates/) === 0
+      );
+      const actual = defUpdates[defDateKey] || {};
       expect(actual).to.deep.equal(expected, message);
     }
   });
 
-  it('it transitions to each state when valid input provided', function() {
+  it('transitions to each state when valid input provided', function() {
     const createdAt = nowUnix();
     const tomorrow = nowUnix() + 24 * 60 * 60;
     const completedPhoto = createCompletedPhotosTree(tomorrow, 1, '1');
@@ -1288,6 +1360,154 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       expect(actual).to.equal(
         expected,
         `transitioned from ${data.state} to ${expected}`
+      );
+    }
+  });
+
+  it('appends a history state record for each state transition', function() {
+    const createdAt = nowUnix();
+    const tomorrow = nowUnix() + 24 * 60 * 60;
+    const completedPhoto = createCompletedPhotosTree(tomorrow, 1, '1');
+    const tests = [
+      {
+        data: {
+          state: 'requires-action',
+        },
+        changes: {
+          state: 'deferred',
+          currentDeferredDate: tomorrow,
+        },
+        expected: 'deferred',
+      },
+      {
+        data: { state: 'requires-action' },
+        changes: {
+          state: 'closed',
+          currentCompleteNowReason: 'done', // AKA complete now
+        },
+        expected: 'closed',
+      },
+      {
+        data: { state: 'deferred' },
+        changes: { state: 'go-back' },
+        expected: 'go-back',
+      },
+      {
+        data: { state: 'deferred' },
+        changes: { state: 'closed' }, // AKA duplicate
+        expected: 'closed',
+      },
+      {
+        data: { state: 'go-back' },
+        changes: {
+          state: 'pending',
+          currentDueDate: tomorrow,
+          currentPlanToFix: 'ok',
+          currentResponsibilityGroup: 'site_level_in-house',
+        },
+        expected: 'pending',
+      },
+      {
+        data: { state: 'go-back' },
+        changes: {
+          state: 'deferred',
+          currentDeferredDate: tomorrow,
+        },
+        expected: 'deferred',
+      },
+      {
+        data: { state: 'pending' },
+        changes: {
+          state: 'deferred',
+          currentDeferredDate: tomorrow,
+        },
+        expected: 'deferred',
+      },
+      // TODO: Move support here
+      // {
+      //   data: { state: 'pending' },
+      //   changes: { state: 'overdue' },
+      //   expected: 'overdue',
+      // },
+      {
+        data: { state: 'pending' },
+        changes: { state: 'requires-progress-update' },
+        expected: 'requires-progress-update',
+      },
+      {
+        data: { state: 'pending', currentStartDate: tomorrow },
+        changes: { state: 'completed' },
+        completedPhoto,
+        expected: 'completed',
+      },
+      {
+        data: { state: 'requires-progress-update' },
+        changes: { state: 'pending' },
+        progressNote: 'progress',
+        expected: 'pending',
+      },
+
+      // TODO: Move support here
+      // {
+      //   data: { state: 'requires-progress-update' },
+      //   changes: { state: 'overdue' },
+      //   expected: 'overdue',
+      // },
+      {
+        data: { state: 'overdue' },
+        changes: {
+          state: 'incomplete',
+          currentReasonIncomplete: 'not ready',
+        },
+        expected: 'incomplete',
+      },
+      {
+        data: { state: 'completed' },
+        changes: { state: 'go-back' },
+        expected: 'go-back',
+      },
+      {
+        data: { state: 'completed' },
+        changes: { state: 'closed' },
+        expected: 'closed',
+      },
+      {
+        data: { state: 'incomplete' },
+        changes: { state: 'go-back' },
+        expected: 'go-back',
+      },
+      {
+        data: { state: 'incomplete' },
+        changes: { state: 'closed' },
+        expected: 'closed',
+      },
+    ];
+
+    for (let i = 0; i < tests.length; i++) {
+      const {
+        data,
+        changes,
+        progressNote,
+        completedPhoto: completedPhotoArg,
+        expected,
+      } = tests[i];
+      const model = createDeficientItem(data);
+      const updates = updateDeficientItem(
+        model,
+        changes,
+        '1',
+        createdAt,
+        progressNote || '',
+        completedPhotoArg || null
+      );
+      const [stateHistoryKey] = Object.keys(updates).filter(
+        updateKey => updateKey.search(/^stateHistory/) === 0
+      );
+      const stateHistoryEntry = updates[stateHistoryKey] || {};
+      const actual = stateHistoryEntry.state || '';
+      expect(actual).to.equal(
+        expected,
+        `has state history for transition to ${expected} from ${data.state}`
       );
     }
   });

@@ -41,20 +41,27 @@ module.exports = function updateDeficientItem(
     setRequiresProgressUpdateState,
     setWillRequireProgressNote,
     applyGoBackStateSideEffects,
+    setCurrentDueDate,
     setCurrentDueDateDay,
     setCurrentStartDate,
-    appendStateHistory,
     appendDueDate,
+    setCurrentDeferredDate,
     setCurrentDeferredDateDay,
     appendDeferredDate,
+    setCurrentPlanToFix,
     appendPlanToFix,
+    setCompleteNowReasons,
     appendCompleteNowReasons,
+    setCurrentResponsibilityGroup,
     appendResponsibilityGroup,
+    setCurrentReasonIncomplete,
     appendReasonIncomplete,
     appendStartDate,
     appendProgressNote,
     appendCompletedPhotos,
     setCompletedState, // NOTE: must be after appendCompletedPhotos
+    setIsDuplicate,
+    appendStateHistory,
     setUpdatedAt
   )({
     updates: Object.create(null),
@@ -69,6 +76,8 @@ module.exports = function updateDeficientItem(
 
 /**
  * Removed all current content on go back
+ * TODO: drop this middleware after below
+ *       migration is completed
  * @param  {Object} updates
  * @param  {Object} changes
  * @return {Object} - config
@@ -78,15 +87,14 @@ function applyGoBackStateSideEffects(config) {
   const isProgressingToGoBack = updates.state === 'go-back';
 
   if (isProgressingToGoBack) {
-    updates.currentPlanToFix = null;
-    updates.currentReasonIncomplete = null;
-    updates.currentDueDate = null;
-    updates.currentDueDateDay = null;
-    updates.currentDeferredDate = null;
-    updates.currentDeferredDateDay = null;
-    updates.currentResponsibilityGroup = null;
-    updates.currentStartDate = null;
-    updates.currentCompleteNowReason = null;
+    updates.currentPlanToFix = null; // TODO move to setCurrentPlanToFix
+    updates.currentDueDate = null; // TODO move to setCurrentDueDate
+    updates.currentDueDateDay = null; // TODO move to setCurrentDueDateDay
+    updates.currentDeferredDate = null; // TODO move to setCurrentDeferredDate
+    updates.currentDeferredDateDay = null; // TODO move to setCurrentDeferredDateDay
+    updates.currentResponsibilityGroup = null; // TODO move to setCurrentResponsibilityGroup
+    updates.currentStartDate = null; // TODO move to setCurrentStartDate
+    updates.currentCompleteNowReason = null; // TODO move tosetCompleteNowReasons
   }
 
   return config;
@@ -353,11 +361,15 @@ function setIncompleteState(config) {
 
   const currentState = deficientItem.state;
   const isValidCurrentState = currentState === 'overdue';
+  const isUpdatingReasonIncomplete = Boolean(changes.currentReasonIncomplete);
   const hasCurrentReasonIncomplete = Boolean(
-    changes.currentReasonIncomplete ? changes.currentReasonIncomplete[1] : ''
+    deficientItem.currentReasonIncomplete
   );
 
-  if (isValidCurrentState && hasCurrentReasonIncomplete) {
+  if (
+    isValidCurrentState &&
+    (isUpdatingReasonIncomplete || hasCurrentReasonIncomplete)
+  ) {
     updates.state = 'incomplete';
   }
 
@@ -386,8 +398,22 @@ function setCompletedState(config) {
   const currentState = deficientItem.state;
   const isValidCurrentState = currentState === 'pending';
   const currentStartDate = deficientItem.currentStartDate || 0;
-  const completedPhotos =
-    updates.completedPhotos || deficientItem.completedPhotos || {};
+
+  // Convert completed photos updates
+  // into history hash from flat firestore
+  // compatible "path.attributes"
+  // NOTE: defaults to `null`
+  const updatedPhotos = Object.keys(updates).reduce((acc, attr) => {
+    if (attr.search(/^completedPhotos\./) === 0) {
+      acc = acc || {};
+      const [, photoId] = attr.split('.');
+      acc[photoId] = updates[attr];
+    }
+
+    return acc;
+  }, null);
+
+  const completedPhotos = updatedPhotos || deficientItem.completedPhotos || {};
   const hasRequiredUpdates = hasCurrentStartDate(
     currentStartDate,
     completedPhotos
@@ -395,6 +421,24 @@ function setCompletedState(config) {
 
   if (isValidCurrentState && hasRequiredUpdates) {
     updates.state = 'completed';
+  }
+
+  return config;
+}
+
+/**
+ * Set the current due date
+ * from users updates
+ * @param  {Object} updates
+ * @param  {Object} changes
+ * @return {Object} - config
+ */
+function setCurrentDueDate(config) {
+  const { updates, changes } = config;
+  const updateDate = changes.currentDueDate || 0;
+
+  if (updateDate && typeof updateDate === 'number') {
+    updates.currentDueDate = updateDate;
   }
 
   return config;
@@ -456,17 +500,16 @@ function appendStateHistory(config) {
   const newState = updates.state || '';
 
   if (newState && newState !== deficientItem.state) {
-    const id = uuid();
+    const updateKey = `stateHistory.${uuid()}`;
 
-    updates.stateHistory = Object.create(null);
-    updates.stateHistory[id] = {
+    updates[updateKey] = {
       createdAt: updatedAt,
       state: newState,
     };
 
     // Add optional user
     if (authorID) {
-      updates.stateHistory[id].user = authorID;
+      updates[updateKey].user = authorID;
     }
   }
 
@@ -493,28 +536,27 @@ function appendDueDate(config) {
     typeof dueTime === 'number' &&
     dueTime !== deficientItem.currentDueDate
   ) {
-    const id = uuid();
+    const updateKey = `dueDates.${uuid()}`;
     const startDate = findFirstUnix(
       updates.currentStartDate,
       deficientItem.currentStartDate
     );
 
-    updates.dueDates = Object.create(null);
-    updates.dueDates[id] = { createdAt: updatedAt, dueDate: dueTime };
+    updates[updateKey] = { createdAt: updatedAt, dueDate: dueTime };
 
     // Append current start date
     if (startDate) {
-      updates.dueDates[id].startDate = startDate;
+      updates[updateKey].startDate = startDate;
     }
 
     // Add optional due date day
     if (dueDay) {
-      updates.dueDates[id].dueDateDay = dueDay;
+      updates[updateKey].dueDateDay = dueDay;
     }
 
     // Add optional user
     if (authorID) {
-      updates.dueDates[id].user = authorID;
+      updates[updateKey].user = authorID;
     }
   }
 
@@ -546,6 +588,23 @@ function setCurrentDeferredDateDay(config) {
 }
 
 /**
+ * Set the current deferred date
+ * @param   {Object} update
+ * @param   {Object} changes
+ * @return  {Object} - config
+ */
+function setCurrentDeferredDate(config) {
+  const { updates, changes } = config;
+  const updateDate = changes.currentDeferredDate || 0;
+
+  if (updateDate && typeof updateDate === 'number') {
+    updates.currentDeferredDate = updateDate;
+  }
+
+  return config;
+}
+
+/**
  * Add to due dates when current
  * due date gets updated
  * @param  {Object} updates
@@ -566,23 +625,39 @@ function appendDeferredDate(config) {
     typeof deferTime === 'number' &&
     deferTime !== deficientItem.currentDeferredDate
   ) {
-    const id = uuid();
+    const updateKey = `deferredDates.${uuid()}`;
 
-    updates.deferredDates = Object.create(null);
-    updates.deferredDates[id] = {
+    updates[updateKey] = {
       createdAt: updatedAt,
       deferredDate: deferTime,
     };
 
     // Add optional deferred day
     if (deferDay) {
-      updates.deferredDates[id].deferredDateDay = deferDay;
+      updates[updateKey].deferredDateDay = deferDay;
     }
 
     // Add optional user
     if (authorID) {
-      updates.deferredDates[id].user = authorID;
+      updates[updateKey].user = authorID;
     }
+  }
+
+  return config;
+}
+
+/**
+ * Set valid current plan to fix
+ * @param {Object} updates
+ * @param {Object} changes
+ * @return {Object} config
+ */
+function setCurrentPlanToFix(config) {
+  const { updates, changes } = config;
+  const updatePlan = changes.currentPlanToFix || '';
+
+  if (updatePlan && typeof updatePlan === 'string') {
+    updates.currentPlanToFix = updatePlan;
   }
 
   return config;
@@ -603,27 +678,43 @@ function appendPlanToFix(config) {
   const planToFix = changes.currentPlanToFix || '';
 
   if (planToFix && planToFix !== deficientItem.currentPlanToFix) {
-    const id = uuid();
+    const updateKey = `plansToFix.${uuid()}`;
     const startDate = findFirstUnix(
       updates.currentStartDate,
       deficientItem.currentStartDate
     );
 
-    updates.plansToFix = Object.create(null);
-    updates.plansToFix[id] = {
+    updates[updateKey] = {
       createdAt: updatedAt,
       planToFix,
     };
 
     // Append any start date
     if (startDate) {
-      updates.plansToFix[id].startDate = startDate;
+      updates[updateKey].startDate = startDate;
     }
 
     // Add optional user
     if (authorID) {
-      updates.plansToFix[id].user = authorID;
+      updates[updateKey].user = authorID;
     }
+  }
+
+  return config;
+}
+
+/**
+ * Set the complete now reason
+ * @param   {Object} update
+ * @param   {Object} changes
+ * @return  {Object} - config
+ */
+function setCompleteNowReasons(config) {
+  const { updates, changes } = config;
+  const updateReason = changes.currentCompleteNowReason || '';
+
+  if (updateReason && typeof updateReason === 'string') {
+    updates.currentCompleteNowReason = updateReason;
   }
 
   return config;
@@ -647,18 +738,34 @@ function appendCompleteNowReasons(config) {
     completeNowReason &&
     completeNowReason !== deficientItem.currentCompleteNowReason
   ) {
-    const id = uuid();
-
-    updates.completeNowReasons = Object.create(null);
-    updates.completeNowReasons[id] = {
+    const updateKey = `completeNowReasons.${uuid()}`;
+    updates[updateKey] = {
       createdAt: updatedAt,
       completeNowReason,
     };
 
     // Add optional user
     if (authorID) {
-      updates.completeNowReasons[id].user = authorID;
+      updates[updateKey].user = authorID;
     }
+  }
+
+  return config;
+}
+
+/**
+ * Set valid current
+ * responsibility group
+ * @param {Object} updates
+ * @param {Object} changes
+ * @return {Object} config
+ */
+function setCurrentResponsibilityGroup(config) {
+  const { updates, changes } = config;
+  const updateGroup = changes.currentResponsibilityGroup || '';
+
+  if (updateGroup && typeof updateGroup === 'string') {
+    updates.currentResponsibilityGroup = updateGroup;
   }
 
   return config;
@@ -682,27 +789,55 @@ function appendResponsibilityGroup(config) {
     groupResponsible &&
     groupResponsible !== deficientItem.currentResponsibilityGroup
   ) {
-    const id = uuid();
+    const updateKey = `responsibilityGroups.${uuid()}`;
     const startDate = findFirstUnix(
       updates.currentStartDate,
       deficientItem.currentStartDate
     );
 
-    updates.responsibilityGroups = Object.create(null);
-    updates.responsibilityGroups[id] = {
+    updates[updateKey] = {
       createdAt: updatedAt,
       groupResponsible,
     };
 
     // Append start date
     if (startDate) {
-      updates.responsibilityGroups[id].startDate = startDate;
+      updates[updateKey].startDate = startDate;
     }
 
     // Add optional user
     if (authorID) {
-      updates.responsibilityGroups[id].user = authorID;
+      updates[updateKey].user = authorID;
     }
+  }
+
+  return config;
+}
+
+/**
+ * Set the current reason
+ * incomplete when provided
+ * or remove it when deficiency
+ * exists the `incomplete` state
+ * @param  {Object} update
+ * @param  {Object} changes
+ * @param  {Object} deficientItem
+ * @return  {Object} - config
+ */
+function setCurrentReasonIncomplete(config) {
+  const { updates, changes, deficientItem } = config;
+  const isEnteringIncomplete = updates.state === 'incomplete';
+  const hasExistingReason = Boolean(deficientItem.currentReasonIncomplete);
+  const updateReason = changes.currentReasonIncomplete || '';
+
+  if (
+    isEnteringIncomplete &&
+    updateReason &&
+    typeof updateReason === 'string'
+  ) {
+    updates.currentReasonIncomplete = updateReason;
+  } else if (!isEnteringIncomplete && hasExistingReason) {
+    updates.currentReasonIncomplete = null;
   }
 
   return config;
@@ -719,8 +854,8 @@ function appendResponsibilityGroup(config) {
  * @return {Object} - config
  */
 function appendReasonIncomplete(config) {
-  const { updates, deficientItem, changes, authorID, updatedAt } = config;
-  const newReason = changes.currentReasonIncomplete || '';
+  const { updates, deficientItem, authorID, updatedAt } = config;
+  const newReason = updates.currentReasonIncomplete || '';
 
   if (newReason && newReason !== deficientItem.currentReasonIncomplete) {
     const id = uuid();
@@ -729,20 +864,20 @@ function appendReasonIncomplete(config) {
       deficientItem.currentStartDate
     );
 
-    updates.reasonsIncomplete = Object.create(null);
-    updates.reasonsIncomplete[id] = {
+    const updateKey = `reasonsIncomplete.${id}`;
+    updates[updateKey] = {
       createdAt: updatedAt,
       reasonIncomplete: newReason,
     };
 
     // Append start date
     if (startDate) {
-      updates.reasonsIncomplete[id].startDate = startDate;
+      updates[updateKey].startDate = startDate;
     }
 
     // Add optional user
     if (authorID) {
-      updates.reasonsIncomplete[id].user = authorID;
+      updates[updateKey].user = authorID;
     }
   }
 
@@ -767,8 +902,7 @@ function appendStartDate(config) {
     typeof startDate === 'number' &&
     startDate !== deficientItem.currentStartDate
   ) {
-    updates.startDates = Object.create(null);
-    updates.startDates[uuid()] = { startDate };
+    updates[`startDates.${uuid()}`] = { startDate };
   }
 
   return config;
@@ -794,20 +928,20 @@ function appendProgressNote(config) {
       deficientItem.currentStartDate
     );
 
-    updates.progressNotes = Object.create(null);
-    updates.progressNotes[id] = {
+    const updateKey = `progressNotes.${id}`;
+    updates[updateKey] = {
       createdAt: updatedAt,
       progressNote,
     };
 
     // Append start date
     if (startDate) {
-      updates.progressNotes[id].startDate = startDate;
+      updates[updateKey].startDate = startDate;
     }
 
     // Add optional user
     if (authorID) {
-      updates.progressNotes[id].user = authorID;
+      updates[updateKey].user = authorID;
     }
   }
 
@@ -825,8 +959,27 @@ function appendCompletedPhotos(config) {
   const { updates, completedPhotos } = config;
 
   if (completedPhotos) {
-    updates.completedPhotos = updates.completedPhotos || Object.create(null);
-    Object.assign(updates.completedPhotos, completedPhotos); // append photo JSON
+    // Append completed photos as nested writes
+    Object.keys(completedPhotos).forEach(id => {
+      updates[`completedPhotos.${id}`] = completedPhotos[id];
+    });
+  }
+
+  return config;
+}
+
+/**
+ * Set is duplicate
+ * @param   {Object} update
+ * @param   {Object} changes
+ * @return  {Object} - config
+ */
+function setIsDuplicate(config) {
+  const { updates, changes } = config;
+  const updateIsDuplicate = changes.isDuplicate;
+
+  if (typeof updateIsDuplicate === 'boolean') {
+    updates.isDuplicate = updateIsDuplicate;
   }
 
   return config;
