@@ -44,7 +44,6 @@ module.exports = function updateDeficientItem(
     setCurrentDueDate,
     setCurrentDueDateDay,
     setCurrentStartDate,
-    appendStateHistory,
     appendDueDate,
     setCurrentDeferredDate,
     setCurrentDeferredDateDay,
@@ -62,6 +61,7 @@ module.exports = function updateDeficientItem(
     appendCompletedPhotos,
     setCompletedState, // NOTE: must be after appendCompletedPhotos
     setIsDuplicate,
+    appendStateHistory,
     setUpdatedAt
   )({
     updates: Object.create(null),
