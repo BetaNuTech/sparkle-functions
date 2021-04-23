@@ -2,6 +2,7 @@ const assert = require('assert');
 const log = require('../../utils/logger');
 const deficiencyModel = require('../../models/deficient-items');
 const updateItem = require('../utils/update-deficient-item');
+const validateUpdate = require('../utils/validate-deficient-item-update');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
 const unflatten = require('../../utils/unflatten-string-attrs');
 
@@ -31,6 +32,9 @@ module.exports = function createPutDeficiencyBatch(fs) {
     const srcUpdatedAt = req.query.updatedAt || '0';
     const parsedUpdatedAt = parseInt(srcUpdatedAt, 10) || 0;
     const hasUpdates = Boolean(Object.keys(update || {}).length);
+    const isValidUpdate = hasUpdates
+      ? validateUpdate(update).length === 0
+      : false;
     const srcDeficiencyIds = (req.query || {}).id || '';
     const deficiencyIds = Array.isArray(srcDeficiencyIds)
       ? srcDeficiencyIds
@@ -73,6 +77,18 @@ module.exports = function createPutDeficiencyBatch(fs) {
         errors: [
           {
             detail: 'Bad Request: deficient item update body required',
+          },
+        ],
+      });
+    }
+
+    // Reject bad payload
+    if (!isValidUpdate) {
+      return res.status(400).send({
+        errors: [
+          {
+            detail:
+              'Bad Request: Update is not valid, please provide acceptable payload',
           },
         ],
       });

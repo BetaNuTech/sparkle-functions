@@ -19,7 +19,7 @@ describe('Deficiencies | API | PUT Batch', () => {
 
   it('rejects request missing any deficient item ids', done => {
     request(createApp())
-      .put(`/t`)
+      .put('/t')
       .send({ update: true })
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(400)
@@ -50,9 +50,24 @@ describe('Deficiencies | API | PUT Batch', () => {
       .catch(done);
   });
 
+  it('rejects request with invalid update payload', done => {
+    request(createApp())
+      .put('/t?id=1')
+      .send({ state: false })
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(400)
+      .then(res => {
+        expect(res.body.errors[0].detail).to.contain(
+          'Bad Request: Update is not valid'
+        );
+        done();
+      })
+      .catch(done);
+  });
+
   it('rejects request missing update payload', done => {
     request(createApp())
-      .put(`/t?id=1`)
+      .put('/t?id=1')
       .send()
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(400)
