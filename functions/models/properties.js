@@ -325,6 +325,28 @@ module.exports = modelSetup({
       .delete()
       .catch(err => Promise.reject(Error(`${PREFIX} deleteUpload: ${err}`)));
   },
+
+  /**
+   * Lookup Property's team relationships
+   * @param  {admin.firestore} db - Firestore DB instance
+   * @param  {firestore.transaction?} transaction
+   * @return {Promise}
+   */
+  findAllTeamRelationships(db, transaction) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    const query = db
+      .collection(PROPERTY_COLLECTION)
+      .orderBy('team')
+      .where('team', '>', '')
+      .select('team');
+
+    if (transaction) {
+      assert(typeof transaction.get === 'function', 'has transaction instance');
+      return Promise.resolve(transaction.get(query));
+    }
+
+    return query.get();
+  },
 });
 
 /**

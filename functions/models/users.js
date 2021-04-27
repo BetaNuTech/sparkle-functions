@@ -287,6 +287,75 @@ module.exports = modelSetup({
   },
 
   /**
+   * Toggle a user as disabled or not disabled
+   * @param {admin.auth} auth - Firebase Auth instance
+   * @param {String} uid - user ID
+   * @param {Boolean} isDisabled
+   * @return {Promise} - resolves {UserRecord} Firebase Auth user record
+   */
+  setAuthUserDisabled(auth, uid, isDisabled) {
+    assert(
+      auth && typeof auth.updateUser === 'function',
+      'has firebase auth instance'
+    );
+    assert(uid && typeof uid === 'string', 'has user ID');
+    assert(typeof isDisabled === 'boolean', 'has is disabled state');
+
+    return auth.updateUser(uid, {
+      disabled: isDisabled,
+    });
+  },
+
+  /**
+   * Update a user's custom claims
+   * by merging existing/updated claims
+   * @param {admin.auth} auth - Firebase Auth instance
+   * @param {String} uid - user ID
+   * @param {Object} updates
+   * @return {Promise} - resolves {undefined}
+   */
+  async upsertCustomClaims(auth, uid, updates) {
+    assert(
+      auth && typeof auth.getUser === 'function',
+      'has firebase auth instance'
+    );
+    assert(uid && typeof uid === 'string', 'has user ID');
+    assert(updates && typeof updates === 'object', 'has updates hash');
+
+    // Prevent admin/corporate inclusive state
+    if (updates.admin) {
+      updates.corporate = false;
+    } else if (updates.corporate) {
+      updates.admin = false;
+    }
+
+    // Lookup existing claims state
+    let existingClaims = null;
+    try {
+      existingClaims = await this.getCustomClaims(auth, uid);
+    } catch (err) {
+      throw Error(`${PREFIX} unexpected claims lookup error`);
+    }
+
+    return auth.setCustomUserClaims(uid, { ...existingClaims, ...updates });
+  },
+
+  /**
+   * Lookup a Firebase Auth user record
+   * @param {admin.auth} auth - Firebase Auth instance
+   * @param {String} uid - user ID
+   * @return {Promise} - resolves {UserRecord} Firebase Auth user record
+   */
+  getAuthUser(auth, uid) {
+    assert(
+      auth && typeof auth.getUser === 'function',
+      'has firebase auth instance'
+    );
+    assert(uid && typeof uid === 'string', 'has user ID');
+    return auth.getUser(uid);
+  },
+
+  /**
    * Create new Auth user
    * @param {admin.auth} auth - Firebase Auth instance
    * @param  {String} email
@@ -326,5 +395,46 @@ module.exports = modelSetup({
     }
 
     return Boolean(reqUserClaims.admin);
+  },
+
+  /**
+   * Requestor has permission to perform update
+   * @param {admin.auth} auth - Firebase Auth instance
+   * @param {String} requestingUserId - user ID
+   * @param {Object} updates
+   * @return {Promise} - resolves {Boolean}
+   */
+  async hasUpdatePermission(auth, requestingUserId, updates) {
+    assert(
+      auth && typeof auth.getUser === 'function',
+      'has firebase auth instance'
+    );
+    assert(
+      requestingUserId && typeof requestingUserId === 'string',
+      'has requesting user ID'
+    );
+    assert(updates && typeof updates === 'object', 'has updates hash');
+
+    const isUpdatingSuperAdmin = typeof updates.superAdmin === 'boolean';
+
+    // Get requesting user's current custom claim state
+    let reqUserClaims = null;
+    try {
+      reqUserClaims = await this.getCustomClaims(auth, requestingUserId);
+    } catch (err) {
+      throw Error(`${PREFIX} unexpected claims lookup error`);
+    }
+
+    // Non super admins may not set super admins
+    if (isUpdatingSuperAdmin && !reqUserClaims.superAdmin) {
+      return false;
+    }
+
+    // All other updates require admin claim
+    if (!isUpdatingSuperAdmin && !reqUserClaims.admin) {
+      return false;
+    }
+
+    return true;
   },
 });
