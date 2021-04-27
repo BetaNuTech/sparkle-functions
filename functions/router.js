@@ -158,5 +158,12 @@ module.exports = (fs, auth, settings) => {
     users.api.createPostUser(fs, auth)
   );
 
+  // Update User
+  app.patch(
+    '/v0/users/:userId',
+    authUser(fs, auth),
+    users.api.createPatchUser(fs, auth)
+  );
+
   return app;
 };
