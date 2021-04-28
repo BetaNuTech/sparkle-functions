@@ -165,5 +165,13 @@ module.exports = (fs, auth, settings) => {
     users.api.createPatchUser(fs, auth)
   );
 
+  // Delete User
+  app.delete(
+    '/v0/users/:userId',
+    authUser(fs, auth),
+    authUserCrud(auth),
+    users.api.createDeleteUser(fs, auth)
+  );
+
   return app;
 };
