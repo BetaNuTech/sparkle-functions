@@ -7,8 +7,10 @@ const trello = require('./trello');
 const deficiencies = require('./deficient-items');
 const properties = require('./properties');
 const inspections = require('./inspections');
+const users = require('./users');
 const versions = require('./versions');
 const authUser = require('./utils/auth-firebase-user');
+const authUserCrud = require('./middleware/auth-user-crud');
 const authTrelloReq = require('./utils/auth-trello-request');
 
 /**
@@ -146,6 +148,29 @@ module.exports = (fs, auth, settings) => {
       corporate: true,
     }),
     deficiencies.api.putBatch(fs)
+  );
+
+  // Create new user
+  app.post(
+    '/v0/users',
+    authUser(fs, auth),
+    authUserCrud(auth),
+    users.api.createPostUser(fs, auth)
+  );
+
+  // Update User
+  app.patch(
+    '/v0/users/:userId',
+    authUser(fs, auth),
+    users.api.createPatchUser(fs, auth)
+  );
+
+  // Delete User
+  app.delete(
+    '/v0/users/:userId',
+    authUser(fs, auth),
+    authUserCrud(auth),
+    users.api.createDeleteUser(fs, auth)
   );
 
   return app;
