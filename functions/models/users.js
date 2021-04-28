@@ -256,6 +256,21 @@ module.exports = modelSetup({
   },
 
   /**
+   * Delate a Firestore user document
+   * @param  {admin.firestore} db - Firestore database instance
+   * @param  {String} userId
+   * @return {Promise}
+   */
+  deleteRecord(db, userId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(userId && typeof userId === 'string', 'has user ID');
+    return db
+      .collection(USERS_COLLECTION)
+      .doc(userId)
+      .delete();
+  },
+
+  /**
    * Return all a user's custom claims
    * @param {admin.auth} auth - Firebase Auth instance
    * @param {String} uid - user ID
@@ -368,6 +383,21 @@ module.exports = modelSetup({
     );
     assert(email && typeof email === 'string', 'has email string');
     return auth.createUser({ email });
+  },
+
+  /**
+   * Delete a Firebase Auth user
+   * @param {admin.auth} auth - Firebase Auth instance
+   * @param {String} uid - user ID
+   * @return {Promise}
+   */
+  deleteAuthUser(auth, uid) {
+    assert(
+      auth && typeof auth.deleteUser === 'function',
+      'has firebase auth instance'
+    );
+    assert(uid && typeof uid === 'string', 'has user ID');
+    return auth.deleteUser(uid);
   },
 
   /**
