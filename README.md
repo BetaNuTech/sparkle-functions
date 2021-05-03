@@ -98,7 +98,7 @@ docker-compose run yarn-fn dev
 
 4. Deploying Firebase Functions
 ```sh
-docker-compose deploy-fn
+docker-compose run deploy-fn
 ```
 [Source repository](https://github.com/lgvalle/firebase-tools-docker)
 
