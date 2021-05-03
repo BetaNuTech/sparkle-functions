@@ -44,6 +44,7 @@ jobs:
           COBALT_DOMAIN: ${{ secrets.STAGING_COBALT_DOMAIN }}
           CLIENT_DOMAIN: https://staging.sapphire-standard.com
           GLOBAL_API_TOKEN: ${{ secrets.STAGING_GLOBAL_API_TOKEN }}
+          GLOBAL_API_DOMAIN: ${{ secrets.STAGING_GLOBAL_API_DOMAIN }}
         run: ./scripts/deploy-functions.sh production
 
       - name: Deploy production functions
@@ -63,4 +64,5 @@ jobs:
           COBALT_DOMAIN: ${{ secrets.PRODUCTION_COBALT_DOMAIN }}
           CLIENT_DOMAIN: https://bluestone-prop.sapphire-standard.com
           GLOBAL_API_TOKEN: ${{ secrets.PRODUCTION_GLOBAL_API_TOKEN }}
+          GLOBAL_API_DOMAIN: ${{ secrets.PRODUCTION_GLOBAL_API_DOMAIN }}
         run: ./scripts/deploy-functions.sh production
