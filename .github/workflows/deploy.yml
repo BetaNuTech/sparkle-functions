@@ -42,7 +42,7 @@ jobs:
           FIREBASE_TEST_DB_URL: ${{ secrets.STAGING_FIREBASE_TEST_DB_URL }}
           FIREBASE_STORAGE_BUCKET: ${{ secrets.STAGING_FIREBASE_STORAGE_BUCKET }}
           COBALT_DOMAIN: ${{ secrets.STAGING_COBALT_DOMAIN }}
-          CLIENT_DOMAIN: https://staging.sapphire-standard.com
+          CLIENT_DOMAIN: ${{ secrets.STAGING_CLIENT_DOMAIN }}
           GLOBAL_API_TOKEN: ${{ secrets.STAGING_GLOBAL_API_TOKEN }}
           GLOBAL_API_DOMAIN: ${{ secrets.STAGING_GLOBAL_API_DOMAIN }}
         run: ./scripts/deploy-functions.sh production
@@ -62,7 +62,7 @@ jobs:
           FIREBASE_TEST_DB_URL: ${{ secrets.PRODUCTION_FIREBASE_TEST_DB_URL }}
           FIREBASE_STORAGE_BUCKET: ${{ secrets.PRODUCTION_FIREBASE_STORAGE_BUCKET }}
           COBALT_DOMAIN: ${{ secrets.PRODUCTION_COBALT_DOMAIN }}
-          CLIENT_DOMAIN: https://bluestone-prop.sapphire-standard.com
+          CLIENT_DOMAIN: ${{ secrets.PRODUCTION_CLIENT_DOMAIN }}
           GLOBAL_API_TOKEN: ${{ secrets.PRODUCTION_GLOBAL_API_TOKEN }}
           GLOBAL_API_DOMAIN: ${{ secrets.PRODUCTION_GLOBAL_API_DOMAIN }}
         run: ./scripts/deploy-functions.sh production
