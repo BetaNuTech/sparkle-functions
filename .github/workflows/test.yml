@@ -63,3 +63,4 @@ jobs:
           FIREBASE_STORAGE_BUCKET: ${{ secrets.TEST_FIREBASE_STORAGE_BUCKET }}
           CLIENT_DOMAIN: https://staging.sapphire-standard.com
           GLOBAL_API_TOKEN: ${{ secrets.STAGING_GLOBAL_API_TOKEN }}
+          GLOBAL_API_DOMAIN: ${{ secrets.STAGING_GLOBAL_API_DOMAIN }}
