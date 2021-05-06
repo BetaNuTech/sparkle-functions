@@ -1,9 +1,13 @@
 const assert = require('assert');
 const pipe = require('../../utils/pipe');
+const config = require('../../config');
+
+const FIVE_DAYS_IN_SEC = 432000;
+const OVERDUE_ELIGIBLE_STATES = config.deficientItems.overdueEligibleStates;
 
 /**
- *  Save a deficient item with updates
- *  relavant to its' target state
+ * Save a deficient item with updates
+ * relavant to its' target state
  * @param  {Object} deficientItem
  * @param  {Object} changes
  * @param  {String?} authorID
@@ -37,7 +41,6 @@ module.exports = function updateDeficientItem(
     setIncompleteState,
     setGoBackState,
     setClosedState,
-    // TODO: setOverdueState,
     setRequiresProgressUpdateState,
     setWillRequireProgressNote,
     applyGoBackStateSideEffects,
@@ -60,6 +63,7 @@ module.exports = function updateDeficientItem(
     appendProgressNote,
     appendCompletedPhotos,
     setCompletedState, // NOTE: must be after appendCompletedPhotos
+    setOverdueState,
     setIsDuplicate,
     appendStateHistory,
     setUpdatedAt
@@ -248,6 +252,32 @@ function setClosedState(config) {
 
   if (isValidCurrentState) {
     updates.state = 'closed';
+  }
+
+  return config;
+}
+
+/**
+ * Set new state to overdue
+ * when deficiency is eligible
+ * @param {Object} updates
+ * @param {Object} deficientItem
+ * @return {Object} - config
+ */
+function setOverdueState(config) {
+  const { updates, deficientItem, updatedAt: now } = config;
+  const currentState = deficientItem.state;
+  const currentDueDate = deficientItem.currentDueDate || 0;
+
+  // Second measurements until DI becomes "overdue"
+  const secondsUntilDue = currentDueDate - now;
+  const isStateNotUpdated = Boolean(updates.state) === false;
+  const isOverdueEligible = OVERDUE_ELIGIBLE_STATES.includes(currentState);
+  const isPastDue = secondsUntilDue <= 0;
+
+  // Set eligible, overdue, deficiency to overdue state
+  if (isStateNotUpdated && isOverdueEligible && isPastDue) {
+    updates.state = 'overdue';
   }
 
   return config;
@@ -501,11 +531,23 @@ function appendStateHistory(config) {
 
   if (newState && newState !== deficientItem.state) {
     const updateKey = `stateHistory.${uuid()}`;
+    const { currentStartDate } = deficientItem;
+    const isStartDateRequired = [
+      'overdue',
+      'requires-progress-update',
+    ].includes(newState);
+    const hasStartDate = Boolean(currentStartDate);
 
     updates[updateKey] = {
       createdAt: updatedAt,
       state: newState,
     };
+
+    // Add start date when
+    // required & available
+    if (isStartDateRequired && hasStartDate) {
+      updates[updateKey].startDate = currentStartDate;
+    }
 
     // Add optional user
     if (authorID) {

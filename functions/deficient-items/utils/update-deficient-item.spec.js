@@ -43,7 +43,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  // TODO: remove
+  // TODO: remove #615
   it('removes "current" DI attributes when set as go-back', function() {
     const model = createDeficientItem({
       state: 'deferred',
@@ -1226,9 +1226,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     const completedPhoto = createCompletedPhotosTree(tomorrow, 1, '1');
     const tests = [
       {
-        data: {
-          state: 'requires-action',
-        },
+        data: { state: 'requires-action' },
         changes: {
           state: 'deferred',
           currentDeferredDate: tomorrow,
@@ -1279,12 +1277,11 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
         },
         expected: 'deferred',
       },
-      // TODO: Move support here
-      // {
-      //   data: { state: 'pending' },
-      //   changes: { state: 'overdue' },
-      //   expected: 'overdue',
-      // },
+      {
+        data: { state: 'pending' },
+        changes: { state: 'overdue' },
+        expected: 'overdue',
+      },
       {
         data: { state: 'pending' },
         changes: { state: 'requires-progress-update' },
@@ -1302,13 +1299,12 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
         progressNote: 'progress',
         expected: 'pending',
       },
-
-      // TODO: Move support here
-      // {
-      //   data: { state: 'requires-progress-update' },
-      //   changes: { state: 'overdue' },
-      //   expected: 'overdue',
-      // },
+      {
+        data: { state: 'requires-progress-update', currentStartDate: tomorrow },
+        changes: { state: 'overdue' },
+        setStartDate: true,
+        expected: 'overdue',
+      },
       {
         data: { state: 'overdue' },
         changes: {
@@ -1423,15 +1419,16 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
         },
         expected: 'deferred',
       },
-      // TODO: Move support here
-      // {
-      //   data: { state: 'pending' },
-      //   changes: { state: 'overdue' },
-      //   expected: 'overdue',
-      // },
       {
-        data: { state: 'pending' },
+        data: { state: 'pending', currentStartDate: tomorrow },
+        changes: { state: 'overdue' },
+        setStartDate: true,
+        expected: 'overdue',
+      },
+      {
+        data: { state: 'pending', currentStartDate: tomorrow },
         changes: { state: 'requires-progress-update' },
+        setStartDate: true,
         expected: 'requires-progress-update',
       },
       {
@@ -1447,10 +1444,11 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
         expected: 'pending',
       },
 
-      // TODO: Move support here
+      // TODO: Move support here #629
       // {
-      //   data: { state: 'requires-progress-update' },
+      //   data: { state: 'requires-progress-update', currentStartDate: tomorrow },
       //   changes: { state: 'overdue' },
+      //   currentStartDate: tomorrow,
       //   expected: 'overdue',
       // },
       {
@@ -1489,6 +1487,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
         changes,
         progressNote,
         completedPhoto: completedPhotoArg,
+        setStartDate,
         expected,
       } = tests[i];
       const model = createDeficientItem(data);
@@ -1505,6 +1504,12 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       );
       const stateHistoryEntry = updates[stateHistoryKey] || {};
       const actual = stateHistoryEntry.state || '';
+      if (setStartDate) {
+        expect(stateHistoryEntry.startDate).to.equal(
+          data.currentStartDate,
+          `has set history start date for ${expected} from ${data.state}`
+        );
+      }
       expect(actual).to.equal(
         expected,
         `has state history for transition to ${expected} from ${data.state}`
