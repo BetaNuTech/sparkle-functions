@@ -8,6 +8,7 @@ const propertyModel = require('../../models/properties');
 const deficiencyModel = require('../../models/deficient-items');
 const notificationsModel = require('../../models/notifications');
 const createStateHistory = require('../utils/create-state-history');
+const updateDeficiency = require('../utils/update-deficient-item');
 
 const PREFIX = 'deficiency: pubsub: sync-overdue-v2:';
 const FIVE_DAYS_IN_SEC = 432000;
@@ -70,32 +71,27 @@ module.exports = function createSyncOverdueDeficientItems(
         const currentDueDate = deficiency.currentDueDate || 0;
         const willRequireProgressNote =
           deficiency.willRequireProgressNote || false;
+        const updates = updateDeficiency(deficiency, {});
 
         // Eligible for "requires-progress-update" state
         // when due date is at least 5 days from the start date
+        // TODO refactor #629
+        const secondsUntilDue = currentDueDate - now;
         const isRequiresProgressUpdateStateEligible =
           FIVE_DAYS_IN_SEC <= currentDueDate - currentStartDate;
-
-        // Second measurements until DI becomes "overdue"
-        const secondsUntilDue = currentDueDate - now;
         const secondsUntilHalfDue = (currentDueDate - currentStartDate) / 2;
 
-        if (OVERDUE_ELIGIBLE_STATES.includes(state) && secondsUntilDue <= 0) {
-          // Progress state
-          state = 'overdue';
-          deficiency.state = 'overdue';
+        // TODO refactor #629
+        if (updates.state === 'overdue') {
+          state = updates.state;
+          deficiency.state = updates.state;
           log.info(`${PREFIX} deficiency "${deficiencyId}" is now overdue`);
 
           try {
-            const stateHistId = deficiencyModel.uuid(fs);
             await deficiencyModel.firestoreUpdateRecord(
               fs,
               deficiencyId,
-              {
-                state,
-                updatedAt: Math.round(Date.now() / 1000),
-                [`stateHistory.${stateHistId}`]: createStateHistory(deficiency), // Append state history update
-              },
+              updates,
               batch
             );
           } catch (err) {
