@@ -291,21 +291,36 @@ function setOverdueState(config) {
  * @return {Object} - config
  */
 function setRequiresProgressUpdateState(config) {
-  const { updates, deficientItem, changes } = config;
-  const isRequestingClosed = changes.state === 'requires-progress-update';
+  const { updates, deficientItem, changes, updatedAt: now } = config;
+  const currentStartDate = deficientItem.currentStartDate || 0;
+  const currentDueDate = deficientItem.currentDueDate || 0;
+  const willRequireProgressNote =
+    deficientItem.willRequireProgressNote || false;
+  const isRequestingClosed = changes.state === 'closed';
 
   // Return early if state already updated
   // or not requesting closed state change
-  if (updates.state || !isRequestingClosed) {
+  if (updates.state || isRequestingClosed) {
     return config;
   }
 
-  // TODO: check that more than 1/2 way to due date
+  // Eligible for "requires-progress-update" state
+  // when due date is at least 5 days from the start date
+  const secondsUntilDue = currentDueDate - now;
+  const isRequiresProgressUpdateStateEligible =
+    FIVE_DAYS_IN_SEC <= currentDueDate - currentStartDate;
+  const secondsUntilHalfDue = (currentDueDate - currentStartDate) / 2;
 
-  const currentState = deficientItem.state;
-  const isValidCurrentState = currentState === 'pending';
+  // Setup checks
+  const isValidCurrentState = deficientItem.state === 'pending';
+  const isHalfWayDue = secondsUntilDue < secondsUntilHalfDue;
 
-  if (isValidCurrentState) {
+  if (
+    isValidCurrentState &&
+    isRequiresProgressUpdateStateEligible &&
+    isHalfWayDue &&
+    willRequireProgressNote
+  ) {
     updates.state = 'requires-progress-update';
   }
 
