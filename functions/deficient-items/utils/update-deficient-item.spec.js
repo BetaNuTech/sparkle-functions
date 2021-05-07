@@ -217,6 +217,9 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
   });
 
   it('sets requires progress update state only when specific state(s) are active', function() {
+    const threeDaysFromNow = daysFromNowUnix(3);
+    const halfDueUnix = daysFromNowUnix(-6); // Note: must be a difference > 5 days from start
+
     [
       { data: 'completed', expected: false },
       { data: 'incomplete', expected: false },
@@ -228,9 +231,13 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
       { data: 'closed', expected: false },
       { data: 'deferred', expected: false },
     ].forEach(({ data, expected }) => {
-      const model = createDeficientItem({ state: data });
-      const changes = { state: 'requires-progress-update' };
-      const updates = updateDeficientItem(model, changes);
+      const model = createDeficientItem({
+        state: data,
+        currentDueDate: threeDaysFromNow,
+        currentStartDate: halfDueUnix,
+        willRequireProgressNote: true,
+      });
+      const updates = updateDeficientItem(model, {});
       const actual = updates.state === 'requires-progress-update';
       expect(actual).to.equal(
         expected,
@@ -241,8 +248,52 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
     });
   });
 
-  // TODO:
-  // it('only transitions to requires progress update when more than 1/2 way to due date', function() {});
+  it('only transitions to requires progress update when more than 1/2 way to due date and requires note', function() {
+    const threeDaysFromNow = daysFromNowUnix(3);
+    const notHalfDueUnix = daysFromNowUnix(-2);
+    const halfDueUnix = daysFromNowUnix(-6); // Note: must be a difference > 5 days from start
+
+    [
+      {
+        data: {
+          currentStartDate: notHalfDueUnix,
+        },
+        expected: false,
+        msg: 'does not transition when not half way to due date',
+      },
+      {
+        data: {
+          currentStartDate: halfDueUnix,
+        },
+        expected: false,
+        msg: 'does not transition when progress note is not required',
+      },
+      {
+        data: {
+          currentStartDate: halfDueUnix,
+          willRequireProgressNote: true,
+        },
+        expected: true,
+        msg:
+          'it transitions when half past due and a progress note is required',
+      },
+    ].forEach(({ data, expected }) => {
+      const model = createDeficientItem(
+        Object.assign(data, {
+          state: 'pending',
+          currentDueDate: threeDaysFromNow,
+        })
+      );
+      const updates = updateDeficientItem(model, {});
+      const actual = updates.state === 'requires-progress-update';
+      expect(actual).to.equal(
+        expected,
+        `state: ${data} was expected to ${
+          expected ? '' : 'not '
+        }equal requires-progress-update`
+      );
+    });
+  });
 
   it('appends a state history entry when pending state is set', function() {
     const user = uuid();
@@ -1222,7 +1273,7 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
 
   it('transitions to each state when valid input provided', function() {
     const createdAt = nowUnix();
-    const tomorrow = nowUnix() + 24 * 60 * 60;
+    const tomorrow = daysFromNowUnix(1);
     const completedPhoto = createCompletedPhotosTree(tomorrow, 1, '1');
     const tests = [
       {
@@ -1283,8 +1334,13 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
         expected: 'overdue',
       },
       {
-        data: { state: 'pending' },
-        changes: { state: 'requires-progress-update' },
+        data: {
+          state: 'pending',
+          currentDueDate: daysFromNowUnix(3),
+          currentStartDate: daysFromNowUnix(-6), // Note: must be a difference > 5 days from start
+          willRequireProgressNote: true,
+        },
+        changes: {},
         expected: 'requires-progress-update',
       },
       {
@@ -1426,7 +1482,12 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
         expected: 'overdue',
       },
       {
-        data: { state: 'pending', currentStartDate: tomorrow },
+        data: {
+          state: 'pending',
+          currentDueDate: daysFromNowUnix(3),
+          currentStartDate: daysFromNowUnix(-6), // Note: must be a difference > 5 days from start
+          willRequireProgressNote: true,
+        },
         changes: { state: 'requires-progress-update' },
         setStartDate: true,
         expected: 'requires-progress-update',
@@ -1443,14 +1504,13 @@ describe('Deficiency | Utils | Update Deficient Item', () => {
         progressNote: 'progress',
         expected: 'pending',
       },
-
-      // TODO: Move support here #629
-      // {
-      //   data: { state: 'requires-progress-update', currentStartDate: tomorrow },
-      //   changes: { state: 'overdue' },
-      //   currentStartDate: tomorrow,
-      //   expected: 'overdue',
-      // },
+      {
+        data: { state: 'requires-progress-update', currentStartDate: tomorrow },
+        changes: { state: 'overdue' },
+        setStartDate: true,
+        currentStartDate: tomorrow,
+        expected: 'overdue',
+      },
       {
         data: { state: 'overdue' },
         changes: {
@@ -1626,4 +1686,13 @@ function nowUnix() {
  */
 function toUnix(date) {
   return Math.round(date.getTime() / 1000);
+}
+
+/**
+ * Get exact days from now in unix
+ * @param  {Number?} days
+ * @return {Number}
+ */
+function daysFromNowUnix(days = 1) {
+  return toUnix(new Date()) + 86400 * days;
 }
