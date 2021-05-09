@@ -1,9 +1,13 @@
 const assert = require('assert');
 const pipe = require('../../utils/pipe');
+const config = require('../../config');
+
+const FIVE_DAYS_IN_SEC = 432000;
+const OVERDUE_ELIGIBLE_STATES = config.deficientItems.overdueEligibleStates;
 
 /**
- *  Save a deficient item with updates
- *  relavant to its' target state
+ * Save a deficient item with updates
+ * relavant to its' target state
  * @param  {Object} deficientItem
  * @param  {Object} changes
  * @param  {String?} authorID
@@ -37,7 +41,6 @@ module.exports = function updateDeficientItem(
     setIncompleteState,
     setGoBackState,
     setClosedState,
-    // TODO: setOverdueState,
     setRequiresProgressUpdateState,
     setWillRequireProgressNote,
     applyGoBackStateSideEffects,
@@ -60,6 +63,7 @@ module.exports = function updateDeficientItem(
     appendProgressNote,
     appendCompletedPhotos,
     setCompletedState, // NOTE: must be after appendCompletedPhotos
+    setOverdueState,
     setIsDuplicate,
     appendStateHistory,
     setUpdatedAt
@@ -254,6 +258,32 @@ function setClosedState(config) {
 }
 
 /**
+ * Set new state to overdue
+ * when deficiency is eligible
+ * @param {Object} updates
+ * @param {Object} deficientItem
+ * @return {Object} - config
+ */
+function setOverdueState(config) {
+  const { updates, deficientItem, updatedAt: now } = config;
+  const currentState = deficientItem.state;
+  const currentDueDate = deficientItem.currentDueDate || 0;
+
+  // Second measurements until DI becomes "overdue"
+  const secondsUntilDue = currentDueDate - now;
+  const isStateNotUpdated = Boolean(updates.state) === false;
+  const isOverdueEligible = OVERDUE_ELIGIBLE_STATES.includes(currentState);
+  const isPastDue = secondsUntilDue <= 0;
+
+  // Set eligible, overdue, deficiency to overdue state
+  if (isStateNotUpdated && isOverdueEligible && isPastDue) {
+    updates.state = 'overdue';
+  }
+
+  return config;
+}
+
+/**
  * Set new state to requires progress update
  * @param {Object} updates
  * @param {Object} deficientItem
@@ -261,21 +291,36 @@ function setClosedState(config) {
  * @return {Object} - config
  */
 function setRequiresProgressUpdateState(config) {
-  const { updates, deficientItem, changes } = config;
-  const isRequestingClosed = changes.state === 'requires-progress-update';
+  const { updates, deficientItem, changes, updatedAt: now } = config;
+  const currentStartDate = deficientItem.currentStartDate || 0;
+  const currentDueDate = deficientItem.currentDueDate || 0;
+  const willRequireProgressNote =
+    deficientItem.willRequireProgressNote || false;
+  const isRequestingClosed = changes.state === 'closed';
 
   // Return early if state already updated
   // or not requesting closed state change
-  if (updates.state || !isRequestingClosed) {
+  if (updates.state || isRequestingClosed) {
     return config;
   }
 
-  // TODO: check that more than 1/2 way to due date
+  // Eligible for "requires-progress-update" state
+  // when due date is at least 5 days from the start date
+  const secondsUntilDue = currentDueDate - now;
+  const isRequiresProgressUpdateStateEligible =
+    FIVE_DAYS_IN_SEC <= currentDueDate - currentStartDate;
+  const secondsUntilHalfDue = (currentDueDate - currentStartDate) / 2;
 
-  const currentState = deficientItem.state;
-  const isValidCurrentState = currentState === 'pending';
+  // Setup checks
+  const isValidCurrentState = deficientItem.state === 'pending';
+  const isHalfWayDue = secondsUntilDue < secondsUntilHalfDue;
 
-  if (isValidCurrentState) {
+  if (
+    isValidCurrentState &&
+    isRequiresProgressUpdateStateEligible &&
+    isHalfWayDue &&
+    willRequireProgressNote
+  ) {
     updates.state = 'requires-progress-update';
   }
 
@@ -501,11 +546,23 @@ function appendStateHistory(config) {
 
   if (newState && newState !== deficientItem.state) {
     const updateKey = `stateHistory.${uuid()}`;
+    const { currentStartDate } = deficientItem;
+    const isStartDateRequired = [
+      'overdue',
+      'requires-progress-update',
+    ].includes(newState);
+    const hasStartDate = Boolean(currentStartDate);
 
     updates[updateKey] = {
       createdAt: updatedAt,
       state: newState,
     };
+
+    // Add start date when
+    // required & available
+    if (isStartDateRequired && hasStartDate) {
+      updates[updateKey].startDate = currentStartDate;
+    }
 
     // Add optional user
     if (authorID) {

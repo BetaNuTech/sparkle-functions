@@ -33,6 +33,7 @@ jobs:
         env:
           AWS_S3_ACCESS_KEY_ID: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
           AWS_S3_SECRET_ACCESS_KEY: ${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}
+          AWS_S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET_NAME }}
           FIREBASE_FUNCTIONS_AUTH: ${{ secrets.TEST_FIREBASE_FUNCTIONS_AUTH }}
           FIREBASE_TEST_DB_URL: ${{ secrets.TEST_FIREBASE_TEST_DB_URL }}
           SLACK_CLIENT_SECRET: ${{ secrets.PRODUCTION_SLACK_CLIENT_SECRET }}
@@ -43,6 +44,7 @@ jobs:
         env:
           AWS_S3_ACCESS_KEY_ID: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
           AWS_S3_SECRET_ACCESS_KEY: ${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}
+          AWS_S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET_NAME }}
           FIREBASE_FUNCTIONS_AUTH: ${{ secrets.TEST_FIREBASE_FUNCTIONS_AUTH }}
           FIREBASE_TEST_DB_URL: ${{ secrets.TEST_FIREBASE_TEST_DB_URL }}
           SLACK_CLIENT_SECRET: ${{ secrets.PRODUCTION_SLACK_CLIENT_SECRET }}
@@ -56,7 +58,9 @@ jobs:
           GOOGLE_CLOUD_PROJECT: sapphire-inspections-testing
           AWS_S3_ACCESS_KEY_ID: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
           AWS_S3_SECRET_ACCESS_KEY: ${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}
+          AWS_S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET_NAME }}
           FIREBASE_TEST_DB_URL: ${{ secrets.TEST_FIREBASE_TEST_DB_URL }}
           FIREBASE_STORAGE_BUCKET: ${{ secrets.TEST_FIREBASE_STORAGE_BUCKET }}
-          CLIENT_DOMAIN: https://staging.sapphire-standard.com
+          CLIENT_DOMAIN: ${{ secrets.STAGING_CLIENT_DOMAIN }}
           GLOBAL_API_TOKEN: ${{ secrets.STAGING_GLOBAL_API_TOKEN }}
+          GLOBAL_API_DOMAIN: ${{ secrets.STAGING_GLOBAL_API_DOMAIN }}
