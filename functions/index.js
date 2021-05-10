@@ -9,7 +9,6 @@ const teams = require('./teams');
 const notifications = require('./notifications');
 const regTokens = require('./reg-tokens');
 const config = require('./config');
-const versions = require('./versions');
 const createRouter = require('./router');
 
 const { firebase: firebaseConfig } = config;
@@ -21,11 +20,6 @@ const messaging = admin.messaging();
 const pubsubClient = new PubSub({
   projectId: firebaseConfig ? firebaseConfig.projectId : '',
 });
-
-// Send API version
-exports.latestVersion = functions.https.onRequest(
-  versions.api.getClientAppVersions(fs)
-);
 
 exports.deficientItemsPropertyMetaSyncV2 = functions.firestore
   .document('deficiencies/{deficiencyId}')

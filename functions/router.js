@@ -8,7 +8,7 @@ const deficiencies = require('./deficient-items');
 const properties = require('./properties');
 const inspections = require('./inspections');
 const users = require('./users');
-const versions = require('./versions');
+const clients = require('./clients');
 const authUser = require('./utils/auth-firebase-user');
 const authUserCrud = require('./middleware/auth-user-crud');
 const authTrelloReq = require('./utils/auth-trello-request');
@@ -29,10 +29,13 @@ module.exports = (fs, auth, settings) => {
   const { inspectionUrl } = settings;
   app.use(bodyParser.json(), cors({ origin: true, credentials: true }));
 
+  // Return latest published
+  // client app versions
+  app.get('/v0/versions', authUser(fs, auth), clients.api.getAppVersions(fs));
   app.get(
-    '/v0/versions',
+    '/v0/clients/versions',
     authUser(fs, auth),
-    versions.api.getClientAppVersions(fs)
+    clients.api.getAppVersions(fs)
   );
 
   // Inspection property
