@@ -39,7 +39,7 @@ module.exports = (fs, auth, settings) => {
   );
 
   // Create client error report
-  app.post('/v0/clients/errors', clients.api.postError());
+  app.post('/v0/clients/errors', authUser(fs, auth), clients.api.postError());
 
   // Inspection property
   // reassignment endpoint
