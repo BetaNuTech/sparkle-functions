@@ -38,6 +38,9 @@ module.exports = (fs, auth, settings) => {
     clients.api.getAppVersions(fs)
   );
 
+  // Create client error report
+  app.post('/v0/clients/errors', clients.api.postError());
+
   // Inspection property
   // reassignment endpoint
   app.patch(
