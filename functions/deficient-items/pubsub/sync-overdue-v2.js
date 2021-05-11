@@ -7,10 +7,9 @@ const findHistory = require('../utils/find-history');
 const propertyModel = require('../../models/properties');
 const deficiencyModel = require('../../models/deficient-items');
 const notificationsModel = require('../../models/notifications');
-const createStateHistory = require('../utils/create-state-history');
+const updateDeficiency = require('../utils/update-deficient-item');
 
 const PREFIX = 'deficiency: pubsub: sync-overdue-v2:';
-const FIVE_DAYS_IN_SEC = 432000;
 const OVERDUE_ELIGIBLE_STATES = config.deficientItems.overdueEligibleStates;
 const RESPONSIBILITY_GROUPS = config.deficientItems.responsibilityGroups;
 const DEF_ITEM_URI = config.clientApps.web.deficientItemURL;
@@ -41,7 +40,6 @@ module.exports = function createSyncOverdueDeficientItems(
   return pubsub
     .topic(topic)
     .onPublish(async function syncOverdueDeficienciesHandler() {
-      const now = Math.round(Date.now() / 1000);
       const propertyCache = {};
       const propertyMetaUpdates = [];
       const batch = fs.batch();
@@ -66,79 +64,43 @@ module.exports = function createSyncOverdueDeficientItems(
         let { state } = deficiency;
         const previousState = state;
         const { property: propertyId } = deficiency;
-        const currentStartDate = deficiency.currentStartDate || 0;
-        const currentDueDate = deficiency.currentDueDate || 0;
-        const willRequireProgressNote =
-          deficiency.willRequireProgressNote || false;
+        const updates = updateDeficiency(deficiency, {});
 
-        // Eligible for "requires-progress-update" state
-        // when due date is at least 5 days from the start date
-        const isRequiresProgressUpdateStateEligible =
-          FIVE_DAYS_IN_SEC <= currentDueDate - currentStartDate;
-
-        // Second measurements until DI becomes "overdue"
-        const secondsUntilDue = currentDueDate - now;
-        const secondsUntilHalfDue = (currentDueDate - currentStartDate) / 2;
-
-        if (OVERDUE_ELIGIBLE_STATES.includes(state) && secondsUntilDue <= 0) {
-          // Progress state
-          state = 'overdue';
-          deficiency.state = 'overdue';
-          log.info(`${PREFIX} deficiency "${deficiencyId}" is now overdue`);
-
-          try {
-            const stateHistId = deficiencyModel.uuid(fs);
-            await deficiencyModel.firestoreUpdateRecord(
-              fs,
-              deficiencyId,
-              {
-                state,
-                updatedAt: Math.round(Date.now() / 1000),
-                [`stateHistory.${stateHistId}`]: createStateHistory(deficiency), // Append state history update
-              },
-              batch
-            );
-          } catch (err) {
-            log.error(
-              `${PREFIX} failed to update deficiency: "${deficiencyId}" state to: "overdue" | ${err}`
-            );
-            // continue to next deficiency
-            continue; // eslint-disable-line
-          }
-
-          // Queue property for meta data syncing
-          if (!propertyMetaUpdates.includes(propertyId)) {
-            propertyMetaUpdates.push(propertyId);
-          }
-        } else if (
-          state === 'pending' &&
-          isRequiresProgressUpdateStateEligible &&
-          secondsUntilDue < secondsUntilHalfDue &&
-          willRequireProgressNote
+        // Transition deficiencies that are
+        // overdue or require a progress update
+        if (
+          updates.state === 'overdue' ||
+          updates.state === 'requires-progress-update'
         ) {
-          // Progress state
-          state = 'requires-progress-update';
-          deficiency.state = 'requires-progress-update';
+          state = updates.state;
+          deficiency.state = updates.state;
+          log.info(
+            `${PREFIX} deficiency "${deficiencyId}" is now "${updates.state}"`
+          );
 
           try {
-            const stateHistId = deficiencyModel.uuid(fs);
             await deficiencyModel.firestoreUpdateRecord(
               fs,
               deficiencyId,
-              {
-                state,
-                updatedAt: Math.round(Date.now() / 1000),
-                [`stateHistory.${stateHistId}`]: createStateHistory(deficiency), // Append state history update
-              },
+              updates,
               batch
             );
           } catch (err) {
             log.error(
-              `${PREFIX} failed to update deficiency: "${deficiencyId}" state to: "requires-progress-update" | ${err}`
+              `${PREFIX} failed to update deficiency: "${deficiencyId}" state to: "${updates.state}" | ${err}`
             );
             // continue to next deficiency
             continue; // eslint-disable-line
           }
+        }
+
+        // Queue property for meta data syncing
+        // for only the overdue deficienices
+        if (
+          updates.state === 'overdue' &&
+          !propertyMetaUpdates.includes(propertyId)
+        ) {
+          propertyMetaUpdates.push(propertyId);
         }
 
         // If state change was set above create

@@ -2,7 +2,7 @@ const assert = require('assert');
 const integrationsModel = require('../../models/integrations');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
 
-const PREFIX = 'versions: api: get-client-app-versions:';
+const PREFIX = 'clients: api: get-app-versions:';
 
 /**
  * Factory for creating a GET endpoint
