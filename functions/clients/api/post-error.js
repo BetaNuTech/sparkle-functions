@@ -26,8 +26,6 @@ module.exports = function createPostError() {
     const { body = {} } = req;
     const hasValidMsg =
       Boolean(body.message) && typeof body.message === 'string';
-    const hasValidClient =
-      Boolean(body.client) && typeof body.client === 'string';
     const hasValidUserAgent =
       Boolean(body.userAgent) && typeof body.userAgent === 'string';
     const send500Error = create500ErrHandler(PREFIX, res);
@@ -40,28 +38,24 @@ module.exports = function createPostError() {
       return res.status(400).send({
         errors: [
           {
-            detail: 'Bad Request: missing error message attribute',
+            detail: 'Bad Request: missing error "message" attribute',
           },
         ],
       });
     }
 
-    // Reject missing, required, error client name
-    if (!hasValidClient) {
+    if (!hasValidUserAgent) {
       return res.status(400).send({
         errors: [
           {
-            detail: 'Bad Request: missing error client attribute',
+            detail: 'Bad Request: missing error "userAgent" attribute',
           },
         ],
       });
     }
 
-    // Configure error w/ optional
-    // user agent string
-    const message = `${body.client} | ${body.message}${
-      hasValidUserAgent ? ' (' + body.userAgent + ')' : '' // eslint-disable-line
-    }`;
+    // Configure error message alonside user agent
+    const message = `${body.message} (${body.userAgent})`;
 
     // Send error report
     try {
