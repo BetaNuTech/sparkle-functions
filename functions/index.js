@@ -21,8 +21,9 @@ const pubsubClient = new PubSub({
   projectId: firebaseConfig ? firebaseConfig.projectId : '',
 });
 
-exports.deficientItemsPropertyMetaSyncV2 = functions.firestore
-  .document('deficiencies/{deficiencyId}')
+exports.deficientItemsPropertyMetaSyncV2 = functions
+  .runWith({ timeoutSeconds: 240, memory: '1GB' })
+  .firestore.document('deficiencies/{deficiencyId}')
   .onUpdate(
     deficiency.createOnUpdateStateV2(
       fs,
@@ -63,8 +64,9 @@ exports.inspectionDeleteV2 = functions.firestore
   .document('/inspections/{inspectionId}')
   .onDelete(inspections.onDeleteV2(fs));
 
-exports.inspectionWriteV2 = functions.firestore
-  .document('/inspections/{inspectionId}')
+exports.inspectionWriteV2 = functions
+  .runWith({ memory: '1GB' })
+  .firestore.document('/inspections/{inspectionId}')
   .onWrite(inspections.onWriteV2(fs));
 
 exports.teamDeleteV2 = functions.firestore
@@ -135,8 +137,10 @@ exports.cleanupNotificationsV2 = notifications.pubsub.cleanPublished(
 
 // HTTPS Router API
 
-exports.api = functions.https.onRequest(
-  createRouter(fs, auth, {
-    inspectionUrl: config.clientApps.web.inspectionURL,
-  })
-);
+exports.api = functions
+  .runWith({ timeoutSeconds: 540, memory: '1GB' })
+  .https.onRequest(
+    createRouter(fs, auth, {
+      inspectionUrl: config.clientApps.web.inspectionURL,
+    })
+  );
