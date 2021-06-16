@@ -3,9 +3,9 @@ const { expect } = require('chai');
 const sinon = require('sinon');
 const express = require('express');
 const integrationsModel = require('../../../models/integrations');
-const getPropertyResidents = require('../../../versions/api/get-client-app-versions');
+const getVersions = require('../../../clients/api/get-app-versions');
 
-describe('Versions | API | GET Client App Versions', () => {
+describe('Clients | API | GET App Versions', () => {
   afterEach(() => sinon.restore());
 
   it('returns a payload of all client app versions', done => {
@@ -69,7 +69,7 @@ describe('Versions | API | GET Client App Versions', () => {
 
 function createApp() {
   const app = express();
-  app.get('/t/versions', stubAuth, getPropertyResidents({}));
+  app.get('/t/versions', stubAuth, getVersions({}));
   return app;
 }
 

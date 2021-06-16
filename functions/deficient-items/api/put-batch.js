@@ -12,7 +12,7 @@ const PREFIX = 'deficient-items: api: put batch:';
  * Factory for client requested Deficiency
  * archiving on DI state updates
  * @param  {admin.firestore} fs
- * @return {Function} - property onWrite handler
+ * @return {Function} - Express middleware
  */
 module.exports = function createPutDeficiencyBatch(fs) {
   assert(fs && typeof fs.collection === 'function', 'has firestore db');
