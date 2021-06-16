@@ -42,6 +42,7 @@ try {
 
   // Add service account crentials to config
   config.credential = admin.credential.cert(serviceAccount);
+  config.credentialJson = serviceAccount;
 
   // Limit full access of FB admin
   // forcing adherance to database rules
