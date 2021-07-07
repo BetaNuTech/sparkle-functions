@@ -22,3 +22,10 @@ module.exports = {
 - Do **not** instantiate new Express app instances to publish new endpoints, rather that should be left to the router.
 - Import an api function's module into `./functions/router.js` and instantiate it there.
 - Always add the `/v*` versioning path to an API endpoint to support multiple, backward incompatible, API responses.
+- We have universtal handler (`functions/utils/unexpected-api-error.js`) for all 500 (unexpected error) responses, please use this instead of managing these errors yourself.
+- Do not return a `401` (unathorized) error response unless you know for sure the user's firebase session is invalid/expired.
+
+## Response Format
+- We use [JSON:API](https://jsonapi.org/) formatting for all API response formatting.
+- Set your reponse Content-Type to JSON API standards: `res.set('Content-Type', 'application/vnd.api+json');`
+- [Explore JSON:API examples](https://jsonapi.org/examples/) for ways to format your responses to clients.
