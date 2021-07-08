@@ -40,24 +40,29 @@ module.exports = function authFirebaseUser(
 
     // Is authentication requested?
     if (!authorization) {
-      return sendInvalidCred();
+      return sendInvalidAuth();
     }
 
     const tokenType = `${authorization}`.split(' ').shift(); // take type
 
     // Is Firebase JWT Authorization requested?
     if (tokenType.toLowerCase() !== 'fb-jwt') {
-      return sendInvalidCred(); // TODO: allow other auth strategies
+      return sendInvalidAuth(); // TODO: allow other auth strategies
     }
 
     const idToken = `${authorization}`.split(' ').pop(); // take token
 
+    let userSnap = null;
+    let decodedToken = null;
     try {
-      const decodedToken = await auth.verifyIdToken(idToken);
-      const userSnap = await usersModel.firestoreFindRecord(
-        db,
-        decodedToken.uid
-      );
+      decodedToken = await auth.verifyIdToken(idToken);
+      userSnap = await usersModel.firestoreFindRecord(db, decodedToken.uid);
+    } catch (err) {
+      log.error(`${PREFIX} invalid auth token: ${err}`);
+      return sendInvalidAuth();
+    }
+
+    try {
       const user = userSnap.data() || {};
 
       if (shouldBeAdmin && !user.admin) {
@@ -99,14 +104,21 @@ module.exports = function authFirebaseUser(
       req.user.id = req.user.id || decodedToken.uid; // add user ID
 
       next();
-    } catch (e) {
-      log.error(`${PREFIX} ${e}`);
-      sendInvalidCred();
+    } catch (err) {
+      log.error(`${PREFIX} forbidden request: ${err}`);
+      return sendForbidden();
     }
 
-    function sendInvalidCred() {
+    function sendInvalidAuth() {
       res.status(401).send({ message: 'invalid credentials' });
       next(new Error('invalid credentials')); // stop proceeding middleware
+    }
+
+    function sendForbidden() {
+      res
+        .status(403)
+        .send({ message: 'you do not have the necessary permission' });
+      next(new Error('invalid permission level')); // stop proceeding middleware
     }
   };
 };
