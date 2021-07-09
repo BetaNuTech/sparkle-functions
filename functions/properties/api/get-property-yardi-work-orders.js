@@ -50,7 +50,7 @@ module.exports = function createGetYardiWorkOrders() {
 
       // Bad system integration credentials
       if (err.code === 'ERR_BAD_YARDI_CREDENTIALS') {
-        return res.status(401).send({
+        return res.status(407).send({
           errors: [
             {
               detail: 'Yardi integration credentials not accepted',
