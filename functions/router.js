@@ -152,6 +152,8 @@ module.exports = (fs, auth, settings) => {
     authUser(fs, auth, {
       admin: true,
       corporate: true,
+      team: true,
+      property: true,
     }),
     deficiencies.api.putBatch(fs)
   );
