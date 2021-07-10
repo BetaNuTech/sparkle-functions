@@ -36,7 +36,8 @@ module.exports = function authFirebaseUser(
   return async function strategy(req, res, next) {
     const { params } = req;
     const { authorization } = req.headers;
-    const propertyId = params ? params.propertyId : '';
+    const propertyId =
+      (params ? params.propertyId : '') || (req.propertyId || '');
 
     // Is authentication requested?
     if (!authorization) {

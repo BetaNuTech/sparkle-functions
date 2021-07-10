@@ -41,26 +41,15 @@ module.exports = function createPutDeficiencyBatch(fs) {
     const deficiencyIds = Array.isArray(srcDeficiencyIds)
       ? srcDeficiencyIds
       : [srcDeficiencyIds];
-    const hasDeficiencyIds = Boolean(
-      Array.isArray(deficiencyIds) &&
-        deficiencyIds.length &&
-        deficiencyIds.every(id => id && typeof id === 'string')
-    );
 
     // Set content type
     res.set('Content-Type', 'application/vnd.api+json');
 
-    // Reject missing, required, deficient item ids
-    if (!hasDeficiencyIds) {
-      return res.status(400).send({
-        errors: [
-          {
-            detail:
-              'Bad Request: One or more deficient item ids must be provided as query params',
-          },
-        ],
-      });
-    }
+    log.info(
+      `PUT deficienc${
+        deficiencyIds.length > 1 ? 'ies' : 'y'
+      }: ${deficiencyIds.map(id => `"${id}"`).join(', ')}`
+    );
 
     if (deficiencyIds.length > 10) {
       return res.status(400).send({
@@ -109,7 +98,7 @@ module.exports = function createPutDeficiencyBatch(fs) {
     } catch (err) {
       return send500Error(
         err,
-        'deficient item lookup failed',
+        'deficient items lookup failed',
         'unexpected error'
       );
     }
