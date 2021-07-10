@@ -2,6 +2,7 @@ const assert = require('assert');
 const log = require('../../utils/logger');
 const deficiencyModel = require('../../models/deficient-items');
 const updateItem = require('../utils/update-deficient-item');
+const canUserTransitionDeficientItem = require('../utils/can-user-transition-deficient-item-state');
 const validateUpdate = require('../utils/validate-deficient-item-update');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
 const unflatten = require('../../utils/unflatten-string-attrs');
@@ -28,7 +29,8 @@ module.exports = function createPutDeficiencyBatch(fs) {
     const { body = {} } = req;
     const send500Error = create500ErrHandler(PREFIX, res);
     const update = body;
-    const userId = (req.user || {}).id || '';
+    const { user } = req;
+    const userId = (user || {}).id || '';
     const srcUpdatedAt = req.query.updatedAt || '0';
     const parsedUpdatedAt = parseInt(srcUpdatedAt, 10) || 0;
     const hasUpdates = Boolean(Object.keys(update || {}).length);
@@ -59,6 +61,12 @@ module.exports = function createPutDeficiencyBatch(fs) {
         ],
       });
     }
+
+    log.info(
+      `PUT deficienc${
+        hasDeficiencyIds.length > 1 ? 'ies' : 'y'
+      }: ${hasDeficiencyIds.map(id => `"${id}"`).join(', ')}`
+    );
 
     if (deficiencyIds.length > 10) {
       return res.status(400).send({
@@ -107,7 +115,7 @@ module.exports = function createPutDeficiencyBatch(fs) {
     } catch (err) {
       return send500Error(
         err,
-        'deficient item lookup failed',
+        'deficient items lookup failed',
         'unexpected error'
       );
     }
@@ -184,6 +192,24 @@ module.exports = function createPutDeficiencyBatch(fs) {
       }
     }
 
+    // Check user permission to update all state transitions
+    const updateStates = updateResults
+      .map(({ attributes }) => attributes.state || '')
+      .filter(Boolean);
+    const userHasPermissionForUpdate = updateStates.every(state =>
+      canUserTransitionDeficientItem(user, state)
+    );
+    if (!userHasPermissionForUpdate) {
+      return res.status(403).send({
+        errors: [
+          {
+            detail:
+              'Forbidden: you do not have permission to make the requested state transition',
+          },
+        ],
+      });
+    }
+
     // Commit all updates in batched transation
     try {
       await batch.commit();
@@ -198,7 +224,7 @@ module.exports = function createPutDeficiencyBatch(fs) {
     // Create JSON API response
     const payload = { data: [], meta: { warnings: [] } };
 
-    // Append warnings for deficiencies thatwere not changed
+    // Append warnings for deficiencies that were not changed
     notUpdated.forEach(deficiencyId => {
       payload.meta.warnings.push({
         id: deficiencyId,

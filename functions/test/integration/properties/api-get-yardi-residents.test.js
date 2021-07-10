@@ -66,7 +66,7 @@ describe("Properties | API | GET Property's Yardi Residents", () => {
       .get('/t/123')
       .send()
       .expect('Content-Type', /json/)
-      .expect(401)
+      .expect(407)
       .then(res => {
         expect(res.body.errors[0].detail).to.contain(
           'credentials not accepted'
