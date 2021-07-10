@@ -149,6 +149,11 @@ module.exports = (fs, auth, settings) => {
   // Update 1 or more deficiencies
   app.put(
     '/v0/deficiencies',
+    // session auth
+    authUser(fs, auth),
+    // setup property-level auth requirements
+    deficiencies.api.putBatchSetupMiddleware(fs),
+    // permission auth
     authUser(fs, auth, {
       admin: true,
       corporate: true,
