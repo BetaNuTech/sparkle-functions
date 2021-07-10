@@ -62,6 +62,12 @@ module.exports = function createPutDeficiencyBatch(fs) {
       });
     }
 
+    log.info(
+      `PUT deficienc${
+        hasDeficiencyIds.length > 1 ? 'ies' : 'y'
+      }: ${hasDeficiencyIds.map(id => `"${id}"`).join(', ')}`
+    );
+
     if (deficiencyIds.length > 10) {
       return res.status(400).send({
         errors: [
@@ -109,7 +115,7 @@ module.exports = function createPutDeficiencyBatch(fs) {
     } catch (err) {
       return send500Error(
         err,
-        'deficient item lookup failed',
+        'deficient items lookup failed',
         'unexpected error'
       );
     }

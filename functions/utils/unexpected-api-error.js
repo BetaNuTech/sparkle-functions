@@ -22,6 +22,7 @@ module.exports = function create500ErrorHandler(prefix, res) {
     assert(typeof msg === 'string', 'has log message');
     assert(userMsg && typeof userMsg === 'string', 'has user message');
     log.error(`${prefix} ${msg}${msg ? ' ' : ''}| ${err}`);
+    res.set('Content-Type', 'application/vnd.api+json');
     res.status(500).send({ errors: [{ detail: userMsg }] });
   };
 };
