@@ -76,7 +76,7 @@ function createApp() {
       collection: () => {},
     }),
     // Send the "propertyId" request param as success payload
-    (req, res) => res.status(200).send({ propertyId: req.params.propertyId })
+    (req, res) => res.status(200).send({ propertyId: req.propertyId })
   );
   return app;
 }

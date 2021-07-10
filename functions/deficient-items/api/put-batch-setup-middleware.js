@@ -57,7 +57,15 @@ module.exports = function putBatchSetup(db) {
 
     // Add deficiency's property
     // to the request params
-    req.params.propertyId = req.params.propertyId || deficiency.property || '';
+    try {
+      req.propertyId = deficiency.property || '';
+    } catch (err) {
+      return send500Error(
+        err,
+        'deficient item lookup failed',
+        'unexpected error'
+      );
+    }
 
     // Proceed
     next();
