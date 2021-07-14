@@ -41,6 +41,17 @@ module.exports = (fs, auth, settings) => {
   // Create client error report
   app.post('/v0/clients/errors', authUser(fs, auth), clients.api.postError());
 
+  // Inspection creation end point
+  app.post(
+    '/v0/properties/:propertyId/inspections',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    inspections.api.post(fs)
+  );
   // Inspection property
   // reassignment endpoint
   app.patch(

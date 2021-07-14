@@ -1,4 +1,5 @@
 const assert = require('assert');
+const uuid = require('./uuid');
 
 module.exports = {
   /**
@@ -96,6 +97,21 @@ module.exports = {
       },
       config
     );
+  },
+
+  /**
+   * Create a Firebase snapShot for testing
+   * @param  {String} id
+   * @param  {Object} data
+   * @return {Object}
+   */
+
+  createDocSnapshot(id, data) {
+    return {
+      exists: Boolean(data),
+      id,
+      data: () => data,
+    };
   },
 
   /**
