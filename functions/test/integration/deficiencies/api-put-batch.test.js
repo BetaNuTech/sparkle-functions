@@ -201,7 +201,8 @@ describe('Deficiencies | API | PUT Batch', () => {
     const deficiencyId = uuid();
     const changes = {
       state: 'deferred', // permissioned transition
-      currentDeferredDate: 1626152399,
+      // 4 days from now
+      currentDeferredDate: Math.round(Date.now() * 1000) + 4 * 86400,
       currentPlanToFix: 'fasd',
       currentResponsibilityGroup: 'site_level_in-house',
     };
