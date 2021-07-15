@@ -3,6 +3,7 @@ const log = require('../../utils/logger');
 const config = require('../../config');
 const propertiesModel = require('../../models/properties');
 const inspectionsModel = require('../../models/inspections');
+const create500ErrHandler = require('../../utils/unexpected-api-error');
 
 const PREFIX = 'inspections: api: get-latest-completed:';
 const INSP_PATH = config.clientApps.web.inspectionURL;
@@ -25,6 +26,7 @@ module.exports = function createGetLatestCompleted(fs) {
   return async (req, res) => {
     const { before, propertyCode, templateName } = req.query;
     const now = Math.round(Date.now() / 1000);
+    const send500Error = create500ErrHandler(PREFIX, res);
     let beforeQuery = now;
     const inspQuery = {};
 
@@ -95,26 +97,22 @@ module.exports = function createGetLatestCompleted(fs) {
         beforeQuery,
         inspQuery
       );
-      if (snap.size === 0) {
-        throw Error('no completed inspections found');
+
+      if (snap.size > 0) {
+        const [inspDoc] = snap.docs;
+        inspection = { id: inspDoc.id, ...inspDoc.data() };
       }
-      const [inspDoc] = snap.docs;
-      inspection = { id: inspDoc.id, ...inspDoc.data() };
     } catch (err) {
-      log.error(`${PREFIX} inspections lookup failed | ${err}`);
-      if (`${err}`.search('no completed inspections') > -1) {
-        return res
-          .status(404)
-          .send({ errors: [{ detail: 'no inspection found for query' }] });
-      }
-      return res
-        .status(500)
-        .send({ errors: [{ detail: 'inspections lookup failed' }] });
+      return send500Error(
+        err,
+        'Completed inspection lookup failed',
+        'unexpected error'
+      );
     }
 
     // Lookup inspection property
     // when not previously discovered
-    if (!property) {
+    if (inspection && !property) {
       try {
         const propertySnap = await propertiesModel.firestoreFindRecord(
           fs,
@@ -132,7 +130,7 @@ module.exports = function createGetLatestCompleted(fs) {
     // Successful response
     res.status(200).send({
       included: property ? [createJsonApiProperty(property)] : [],
-      data: createJsonApiInspection(inspection),
+      data: inspection ? createJsonApiInspection(inspection) : [],
     });
   };
 };
