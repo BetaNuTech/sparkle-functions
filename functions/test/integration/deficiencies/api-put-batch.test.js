@@ -195,7 +195,7 @@ describe('Deficiencies | API | PUT Batch', () => {
         done();
       })
       .catch(done);
-  // });
+  });
 
   it('reject forbidden request to transition deficient item without necessary permission', done => {
     const deficiencyId = uuid();
