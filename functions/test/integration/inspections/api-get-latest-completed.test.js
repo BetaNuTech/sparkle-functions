@@ -66,7 +66,7 @@ describe('Inspections | API | GET Latest Completed', () => {
       .get(`/t?before=${expected}`)
       .send()
       .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(404)
+      .expect(200)
       .then(() => {
         expect(actual).to.equal(expected);
         done();
@@ -91,7 +91,7 @@ describe('Inspections | API | GET Latest Completed', () => {
       .get(`/t?templateName=${expected}`)
       .send()
       .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(404)
+      .expect(200)
       .then(() => {
         expect(actual).to.equal(expected);
         done();
@@ -120,9 +120,31 @@ describe('Inspections | API | GET Latest Completed', () => {
       .get(`/t?propertyCode=${propCode}`)
       .send()
       .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(404)
+      .expect(200)
       .then(() => {
         expect(actual).to.equal(expected);
+        done();
+      })
+      .catch(done);
+  });
+
+  it('returns an empty response when no inspections can be found', done => {
+    const expected = [];
+    const inspectionsSnap = stubs.wrapSnapshot([]); // empty
+
+    // Stup requests
+    sinon
+      .stub(inspectionsModel, 'firestoreLatestCompletedQuery')
+      .resolves(inspectionsSnap);
+
+    request(createApp())
+      .get(`/t`)
+      .send()
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(200)
+      .then(res => {
+        const actual = res.body.data;
+        expect(actual).to.deep.equal(expected);
         done();
       })
       .catch(done);

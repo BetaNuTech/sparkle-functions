@@ -63,6 +63,7 @@ module.exports = {
     'overdue',
     'requires-progress-update',
   ],
+  permissionedTransitionStates: ['incomplete', 'deferred'],
   followUpActionStates: ['completed', 'incomplete'],
   overdueEligibleStates: ['pending', 'requires-progress-update'],
   overdueCounterStates: ['overdue'],
