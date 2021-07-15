@@ -41,6 +41,17 @@ module.exports = (fs, auth, settings) => {
   // Create client error report
   app.post('/v0/clients/errors', authUser(fs, auth), clients.api.postError());
 
+  // Inspection creation end point
+  app.post(
+    '/v0/properties/:propertyId/inspections',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    inspections.api.post(fs)
+  );
   // Inspection property
   // reassignment endpoint
   app.patch(
@@ -84,6 +95,12 @@ module.exports = (fs, auth, settings) => {
     properties.middleware.propertyCode(fs),
     properties.middleware.yardiIntegration(fs),
     properties.api.getPropertyYardiWorkOrders()
+  );
+
+  app.post(
+    '/v0/properties',
+    authUser(fs, auth, true), // admin only
+    properties.api.post(fs)
   );
 
   // Authorize Slack API credentials
@@ -149,9 +166,14 @@ module.exports = (fs, auth, settings) => {
   // Update 1 or more deficiencies
   app.put(
     '/v0/deficiencies',
+    // setup property-level auth requirements
+    deficiencies.api.putBatchSetupMiddleware(fs),
+    // permission auth
     authUser(fs, auth, {
       admin: true,
       corporate: true,
+      team: true,
+      property: true,
     }),
     deficiencies.api.putBatch(fs)
   );

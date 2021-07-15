@@ -17,21 +17,6 @@ const USER_ID = '123';
 describe('Deficiencies | API | PUT Batch', () => {
   afterEach(() => sinon.restore());
 
-  it('rejects request missing any deficient item ids', done => {
-    request(createApp())
-      .put('/t')
-      .send({ update: true })
-      .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(400)
-      .then(res => {
-        expect(res.body.errors[0].detail).to.contain(
-          'Bad Request: One or more deficient item ids must be provided as query params'
-        );
-        done();
-      })
-      .catch(done);
-  });
-
   it('rejects request to update more than 10 deficient items', done => {
     const query = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
       .map(id => `id=${id}`)
@@ -212,6 +197,40 @@ describe('Deficiencies | API | PUT Batch', () => {
       .catch(done);
   });
 
+  it('reject forbidden request to transition deficient item without necessary permission', done => {
+    const deficiencyId = uuid();
+    const changes = {
+      state: 'deferred', // permissioned transition
+      // 4 days from now
+      currentDeferredDate: Math.round(Date.now() * 1000) + 4 * 86400,
+      currentPlanToFix: 'fasd',
+      currentResponsibilityGroup: 'site_level_in-house',
+    };
+    const deficiency = mocking.createDeficiency({
+      state: 'requires-action',
+      inspection: uuid(),
+      property: uuid(),
+      item: uuid(),
+    });
+    deficiency.id = deficiencyId;
+    sinon
+      .stub(deficiencyModel, 'findMany')
+      .resolves(stubs.wrapSnapshot([deficiency]));
+    sinon.stub(deficiencyModel, 'firestoreUpdateRecord').resolves();
+    const unpermissionedUser = mocking.createUser({
+      admin: false,
+      corporate: false,
+    });
+
+    request(createApp(unpermissionedUser))
+      .put(`/t?id=${deficiencyId}`)
+      .send(changes)
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(403)
+      .then(() => done())
+      .catch(done);
+  });
+
   it('resolves JSON-API response payload of sucessful update(s)', done => {
     const deficiencyId = uuid();
     const changes = { state: 'closed' }; // valid request
@@ -260,12 +279,12 @@ describe('Deficiencies | API | PUT Batch', () => {
   });
 });
 
-function createApp() {
+function createApp(user = {}) {
   const app = express();
   app.put(
     '/t',
     bodyParser.json(),
-    stubAuth,
+    stubAuth(user),
     putBatch({
       collection: () => {},
       batch: () => ({
@@ -277,7 +296,9 @@ function createApp() {
   return app;
 }
 
-function stubAuth(req, res, next) {
-  req.user = { id: USER_ID };
-  next();
+function stubAuth(user = {}) {
+  return (req, res, next) => {
+    req.user = Object.assign({ id: USER_ID }, user);
+    next();
+  };
 }

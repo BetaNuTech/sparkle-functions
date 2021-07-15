@@ -58,7 +58,7 @@ describe('Utils | Auth Firebase User', () => {
     return request(app)
       .get(`/${PROPERTY_ID}`)
       .set('Authorization', 'fb-jwt 123')
-      .expect(401);
+      .expect(403);
   });
 
   it('should authorize an admin user', () => {
@@ -97,7 +97,7 @@ describe('Utils | Auth Firebase User', () => {
     return request(app)
       .get(`/${PROPERTY_ID}`)
       .set('Authorization', 'fb-jwt 123')
-      .expect(401);
+      .expect(403);
   });
 
   it('should authorize an admin user via permissions hash', () => {
@@ -126,7 +126,7 @@ describe('Utils | Auth Firebase User', () => {
     return request(app)
       .get(`/${PROPERTY_ID}`)
       .set('Authorization', 'fb-jwt 123')
-      .expect(401);
+      .expect(403);
   });
 
   it('should authorize a corporate user via permissions hash', () => {
@@ -158,7 +158,7 @@ describe('Utils | Auth Firebase User', () => {
     return request(app)
       .get(`/${PROPERTY_ID}`)
       .set('Authorization', 'fb-jwt 123')
-      .expect(401);
+      .expect(403);
   });
 
   it('should authorize a property level user via permissions hash', () => {
@@ -187,7 +187,7 @@ describe('Utils | Auth Firebase User', () => {
     return request(app)
       .get(`/${PROPERTY_ID}`)
       .set('Authorization', 'fb-jwt 123')
-      .expect(401);
+      .expect(403);
   });
 
   it('should authorize a team level user via permissions hash', () => {
