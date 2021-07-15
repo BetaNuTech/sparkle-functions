@@ -95,8 +95,9 @@ module.exports = modelSetup({
    */
   firestoreCreateRecord(fs, propertyId, data) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
-    assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(data && typeof data === 'object', 'has data');
+    if (propertyId === undefined)
+      propertyId = fs.collection(PROPERTY_COLLECTION).doc().id;
     return fs
       .collection(PROPERTY_COLLECTION)
       .doc(propertyId)
