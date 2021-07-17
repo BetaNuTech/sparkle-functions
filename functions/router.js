@@ -7,6 +7,7 @@ const trello = require('./trello');
 const deficiencies = require('./deficient-items');
 const properties = require('./properties');
 const inspections = require('./inspections');
+const jobs = require('./jobs');
 const users = require('./users');
 const clients = require('./clients');
 const authUser = require('./utils/auth-firebase-user');
@@ -199,6 +200,18 @@ module.exports = (fs, auth, settings) => {
     authUser(fs, auth),
     authUserCrud(auth),
     users.api.createDeleteUser(fs, auth)
+  );
+
+  // Create job
+  app.post(
+    '/v0/properties/:propertyId/jobs',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    jobs.api.post(fs)
   );
 
   return app;

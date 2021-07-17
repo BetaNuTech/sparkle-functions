@@ -105,6 +105,17 @@ module.exports = modelSetup({
   },
 
   /**
+   * Create a firestore document reference
+   * @param  {admin.firestore} fs
+   * @param  {String} id
+   * @return {firestore.DocumentReference}
+   */
+  createDocRef(fs, id) {
+    assert(id && typeof id === 'string', 'has document reference id');
+    return fs.collection(PROPERTY_COLLECTION).doc(id);
+  },
+
+  /**
    * Update Firestore Property
    * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
    * @param  {String} propertyId

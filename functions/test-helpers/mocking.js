@@ -453,5 +453,32 @@ module.exports = {
     };
   },
 
+  /**
+   * Create a valid job
+   * @param  {Object} jobConfig
+   * @return {Object}
+   */
+  createJob(jobConfig = {}) {
+    if (jobConfig.property) {
+      assert(
+        jobConfig.property.id,
+        'has required firestore "property" document reference'
+      );
+    }
+
+    return {
+      title: 'test job',
+      need: 'test',
+      scopeOfWork: '1. fix it',
+      trelloCardURL: 'trello.com/card/1',
+      createdAt: nowUnix(),
+      updatedAt: nowUnix(),
+      state: config.jobs.stateTypes[0],
+      type: config.jobs.typeValues[0],
+      authorizedRules: config.jobs.authorizedRuleTypes[0],
+      ...jobConfig,
+    };
+  },
+
   nowUnix,
 };
