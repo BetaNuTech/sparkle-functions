@@ -22,7 +22,7 @@ interface property {
   photoName?: string;
   photoURL?: string;
   state?: string;
-  year_built?: number; 
+  year_built?: number;
   slackChannel?: string;
   zip?: string;
 
@@ -64,11 +64,30 @@ interface inspection {
   templateCategory: string; // templateCategory ID
   property: string; // property ID
   inspector: string;
-  
+
   // Embedded copy of template
   template: template;
 }
 ```
 
+## Job
+
+```typescript
+interface Job {
+  id?: string;
+  title: string;
+  need: string;
+  authorizedRules: 'default' | 'expedite';
+  scopeOfWork: string;
+  trelloCardURL?: string;
+  property: Firestore.DocumentReference; // https://googleapis.dev/nodejs/firestore/latest/DocumentReference.html
+  createdAt: number; // Unix timestamp
+  updatedAt: number; // Unix timestamp
+  state: 'open' | 'approved' | 'authorized' | 'complete';
+  type: 'improvement' | 'maintenance';
+}
+```
+
 ## Template
+
 **TODO**

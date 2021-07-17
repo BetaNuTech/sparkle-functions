@@ -100,6 +100,22 @@ module.exports = {
   },
 
   /**
+   * Create a mock firestore document reference
+   * https://googleapis.dev/nodejs/firestore/latest/DocumentReference.html
+   * @param  {Object} docConfig
+   * @return {Object}
+   */
+  createDocRef(docConfig = {}) {
+    const id = uuid();
+    return {
+      id,
+      path: `collection/${id}`,
+      parent: {},
+      ...docConfig,
+    };
+  },
+
+  /**
    * Create a Firebase snapShot for testing
    * @param  {String} id
    * @param  {Object} data
