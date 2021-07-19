@@ -1,7 +1,11 @@
 const assert = require('assert');
 const propertiesModel = require('../../models/properties');
-const validateProperty = require('../utils/validate');
+const validate = require('../utils/validate');
+const notificationsModel = require('../../models/notifications');
+const notifyTemplate = require('../../utils/src-notification-templates');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
+const getFullName = require('../../utils/user');
+const log = require('../../utils/logger');
 
 const PREFIX = 'property: api: post:';
 
@@ -21,38 +25,82 @@ module.exports = function createPost(fs) {
    * @return {Promise}
    */
   return async (req, res) => {
+    const property = req.body;
+    const authorName = getFullName(req.user);
+    const authorEmail = req.user ? req.user.email : '';
     const send500Error = create500ErrHandler(PREFIX, res);
+
+    // Optional incognito mode query
+    // defaults to false
+    const incognitoMode = req.query.incognitoMode
+      ? req.query.incognitoMode.search(/true/i) > -1
+      : false;
 
     // Set content type
     res.set('Content-Type', 'application/vnd.api+json');
+    log.info('Create property requested');
 
-    const property = {
-      name: 'Not Set',
-      templates: {},
-    };
-
-    const hasProperty = Boolean(Object.keys(property || {}).length);
-    const isValidProperty = hasProperty
-      ? validateProperty(property).length === 0
-      : false;
+    // Validate property atrributes
+    const propertyValidationErrors = validate(property);
+    const isValidProperty = propertyValidationErrors.length === 0;
 
     // Reject on missing property attributes
     if (!isValidProperty) {
-      return send500Error(
-        'Bad Request: Property is not valid, please provide acceptable payload'
-      );
+      return res.status(400).send({
+        errors: propertyValidationErrors.map(({ message, path }) => ({
+          detail: message,
+          source: { pointer: path },
+        })),
+      });
     }
 
-    // TODO send property create global notification
+    // Create new property record
+    let propertyDoc;
     try {
-      await propertiesModel.firestoreCreateRecord(fs, undefined, property);
+      propertyDoc = await propertiesModel.firestoreCreateRecord(
+        fs,
+        undefined,
+        property
+      );
     } catch (err) {
       return send500Error(err, 'property creation failed', 'unexpected error');
+    }
+
+    if (!incognitoMode) {
+      try {
+        // Notify of new inspection report
+        await notificationsModel.firestoreAddRecord(fs, undefined, {
+          name: property.name,
+          summary: notifyTemplate('property-creation-summary', {
+            authorName,
+            authorEmail,
+          }),
+          markdownBody: notifyTemplate('property-creation-markdown-body', {
+            name: property.name,
+            addr1: property.addr1,
+            addr2: property.addr2,
+            city: property.city,
+            state: property.state,
+            zip: property.zip,
+            teamName: property.teamName,
+            code: property.code,
+            slackChannel: property.slackChannel,
+            templateNames: property.templates,
+            bannerPhotoURL: property.bannerPhotoURL,
+            photoURL: property.photoURL,
+          }),
+          creator: req.user ? req.user.id || '' : '',
+          property: propertyDoc.id,
+        });
+      } catch (err) {
+        log.error(`${PREFIX} failed to create source notification | ${err}`); // proceed with error
+      }
     }
 
     // Send newly created property
     res.status(201).send({
       data: {
+        id: propertyDoc.id,
         type: 'property',
         attributes: property,
       },

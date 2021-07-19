@@ -75,6 +75,29 @@ Inspection: {{{inspectionUrl}}}{{/if}}{{#if reportUrl}}
 Inspection Report: {{{reportUrl}}}{{/if}}
 
 *Updated by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // /////////////////////////////////////
+  // Property Creation
+  // /////////////////////////////////////
+  'property-creation-summary':
+    '{{name}} created{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'property-creation-markdown-body':
+`\`\`\`
+{{#if name}}Name: {{{name}}}{{/if}}
+{{#if addr1}}Addr1: {{{addr1}}}{{/if}}
+{{#if addr2}}Addr2: {{{addr2}}}{{/if}}
+{{#if city}}City: {{{city}}}{{/if}}
+{{#if state}}State: {{{state}}}{{/if}}
+{{#if zip}}zipcode: {{{zip}}}{{/if}}
+{{#if teamName}}Team: {{{teamName}}}{{/if}}
+{{#if code}}Cobalt Property Code: {{{code}}}{{/if}}
+{{#if slackChannel}}Slack Channel: {{{slackChannel}}}{{/if}}
+{{#if templateNames}}Templates: {{{templateNames}}}{{/if}}
+{{#if bannerPhotoURL}}bannerPhotoURL: {{{bannerPhotoURL}}}{{/if}}
+{{#if photoURL}}photoURL: {{{photoURL}}}{{/if}}
+\`\`\`
+*Created by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
 };
 
 /**
