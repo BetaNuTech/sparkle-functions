@@ -214,5 +214,17 @@ module.exports = (fs, auth, settings) => {
     jobs.api.post(fs)
   );
 
+  // Update a job
+  app.put(
+    '/v0/properties/:propertyId/jobs/:jobIds',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    jobs.api.put(fs)
+  );
+
   return app;
 };
