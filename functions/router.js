@@ -98,10 +98,21 @@ module.exports = (fs, auth, settings) => {
     properties.api.getPropertyYardiWorkOrders()
   );
 
+  // Create a property
   app.post(
     '/v0/properties',
     authUser(fs, auth, true), // admin only
     properties.api.post(fs)
+  );
+
+  // Update a property
+  app.put(
+    '/v0/properties/:propertyId',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+    }), // admin only
+    properties.api.put(fs)
   );
 
   // Authorize Slack API credentials

@@ -82,8 +82,7 @@ Inspection Report: {{{reportUrl}}}{{/if}}
   'property-creation-summary':
     '{{name}} created{{#if authorName}} by {{{authorName}}}{{/if}}',
 
-  'property-creation-markdown-body':
-`\`\`\`
+  'property-creation-markdown-body': `\`\`\`
 {{#if name}}Name: {{{name}}}{{/if}}
 {{#if addr1}}Addr1: {{{addr1}}}{{/if}}
 {{#if addr2}}Addr2: {{{addr2}}}{{/if}}
@@ -98,6 +97,45 @@ Inspection Report: {{{reportUrl}}}{{/if}}
 {{#if photoURL}}photoURL: {{{photoURL}}}{{/if}}
 \`\`\`
 *Created by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // //////////////////
+  // Property Update
+  // //////////////////
+
+  'property-update-summary':
+    '{{name}} updated{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'property-update-markdown-body': `Previous Data:
+\`\`\`
+{{#if previousName}}Name: {{{previousName}}}{{/if}}
+{{#if previousAddr1}}Addr1: {{{previousAddr1}}}{{/if}}
+{{#if previousAddr2}}Addr2: {{{previousAddr2}}}{{/if}}
+{{#if previousCity}}City: {{{previousCity}}}{{/if}}
+{{#if previousState}}State: {{{previousState}}}{{/if}}
+{{#if previousZip}}zipcode: {{{previousZip}}}{{/if}}
+{{#if previousTeamName}}Team: {{{previousTeamName}}}{{/if}}
+{{#if previousCode}}Cobalt Property Code: {{{previousCode}}}{{/if}}
+{{#if previousSlackChannel}}Slack Channel: {{{previousSlackChannel}}}{{/if}}
+{{#if previousTemplateNames}}Templates: {{{previousTemplateNames}}}{{/if}}
+{{#if previousBannerPhotoURL}}bannerPhotoURL: {{{previousBannerPhotoURL}}}{{/if}}
+{{#if previousPhotoURL}}photoURL: {{{previousPhotoURL}}}{{/if}}
+\`\`\`
+New Data:
+\`\`\`
+{{#if currentName}}Name: {{{currentName}}}{{/if}}
+{{#if currentAddr1}}Addr1: {{{currentAddr1}}}{{/if}}
+{{#if currentAddr2}}Addr2: {{{currentAddr2}}}{{/if}}
+{{#if currentCity}}City: {{{currentCity}}}{{/if}}
+{{#if currentState}}State: {{{currentState}}}{{/if}}
+{{#if currentZip}}zipcode: {{{currentZip}}}{{/if}}
+{{#if currentTeamName}}Team: {{{currentTeamName}}}{{/if}}
+{{#if currentCode}}Cobalt Property Code: {{{currentCode}}}{{/if}}
+{{#if currentSlackChannel}}Slack Channel: {{{currentSlackChannel}}}{{/if}}
+{{#if currentTemplateNames}}Templates: {{{currentTemplateNames}}}{{/if}}
+{{#if currentBannerPhotoURL}}bannerPhotoURL: {{{currentBannerPhotoURL}}}{{/if}}
+{{#if currentPhotoURL}}photoURL: {{{currentPhotoURL}}}{{/if}}
+\`\`\`
+*Edited by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
 };
 
 /**
