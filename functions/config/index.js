@@ -8,6 +8,7 @@ const cobalt = require('./cobalt');
 const notifications = require('./notifications');
 const globalApi = require('./global-api');
 const jobs = require('./jobs');
+const bids = require('./bids');
 
 const env = process.env.NODE_ENV || 'production';
 
@@ -30,5 +31,6 @@ module.exports = Object.assign(
   { cobalt },
   { notifications },
   { globalApi },
-  { jobs }
+  { jobs },
+  { bids }
 );

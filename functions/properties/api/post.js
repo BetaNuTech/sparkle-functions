@@ -54,14 +54,12 @@ module.exports = function createPost(fs) {
       });
     }
 
+    // Generate property ID
+    const propertyId = propertiesModel.createId(fs);
+
     // Create new property record
-    let propertyDoc;
     try {
-      propertyDoc = await propertiesModel.firestoreCreateRecord(
-        fs,
-        undefined,
-        property
-      );
+      await propertiesModel.firestoreCreateRecord(fs, propertyId, property);
     } catch (err) {
       return send500Error(err, 'property creation failed', 'unexpected error');
     }
@@ -90,7 +88,7 @@ module.exports = function createPost(fs) {
             photoURL: property.photoURL,
           }),
           creator: req.user ? req.user.id || '' : '',
-          property: propertyDoc.id,
+          property: propertyId,
         });
       } catch (err) {
         log.error(`${PREFIX} failed to create source notification | ${err}`); // proceed with error
@@ -100,7 +98,7 @@ module.exports = function createPost(fs) {
     // Send newly created property
     res.status(201).send({
       data: {
-        id: propertyDoc.id,
+        id: propertyId,
         type: 'property',
         attributes: property,
       },

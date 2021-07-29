@@ -35,7 +35,7 @@ describe('Properties | API | POST', () => {
     expect(actual).to.equal(expected);
   });
 
-  it('returns the property JSON API document on successful creation', done => {
+  it('returns the property document on successful creation', done => {
     const propertyId = uuid();
     const property = mocking.createProperty({
       name: 'Not Set',
@@ -50,6 +50,7 @@ describe('Properties | API | POST', () => {
       },
     };
 
+    sinon.stub(propertiesModel, 'createId').returns(propertyId);
     sinon
       .stub(propertiesModel, 'firestoreCreateRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
@@ -77,6 +78,10 @@ describe('Properties | API | POST', () => {
 
     // Stubs
     sinon
+      .stub(propertiesModel, 'createId')
+      .resolves(firebase.createDocSnapshot(propertyId));
+
+    sinon
       .stub(propertiesModel, 'firestoreCreateRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
 
@@ -102,6 +107,10 @@ describe('Properties | API | POST', () => {
     });
 
     // Stubs
+    sinon
+      .stub(propertiesModel, 'createId')
+      .resolves(firebase.createDocSnapshot(propertyId));
+
     sinon
       .stub(propertiesModel, 'firestoreCreateRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
