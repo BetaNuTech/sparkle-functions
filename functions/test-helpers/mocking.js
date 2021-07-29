@@ -480,5 +480,32 @@ module.exports = {
     };
   },
 
+  /**
+   * Create a valid bid
+   * @param  {Object} bidConfig
+   * @return {Object}
+   */
+  createBid(bidConfig = {}) {
+    if (bidConfig.job) {
+      assert(
+        bidConfig.job.id,
+        'has required firestore "job" document reference'
+      );
+    }
+
+    return {
+      vendor: 'test',
+      vendorDetails: 'test',
+      state: config.bids.stateTypes[0],
+      costMin: 2,
+      costMax: 1,
+      startedAt: 1,
+      completedAt: 2,
+      createdAt: nowUnix(),
+      updatedAt: nowUnix(),
+      ...bidConfig,
+    };
+  },
+
   nowUnix,
 };

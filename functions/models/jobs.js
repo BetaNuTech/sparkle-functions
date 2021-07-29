@@ -45,6 +45,27 @@ module.exports = modelSetup({
   },
 
   /**
+   * Create a firestore document reference
+   * @param  {admin.firestore} fs
+   * @param  {String} id
+   * @return {firestore.DocumentReference}
+   */
+  createDocRef(fs, id) {
+    assert(id && typeof id === 'string', 'has document reference id');
+    return fs.collection(JOB_COLLECTION).doc(id);
+  },
+
+  /**
+   * Create a firestore doc id for collection
+   * @param  {admin.firestore} fs
+   * @return {Promise}
+   */
+  createId(fs) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    return fs.collection(JOB_COLLECTION).doc().id;
+  },
+
+  /**
    * Lookup associated bids
    * @param  {firebaseAdmin.firestore} fs
    * @param  {String} jobId

@@ -105,6 +105,16 @@ module.exports = modelSetup({
   },
 
   /**
+   * Create a firestore doc id for collection
+   * @param  {admin.firestore} fs
+   * @return {String}
+   */
+  createId(fs) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    return fs.collection(PROPERTY_COLLECTION).doc().id;
+  },
+
+  /**
    * Create a firestore document reference
    * @param  {admin.firestore} fs
    * @param  {String} id

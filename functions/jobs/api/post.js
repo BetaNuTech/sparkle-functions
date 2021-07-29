@@ -105,10 +105,12 @@ module.exports = function createPostJob(fs) {
       });
     }
 
+    // Generate Job id
+    const jobId = jobsModel.createId(fs);
+
     // create firestore record
-    let jobDoc;
     try {
-      jobDoc = await jobsModel.createRecord(fs, '', job);
+      await jobsModel.createRecord(fs, jobId, job);
     } catch (err) {
       return send500Error(err, 'job creation failed', err.message);
     }
@@ -120,7 +122,7 @@ module.exports = function createPostJob(fs) {
     // Send newly created job
     res.status(201).send({
       data: {
-        id: jobDoc.id,
+        id: jobId,
         type: 'job',
         attributes: job,
         relationships: {

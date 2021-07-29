@@ -3,41 +3,41 @@ const { expect } = require('chai');
 const express = require('express');
 const bodyParser = require('body-parser');
 const sinon = require('sinon');
+const bidsModel = require('../../../models/bids');
 const jobsModel = require('../../../models/jobs');
 const propertiesModel = require('../../../models/properties');
-const post = require('../../../jobs/api/post');
+const post = require('../../../jobs/api/post-bid');
 const mocking = require('../../../test-helpers/mocking');
 const uuid = require('../../../test-helpers/uuid');
 const firebase = require('../../../test-helpers/firebase');
 const log = require('../../../utils/logger');
 
-describe('Jobs | API | POST', () => {
+const propertyId = uuid();
+const jobId = uuid();
+
+describe('Bids | API | POST', () => {
   beforeEach(() => {
     sinon.stub(log, 'info').callsFake(() => true);
     sinon.stub(log, 'error').callsFake(() => true);
   });
   afterEach(() => sinon.restore());
 
-  it('rejects request to create job without required payloads', async () => {
-    const expected = 'need, scopeOfWork, title, type';
+  it('rejects request to create bid without required payload', async () => {
+    const expected = 'vendor';
     const res = await request(createApp())
-      .post('/t/123')
+      .post(`/t/${propertyId}/${jobId}`)
       .send()
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(400);
 
     // Assertions
     const result = res.body.errors || [];
-    const actual = result
-      .map(({ source }) => (source ? source.pointer : ''))
-      .sort()
-      .join(', ');
+    const actual = result[0].source.pointer;
     expect(actual).to.equal(expected);
   });
 
-  it('rejects request to create job with non-existent property', async () => {
+  it('rejects request to create bid with non-existent property', async () => {
     const expected = 'Property not found';
-    const job = mocking.createJob();
 
     // Stub Requests
     sinon
@@ -45,8 +45,8 @@ describe('Jobs | API | POST', () => {
       .resolves(firebase.createDocSnapshot()); // empty
 
     const res = await request(createApp())
-      .post('/t/123')
-      .send({ ...job })
+      .post(`/t/${propertyId}/${jobId}`)
+      .send({ vendor: 'test' })
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(404);
 
@@ -56,53 +56,46 @@ describe('Jobs | API | POST', () => {
     expect(actual).to.equal(expected);
   });
 
-  it('rejects request to create job with invalid configuration', async () => {
-    const expected = 'type';
-    const propertyId = uuid();
-    const invalidJob = mocking.createJob();
-    invalidJob.type = 'invalid-type';
+  it('rejects request to create bid with non-existent job', async () => {
+    const expected = 'Job not found';
+    const property = mocking.createProperty();
 
     // Stub Requests
     sinon
       .stub(propertiesModel, 'firestoreFindRecord')
-      .resolves(
-        firebase.createDocSnapshot(propertyId, mocking.createProperty())
-      );
-    sinon
-      .stub(propertiesModel, 'createDocRef')
-      .returns(firebase.createDocRef({ id: propertyId }));
+      .resolves(firebase.createDocSnapshot(propertyId, property));
+
+    sinon.stub(jobsModel, 'findRecord').resolves(firebase.createDocSnapshot()); // empty
 
     const res = await request(createApp())
-      .post(`/t/${propertyId}`)
-      .send({ ...invalidJob })
+      .post(`/t/${propertyId}/${jobId}`)
+      .send({ vendor: 'test' })
       .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(400);
+      .expect(404);
 
     // Assertions
     const [result] = res.body.errors || [];
-    const { source = {} } = result;
-    const actual = source.pointer || '';
+    const actual = result ? result.title : '';
     expect(actual).to.equal(expected);
   });
 
-  it('returns the job JSON API document on successfull creation', done => {
-    const propertyId = uuid();
-    const jobId = uuid();
+  it('returns the bid document on successful creation', async () => {
     const property = mocking.createProperty();
     const job = mocking.createJob();
-    delete job.property; // sanity check
-    delete job.trelloCardURL; // sanity check
+    const bid = mocking.createBid();
+    const bidId = uuid();
+    delete bid.job; // sanity check
 
     const expected = {
       data: {
-        id: jobId,
-        type: 'job',
-        attributes: { ...job },
+        id: bidId,
+        type: 'bid',
+        attributes: { ...bid },
         relationships: {
-          property: {
+          job: {
             data: {
-              id: propertyId,
-              type: 'property',
+              id: jobId,
+              type: 'job',
             },
           },
         },
@@ -113,31 +106,33 @@ describe('Jobs | API | POST', () => {
       .stub(propertiesModel, 'firestoreFindRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
     sinon
-      .stub(propertiesModel, 'createDocRef')
-      .returns(firebase.createDocRef({ id: propertyId }));
-    sinon.stub(jobsModel, 'createId').returns(jobId);
-    sinon
-      .stub(jobsModel, 'createRecord')
+      .stub(jobsModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(jobId, job));
+    sinon
+      .stub(jobsModel, 'createDocRef')
+      .returns(firebase.createDocRef({ id: jobId }));
+    sinon.stub(bidsModel, 'createId').returns(bidId);
+    sinon
+      .stub(bidsModel, 'createRecord')
+      .resolves(firebase.createDocSnapshot(bidId, bid));
 
-    request(createApp())
-      .post(`/t/${propertyId}`)
-      .send({ ...job })
+    const res = await request(createApp())
+      .post(`/t/${propertyId}/${jobId}`)
+      .send({ ...bid })
       .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(201)
-      .then(res => {
-        const actual = res.body;
-        expect(actual).to.deep.equal(expected);
-        done();
-      })
-      .catch(done);
+      .expect(201);
+
+    const actual = res.body;
+    actual.data.attributes.createdAt = bid.createdAt; // allow different
+    actual.data.attributes.updatedAt = bid.updatedAt; // allow different
+    expect(actual).to.deep.equal(expected);
   });
 });
 
 function createApp() {
   const app = express();
   app.post(
-    '/t/:propertyId',
+    '/t/:propertyId/:jobId',
     bodyParser.json(),
     stubAuth,
     post({ collection: () => {} })
