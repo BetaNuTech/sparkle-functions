@@ -46,10 +46,11 @@ const bidSchema = new Schema({
 
 /**
  * Validate a def
- * @param {Object} bidCreate
+ * @param {Object} bid
  * @return {Object[]} errors [{path: String, message: String}]
  */
-module.exports = bidCreate => {
-  assert(bidCreate && typeof bidCreate, 'has bid create');
-  return bidSchema.validate(bidCreate);
+module.exports = bid => {
+  assert(bid && typeof bid, 'has bid instance');
+  const clone = JSON.parse(JSON.stringify(bid));
+  return bidSchema.validate(clone);
 };

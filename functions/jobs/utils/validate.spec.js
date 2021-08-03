@@ -17,7 +17,7 @@ const requiredAttrs = {
 describe('Jobs | Utils | Validate Job Create', () => {
   it('rejects if required attributes are not provided in schema', () => {
     const expected =
-      'title,need,authorizedRules,scopeOfWork,property,createdAt,updatedAt,state,type are required';
+      'title,need,authorizedRules,scopeOfWork,createdAt,updatedAt,state,type are required';
     const result = validate({
       telloCardURL: 'test',
     });
@@ -66,11 +66,6 @@ describe('Jobs | Utils | Validate Job Create', () => {
         job: { trelloCardURL: 1 },
         expected: 'trelloCardURL',
         msg: 'rejects non-string for trelloCardURL',
-      },
-      {
-        job: { property: 1 },
-        expected: 'property',
-        msg: 'rejects non-string for property',
       },
       {
         job: { createdAt: 'test' },

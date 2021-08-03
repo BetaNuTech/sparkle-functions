@@ -70,7 +70,7 @@ describe('Inspections | API | Patch Property', () => {
   afterEach(() => cleanDb(null, fs));
 
   it('successfully reassigns an inspection to a new property', async () => {
-    // setup database
+    // Setup database
     await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
     await propertiesModel.firestoreCreateRecord(
       fs,
