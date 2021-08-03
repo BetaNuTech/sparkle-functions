@@ -28,10 +28,11 @@ const jobSchema = new Schema({
 
 /**
  * Validate a def
- * @param {Object} jobUpdate
+ * @param {Object} update
  * @return {Object[]} errors [{path: String, message: String}]
  */
-module.exports = jobUpdate => {
-  assert(jobUpdate && typeof jobUpdate, 'has job update');
-  return jobSchema.validate(jobUpdate);
+module.exports = update => {
+  assert(update && typeof update, 'has job update');
+  const clone = JSON.parse(JSON.stringify(update));
+  return jobSchema.validate(clone);
 };

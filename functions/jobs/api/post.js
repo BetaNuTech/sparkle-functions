@@ -88,7 +88,6 @@ module.exports = function createPostJob(fs) {
       authorizedRules: config.jobs.authorizedRuleTypes[0],
       createdAt: Math.round(Date.now() / 1000),
       updatedAt: Math.round(Date.now() / 1000),
-      property: propertiesModel.createDocRef(fs, propertyId),
     };
 
     // Validate job atrributes
@@ -107,6 +106,9 @@ module.exports = function createPostJob(fs) {
 
     // Generate Job id
     const jobId = jobsModel.createId(fs);
+
+    // Add property relationship
+    job.property = propertiesModel.createDocRef(fs, propertyId);
 
     // create firestore record
     try {

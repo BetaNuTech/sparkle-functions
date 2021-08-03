@@ -28,10 +28,6 @@ const jobSchema = new Schema({
     type: String,
     required: false,
   },
-  property: {
-    type: Object,
-    required: true,
-  },
   createdAt: {
     type: Number,
     required: true,
@@ -54,10 +50,11 @@ const jobSchema = new Schema({
 
 /**
  * Validate a def
- * @param {Object} jobCreate
+ * @param {Object} job
  * @return {Object[]} errors [{path: String, message: String}]
  */
-module.exports = jobCreate => {
-  assert(jobCreate && typeof jobCreate, 'has job create');
-  return jobSchema.validate(jobCreate);
+module.exports = job => {
+  assert(job && typeof job, 'has job instance');
+  const clone = JSON.parse(JSON.stringify(job));
+  return jobSchema.validate(clone);
 };
