@@ -102,6 +102,7 @@ describe('Bids | API | POST', () => {
       },
     };
 
+    // Stup Requests
     sinon
       .stub(propertiesModel, 'firestoreFindRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
@@ -116,12 +117,14 @@ describe('Bids | API | POST', () => {
       .stub(bidsModel, 'createRecord')
       .resolves(firebase.createDocSnapshot(bidId, bid));
 
+    // Execute
     const res = await request(createApp())
       .post(`/t/${propertyId}/${jobId}`)
       .send({ ...bid })
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(201);
 
+    // Assertions
     const actual = res.body;
     actual.data.attributes.createdAt = bid.createdAt; // allow different
     actual.data.attributes.updatedAt = bid.updatedAt; // allow different

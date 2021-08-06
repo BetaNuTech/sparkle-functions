@@ -15,7 +15,7 @@ module.exports = modelSetup({
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     if (bidId) assert(typeof bidId === 'string', 'has valid bid id');
     assert(data && typeof data === 'object', 'has data');
-    assert(data.job && data.bid.id, 'has firestore bid document reference');
+    assert(data.job && data.job.id, 'has firestore bid document reference');
     if (bidId === undefined) bidId = fs.collection(BID_COLLECTION).doc().id;
 
     return fs
@@ -58,11 +58,13 @@ module.exports = modelSetup({
    * @param  {firestore.batch?}
    * @return {Promise} - resolves {Document}
    */
-  updateRecord(fs, bidId, data) {
+  updateRecord(fs, bidId, data, batch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(bidId && typeof bidId === 'string', 'has bid id');
     assert(data && typeof data === 'object', 'has update data');
-    const batch = fs.batch();
+    if (batch) {
+      assert(typeof batch.update === 'function', 'has firestore batch');
+    }
 
     const doc = fs.collection(BID_COLLECTION).doc(bidId);
 
@@ -75,12 +77,11 @@ module.exports = modelSetup({
   },
 
   /**
-   * Lookup approved bid
+   * Lookup a job's approved bid
    * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
    * @param  {String} jobId
-   * @return {Promise}
+   * @return {Promise} - resolves {QuerySnapshot}
    */
-
   queryJobsApproved(fs, jobId) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(jobId && typeof jobId === 'string', 'has job id');

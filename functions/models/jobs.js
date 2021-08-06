@@ -34,7 +34,6 @@ module.exports = modelSetup({
    * @param  {String} jobId
    * @return {Promise}
    */
-
   findRecord(fs, jobId) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(jobId && typeof jobId === 'string', 'has job id');
@@ -43,7 +42,6 @@ module.exports = modelSetup({
       .doc(jobId)
       .get();
   },
-
   /**
    * Create a firestore document reference
    * @param  {admin.firestore} fs
@@ -69,7 +67,7 @@ module.exports = modelSetup({
    * Lookup associated bids
    * @param  {firebaseAdmin.firestore} fs
    * @param  {String} jobId
-   * @return {Promise} - resolves {DocumentSnapshot[]}
+   * @return {Promise} - resolves {QuerySnapshot}
    */
   findAssociatedBids(fs, jobId) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
@@ -90,6 +88,7 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {Document}
    */
   updateRecord(fs, jobId, data, batch) {
+    console.log('>>>> job id', jobId);
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(jobId && typeof jobId === 'string', 'has job id');
     assert(data && typeof data === 'object', 'has update data');

@@ -7,6 +7,38 @@ const isValidCost = (value, ctx) => {
     : true;
 };
 
+/**
+ * Validate minimum cost
+ * @param  {Number?} value
+ * @param  {Object} ctx
+ * @return {Boolean}
+ */
+const isValidCostMin = (value, ctx) => {
+  if (!value) return true;
+
+  if (ctx.costMax) {
+    return value < ctx.costMax;
+  }
+
+  return value >= 0;
+};
+
+/**
+ * Validate maximum cost
+ * @param  {Number?} value
+ * @param  {Object} ctx
+ * @return {Boolean}
+ */
+const isValidCostMax = (value, ctx) => {
+  if (!value) return true;
+
+  if (ctx.costMin) {
+    return value > ctx.costMin;
+  }
+
+  return value >= 0;
+};
+
 const isValidCompletedOrStartedAt = (value, ctx) => {
   return value && (ctx.completedAt || ctx.startedAt)
     ? value < ctx.completedAt || value > ctx.startedAt
@@ -25,12 +57,12 @@ const bidSchema = new Schema({
   costMin: {
     type: Number,
     required: false,
-    use: { isValidCost },
+    use: { isValidCostMin },
   },
   costMax: {
     type: Number,
     required: false,
-    use: { isValidCost },
+    use: { isValidCostMax },
   },
   startedAt: {
     type: Number,
