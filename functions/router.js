@@ -237,6 +237,18 @@ module.exports = (fs, auth, settings) => {
     jobs.api.put(fs)
   );
 
+  // Update a bid
+  app.put(
+    '/v0/properties/:propertyId/jobs/:jobId/bids/:bidId',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    jobs.api.putBid(fs)
+  );
+
   // Create bid
   app.post(
     '/v0/properties/:propertyId/jobs/:jobId/bids',

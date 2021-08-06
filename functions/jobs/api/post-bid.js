@@ -30,7 +30,6 @@ module.exports = function createPostJobsBid(fs) {
     const { propertyId, jobId } = params;
     const bid = body;
     const send500Error = create500ErrHandler(PREFIX, res);
-    const badReqPayload = { errors: [] };
 
     // Set content type
     res.set('Content-Type', 'application/vnd.api+json');
@@ -40,21 +39,15 @@ module.exports = function createPostJobsBid(fs) {
     const bidValidationErrors = validate(bid);
     const isValidBid = bidValidationErrors.length === 0;
 
-    // Reject on missing or invalid type bid attributes
+    // Send bad request error
     if (!isValidBid) {
-      // eslint-disable-next-line array-callback-return
-      bidValidationErrors.map(({ message, path }) => {
-        badReqPayload.errors.push({
+      log.error(`${PREFIX} invalid bid request`);
+      return res.status(400).send({
+        errors: bidValidationErrors.map(({ message, path }) => ({
           source: { pointer: path },
           detail: message,
-        });
+        })),
       });
-    }
-
-    // Send bad request error
-    if (badReqPayload.errors.length) {
-      log.error(`${PREFIX} invalid bid request`);
-      return res.status(400).send(badReqPayload);
     }
 
     // Lookup Firestore Property
@@ -82,7 +75,7 @@ module.exports = function createPostJobsBid(fs) {
       });
     }
 
-    // Lookup Firestore Job
+    // Lookup Job
     let job;
     try {
       const jobSnap = await jobsModel.findRecord(fs, jobId);

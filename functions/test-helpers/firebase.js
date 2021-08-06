@@ -116,18 +116,35 @@ module.exports = {
   },
 
   /**
-   * Create a Firebase snapShot for testing
+   * Create a Firebase DocumentSnapshot for testing
    * @param  {String} id
    * @param  {Object} data
    * @return {Object}
    */
-
   createDocSnapshot(id, data) {
     return {
       exists: Boolean(data),
       id,
       data: () => data,
     };
+  },
+
+  /**
+   * Create a Firebase QuerySnapshot for testing
+   * @param  {Object[]?} data
+   * @return {Object}
+   */
+  createQuerySnapshot(data = []) {
+    assert(Array.isArray(data), 'has array');
+    assert(data.every(d => d && typeof d === 'object'), 'has array of objects');
+
+    const snap = {
+      size: data.length,
+      empty: data.length === 0,
+      docs: data.map(datum => this.createDocSnapshot(datum.id, data)),
+    };
+
+    return snap;
   },
 
   /**

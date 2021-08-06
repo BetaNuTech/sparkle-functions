@@ -87,13 +87,11 @@ describe('Jobs | Utils | Validate Bid Create', () => {
       'Validation failed for startedAt.',
       'Validation failed for completedAt.',
     ];
-
     const result = validate({
       vendor: 'test',
       completedAt: 1,
       startedAt: 2,
     });
-
     const actual = [];
 
     result.map(({ message }) => actual.push(message)).join(',');
@@ -101,34 +99,31 @@ describe('Jobs | Utils | Validate Bid Create', () => {
     expect(actual).to.deep.equal(expected);
   });
 
-  it('accepts if cost min is greater than cost max', async () => {
-    const expected = [];
-
+  it('rejects if cost min is greater than cost max', async () => {
+    const expected = 'costMax,costMin';
     const result = validate({
       vendor: 'test',
       costMin: 2,
       costMax: 1,
     });
-
-    const actual = [];
-
-    result.map(({ message }) => actual.push(message)).join(',');
-
+    const actual = result
+      .map(({ path }) => path)
+      .sort()
+      .join(',');
     expect(actual).to.deep.equal(expected);
   });
 
-  it('accepts if completed at is greater than started at', async () => {
-    const expected = [];
-
+  it('rejects if completed at is greater than started at', async () => {
+    const expected = 'completedAt,startedAt';
     const result = validate({
       vendor: 'test',
-      completedAt: 2,
-      startedAt: 1,
+      completedAt: 1,
+      startedAt: 2,
     });
-
-    const actual = [];
-
-    result.map(({ message }) => actual.push(message)).join(',');
+    const actual = result
+      .map(({ path }) => path)
+      .sort()
+      .join(',');
 
     expect(actual).to.deep.equal(expected);
   });
@@ -138,8 +133,8 @@ describe('Jobs | Utils | Validate Bid Create', () => {
     const actual = validate({
       vendor: 'test',
       vendorDetails: 'test',
-      costMin: 2,
-      costMax: 1,
+      costMin: 1,
+      costMax: 2,
       startedAt: 1,
       completedAt: 2,
     });
