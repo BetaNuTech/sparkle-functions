@@ -11,7 +11,7 @@ const PREFIX = 'jobs: api: put:';
 
 /**
  * Factory for creating a PUT endpoint
- * that updates Firestore job
+ * to update a job
  * @param  {admin.firestore} fs
  * @return {Function} - Express middleware
  */
@@ -130,11 +130,12 @@ module.exports = function createPutJob(fs) {
     // Check user permission to update authorizedRules
     if (update.authorizedRules && !user.admin) {
       log.error(
-        `${PREFIX} use does not have the permission to update authorized rules`
+        `${PREFIX} user does not have the permission to update authorized rules`
       );
       return res.status(403).send({
         errors: [
           {
+            source: { pointer: 'authorizedRules' },
             detail:
               'Forbidden: you do not have permission to update authorized rules',
           },
@@ -146,18 +147,30 @@ module.exports = function createPutJob(fs) {
     const bids = [];
     try {
       const bidsSnap = await jobsModel.findAssociatedBids(fs, jobId);
-      bidsSnap.docs[0].docs.forEach(doc =>
-        bids.push({ ...doc.data(), id: doc.id })
-      );
+      bidsSnap.docs
+        .filter(doc => Boolean(doc.data()))
+        .forEach(doc => bids.push({ ...doc.data(), id: doc.id }));
     } catch (err) {
       return send500Error(err, 'bids lookup failed', 'unexpected error');
     }
 
     // Check if job state can be updated
-    const updateStateStatus = canUpdateState(update.state, job, bids, user);
+    const updateStateStatus = update.state
+      ? canUpdateState(update.state, job, bids, user)
+      : true;
 
     if (!updateStateStatus) {
-      delete update.state;
+      log.error(
+        `${PREFIX} user does not have the permission to transition to state: "${update.state}`
+      );
+      return res.status(403).send({
+        errors: [
+          {
+            source: { pointer: 'state' },
+            detail: `Forbidden: you do not have permission to update state to "${update.state}"`,
+          },
+        ],
+      });
     }
 
     // Update job

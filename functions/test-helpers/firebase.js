@@ -197,6 +197,8 @@ module.exports = {
           'integrations',
           'notifications',
           'registrationTokens',
+          'jobs',
+          'bids',
         ].map(col => deleteFirestoreCollection(fs, col))
       );
     }
