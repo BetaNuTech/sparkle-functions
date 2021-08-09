@@ -162,6 +162,18 @@ module.exports = (fs, auth, settings) => {
     trello.api.getBoardLists(fs)
   );
 
+  app.post(
+    '/v0/properties/:propertyId/jobs/:jobId/trello',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    authTrelloReq(fs),
+    trello.api.postJobCard(fs)
+  );
+
   // Create Trello Card for deficiency
   app.post(
     '/v0/deficiencies/:deficiencyId/trello/card',
