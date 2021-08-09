@@ -88,7 +88,6 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {Document}
    */
   updateRecord(fs, jobId, data, batch) {
-    console.log('>>>> job id', jobId);
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(jobId && typeof jobId === 'string', 'has job id');
     assert(data && typeof data === 'object', 'has update data');

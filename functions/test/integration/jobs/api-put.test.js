@@ -12,9 +12,9 @@ const uuid = require('../../../test-helpers/uuid');
 const firebase = require('../../../test-helpers/firebase');
 const log = require('../../../utils/logger');
 
-const USER_ID = '123';
-const propertyId = uuid();
-const jobId = uuid();
+const USER_ID = uuid();
+const JOB_ID = uuid();
+const PROPERTY_ID = uuid();
 
 describe('Jobs | API | PUT', () => {
   beforeEach(() => {
@@ -25,8 +25,10 @@ describe('Jobs | API | PUT', () => {
 
   it('rejects request for missing update payload', async () => {
     const expected = 'Bad Request: job update body required';
+
+    // Execute
     const res = await request(createApp())
-      .put(`/t/${propertyId}/${jobId}`)
+      .put(`/t/${PROPERTY_ID}/${JOB_ID}`)
       .send()
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(400);
@@ -41,8 +43,9 @@ describe('Jobs | API | PUT', () => {
     const expected = 'title';
     const invalidUpdate = { title: 1 };
 
+    // Execute
     const res = await request(createApp())
-      .put(`/t/${propertyId}/${jobId}`)
+      .put(`/t/${PROPERTY_ID}/${JOB_ID}`)
       .send(invalidUpdate)
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(400);
@@ -63,8 +66,9 @@ describe('Jobs | API | PUT', () => {
       .stub(propertiesModel, 'firestoreFindRecord')
       .resolves(firebase.createDocSnapshot()); // empty
 
+    // Execute
     const res = await request(createApp())
-      .put(`/t/${propertyId}/${jobId}`)
+      .put(`/t/${PROPERTY_ID}/${JOB_ID}`)
       .send(update)
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(404);
@@ -83,13 +87,12 @@ describe('Jobs | API | PUT', () => {
     // Stub Requests
     sinon
       .stub(propertiesModel, 'firestoreFindRecord')
-      .resolves(firebase.createDocSnapshot(propertyId, property));
-
-    // Stub Requests
+      .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon.stub(jobsModel, 'findRecord').resolves(firebase.createDocSnapshot()); // empty
 
+    // Execute
     const res = await request(createApp())
-      .put(`/t/${propertyId}/${jobId}`)
+      .put(`/t/${PROPERTY_ID}/${JOB_ID}`)
       .send(update)
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(404);
@@ -100,30 +103,29 @@ describe('Jobs | API | PUT', () => {
     expect(actual).to.equal(expected);
   });
 
-  it('reject forbidden request to update job without necessary permission', done => {
+  it('reject forbidden request to update job without necessary permission', async () => {
     const update = { authorizedRules: 'expedite' };
     const property = mocking.createProperty();
     const job = mocking.createJob();
 
+    // Stubs
     sinon
       .stub(propertiesModel, 'firestoreFindRecord')
-      .resolves(firebase.createDocSnapshot(propertyId, property));
-
+      .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon
       .stub(jobsModel, 'findRecord')
-      .resolves(firebase.createDocSnapshot(jobId, job));
+      .resolves(firebase.createDocSnapshot(JOB_ID, job));
 
     const unpermissionedUser = mocking.createUser({
       admin: false,
     });
 
-    request(createApp(unpermissionedUser))
-      .put(`/t/${propertyId}/${jobId}`)
+    // Execute
+    await request(createApp(unpermissionedUser))
+      .put(`/t/${PROPERTY_ID}/${JOB_ID}`)
       .send(update)
       .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(403)
-      .then(() => done())
-      .catch(done);
+      .expect(403); // Assertion
   });
 
   it('rejects when  payload contains non-updatable attributes', async () => {
@@ -132,16 +134,17 @@ describe('Jobs | API | PUT', () => {
     const property = mocking.createProperty();
     const job = mocking.createJob();
 
+    // Stubs
     sinon
       .stub(propertiesModel, 'firestoreFindRecord')
-      .resolves(firebase.createDocSnapshot(propertyId, property));
-
+      .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon
       .stub(jobsModel, 'findRecord')
-      .resolves(firebase.createDocSnapshot(jobId, job));
+      .resolves(firebase.createDocSnapshot(JOB_ID, job));
 
+    // Execute
     const res = await request(createApp())
-      .put(`/t/${propertyId}/${jobId}`)
+      .put(`/t/${PROPERTY_ID}/${JOB_ID}`)
       .send(update)
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(400);
@@ -152,61 +155,74 @@ describe('Jobs | API | PUT', () => {
     expect(actual).to.contain(expected);
   });
 
-  it('return the job document on successful update', async () => {
+  it('forbids transitioning a job to authorized when it only has a single approved bid', async () => {
     const update = { state: 'authorized' };
     const property = mocking.createProperty();
-    const job = mocking.createJob();
-    job.id = jobId;
-    job.state = 'approved';
-    job.authorizedRules = 'expedite';
-    job.property = property;
-    const bids = [{ job: job.id, state: 'approved' }];
+    const propertyRef = firebase.createDocRef({ id: PROPERTY_ID });
+    const job = mocking.createJob({
+      property: propertyRef,
+      state: 'approved',
+      authorizedRules: 'default',
+    });
+    const jobRef = firebase.createDocRef({ id: JOB_ID });
+    const bid = mocking.createBid({ job: jobRef, state: 'approved' });
+    const user = mocking.createUser({ admin: true });
 
+    // Stubs
     sinon
       .stub(propertiesModel, 'firestoreFindRecord')
-      .resolves(firebase.createDocSnapshot(propertyId, property));
-
+      .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon
       .stub(jobsModel, 'findRecord')
-      .resolves(firebase.createDocSnapshot(job.id, job));
-
+      .resolves(firebase.createDocSnapshot(JOB_ID, job));
     sinon
       .stub(jobsModel, 'findAssociatedBids')
-      .resolves(stubs.wrapSnapshot([bids]));
-
+      .resolves(stubs.wrapSnapshot([bid]));
     sinon
       .stub(jobsModel, 'updateRecord')
-      .resolves(firebase.createDocSnapshot(job.id, update));
+      .resolves(firebase.createDocSnapshot(JOB_ID, update));
 
-    const permissionedUser = mocking.createUser({
-      admin: true,
-    });
-
-    delete job.property;
-
-    const expected = {
-      id: job.id,
-      type: 'job',
-      attributes: { ...job, ...update },
-      relationships: {
-        property: {
-          data: {
-            id: propertyId,
-            type: 'property',
-          },
-        },
-      },
-    };
-
-    const res = await request(createApp(permissionedUser))
-      .put(`/t/${propertyId}/${jobId}`)
+    // Execute
+    await request(createApp(user))
+      .put(`/t/${PROPERTY_ID}/${JOB_ID}`)
       .send(update)
       .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(201);
+      .expect(403); // assertion
+  });
 
-    // Assertions
-    const actual = res.body.data;
-    expect(actual).to.deep.equal(expected);
+  it('accepts admins transitioning a expedited job to authorized when it only has a single approved bid', async () => {
+    const update = { state: 'authorized' };
+    const property = mocking.createProperty();
+    const propertyRef = firebase.createDocRef({ id: PROPERTY_ID });
+    const job = mocking.createJob({
+      property: propertyRef,
+      state: 'approved',
+      authorizedRules: 'expedite',
+    });
+    const jobRef = firebase.createDocRef({ id: JOB_ID });
+    const bid = mocking.createBid({ job: jobRef, state: 'approved' });
+    const user = mocking.createUser({ admin: true });
+
+    // Stubs
+    sinon
+      .stub(propertiesModel, 'firestoreFindRecord')
+      .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
+    sinon
+      .stub(jobsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(JOB_ID, job));
+    sinon
+      .stub(jobsModel, 'findAssociatedBids')
+      .resolves(stubs.wrapSnapshot([bid]));
+    sinon
+      .stub(jobsModel, 'updateRecord')
+      .resolves(firebase.createDocSnapshot(JOB_ID, update));
+
+    // Execute
+    await request(createApp(user))
+      .put(`/t/${PROPERTY_ID}/${JOB_ID}`)
+      .send(update)
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(201); // assertion
   });
 });
 

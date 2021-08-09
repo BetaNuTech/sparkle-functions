@@ -21,10 +21,12 @@ module.exports = (targetState, job, bids, user) => {
       return false;
     }
     case 'authorized': {
-      const approvedBids = bids.reduce((total, bid) => {
-        return total + (bid.state === 'approved' ? 1 : 0);
-      }, 0);
       if (job.state !== 'approved') return false;
+
+      const approvedBids = bids.reduce(
+        (total, bid) => total + (bid.state === 'approved' ? 1 : 0),
+        0
+      );
 
       // Regular job
       if (approvedBids >= 1 && bids.length >= 3) {
