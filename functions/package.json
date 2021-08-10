@@ -4,8 +4,11 @@
   "scripts": {
     "test": "npm run test-unit && npm run test-int",
     "test-unit": "NODE_ENV=test LOG_LEVEL=crit ./node_modules/.bin/mocha './{,!(node_modules)/**}/*.spec.js'",
+    "unit-test": "npm run test-unit",
     "test-e2e": "NODE_ENV=test LOG_LEVEL=crit ./node_modules/.bin/mocha './{,!(node_modules)/**}/test/end-to-end/**/*.test.js'",
+    "end-to-end-test": "npm run test-e2e",
     "test-int": "NODE_ENV=test LOG_LEVEL=crit ./node_modules/.bin/mocha './{,!(node_modules)/**}/test/integration/**/*.test.js'",
+    "integration-test": "npm run test-int",
     "dev": "./node_modules/.bin/nodemon -i node_modules -e js,json --exec 'npm test --silent'",
     "server": "./node_modules/.bin/nodemon -i node_modules -e js,json --exec 'node ./scripts/api-server.js'",
     "coverage": "./node_modules/.bin/nyc npm test --silent"
