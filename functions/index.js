@@ -48,9 +48,9 @@ exports.deficiencyUpdateCompletedPhotos = functions.firestore
   .document('deficiencies/{deficiencyId}')
   .onUpdate(deficiency.onUpdateCompletedPhotoV2(fs));
 
-exports.templateCategoryDeleteV2 = functions.firestore
+exports.templateCategoryDelete = functions.firestore
   .document('/templateCategories/{categoryId}')
-  .onDelete(templateCategories.createOnDeleteWatcherV2(fs));
+  .onDelete(templateCategories.watchers.onDelete(fs));
 
 exports.propertyDeleteV2 = functions.firestore
   .document('/properties/{propertyId}')

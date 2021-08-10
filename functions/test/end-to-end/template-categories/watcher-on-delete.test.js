@@ -5,7 +5,7 @@ const templatesModel = require('../../../models/templates');
 const templateCategories = require('../../../models/template-categories');
 const { fs, test, cloudFunctions } = require('../../setup');
 
-describe('Template Categories | Delete | V2', () => {
+describe('Template Categories | Watchers | On Delete', () => {
   afterEach(() => cleanDb(null, fs));
 
   it('should disassociate all templates belonging to a category', async () => {
@@ -39,7 +39,7 @@ describe('Template Categories | Delete | V2', () => {
     await templateCategories.firestoreRemoveRecord(fs, categoryId);
 
     // Execute
-    const wrapped = test.wrap(cloudFunctions.templateCategoryDeleteV2);
+    const wrapped = test.wrap(cloudFunctions.templateCategoryDelete);
     await wrapped(snap, { params: { categoryId } });
 
     // Test result
@@ -70,37 +70,5 @@ describe('Template Categories | Delete | V2', () => {
     ].forEach(({ actual, expected, msg }) => {
       expect(actual).to.equal(expected, msg);
     });
-  });
-
-  it('should not modify other feilds of associated templates', async () => {
-    const tmplId = uuid();
-    const categoryId = uuid();
-    const tmplData = {
-      name: 'test',
-      description: 'desc',
-      category: categoryId,
-      items: { [uuid()]: { name: 'test-item' } },
-      sections: { [uuid()]: { name: 'test-section' } },
-    }; // related
-    const expected = { ...tmplData };
-    delete expected.category;
-    const catData = { name: `category${categoryId}` };
-
-    // Setup database
-    await templatesModel.firestoreCreateRecord(fs, tmplId, tmplData);
-    await templateCategories.firestoreCreateRecord(fs, categoryId, catData);
-    const snap = await templateCategories.firestoreFindRecord(fs, categoryId);
-    await templateCategories.firestoreRemoveRecord(fs, categoryId);
-
-    // Execute
-    const wrapped = test.wrap(cloudFunctions.templateCategoryDeleteV2);
-    await wrapped(snap, { params: { categoryId } });
-
-    // Test result
-    const result = await templatesModel.firestoreFindRecord(fs, tmplId);
-    const actual = result.data() || null;
-
-    // Assertions
-    expect(actual).to.deep.equal(expected);
   });
 });
