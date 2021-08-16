@@ -1,12 +1,6 @@
 const assert = require('assert');
 const Schema = require('validate');
 
-const isValidCost = (value, ctx) => {
-  return value && (ctx.costMax || ctx.costMin)
-    ? value > ctx.costMax || value < ctx.costMin
-    : true;
-};
-
 /**
  * Validate minimum cost
  * @param  {Number?} value
@@ -17,7 +11,7 @@ const isValidCostMin = (value, ctx) => {
   if (!value) return true;
 
   if (ctx.costMax) {
-    return value < ctx.costMax;
+    return value <= ctx.costMax;
   }
 
   return value >= 0;
@@ -33,7 +27,7 @@ const isValidCostMax = (value, ctx) => {
   if (!value) return true;
 
   if (ctx.costMin) {
-    return value > ctx.costMin;
+    return value >= ctx.costMin;
   }
 
   return value >= 0;
