@@ -12,7 +12,11 @@ describe('Jobs | Utils | Does Bid Update Contain Invalid Attr', () => {
   it('accpets a valid bid update', () => {
     const expected = false;
 
-    const actual = containInvalidAttr({ state: 'approved' });
+    const actual = containInvalidAttr({
+      state: 'approved',
+      completeAt: 123,
+      startAt: 1,
+    });
     expect(actual).to.equal(expected);
   });
 });

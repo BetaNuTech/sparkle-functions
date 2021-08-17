@@ -9,7 +9,7 @@ const log = require('../../utils/logger');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
 
 const PREFIX = 'jobs: api: put bid:';
-const REQ_TO_APPROVE = ['costMin', 'costMax', 'startedAt', 'completedAt'];
+const REQ_TO_APPROVE = ['costMin', 'costMax', 'startAt', 'completeAt'];
 
 /**
  * Factory for creating a PUT endpoint

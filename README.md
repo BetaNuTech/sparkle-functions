@@ -1,103 +1,81 @@
-# gCloud CRON App [![CircleCI](https://circleci.com/gh/BetaNuTech/sparkle-functions.svg?style=svg)](https://circleci.com/gh/BetaNuTech/sparkle-functions)
-Google Cloud Node.js app to issue cron jobs
+# Sparkle Functions
 
-# Requirements
-- docker
-- docker-compose
+The Backend application for Sparkle.
 
-# Setup Appengine App
-1. [Create gcloud app](https://console.cloud.google.com/flows/enableapi?apiid=pubsub&redirect=https://console.cloud.google.com)
-- Ensure that [PubSub API](https://console.cloud.google.com/apis/api/pubsub.googleapis.com/overview) is enabled for app
-- Ensure [Google Cloud Storage](https://console.cloud.google.com/apis/library/storage-component.googleapis.com?q=storage&id=466e130e-03f7-4da9-965c-10f7e2cf0bd1) is enabled for app (you may have to wait a few minutes before deploying)
-- Ensure that [project billing](https://support.google.com/cloud/answer/6293499#enable-billing) is enabled for app
+## Appengine & Functions
 
-2. [Create a service account](https://console.cloud.google.com/iam-admin/serviceaccounts)
-- Ensure user's have sufficient permissions to deploy apps.
-- Download a JSON key file, used for `gcloud` authorization.
-- Copy the JSON file to repo root as `auth.json`
+This repository consists of 2 separate applications:
 
-3. Build & Authorize `gcloud`
-```sh
-docker-compose run gcloud-auth
-```
+- **Functions**: (in `/functions`) is the API, watchers, and messaging subscribers. This is probably the application you want to modify.
+- **Appengine**: (in `/appengine`) manages the message broker and CRON jobs. _You likely do not need to modify this application._
 
-4. Initialize gCloud utility
-```sh
-docker-compose run gcloud init
-```
-Follow instructions using JSON file credentials and selecting Firebase project.
+### Configuration
 
-5. Set current project
-```sh
-docker-compose run gcloud config set project <my-project>
-```
-Ensure you select the Firebase app as the project
-
-6. Create the gCloud app
-```sh
-docker-compose run gcloud app create
-```
-Follow all instructions, using the user with credentials for Firebase app
-- Ensure you set permissions for users pushing to [Storage buckets](https://console.cloud.google.com/storage/browser)
-
-7. Add `.env` file for local development with following options:
+For testing and development configure a `.env.test` in the root of this repo that connects to a testing database.
 
 ```
-GOOGLE_CLOUD_PROJECT=project-id
-PORT=3000
-
 AWS_S3_ACCESS_KEY_ID=abc
 AWS_S3_SECRET_ACCESS_KEY=123
 AWS_S3_BUCKET_NAME=name
 
 FIREBASE_FUNCTIONS_AUTH=...
-FIREBASE_PROJECT=sapphire
+FIREBASE_PROJECT=project-id
 FIREBASE_DB_URL=https://...
-FIREBASE_STORAGE_BUCKET=*.appspot.com
+FIREBASE_STORAGE_BUCKET=*.appspot.co
+
+GLOBAL_API_TOKEN=123abc
+GLOBAL_API_DOMAIN=https://url.net
 
 // Optional:
 COBALT_DOMAIN=https://..
 ```
 
-8. Install Appengine dependencies
+For running the local server add a `.env` file that points your desired firebase project.
+
+### Installation
+
+Installing the firebase functions for local development
+
 ```sh
-docker-compose run yarn
+# Using Docker
+docker-compose run yarn-fn
+
+# Otherwise
+cd functions
+nvm use # please use NVM
+yarn # ensure you have yarn installed
 ```
 
-9. Local Appengine Server
-```sh
-docker-compose up start
-```
+### Functions Docker Commands
 
-10. Deploy Appengine
-```sh
-docker-compose run deploy
-```
+All docker commands you can run on the functions app.
 
-# Firebase Functions
+1. Adding new dependencies
 
-1. Install dependencies
 ```sh
 docker-compose run yarn-fn add <npm-module>
 ```
 
 2. Running unit tests
+
 ```sh
 docker-compose run test-unit-fn
 ```
 
 3. Running End to End tests
+
 ```sh
 docker-compose run test-e2e-fn
 ```
 
 4. Watch filesystem and run unit tests
+
 ```sh
 docker-compose run yarn-fn dev
 ```
 
 4. Deploying Firebase Functions
+
 ```sh
 docker-compose run deploy-fn
 ```
-[Source repository](https://github.com/lgvalle/firebase-tools-docker)

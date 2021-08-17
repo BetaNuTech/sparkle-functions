@@ -275,9 +275,9 @@ describe('Trello | API | POST Job Card', () => {
   });
 
   it("adds any approved bids completion date as the trello card's due date", async () => {
-    const completedAt = 1628528400;
+    const completeAt = 1628528400;
     const dateStr = moment
-      .unix(completedAt)
+      .unix(completeAt)
       .tz('America/New_York')
       .format('MM/DD/YYYY');
     const expected = toISO8601(dateStr, DEFAULT_ZIP);
@@ -294,7 +294,7 @@ describe('Trello | API | POST Job Card', () => {
     const bid = mocking.createJob({
       job: jobDoc,
       state: 'approved',
-      completedAt,
+      completeAt,
     });
     const trelloIntegration = mocking.createPropertyTrelloIntegration();
 

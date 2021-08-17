@@ -220,12 +220,12 @@ module.exports = function createPostTrelloJob(
 
     // Add approved bid's completion time
     // as the due date of the Trello card
-    if (approvedBid && approvedBid.completedAt) {
-      const { completedAt } = approvedBid;
+    if (approvedBid && approvedBid.completeAt) {
+      const { completeAt } = approvedBid;
       const zipCode = property.zip || defaultZip;
       const timezone = zipToTimezone(zipCode);
       const dateStr = moment
-        .unix(completedAt)
+        .unix(completeAt)
         .tz(timezone)
         .format('MM/DD/YYYY');
       trelloCardPayload.due = toISO8601(dateStr, zipCode);

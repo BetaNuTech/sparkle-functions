@@ -15,8 +15,8 @@ module.exports = update => {
     'vendorDetails',
     'costMax',
     'costMin',
-    'startedAt',
-    'completedAt',
+    'startAt',
+    'completeAt',
     'state',
   ];
 
