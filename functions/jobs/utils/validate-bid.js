@@ -33,9 +33,9 @@ const isValidCostMax = (value, ctx) => {
   return value >= 0;
 };
 
-const isValidCompletedOrStartedAt = (value, ctx) => {
-  return value && (ctx.completedAt || ctx.startedAt)
-    ? value < ctx.completedAt || value > ctx.startedAt
+const isValidCompleteOrStartAt = (value, ctx) => {
+  return value && (ctx.completeAt || ctx.startAt)
+    ? value < ctx.completeAt || value > ctx.startAt
     : true;
 };
 
@@ -58,15 +58,15 @@ const bidSchema = new Schema({
     required: false,
     use: { isValidCostMax },
   },
-  startedAt: {
+  startAt: {
     type: Number,
     required: false,
-    use: { isValidCompletedOrStartedAt },
+    use: { isValidCompleteOrStartAt },
   },
-  completedAt: {
+  completeAt: {
     type: Number,
     required: false,
-    use: { isValidCompletedOrStartedAt },
+    use: { isValidCompleteOrStartAt },
   },
 });
 

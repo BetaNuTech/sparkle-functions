@@ -31,27 +31,27 @@ describe('Jobs | Utils | Validate Bid Create', () => {
       {
         bid: { vendorDetails: 1 },
         expected: 'vendorDetails',
-        msg: 'rejects non-string for vendorDetails',
+        msg: 'rejects non-string for vendor details',
       },
       {
         bid: { costMin: 'test' },
         expected: 'costMin',
-        msg: 'rejects non-number for costMin',
+        msg: 'rejects non-number for cost min',
       },
       {
         bid: { costMax: 'test' },
         expected: 'costMax',
-        msg: 'rejects non-number for costMax',
+        msg: 'rejects non-number for cost max',
       },
       {
-        bid: { startedAt: 'test' },
-        expected: 'startedAt',
-        msg: 'rejects non-number for startedAt',
+        bid: { startAt: 'test' },
+        expected: 'startAt',
+        msg: 'rejects non-number for start at',
       },
       {
-        bid: { completedAt: 'test' },
-        expected: 'completedAt',
-        msg: 'rejects non-number for completedAt',
+        bid: { completeAt: 'test' },
+        expected: 'completeAt',
+        msg: 'rejects non-number for complete at',
       },
     ];
 
@@ -65,13 +65,13 @@ describe('Jobs | Utils | Validate Bid Create', () => {
 
   it('rejects if started at is greater than completed at', () => {
     const expected = [
-      'Validation failed for startedAt.',
-      'Validation failed for completedAt.',
+      'Validation failed for startAt.',
+      'Validation failed for completeAt.',
     ];
     const result = validate({
       vendor: 'test',
-      completedAt: 1,
-      startedAt: 2,
+      completeAt: 1,
+      startAt: 2,
     });
     const actual = [];
 
@@ -109,11 +109,11 @@ describe('Jobs | Utils | Validate Bid Create', () => {
   });
 
   it('rejects if completed at is greater than started at', () => {
-    const expected = 'completedAt,startedAt';
+    const expected = 'completeAt,startAt';
     const result = validate({
       vendor: 'test',
-      completedAt: 1,
-      startedAt: 2,
+      completeAt: 1,
+      startAt: 2,
     });
     const actual = result
       .map(({ path }) => path)
@@ -130,8 +130,8 @@ describe('Jobs | Utils | Validate Bid Create', () => {
       vendorDetails: 'test',
       costMin: 1,
       costMax: 2,
-      startedAt: 1,
-      completedAt: 2,
+      startAt: 1,
+      completeAt: 2,
     });
 
     expect(actual).to.deep.equal(expected);

@@ -17,8 +17,8 @@ module.exports = (update, bid) => {
         bid.state === 'open' &&
         bid.costMax &&
         bid.costMin &&
-        bid.startedAt &&
-        bid.completedAt
+        bid.startAt &&
+        bid.completeAt
       ) {
         return true;
       }

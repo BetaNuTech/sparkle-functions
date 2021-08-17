@@ -180,7 +180,7 @@ describe('Bids | API | PUT', () => {
   });
 
   it('rejects transition to approved, from open, if bid does not contain required attributes', async () => {
-    const expected = 'completedAt,costMax,costMin,startedAt';
+    const expected = 'completeAt,costMax,costMin,startAt';
     const update = { state: 'approved' };
     const property = mocking.createProperty();
     const job = mocking.createJob();
@@ -189,8 +189,8 @@ describe('Bids | API | PUT', () => {
       state: 'open',
       costMin: 0,
       costMax: 0,
-      startedAt: 0,
-      completedAt: 0,
+      startAt: 0,
+      completeAt: 0,
       job: jobDoc,
     });
 
