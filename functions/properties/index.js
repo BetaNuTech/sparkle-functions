@@ -3,6 +3,7 @@ const onDeleteWatcherV2 = require('./on-delete-watcher-v2');
 const getPropertyYardiResidents = require('./api/get-property-yardi-residents');
 const getPropertyYardiWorkOrders = require('./api/get-property-yardi-work-orders');
 const post = require('./api/post');
+const put = require('./api/put');
 const propertyCode = require('./middleware/property-code');
 const yardiIntegration = require('./middleware/yardi-integration');
 
@@ -13,6 +14,7 @@ module.exports = {
     getPropertyYardiResidents,
     getPropertyYardiWorkOrders,
     post,
+    put,
   },
   middleware: { propertyCode, yardiIntegration },
 };

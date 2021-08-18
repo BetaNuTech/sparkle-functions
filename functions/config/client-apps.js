@@ -16,12 +16,18 @@ const config = {
     inspectionPath:
       'properties/{{propertyId}}/update-inspection/{{inspectionId}}',
 
+    jobPath: 'properties/{{propertyId}}/jobs/edit/{{jobId}}',
+
     get deficientItemURL() {
       return `${CLIENT_DOMAIN}/${this.deficientItemPath}`;
     },
 
     get inspectionURL() {
       return `${CLIENT_DOMAIN}/${this.inspectionPath}`;
+    },
+
+    get jobURL() {
+      return `${CLIENT_DOMAIN}/${this.jobPath}`;
     },
   },
 };

@@ -7,6 +7,7 @@ const trello = require('./trello');
 const deficiencies = require('./deficient-items');
 const properties = require('./properties');
 const inspections = require('./inspections');
+const jobs = require('./jobs');
 const users = require('./users');
 const clients = require('./clients');
 const authUser = require('./utils/auth-firebase-user');
@@ -97,10 +98,21 @@ module.exports = (fs, auth, settings) => {
     properties.api.getPropertyYardiWorkOrders()
   );
 
+  // Create a property
   app.post(
     '/v0/properties',
     authUser(fs, auth, true), // admin only
     properties.api.post(fs)
+  );
+
+  // Update a property
+  app.put(
+    '/v0/properties/:propertyId',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+    }), // admin only
+    properties.api.put(fs)
   );
 
   // Authorize Slack API credentials
@@ -148,6 +160,18 @@ module.exports = (fs, auth, settings) => {
     authUser(fs, auth, true),
     authTrelloReq(fs),
     trello.api.getBoardLists(fs)
+  );
+
+  app.post(
+    '/v0/properties/:propertyId/jobs/:jobId/trello',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    authTrelloReq(fs),
+    trello.api.postJobCard(fs)
   );
 
   // Create Trello Card for deficiency
@@ -199,6 +223,54 @@ module.exports = (fs, auth, settings) => {
     authUser(fs, auth),
     authUserCrud(auth),
     users.api.createDeleteUser(fs, auth)
+  );
+
+  // Create job
+  app.post(
+    '/v0/properties/:propertyId/jobs',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    jobs.api.post(fs)
+  );
+
+  // Update a job
+  app.put(
+    '/v0/properties/:propertyId/jobs/:jobId',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    jobs.api.put(fs)
+  );
+
+  // Update a bid
+  app.put(
+    '/v0/properties/:propertyId/jobs/:jobId/bids/:bidId',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    jobs.api.putBid(fs)
+  );
+
+  // Create bid
+  app.post(
+    '/v0/properties/:propertyId/jobs/:jobId/bids',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    jobs.api.postBid(fs)
   );
 
   return app;

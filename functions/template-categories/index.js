@@ -1,5 +1,5 @@
-const createOnDeleteWatcherV2 = require('./on-delete-watcher-v2');
+const onDelete = require('./watchers/on-delete');
 
 module.exports = {
-  createOnDeleteWatcherV2,
+  watchers: { onDelete },
 };

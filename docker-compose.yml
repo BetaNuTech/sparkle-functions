@@ -28,7 +28,7 @@ services:
   test-unit-fn:
     image: "node:10-alpine"
     working_dir: /src/functions
-    env_file: .env
+    env_file: .env.test
     command: [sh, -c, "yarn test-unit"]
     volumes:
       - ./auth.json:/src/auth.json
@@ -37,7 +37,7 @@ services:
   test-e2e-fn:
     image: "node:10.15-alpine"
     working_dir: /src/functions
-    env_file: .env
+    env_file: .env.test
     environment:
       - AUTH_FILE_PATH=/src/auth.json
     command: [sh, -c, "yarn && yarn test-e2e"]
@@ -49,7 +49,7 @@ services:
     image: mj3000/firebase-tools
     working_dir: /srv
     env_file: .env
-    command:  >
+    command: >
       bash -c "if [[ -z \"${FIREBASE_TOKEN}\" ]];
       then
         echo 'ERROR: FIREBASE_TOKEN not provided'; exit 1;
@@ -81,7 +81,12 @@ services:
       context: .
       dockerfile: gcloud-Dockerfile
     working_dir: /root
-    command: [sh, -c, "gcloud auth activate-service-account --key-file=/root/auth.json"]
+    command:
+      [
+        sh,
+        -c,
+        "gcloud auth activate-service-account --key-file=/root/auth.json",
+      ]
     volumes:
       - ./gcloud-root:/root
       - ./auth.json:/root/auth.json
