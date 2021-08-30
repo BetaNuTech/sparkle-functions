@@ -37,7 +37,7 @@ module.exports = function createPostJob(fs) {
     log.info('Create job requested');
 
     // Create errors for missing attributes
-    Object.entries({ title, need, type, scopeOfWork })
+    Object.entries({ title, type })
       .filter(([, value]) => !value)
       .forEach(([name]) => {
         badReqPayload.errors.push({

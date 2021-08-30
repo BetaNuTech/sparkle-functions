@@ -13,7 +13,6 @@ const jobSchema = new Schema({
   },
   need: {
     type: String,
-    required: true,
   },
   authorizedRules: {
     type: String,
@@ -22,7 +21,6 @@ const jobSchema = new Schema({
   },
   scopeOfWork: {
     type: String,
-    required: true,
   },
   trelloCardURL: {
     type: String,
