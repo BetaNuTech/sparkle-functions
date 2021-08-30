@@ -19,7 +19,7 @@ describe('Jobs | API | POST', () => {
   afterEach(() => sinon.restore());
 
   it('rejects request to create job without required payloads', async () => {
-    const expected = 'need, scopeOfWork, title, type';
+    const expected = 'title, type';
     const res = await request(createApp())
       .post('/t/123')
       .send()

@@ -17,7 +17,7 @@ const requiredAttrs = {
 describe('Jobs | Utils | Validate Job Create', () => {
   it('rejects if required attributes are not provided in schema', () => {
     const expected =
-      'title,need,authorizedRules,scopeOfWork,createdAt,updatedAt,state,type are required';
+      'title,authorizedRules,createdAt,updatedAt,state,type are required';
     const result = validate({
       telloCardURL: 'test',
     });
