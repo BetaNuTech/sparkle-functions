@@ -31,7 +31,6 @@ module.exports = function createPutJob(fs) {
     const update = body;
     const send500Error = create500ErrHandler(PREFIX, res);
     const hasUpdates = Boolean(Object.keys(update || {}).length);
-
     // Set content type
     res.set('Content-Type', 'application/vnd.api+json');
 
@@ -146,14 +145,14 @@ module.exports = function createPutJob(fs) {
     // Lookup for associated bids
     const bids = [];
     try {
-      const bidsSnap = await jobsModel.findAssociatedBids(fs, jobId);
+      const jobsReference = await jobsModel.createDocRef(fs, jobId);
+      const bidsSnap = await jobsModel.findAssociatedBids(fs, jobsReference);
       bidsSnap.docs
         .filter(doc => Boolean(doc.data()))
         .forEach(doc => bids.push({ ...doc.data(), id: doc.id }));
     } catch (err) {
       return send500Error(err, 'bids lookup failed', 'unexpected error');
     }
-
     // Check if job state can be updated
     const updateStateStatus = update.state
       ? canUpdateState(update.state, job, bids, user)

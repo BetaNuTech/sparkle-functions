@@ -167,7 +167,6 @@ describe('Jobs | API | PUT', () => {
     const jobRef = firebase.createDocRef({ id: JOB_ID });
     const bid = mocking.createBid({ job: jobRef, state: 'approved' });
     const user = mocking.createUser({ admin: true });
-
     // Stubs
     sinon
       .stub(propertiesModel, 'firestoreFindRecord')
@@ -176,12 +175,16 @@ describe('Jobs | API | PUT', () => {
       .stub(jobsModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(JOB_ID, job));
     sinon
-      .stub(jobsModel, 'findAssociatedBids')
-      .resolves(stubs.wrapSnapshot([bid]));
+      .stub(jobsModel, 'createDocRef')
+      .returns(jobRef)
     sinon
-      .stub(jobsModel, 'updateRecord')
-      .resolves(firebase.createDocSnapshot(JOB_ID, update));
+      .stub(jobsModel, 'findAssociatedBids')
+      .resolves(firebase.createQuerySnapshot([bid]));
 
+      sinon
+        .stub(jobsModel, 'updateRecord')
+        .resolves(firebase.createDocSnapshot(JOB_ID, update));
+      
     // Execute
     await request(createApp(user))
       .put(`/t/${PROPERTY_ID}/${JOB_ID}`)
@@ -202,7 +205,6 @@ describe('Jobs | API | PUT', () => {
     const jobRef = firebase.createDocRef({ id: JOB_ID });
     const bid = mocking.createBid({ job: jobRef, state: 'approved' });
     const user = mocking.createUser({ admin: true });
-
     // Stubs
     sinon
       .stub(propertiesModel, 'firestoreFindRecord')
@@ -211,8 +213,11 @@ describe('Jobs | API | PUT', () => {
       .stub(jobsModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(JOB_ID, job));
     sinon
+      .stub(jobsModel, 'createDocRef')
+      .returns(jobRef)
+    sinon
       .stub(jobsModel, 'findAssociatedBids')
-      .resolves(stubs.wrapSnapshot([bid]));
+      .resolves(firebase.createQuerySnapshot([bid]));
     sinon
       .stub(jobsModel, 'updateRecord')
       .resolves(firebase.createDocSnapshot(JOB_ID, update));
