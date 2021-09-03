@@ -141,7 +141,7 @@ module.exports = {
     const snap = {
       size: data.length,
       empty: data.length === 0,
-      docs: data.map(datum => this.createDocSnapshot(datum.id, data)),
+      docs: data.map(datum => this.createDocSnapshot(datum.id, datum)),
     };
 
     return snap;

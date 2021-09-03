@@ -66,16 +66,15 @@ module.exports = modelSetup({
   /**
    * Lookup associated bids
    * @param  {firebaseAdmin.firestore} fs
-   * @param  {String} jobId
+   * @param  {firestore.DocumentReference} jobRef
    * @return {Promise} - resolves {QuerySnapshot}
    */
-  findAssociatedBids(fs, jobId) {
+  findAssociatedBids(fs, jobRef) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
-    assert(jobId && typeof jobId === 'string', 'has job id');
-
+    assert(jobRef && typeof jobRef === 'object', 'has job document refrence');
     return fs
       .collection(BID_COLLECTION)
-      .where('job', '==', jobId)
+      .where('job', '==', jobRef)
       .get();
   },
 
