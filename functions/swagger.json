@@ -1,0 +1,629 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "SPARKLE API DOC",
+    "description": "SPARKLE Project Application API",
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "host": "localhost:3000",
+  "basePath": "/api/v0",
+  "tags": [
+    {
+      "name": "Jobs",
+      "description": "API for jobs"
+    },
+    {
+      "name": "Bids",
+      "description": "API for bids"
+    }
+  ],
+  "schemes": ["http"],
+  "consumes": ["application/json"],
+  "produces": ["application/vnd.api+json"],
+  "paths": {
+    "/properties/{propertyId}/jobs": {
+      "parameters": [
+        {
+          "name": "propertyId",
+          "in": "path",
+          "required": true,
+          "description": "property id in which we want to create a job.",
+          "type": "string"
+        },
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": ["Jobs"],
+        "summary": "Creating a new job inside a property using the property id.",
+        "parameters": [
+          {
+            "name": "job",
+            "in": "body",
+            "description": "job details",
+            "required": ["title", "type"],
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "need": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["improvement", "maintenance"],
+                "default": "improvement"
+              },
+              "scopeOfWork": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success for creating job api",
+            "schema": {
+              "$ref": "#/definitions/jobs"
+            }
+          }
+        }
+      }
+    },
+    "properties/{propertyId}/jobs/{jobId}": {
+      "parameters": [
+        {
+          "name": "propertyId",
+          "in": "path",
+          "required": true,
+          "description": "property id in which we want to edit a job.",
+          "type": "string"
+        },
+        {
+          "name": "jobId",
+          "in": "path",
+          "required": true,
+          "description": "job id which we want to update.",
+          "type": "string"
+        },
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "put": {
+        "tags": ["Jobs"],
+        "parameters": [
+          {
+            "name": "job",
+            "in": "body",
+            "description": "job details that needs to be updated",
+            "required": ["title", "type"],
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "need": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["improvement", "maintenance"],
+                "default": "improvement"
+              },
+              "scopeOfWork": {
+                "type": "string"
+              },
+              "authorizedRules": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success for creating job api",
+            "schema": {
+              "$ref": "#/definitions/jobs"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BadStatus400"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BadStatus404"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "properties/{propertyId}/jobs/{jobId}/bids/{bidId}": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "propertyId",
+          "in": "path",
+          "required": true,
+          "description": "property id in which we want to edit a bid assigned to a job.",
+          "type": "string"
+        },
+        {
+          "name": "jobId",
+          "in": "path",
+          "required": true,
+          "description": "job to which this bid belongs to.",
+          "type": "string"
+        },
+        {
+          "name": "bidId",
+          "in": "path",
+          "required": true,
+          "description": "bidId id which we want to update.",
+          "type": "string"
+        }
+      ],
+      "put": {
+        "tags": ["Bids"],
+        "parameters": [
+          {
+            "name": "bid",
+            "in": "body",
+            "description": "Bid details that needs to be updated",
+            "required": [
+              "vendor",
+              "vendorDetails",
+              "costMax",
+              "costMin",
+              "startAt",
+              "completeAt",
+              "state"
+            ],
+            "properties": {
+              "vendor": {
+                "type": "string"
+              },
+              "vendorDetails": {
+                "type": "string"
+              },
+              "costMax": {
+                "type": "number"
+              },
+              "costMin": {
+                "type": "number"
+              },
+              "startAt": {
+                "type": "number"
+              },
+              "completeAt": {
+                "type": "number"
+              },
+              "state": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success for updating bid api",
+            "schema": {
+              "$ref": "#/definitions/jobs"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BadStatus400"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BadStatus404"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "properties/{propertyId}/jobs/{jobId}/bids": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "propertyId",
+          "in": "path",
+          "required": true,
+          "description": "property id in which we want to edit a bid assigned to a job.",
+          "type": "string"
+        },
+        {
+          "name": "jobId",
+          "in": "path",
+          "required": true,
+          "description": "job to which this bid belongs to.",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": ["Bids"],
+        "parameters": [
+          {
+            "name": "bid",
+            "in": "body",
+            "description": "Bid details that needs to be needed for new bid for a job.",
+            "required": [
+              "vendor",
+              "vendorDetails",
+              "costMax",
+              "costMin",
+              "startAt",
+              "completeAt",
+              "state"
+            ],
+            "properties": {
+              "vendor": {
+                "type": "string"
+              },
+              "vendorDetails": {
+                "type": "string"
+              },
+              "costMax": {
+                "type": "number"
+              },
+              "costMin": {
+                "type": "number"
+              },
+              "startAt": {
+                "type": "number"
+              },
+              "completeAt": {
+                "type": "number"
+              },
+              "state": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success for adding a new bid",
+            "schema": {
+              "$ref": "#/definitions/jobs"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BadStatus400"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BadStatus404"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "properties/{propertyId}/jobs/{jobId}/trello": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "propertyId",
+          "in": "path",
+          "required": true,
+          "description": "property id.",
+          "type": "string"
+        },
+        {
+          "name": "jobId",
+          "in": "path",
+          "required": true,
+          "description": "job id.",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": ["Jobs"],
+        "parameters": [],
+        "responses": {
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/TRELLO_SUCCESS"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BadStatus404"
+            }
+          },
+          "409": {
+            "schema": {
+              "$ref": "#/definitions/BadStatus409"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "jobs": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "need": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "scopeOfWork": {
+                  "type": "string"
+                },
+                "state": {
+                  "type": "string"
+                },
+                "authorizedRules": {
+                  "type": "string"
+                },
+                "createdAt": {
+                  "type": "number"
+                },
+                "updatedAt": {
+                  "type": "number"
+                }
+              }
+            },
+            "relationships": {
+              "schema": {
+                "$ref": "#/definitions/property"
+              }
+            }
+          }
+        }
+      }
+    },
+    "property": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "BadStatus400": {
+      "type": "object",
+      "properties": {
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "object",
+                "properties": {
+                  "pointer": {
+                    "type": "string"
+                  }
+                }
+              },
+              "title": {
+                "type": "string"
+              },
+              "detail": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "BadStatus404": {
+      "type": "object",
+      "properties": {
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "object",
+                "properties": {
+                  "pointer": {
+                    "type": "string"
+                  },
+                  "enum": ["property", "job", "bid"]
+                }
+              },
+              "title": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "BadStatus409": {
+      "type": "object",
+      "properties": {
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "object",
+                "properties": {
+                  "pointer": {
+                    "type": "string"
+                  }
+                }
+              },
+              "title": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "UNAUTH": {
+      "type": "object",
+      "properties": {
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "object",
+                "properties": {
+                  "pointer": {
+                    "type": "string"
+                  },
+                  "enum": ["authorizedRules", "state"]
+                }
+              },
+              "detail": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "ERROR": {
+      "type": "object",
+      "properties": {
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "detail": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "TRELLO_SUCCESS": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "trelloCardURL": {
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

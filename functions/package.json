@@ -9,8 +9,8 @@
     "end-to-end-test": "npm run test-e2e",
     "test-int": "NODE_ENV=test LOG_LEVEL=crit ./node_modules/.bin/mocha './{,!(node_modules)/**}/test/integration/**/*.test.js'",
     "integration-test": "npm run test-int",
-    "dev": "./node_modules/.bin/nodemon -i node_modules -e js,json --exec 'npm test --silent'",
-    "server": "./node_modules/.bin/nodemon -i node_modules -e js,json --exec 'node ./scripts/api-server.js'",
+    "dev-test": "./node_modules/.bin/nodemon -i node_modules -e js,json --exec 'npm test --silent'",
+    "dev": "./node_modules/.bin/nodemon -i node_modules -e js,json --exec 'node ./scripts/api-server.js'",
     "coverage": "./node_modules/.bin/nyc npm test --silent"
   },
   "engines": {
@@ -38,6 +38,7 @@
     "moment-timezone": "^0.5.26",
     "navigator": "^1.0.1",
     "pdfmake": "^0.1.68",
+    "swagger-ui-express": "^4.1.6",
     "triple-beam": "^1.3.0",
     "validate": "^5.1.0",
     "winston": "^3.1.0",
