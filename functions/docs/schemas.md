@@ -202,7 +202,7 @@ interface Job {
   createdAt?: number;
   updatedAt?: number;
   state?: 'open' | 'approved' | 'authorized' | 'complete';
-  type: 'improvement' | 'maintenance';
+  type: 'asset management project' | 'property management project' | 'hybrid capital project';
 }
 ```
 
@@ -222,6 +222,7 @@ interface bid {
   updatedAt: number; // Unix timestamp
   vendor: string;
   vendorDetails?: string;
+  scope: 'local' | 'national';
 }
 ```
 

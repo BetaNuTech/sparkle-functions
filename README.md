@@ -50,6 +50,8 @@ GLOBAL_API_TOKEN=123abc
 GLOBAL_API_DOMAIN=https://url.net
 ```
 
+To run a single test file: `npx mocha ./test/path/to/file.test.js`
+
 ### Installation
 
 Installing the firebase functions for local development.
