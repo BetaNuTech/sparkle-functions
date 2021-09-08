@@ -95,8 +95,7 @@ const propertySchema = new Schema({
     required: false,
   },
   templates: {
-    type: Object,
-    required: true,
+    type: Object
   },
   team: {
     type: String,
