@@ -3,12 +3,12 @@ const validate = require('./validate');
 
 describe('Properties | Utils | Validate Property', () => {
   it('rejects if required attributes are not provided in schema', () => {
-    const expected = 'name,templates are required';
+    const expected = 'name is required';
     const result = validate({
       numOfInspections: 123,
       bannerPhotoName: 'test',
     });
-    const actual = `${result.map(err => err.path).join(',')} are required`;
+    const actual = `${result.map(err => err.path).join(',')} is required`;
     expect(actual).to.equal(expected);
   });
 
