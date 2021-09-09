@@ -11,6 +11,8 @@ const diModel = require('../../../models/deficient-items');
 const usersModel = require('../../../models/users');
 const inspectionsModel = require('../../../models/inspections');
 const { fs, test, storage, cloudFunctions } = require('../../setup');
+const jobsModel = require('../../../models/jobs');
+const bidsModel = require('../../../models/bids');
 
 const SRC_PROFILE_IMG = 'test-image.jpg';
 const PROFILE_IMG_PATH = path.join(__dirname, `../${SRC_PROFILE_IMG}`);
@@ -233,6 +235,34 @@ describe('Properties | Delete | V2', () => {
 
     // Assertions
     expect(actual).to.equal(expected);
+  });
+
+  it("should remove all property's jobs and bids", async () => {
+    const expected = [undefined, undefined];
+    const propertyId = uuid();
+    const jobId = uuid();
+    const bidId = uuid();
+    const property = mocking.createProperty();
+    const propertyDoc = propertiesModel.createDocRef(fs, propertyId);
+    const job = mocking.createJob({ property: propertyDoc });
+    const jobDoc = jobsModel.createDocRef(fs, jobId);
+    const bid = mocking.createBid({ job: jobDoc });
+
+    // Setup database
+    await propertiesModel.firestoreCreateRecord(fs, propertyId, property);
+    await jobsModel.createRecord(fs, jobId, job);
+    await bidsModel.createRecord(fs, bidId, bid);
+
+    // Execute
+    const snap = await propertiesModel.firestoreFindRecord(fs, propertyId);
+    const wrapped = test.wrap(cloudFunctions.propertyDeleteV2);
+    await wrapped(snap, { params: { propertyId } });
+
+    // Test results
+    const jobResult = await jobsModel.findRecord(fs, jobId);
+    const bidResult = await bidsModel.findRecord(fs, jobId);
+    const actual = [jobResult.data(), bidResult.data()];
+    expect(actual).to.deep.equal(expected);
   });
 
   it("should remove a property's profile image from storage", async () => {
