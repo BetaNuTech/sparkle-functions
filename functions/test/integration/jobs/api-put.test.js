@@ -128,7 +128,7 @@ describe('Jobs | API | PUT', () => {
       .expect(403); // Assertion
   });
 
-  it('rejects when  payload contains non-updatable attributes', async () => {
+  it('rejects when payload contains non-updatable attributes', async () => {
     const expected = 'Can not update non-updatable attributes';
     const update = { state: 'open', invalid: 'invalid' };
     const property = mocking.createProperty();
@@ -174,17 +174,15 @@ describe('Jobs | API | PUT', () => {
     sinon
       .stub(jobsModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(JOB_ID, job));
-    sinon
-      .stub(jobsModel, 'createDocRef')
-      .returns(jobRef)
+    sinon.stub(jobsModel, 'createDocRef').returns(jobRef);
     sinon
       .stub(jobsModel, 'findAssociatedBids')
       .resolves(firebase.createQuerySnapshot([bid]));
 
-      sinon
-        .stub(jobsModel, 'updateRecord')
-        .resolves(firebase.createDocSnapshot(JOB_ID, update));
-      
+    sinon
+      .stub(jobsModel, 'updateRecord')
+      .resolves(firebase.createDocSnapshot(JOB_ID, update));
+
     // Execute
     await request(createApp(user))
       .put(`/t/${PROPERTY_ID}/${JOB_ID}`)
@@ -212,9 +210,7 @@ describe('Jobs | API | PUT', () => {
     sinon
       .stub(jobsModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(JOB_ID, job));
-    sinon
-      .stub(jobsModel, 'createDocRef')
-      .returns(jobRef)
+    sinon.stub(jobsModel, 'createDocRef').returns(jobRef);
     sinon
       .stub(jobsModel, 'findAssociatedBids')
       .resolves(firebase.createQuerySnapshot([bid]));

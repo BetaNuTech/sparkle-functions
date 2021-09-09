@@ -2,6 +2,7 @@ const { expect } = require('chai');
 const express = require('express');
 const request = require('supertest');
 const bodyParser = require('body-parser');
+const config = require('../../../config');
 const uuid = require('../../../test-helpers/uuid');
 const mocking = require('../../../test-helpers/mocking');
 const jobsModel = require('../../../models/jobs');
@@ -18,7 +19,7 @@ describe('Jobs | API | POST', () => {
       title: 'Wall painting',
       need: 'Discolored wall',
       scopeOfWork: 'Need to paint the wall',
-      type: 'improvement',
+      type: config.jobs.typeValues[0],
     };
     const propertyId = uuid();
     const property = mocking.createProperty();
