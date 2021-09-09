@@ -31,9 +31,9 @@ module.exports = function createPutJob(fs) {
     const update = body;
     const send500Error = create500ErrHandler(PREFIX, res);
     const hasUpdates = Boolean(Object.keys(update || {}).length);
+
     // Set content type
     res.set('Content-Type', 'application/vnd.api+json');
-
     log.info('Update job requested');
 
     // Reject missing update request JSON

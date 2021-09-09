@@ -20,7 +20,8 @@ describe('Jobs | API | POST Bid', () => {
     const property = mocking.createProperty();
     const propertyDoc = propertiesModel.createDocRef(fs, propertyId);
     const job = mocking.createJob({ property: propertyDoc });
-    const bid = mocking.createBid();
+    const jobDoc = jobsModel.createDocRef(fs, jobId);
+    const bid = mocking.createBid({ job: jobDoc });
 
     // Setup database
     await propertiesModel.firestoreCreateRecord(fs, propertyId, property);

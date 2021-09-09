@@ -501,6 +501,7 @@ module.exports = {
       costMax: 2,
       startAt: 1,
       completeAt: 2,
+      scope: config.bids.scopeTypes[0],
       createdAt: nowUnix(),
       updatedAt: nowUnix(),
       ...bidConfig,

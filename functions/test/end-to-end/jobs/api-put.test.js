@@ -18,6 +18,7 @@ describe('Jobs | API | PUT', () => {
       title: 'Updated',
       need: 'Updated',
       scopeOfWork: 'Updated',
+      trelloCardURL: 'trello.com/card/1',
     };
     const jobId = uuid();
     const propertyId = uuid();

@@ -17,6 +17,7 @@ module.exports = update => {
     'type',
     'authorizedRules',
     'state',
+    'trelloCardURL'
   ];
 
   return keys.some(key => !attrs.includes(key));

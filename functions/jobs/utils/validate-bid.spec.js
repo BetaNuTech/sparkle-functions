@@ -1,20 +1,27 @@
 const { expect } = require('chai');
 const validate = require('./validate-bid');
+const config = require('../../config');
+
+const requiredAttrs = {
+  vendor: 'test',
+  scope: config.bids.scopeTypes[0],
+};
 
 describe('Jobs | Utils | Validate Bid Create', () => {
   it('rejects if required attribute is not provided in schema', () => {
-    const expected = 'vendor is required';
+    const expected = 'vendor,scope is required';
     const result = validate({
       vendorDetails: 'test',
     });
-    const actual = `${result[0].path} is required`;
+    const paths = result.map(r => r.path).join(',');
+    const actual = `${paths} is required`;
     expect(actual).to.equal(expected);
   });
 
   it('rejects if non existing bid attribute is provided', () => {
     const expected = [];
     const actual = validate({
-      vendor: 'test',
+      ...requiredAttrs,
       invalid: 'non-exixting',
     });
 
@@ -24,34 +31,39 @@ describe('Jobs | Utils | Validate Bid Create', () => {
   it('rejects invalid bid', () => {
     const data = [
       {
-        bid: { vendor: 1 },
+        bid: { ...requiredAttrs, vendor: 1 },
         expected: 'vendor',
         msg: 'rejects non-string for vendor',
       },
       {
-        bid: { vendorDetails: 1 },
+        bid: { ...requiredAttrs, vendorDetails: 1 },
         expected: 'vendorDetails',
         msg: 'rejects non-string for vendor details',
       },
       {
-        bid: { costMin: 'test' },
+        bid: { ...requiredAttrs, costMin: 'test' },
         expected: 'costMin',
         msg: 'rejects non-number for cost min',
       },
       {
-        bid: { costMax: 'test' },
+        bid: { ...requiredAttrs, costMax: 'test' },
         expected: 'costMax',
         msg: 'rejects non-number for cost max',
       },
       {
-        bid: { startAt: 'test' },
+        bid: { ...requiredAttrs, startAt: 'test' },
         expected: 'startAt',
         msg: 'rejects non-number for start at',
       },
       {
-        bid: { completeAt: 'test' },
+        bid: { ...requiredAttrs, completeAt: 'test' },
         expected: 'completeAt',
         msg: 'rejects non-number for complete at',
+      },
+      {
+        bid: { ...requiredAttrs, scope: 'fake' },
+        expected: 'scope',
+        msg: 'rejects non-enum scope value',
       },
     ];
 
@@ -69,7 +81,7 @@ describe('Jobs | Utils | Validate Bid Create', () => {
       'Validation failed for completeAt.',
     ];
     const result = validate({
-      vendor: 'test',
+      ...requiredAttrs,
       completeAt: 1,
       startAt: 2,
     });
@@ -83,7 +95,7 @@ describe('Jobs | Utils | Validate Bid Create', () => {
   it('rejects if cost min is greater than cost max', () => {
     const expected = 'costMax,costMin';
     const result = validate({
-      vendor: 'test',
+      ...requiredAttrs,
       costMin: 2,
       costMax: 1,
     });
@@ -97,7 +109,7 @@ describe('Jobs | Utils | Validate Bid Create', () => {
   it('accepts a fixed cost bid', () => {
     const expected = '';
     const result = validate({
-      vendor: 'test',
+      ...requiredAttrs,
       costMin: 1,
       costMax: 1,
     });
@@ -111,7 +123,7 @@ describe('Jobs | Utils | Validate Bid Create', () => {
   it('rejects if completed at is greater than started at', () => {
     const expected = 'completeAt,startAt';
     const result = validate({
-      vendor: 'test',
+      ...requiredAttrs,
       completeAt: 1,
       startAt: 2,
     });
@@ -132,6 +144,7 @@ describe('Jobs | Utils | Validate Bid Create', () => {
       costMax: 2,
       startAt: 1,
       completeAt: 2,
+      scope: config.bids.scopeTypes[0],
     });
 
     expect(actual).to.deep.equal(expected);
