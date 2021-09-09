@@ -1,8 +1,13 @@
 const assert = require('assert');
+const config = require('../config');
 const modelSetup = require('./utils/model-setup');
+const propertyModel = require('./properties');
+const bidsModel = require('./bids');
 
-const JOB_COLLECTION = 'jobs';
-const BID_COLLECTION = 'bids';
+const JOB_COLLECTION = config.models.collections.jobs;
+const BID_COLLECTION = config.models.collections.bids;
+const PROPERTY_COLLECTION = config.models.collections.properties;
+const PREFIX = 'models: jobs:';
 
 module.exports = modelSetup({
   /**
@@ -42,6 +47,7 @@ module.exports = modelSetup({
       .doc(jobId)
       .get();
   },
+
   /**
    * Create a firestore document reference
    * @param  {admin.firestore} fs
@@ -51,6 +57,17 @@ module.exports = modelSetup({
   createDocRef(fs, id) {
     assert(id && typeof id === 'string', 'has document reference id');
     return fs.collection(JOB_COLLECTION).doc(id);
+  },
+
+  /**
+   * Create a firestore document reference for property
+   * @param  {admin.firestore} fs
+   * @param  {String} id
+   * @return {firestore.DocumentReference}
+   */
+  createPropertyDocRef(fs, id) {
+    assert(id && typeof id === 'string', 'has document reference id');
+    return fs.collection(PROPERTY_COLLECTION).doc(id);
   },
 
   /**
@@ -102,5 +119,52 @@ module.exports = modelSetup({
     }
 
     return doc.update(data);
+  },
+
+  /**
+   * Removing Job linked with the property and internally calling another function to remove bids linked witht the job.
+   * @param   {firebaseAdmin.firestore} fs Firestore DB instance
+   * @param   {String} propertyId
+   * @param   {firestore.batch?} parentBatch
+   * @returns {Promise}
+   */
+  async deletePropertyJobAndBids(fs, propertyId, parentBatch) {
+    const propertyDoc = this.createPropertyDocRef(fs, propertyId);
+
+    // Lookup all property's jobs
+    let linkedJobs;
+    try {
+      linkedJobs = await fs
+        .collection(JOB_COLLECTION)
+        .where('property', '==', propertyDoc)
+        .get();
+    } catch (err) {
+      throw Error(
+        `${PREFIX} deletePropertyJobAndBids: failed to lookup jobs: ${err}`
+      );
+    }
+
+    const batch = parentBatch || fs.batch();
+    const jobIds = linkedJobs.docs.map(jobDoc => {
+      batch.delete(jobDoc.ref); // add job delete to batch
+      return jobDoc.id;
+    });
+
+    // Delete each jobs bids
+    try {
+      await Promise.all(
+        jobIds.map(jobId => bidsModel.deleteLinkedJobsRecord(fs, jobId, batch))
+      );
+    } catch (err) {
+      throw Error(
+        `${PREFIX} deletePropertyJobAndBids: failed to delete bids: ${err}`
+      );
+    }
+
+    if (parentBatch) {
+      return Promise.resolve(parentBatch);
+    }
+
+    return batch.commit();
   },
 });
