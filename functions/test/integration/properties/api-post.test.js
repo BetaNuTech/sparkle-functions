@@ -19,7 +19,7 @@ describe('Properties | API | POST', () => {
   afterEach(() => sinon.restore());
 
   it('rejects request with invalid property payload', async () => {
-    const expected = 'name, templates';
+    const expected = 'name';
     const res = await request(createApp())
       .post('/t')
       .send()

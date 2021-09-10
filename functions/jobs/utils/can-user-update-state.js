@@ -14,7 +14,6 @@ module.exports = (targetState, job, bids, user) => {
   assert(job && typeof job === 'object', 'has job record');
   assert(bids && typeof bids === 'object', 'has bids record');
   assert(user && typeof user === 'object', 'has user record');
-
   switch (targetState) {
     case 'approved': {
       if (job.state === 'open') return true;
@@ -27,7 +26,6 @@ module.exports = (targetState, job, bids, user) => {
         (total, bid) => total + (bid.state === 'approved' ? 1 : 0),
         0
       );
-
       // Regular job
       if (approvedBids >= 1 && bids.length >= 3) {
         return true;

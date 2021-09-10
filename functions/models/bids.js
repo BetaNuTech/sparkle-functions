@@ -1,7 +1,10 @@
 const assert = require('assert');
+const config = require('../config');
 const modelSetup = require('./utils/model-setup');
 
-const BID_COLLECTION = 'bids';
+const JOB_COLLECTION = config.models.collections.jobs;
+const BID_COLLECTION = config.models.collections.bids;
+const PREFIX = 'models: bids:';
 
 module.exports = modelSetup({
   /**
@@ -22,6 +25,16 @@ module.exports = modelSetup({
       .collection(BID_COLLECTION)
       .doc(bidId)
       .create(data);
+  },
+  /**
+   * Create a firestore document reference
+   * @param  {admin.firestore} fs
+   * @param  {String} id
+   * @return {firestore.DocumentReference}
+   */
+  createJobDocRef(fs, id) {
+    assert(id && typeof id === 'string', 'has document reference id');
+    return fs.collection(JOB_COLLECTION).doc(id);
   },
 
   /**
@@ -90,5 +103,37 @@ module.exports = modelSetup({
       .where('job', '==', jobId)
       .where('state', '==', 'approved')
       .get();
+  },
+
+  /**
+   * Deleting all the bids linked with the current Job
+   * @param  {firebaseAdmin.firestore} fs Firestore DB instance
+   * @param  {string} jobId , job id
+   * @param  {firestore.batch?} parentBatch
+   * @return {Promise}
+   */
+  async deleteLinkedJobsRecord(fs, jobId, parentBatch) {
+    const jobDoc = this.createJobDocRef(fs, jobId);
+    const queryRef = fs.collection(BID_COLLECTION).where('job', '==', jobDoc);
+    const batch = parentBatch || fs.batch();
+
+    let querySnapshot;
+    try {
+      querySnapshot = await queryRef.get();
+    } catch (err) {
+      throw Error(
+        `${PREFIX} deleteLinkedJobsRecord: delete bid failed with query lookup failed: ${err}`
+      );
+    }
+
+    querySnapshot.forEach(function(doc) {
+      batch.delete(doc.ref);
+    });
+
+    if (parentBatch) {
+      return Promise.resolve(parentBatch);
+    }
+
+    return batch.commit();
   },
 });

@@ -28,7 +28,6 @@ module.exports = function createPostJob(fs) {
   return async (req, res) => {
     const { params, body = {} } = req;
     const { propertyId } = params;
-    const { title, need, type, scopeOfWork } = body;
     const send500Error = create500ErrHandler(PREFIX, res);
     const badReqPayload = { errors: [] };
 
@@ -36,8 +35,8 @@ module.exports = function createPostJob(fs) {
     res.set('Content-Type', 'application/vnd.api+json');
     log.info('Create job requested');
 
-    // Create errors for missing attributes
-    Object.entries({ title, need, type, scopeOfWork })
+    // Create errors for missing required attributes
+    Object.entries({ title: body.title, type: body.type })
       .filter(([, value]) => !value)
       .forEach(([name]) => {
         badReqPayload.errors.push({
@@ -80,12 +79,10 @@ module.exports = function createPostJob(fs) {
 
     // Create Job object
     const job = {
-      title,
-      need,
-      type,
-      scopeOfWork,
+      ...body,
+      authorizedRules:
+        body.authorizedRules || config.jobs.authorizedRuleTypes[0],
       state: config.jobs.stateTypes[0],
-      authorizedRules: config.jobs.authorizedRuleTypes[0],
       createdAt: Math.round(Date.now() / 1000),
       updatedAt: Math.round(Date.now() / 1000),
     };

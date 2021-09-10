@@ -1,19 +1,14 @@
 # Sparkle Functions
 
-The Backend application for Sparkle.
-
-## Appengine & Functions
-
-This repository consists of 2 separate applications:
-
+The Backend application for Sparkle.  This repo contains 2 apps:
 - **Functions**: (in `/functions`) is the API, watchers, and messaging subscribers. This is probably the application you want to modify.
 - **Appengine**: (in `/appengine`) manages the message broker and CRON jobs. _You likely do not need to modify this application._
 
-### Configuration
-
-For testing and development configure a `.env.test` in the root of this repo that connects to a testing database.
+### Development
+To configure local development add a `.env` file to the root of this repo configured for the development firebase project.
 
 ```
+PORT=3000
 AWS_S3_ACCESS_KEY_ID=abc
 AWS_S3_SECRET_ACCESS_KEY=123
 AWS_S3_BUCKET_NAME=name
@@ -30,11 +25,36 @@ GLOBAL_API_DOMAIN=https://url.net
 COBALT_DOMAIN=https://..
 ```
 
-For running the local server add a `.env` file that points your desired firebase project.
+You can start the local dev server by:
+```sh
+cd ./functions
+yarn run dev
+```
+After installing dependencies (see steps below) it should start server on `localhost:3000`.  You can interact with the local server using POSTman.
+
+
+### Testing
+To configure testing add a `.env.test` file to the root of this repo configured for the testing firebase project.
+
+```
+AWS_S3_ACCESS_KEY_ID=abc
+AWS_S3_SECRET_ACCESS_KEY=123
+AWS_S3_BUCKET_NAME=name
+
+FIREBASE_FUNCTIONS_AUTH=...
+FIREBASE_PROJECT=project-id
+FIREBASE_DB_URL=https://...
+FIREBASE_STORAGE_BUCKET=*.appspot.co
+
+GLOBAL_API_TOKEN=123abc
+GLOBAL_API_DOMAIN=https://url.net
+```
+
+To run a single test file: `npx mocha ./test/path/to/file.test.js`
 
 ### Installation
 
-Installing the firebase functions for local development
+Installing the firebase functions for local development.
 
 ```sh
 # Using Docker

@@ -128,7 +128,7 @@ describe('Jobs | API | PUT', () => {
       .expect(403); // Assertion
   });
 
-  it('rejects when  payload contains non-updatable attributes', async () => {
+  it('rejects when payload contains non-updatable attributes', async () => {
     const expected = 'Can not update non-updatable attributes';
     const update = { state: 'open', invalid: 'invalid' };
     const property = mocking.createProperty();
@@ -167,7 +167,6 @@ describe('Jobs | API | PUT', () => {
     const jobRef = firebase.createDocRef({ id: JOB_ID });
     const bid = mocking.createBid({ job: jobRef, state: 'approved' });
     const user = mocking.createUser({ admin: true });
-
     // Stubs
     sinon
       .stub(propertiesModel, 'firestoreFindRecord')
@@ -175,9 +174,11 @@ describe('Jobs | API | PUT', () => {
     sinon
       .stub(jobsModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(JOB_ID, job));
+    sinon.stub(jobsModel, 'createDocRef').returns(jobRef);
     sinon
       .stub(jobsModel, 'findAssociatedBids')
-      .resolves(stubs.wrapSnapshot([bid]));
+      .resolves(firebase.createQuerySnapshot([bid]));
+
     sinon
       .stub(jobsModel, 'updateRecord')
       .resolves(firebase.createDocSnapshot(JOB_ID, update));
@@ -202,7 +203,6 @@ describe('Jobs | API | PUT', () => {
     const jobRef = firebase.createDocRef({ id: JOB_ID });
     const bid = mocking.createBid({ job: jobRef, state: 'approved' });
     const user = mocking.createUser({ admin: true });
-
     // Stubs
     sinon
       .stub(propertiesModel, 'firestoreFindRecord')
@@ -210,9 +210,10 @@ describe('Jobs | API | PUT', () => {
     sinon
       .stub(jobsModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(JOB_ID, job));
+    sinon.stub(jobsModel, 'createDocRef').returns(jobRef);
     sinon
       .stub(jobsModel, 'findAssociatedBids')
-      .resolves(stubs.wrapSnapshot([bid]));
+      .resolves(firebase.createQuerySnapshot([bid]));
     sinon
       .stub(jobsModel, 'updateRecord')
       .resolves(firebase.createDocSnapshot(JOB_ID, update));

@@ -70,6 +70,123 @@ interface inspection {
 }
 ```
 
+## Template
+
+```typescript
+interface Template {
+  id?: string;
+  name: string;
+  description: string;
+  category: string; // template category relationship
+  trackDeficientItems: boolean;
+  properties?: Array<string>;
+  sections?: any;
+  items?: any;
+}
+```
+
+## Template Category
+
+```typescript
+interface templateCategory {
+  id: string;
+  name: string;
+}
+```
+
+## Inspection/Template Item
+
+```typescript
+interface InspectionItem {
+  adminEdits?: any;
+  deficient: boolean;
+  index: number;
+  isItemNA: boolean;
+  isTextInputItem: boolean;
+  mainInputFourValue: number;
+  mainInputNotes: string;
+  mainInputOneValue: number;
+  mainInputSelected: boolean;
+  mainInputSelection: number;
+  mainInputThreeValue: number;
+  mainInputTwoValue: number;
+  itemType: string;
+  mainInputType: string;
+  mainInputZeroValue: number;
+  notes: boolean;
+  photos: boolean;
+  sectionId: string;
+  title: string;
+  signatureDownloadURL: string;
+  signatureTimestampKey: string;
+  version: number;
+}
+```
+
+## Inspection/Template Section
+
+```typescript
+interface InspectionSection {
+  index: number;
+  title: string;
+  added_multi_section: boolean;
+  section_type: string;
+}
+```
+
+## Team
+
+```typescript
+interface team {
+  id?: string;
+  name: string;
+  properties?: any;
+}
+```
+
+## User
+```typescript
+interface user {
+  id: string;
+  admin: boolean;
+  corporate: boolean;
+  email: string;
+  firstName: string;
+  lastName: string;
+  pushOptOut: boolean;
+  properties?: any;
+
+  /**
+   * Property level access granted via team associations
+   * NOTE: property associations w/ teams are nested under
+   *       their team ID: `{ teamId: { propertyId: true } }`
+   */
+  teams?: any;
+
+  // UNIX timestame of creation date
+  createdAt: number;
+
+  // UNIX timestamp of last login
+  lastSignInDate?: number;
+
+  // User agent string of last sign up OS/Browser
+  lastUserAgent?: string;
+}
+```
+
+## Notification
+
+```typescript
+interface notification {
+  title: string;
+  summary: string;
+  creator?: string; // user id
+  property?: string; // property id
+  markdownBody?: string;
+  userAgent?: string;
+}
+```
+
 ## Job
 
 ```typescript
@@ -77,17 +194,36 @@ interface Job {
   id?: string;
   title: string;
   need: string;
-  authorizedRules: 'default' | 'expedite';
-  scopeOfWork: string;
+  authorizedRules?: 'default' | 'expedite';
+  scopeOfWorkAttachment?: any; // Reference of attachment id
+  scopeOfWork?: string;
   trelloCardURL?: string;
-  property: Firestore.DocumentReference; // https://googleapis.dev/nodejs/firestore/latest/DocumentReference.html
-  createdAt: number; // Unix timestamp
-  updatedAt: number; // Unix timestamp
-  state: 'open' | 'approved' | 'authorized' | 'complete';
-  type: 'improvement' | 'maintenance';
+  property: string;
+  createdAt?: number;
+  updatedAt?: number;
+  state?: 'open' | 'approved' | 'authorized' | 'complete';
+  type: 'asset management project' | 'property management project' | 'hybrid capital project';
 }
 ```
 
-## Template
+## Bid
 
-**TODO**
+```typescript
+interface bid {
+  id?: string;
+  attachments: Array<bidAttachmentModel>;
+  completeAt?: number; // Unix timestamp
+  costMax: number;
+  costMin: number;
+  createdAt: number; // Unix timestamp
+  job: string;
+  startAt?: number; // Unix timestamp
+  state: 'open' | 'approved' | 'rejected' | 'incomplete' | 'complete';
+  updatedAt: number; // Unix timestamp
+  vendor: string;
+  vendorDetails?: string;
+  scope: 'local' | 'national';
+}
+```
+
+

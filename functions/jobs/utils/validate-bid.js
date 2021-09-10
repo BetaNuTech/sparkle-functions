@@ -1,5 +1,6 @@
 const assert = require('assert');
 const Schema = require('validate');
+const config = require('../../config');
 
 /**
  * Validate minimum cost
@@ -67,6 +68,11 @@ const bidSchema = new Schema({
     type: Number,
     required: false,
     use: { isValidCompleteOrStartAt },
+  },
+  scope: {
+    type: String,
+    enum: config.bids.scopeTypes,
+    required: true,
   },
 });
 

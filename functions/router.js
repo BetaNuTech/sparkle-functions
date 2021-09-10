@@ -2,6 +2,7 @@ const cors = require('cors');
 const assert = require('assert');
 const express = require('express');
 const bodyParser = require('body-parser');
+const swaggerUi = require('swagger-ui-express');
 const slack = require('./slack');
 const trello = require('./trello');
 const deficiencies = require('./deficient-items');
@@ -13,6 +14,7 @@ const clients = require('./clients');
 const authUser = require('./utils/auth-firebase-user');
 const authUserCrud = require('./middleware/auth-user-crud');
 const authTrelloReq = require('./utils/auth-trello-request');
+const swaggerDocument = require('./swagger.json');
 
 /**
  * Configure Express app with
@@ -29,6 +31,9 @@ module.exports = (fs, auth, settings) => {
   const app = express();
   const { inspectionUrl } = settings;
   app.use(bodyParser.json(), cors({ origin: true, credentials: true }));
+  swaggerDocument.host = `localhost:${process.env.PORT || 6000}`
+  // API documentation
+  app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
   // Return latest published
   // client app versions

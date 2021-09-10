@@ -11,6 +11,12 @@ const mocking = require('../../../test-helpers/mocking');
 const uuid = require('../../../test-helpers/uuid');
 const firebase = require('../../../test-helpers/firebase');
 const log = require('../../../utils/logger');
+const config = require('../../../config');
+
+const requiredAttrs = {
+  vendor: 'test',
+  scope: config.bids.scopeTypes[0],
+};
 
 const propertyId = uuid();
 const jobId = uuid();
@@ -46,7 +52,7 @@ describe('Bids | API | POST', () => {
 
     const res = await request(createApp())
       .post(`/t/${propertyId}/${jobId}`)
-      .send({ vendor: 'test' })
+      .send(requiredAttrs)
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(404);
 
@@ -69,7 +75,7 @@ describe('Bids | API | POST', () => {
 
     const res = await request(createApp())
       .post(`/t/${propertyId}/${jobId}`)
-      .send({ vendor: 'test' })
+      .send(requiredAttrs)
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(404);
 

@@ -44,6 +44,11 @@ describe('Jobs | Utils | Validate Job Update', () => {
         expected: 'type',
         msg: 'rejects non-string for type',
       },
+      {
+        job: { trelloCardURL: 1 },
+        expected: 'trelloCardURL',
+        msg: 'rejects non-string for trello card url',
+      },
     ];
 
     for (let i = 0; i < data.length; i++) {

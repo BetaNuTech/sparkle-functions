@@ -24,6 +24,9 @@ const jobSchema = new Schema({
     type: String,
     enum: config.jobs.typeValues,
   },
+  trelloCardURL: {
+    type: String,
+  },
 });
 
 /**

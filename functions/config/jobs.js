@@ -7,7 +7,12 @@ Sparkle job: {{{clientUrl}}}{{/if}}`;
 module.exports = {
   authorizedRuleTypes: ['default', 'expedite'], // 1st is default
   stateTypes: ['open', 'approved', 'authorized', 'complete'], // 1st is default
-  typeValues: ['improvement', 'maintenance'],
+  typeValues: [
+    'asset management project',
+    'property management project',
+    'hybrid capital project',
+  ],
+
   /**
    * Template for all Jobs Trello card
    * descriptions

@@ -5,6 +5,7 @@ const propertiesModel = require('../models/properties');
 const teamUsersModel = require('../models/team-users');
 const templatesModel = require('../models/templates');
 const inspectionsModel = require('../models/inspections');
+const jobsModel = require('../models/jobs');
 
 const PREFIX = 'properties: on-delete-v2:';
 
@@ -22,7 +23,6 @@ module.exports = function createOnDeleteV2Handler(fs, storage) {
     const { propertyId } = event.params;
     const batch = fs.batch();
     const property = propertySnap.data() || {};
-
     // Remove property's inspections
     let inspectionDocSnaps = [];
     try {
@@ -86,6 +86,16 @@ module.exports = function createOnDeleteV2Handler(fs, storage) {
         log.error(`${PREFIX} team users cleanup failed | ${err}`);
         throw err;
       }
+    }
+
+    // Deleting all jobs associate with property
+    try {
+      await jobsModel.deletePropertyJobAndBids(fs, propertyId, batch);
+    } catch (err) {
+      // Allow failure
+      log.error(
+        `${PREFIX} failed to delete property's jobs and/or bids, ${err}`
+      );
     }
 
     // Commit batched updates
