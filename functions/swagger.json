@@ -10,7 +10,7 @@
     }
   },
   "host": "localhost:3000",
-  "basePath": "/api/v0",
+  "basePath": "/api",
   "tags": [
     {
       "name": "Jobs",
@@ -19,13 +19,27 @@
     {
       "name": "Bids",
       "description": "API for bids"
+    },
+    {
+      "name": "Property",
+      "description": "API for property"
+    },
+    {
+      "name": "Inspection",
+      "description": "Api for inspection"
     }
   ],
-  "schemes": ["http"],
-  "consumes": ["application/json"],
-  "produces": ["application/vnd.api+json"],
+  "schemes": [
+    "http"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/vnd.api+json"
+  ],
   "paths": {
-    "/properties/{propertyId}/jobs": {
+    "/v0/properties/{propertyId}/jobs": {
       "parameters": [
         {
           "name": "propertyId",
@@ -43,14 +57,19 @@
         }
       ],
       "post": {
-        "tags": ["Jobs"],
+        "tags": [
+          "Jobs"
+        ],
         "summary": "Creating a new job inside a property using the property id.",
         "parameters": [
           {
             "name": "job",
             "in": "body",
             "description": "job details",
-            "required": ["title", "type"],
+            "required": [
+              "title",
+              "type"
+            ],
             "properties": {
               "title": {
                 "type": "string"
@@ -60,7 +79,10 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["improvement", "maintenance"],
+                "enum": [
+                  "improvement",
+                  "maintenance"
+                ],
                 "default": "improvement"
               },
               "scopeOfWork": {
@@ -73,13 +95,33 @@
           "201": {
             "description": "Success for creating job api",
             "schema": {
-              "$ref": "#/definitions/jobs"
+              "$ref": "#/definitions/JOBS"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
             }
           }
         }
       }
     },
-    "properties/{propertyId}/jobs/{jobId}": {
+    "/v0/properties/{propertyId}/jobs/{jobId}": {
       "parameters": [
         {
           "name": "propertyId",
@@ -104,13 +146,18 @@
         }
       ],
       "put": {
-        "tags": ["Jobs"],
+        "tags": [
+          "Jobs"
+        ],
         "parameters": [
           {
             "name": "job",
             "in": "body",
             "description": "job details that needs to be updated",
-            "required": ["title", "type"],
+            "required": [
+              "title",
+              "type"
+            ],
             "properties": {
               "title": {
                 "type": "string"
@@ -120,7 +167,10 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["improvement", "maintenance"],
+                "enum": [
+                  "improvement",
+                  "maintenance"
+                ],
                 "default": "improvement"
               },
               "scopeOfWork": {
@@ -139,17 +189,17 @@
           "201": {
             "description": "Success for creating job api",
             "schema": {
-              "$ref": "#/definitions/jobs"
+              "$ref": "#/definitions/JOBS"
             }
           },
           "400": {
             "schema": {
-              "$ref": "#/definitions/BadStatus400"
+              "$ref": "#/definitions/BADSTATUS400"
             }
           },
           "404": {
             "schema": {
-              "$ref": "#/definitions/BadStatus404"
+              "$ref": "#/definitions/BADSTATUS404"
             }
           },
           "403": {
@@ -165,7 +215,7 @@
         }
       }
     },
-    "properties/{propertyId}/jobs/{jobId}/bids/{bidId}": {
+    "/v0/properties/{propertyId}/jobs/{jobId}/bids/{bidId}": {
       "parameters": [
         {
           "name": "Authorization",
@@ -197,7 +247,9 @@
         }
       ],
       "put": {
-        "tags": ["Bids"],
+        "tags": [
+          "Bids"
+        ],
         "parameters": [
           {
             "name": "bid",
@@ -241,17 +293,17 @@
           "201": {
             "description": "Success for updating bid api",
             "schema": {
-              "$ref": "#/definitions/jobs"
+              "$ref": "#/definitions/JOBS"
             }
           },
           "400": {
             "schema": {
-              "$ref": "#/definitions/BadStatus400"
+              "$ref": "#/definitions/BADSTATUS400"
             }
           },
           "404": {
             "schema": {
-              "$ref": "#/definitions/BadStatus404"
+              "$ref": "#/definitions/BADSTATUS404"
             }
           },
           "403": {
@@ -267,7 +319,7 @@
         }
       }
     },
-    "properties/{propertyId}/jobs/{jobId}/bids": {
+    "/v0/properties/{propertyId}/jobs/{jobId}/bids": {
       "parameters": [
         {
           "name": "Authorization",
@@ -292,7 +344,9 @@
         }
       ],
       "post": {
-        "tags": ["Bids"],
+        "tags": [
+          "Bids"
+        ],
         "parameters": [
           {
             "name": "bid",
@@ -336,17 +390,17 @@
           "201": {
             "description": "Success for adding a new bid",
             "schema": {
-              "$ref": "#/definitions/jobs"
+              "$ref": "#/definitions/JOBS"
             }
           },
           "400": {
             "schema": {
-              "$ref": "#/definitions/BadStatus400"
+              "$ref": "#/definitions/BADSTATUS400"
             }
           },
           "404": {
             "schema": {
-              "$ref": "#/definitions/BadStatus404"
+              "$ref": "#/definitions/BADSTATUS404"
             }
           },
           "403": {
@@ -362,7 +416,7 @@
         }
       }
     },
-    "properties/{propertyId}/jobs/{jobId}/trello": {
+    "/v0/properties/{propertyId}/inspections": {
       "parameters": [
         {
           "name": "Authorization",
@@ -375,34 +429,425 @@
           "name": "propertyId",
           "in": "path",
           "required": true,
-          "description": "property id.",
+          "description": "property id in which we want to create an inspection for.",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Inspection"
+        ],
+        "parameters": [
+          {
+            "name": "inspection",
+            "in": "body",
+            "description": "inspection details that are needed for new inspection for a property.",
+            "required": [
+              "template",
+              "property"
+            ],
+            "properties": {
+              "template": {
+                "type": "string",
+                "description": "template details."
+              },
+              "property": {
+                "type": "string",
+                "description": "property details."
+              }
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/CREATEINSPECTION"
+            }
+          }
+        }
+      }
+    },
+    "/v0/properties/{propertyId}/yardi/residents": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "propertyId",
+          "in": "path",
+          "required": true,
+          "description": "property id in which we want to edit a bid assigned to a job.",
+          "type": "string"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Property"
+        ],
+        "description": "Fetch all residents from the propertyId",
+        "responses": {
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "407": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/RESIDENTS"
+            }
+          }
+        }
+      }
+    },
+    "/v0/properties": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Property"
+        ],
+        "description": "Creating a new property",
+        "parameters": [
+          {
+            "name": "property",
+            "in": "body",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "team": {
+                "type": "string"
+              },
+              "templates": {
+                "type": "object"
+              },
+              "num_of_units": {
+                "type": "number"
+              },
+              "name": {
+                "type": "string"
+              },
+              "loan_type": {
+                "type": "string"
+              },
+              "maint_super_name": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "addr2": {
+                "type": "string"
+              },
+              "city": {
+                "type": "string"
+              },
+              "addr1": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string"
+              },
+              "manager_name": {
+                "type": "string"
+              },
+              "zip": {
+                "type": "string"
+              },
+              "photoURL": {
+                "type": "string"
+              },
+              "logoURL": {
+                "type": "string"
+              },
+              "year_built": {
+                "type": "number"
+              },
+              "slackChannel": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/PROPERTY"
+            }
+          }
+        }
+      }
+    },
+    "/v0/properties/{propertyId}/yardi/work-orders": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "propertyId",
+          "in": "path",
+          "required": true,
+          "description": "property id in which we want to get worker orders.",
+          "type": "string"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Property"
+        ],
+        "responses": {
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "407": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/WORKORDER"
+            }
+          }
+        }
+      }
+    },
+    "/v0/properties/{propertyId}": {
+      "parameters": [
+        {
+          "name": "propertyId",
+          "in": "path",
+          "required": true,
+          "description": "property id in which we want to edit a property.",
+          "type": "string"
+        },
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "put": {
+        "tags": [
+          "Property"
+        ],
+        "parameters": [
+          {
+            "name": "property",
+            "in": "body",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "team": {
+                "type": "string"
+              },
+              "templates": {
+                "type": "object"
+              },
+              "num_of_units": {
+                "type": "number"
+              },
+              "name": {
+                "type": "string"
+              },
+              "loan_type": {
+                "type": "string"
+              },
+              "maint_super_name": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "addr2": {
+                "type": "string"
+              },
+              "city": {
+                "type": "string"
+              },
+              "addr1": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string"
+              },
+              "manager_name": {
+                "type": "string"
+              },
+              "zip": {
+                "type": "string"
+              },
+              "photoURL": {
+                "type": "string"
+              },
+              "logoURL": {
+                "type": "string"
+              },
+              "year_built": {
+                "type": "number"
+              },
+              "slackChannel": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success for creating property api",
+            "schema": {
+              "$ref": "#/definitions/PROPERTY"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/properties/{propertyId}/jobs/{jobId}/trello": {
+      "parameters": [
+        {
+          "name": "propertyId",
+          "in": "path",
+          "required": true,
+          "description": "property id in which we want to edit a property.",
           "type": "string"
         },
         {
           "name": "jobId",
           "in": "path",
           "required": true,
-          "description": "job id.",
+          "description": "job id in which we want to create a trello card.",
+          "type": "string"
+        },
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
           "type": "string"
         }
       ],
       "post": {
-        "tags": ["Jobs"],
-        "parameters": [],
+        "tags": [
+          "Property"
+        ],
+        "parameters": [
+          {
+            "name": "property",
+            "in": "body",
+            "required": [],
+            "properties": {}
+          }
+        ],
         "responses": {
           "201": {
+            "description": "Success for creating trello card.",
             "schema": {
-              "$ref": "#/definitions/TRELLO_SUCCESS"
-            }
-          },
-          "404": {
-            "schema": {
-              "$ref": "#/definitions/BadStatus404"
+              "$ref": "#/definitions/TRELLO"
             }
           },
           "409": {
             "schema": {
-              "$ref": "#/definitions/BadStatus409"
+              "$ref": "#/definitions/BADSTATUS409"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
             }
           },
           "500": {
@@ -415,7 +860,7 @@
     }
   },
   "definitions": {
-    "jobs": {
+    "JOBS": {
       "type": "object",
       "properties": {
         "data": {
@@ -457,15 +902,26 @@
               }
             },
             "relationships": {
-              "schema": {
-                "$ref": "#/definitions/property"
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  }
+                }
               }
             }
           }
         }
       }
     },
-    "property": {
+    "PROPERTY": {
       "type": "object",
       "properties": {
         "data": {
@@ -476,12 +932,71 @@
             },
             "type": {
               "type": "string"
+            },
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "team": {
+                  "type": "string"
+                },
+                "templates": {
+                  "type": "object"
+                },
+                "num_of_units": {
+                  "type": "number"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "loan_type": {
+                  "type": "string"
+                },
+                "maint_super_name": {
+                  "type": "string"
+                },
+                "state": {
+                  "type": "string"
+                },
+                "addr2": {
+                  "type": "string"
+                },
+                "city": {
+                  "type": "string"
+                },
+                "addr1": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "manager_name": {
+                  "type": "string"
+                },
+                "zip": {
+                  "type": "string"
+                },
+                "photoURL": {
+                  "type": "string"
+                },
+                "logoURL": {
+                  "type": "string"
+                },
+                "year_built": {
+                  "type": "number"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "slackChannel": {
+                  "type": "string"
+                }
+              }
             }
           }
         }
       }
     },
-    "BadStatus400": {
+    "BADSTATUS400": {
       "type": "object",
       "properties": {
         "errors": {
@@ -508,7 +1023,7 @@
         }
       }
     },
-    "BadStatus404": {
+    "BADSTATUS404": {
       "type": "object",
       "properties": {
         "errors": {
@@ -522,7 +1037,11 @@
                   "pointer": {
                     "type": "string"
                   },
-                  "enum": ["property", "job", "bid"]
+                  "enum": [
+                    "property",
+                    "job",
+                    "bid"
+                  ]
                 }
               },
               "title": {
@@ -533,7 +1052,7 @@
         }
       }
     },
-    "BadStatus409": {
+    "BADSTATUS409": {
       "type": "object",
       "properties": {
         "errors": {
@@ -571,7 +1090,10 @@
                   "pointer": {
                     "type": "string"
                   },
-                  "enum": ["authorizedRules", "state"]
+                  "enum": [
+                    "authorizedRules",
+                    "state"
+                  ]
                 }
               },
               "detail": {
@@ -598,7 +1120,193 @@
         }
       }
     },
-    "TRELLO_SUCCESS": {
+    "CREATEINSPECTION": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "property": {
+              "type": "string"
+            },
+            "template": {
+              "type": "object",
+              "properties": {
+                "category": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "requireDeficientItemNoteAndPhoto": {
+                  "type": "boolean"
+                },
+                "trackDeficientItems": {
+                  "type": "boolean"
+                },
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "properties": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "sections": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              }
+            },
+            "templateId": {
+              "type": "string"
+            },
+            "inspectorName": {
+              "type": "string"
+            },
+            "inspector": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "RESIDENTS": {
+      "type": "object",
+      "properties": {
+        "meta": {
+          "type": "object",
+          "properties": {}
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {}
+              },
+              "relationships": {
+                "type": "object",
+                "properties": {
+                  "occupants": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "array",
+                        "items": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "included": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {}
+              },
+              "relationships": {
+                "type": "object",
+                "properties": {
+                  "resident": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "object"
+                          },
+                          "type": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "WORKORDER": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {}
+              },
+              "relationships": {
+                "type": "object",
+                "properties": {
+                  "resident": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "TRELLO": {
       "type": "object",
       "properties": {
         "data": {
@@ -613,11 +1321,11 @@
             "attributes": {
               "type": "object",
               "properties": {
-                "trelloCardURL": {
-                  "type": "string"
-                },
                 "updatedAt": {
                   "type": "number"
+                },
+                "trelloCardURL": {
+                  "type": "string"
                 }
               }
             }
