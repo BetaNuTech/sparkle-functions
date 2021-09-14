@@ -16,7 +16,7 @@
     "no-plusplus": "off",
     "no-param-reassign": "off",
     "import/no-extraneous-dependencies": "off",
-    "consistent-return":"off",
+    "consistent-return": "off",
     "no-use-before-define": "off",
     "no-underscore-dangle": "off",
     "prefer-destructuring": "off"

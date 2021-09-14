@@ -1,4 +1,5 @@
 const { expect } = require('chai');
+const config = require('../../config');
 const containInvalidAttr = require('../utils/does-contain-invalid-bid-update-attr');
 
 describe('Jobs | Utils | Does Bid Update Contain Invalid Attr', () => {
@@ -14,6 +15,7 @@ describe('Jobs | Utils | Does Bid Update Contain Invalid Attr', () => {
 
     const actual = containInvalidAttr({
       state: 'approved',
+      scope: config.bids.scopeTypes[0],
       completeAt: 123,
       startAt: 1,
     });

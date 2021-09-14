@@ -3,15 +3,16 @@
   "description": "Cloud Functions for Firebase",
   "scripts": {
     "test": "npm run test-unit && npm run test-int",
-    "test-unit": "NODE_ENV=test LOG_LEVEL=crit ./node_modules/.bin/mocha './{,!(node_modules)/**}/*.spec.js'",
+    "test-unit": "NODE_ENV=test LOG_LEVEL=crit npx mocha './{,!(node_modules)/**}/*.spec.js'",
     "unit-test": "npm run test-unit",
-    "test-e2e": "NODE_ENV=test LOG_LEVEL=crit ./node_modules/.bin/mocha './{,!(node_modules)/**}/test/end-to-end/**/*.test.js'",
+    "test-e2e": "NODE_ENV=test LOG_LEVEL=crit npx mocha './{,!(node_modules)/**}/test/end-to-end/**/*.test.js'",
     "end-to-end-test": "npm run test-e2e",
-    "test-int": "NODE_ENV=test LOG_LEVEL=crit ./node_modules/.bin/mocha './{,!(node_modules)/**}/test/integration/**/*.test.js'",
+    "test-int": "NODE_ENV=test LOG_LEVEL=crit npx mocha './{,!(node_modules)/**}/test/integration/**/*.test.js'",
     "integration-test": "npm run test-int",
-    "dev-test": "./node_modules/.bin/nodemon -i node_modules -e js,json --exec 'npm test --silent'",
-    "dev": "./node_modules/.bin/nodemon -i node_modules -e js,json --exec 'node ./scripts/api-server.js'",
-    "coverage": "./node_modules/.bin/nyc npm test --silent"
+    "dev-test": "npx nodemon -i node_modules -e js,json --exec 'npm test --silent'",
+    "dev": "npx nodemon -i node_modules -e js,json --exec 'node ./scripts/api-server.js'",
+    "coverage": "npx nyc npm test --silent",
+    "lint": "npx eslint --ignore-pattern '*/node_modules/*' --ext js,ts ."
   },
   "engines": {
     "node": "10"
