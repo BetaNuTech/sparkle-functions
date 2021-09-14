@@ -26,7 +26,7 @@ module.exports = function createPutProperty(fs) {
    */
   return async (req, res) => {
     const { params, body = {} } = req;
-    const authorName = getFullName(req.user);
+    const authorName = getFullName(req.user || {});
     const authorEmail = req.user ? req.user.email : '';
     const { propertyId } = params;
     const update = body;

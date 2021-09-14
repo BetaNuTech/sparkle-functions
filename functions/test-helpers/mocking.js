@@ -508,5 +508,18 @@ module.exports = {
     };
   },
 
+  /**
+   * Create a minimal template
+   * @param  {Object} tmplConfig
+   * @return {Object}
+   */
+  createTemplate(tmplConfig = {}) {
+    return {
+      name: 'test',
+      description: 'description',
+      ...tmplConfig,
+    };
+  },
+
   nowUnix,
 };
