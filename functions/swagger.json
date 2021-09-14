@@ -21,23 +21,21 @@
       "description": "API for bids"
     },
     {
+      "name": "Integrations",
+      "description": "API for integrations"
+    },
+    {
       "name": "Property",
-      "description": "API for property"
+      "description": "API for properties"
     },
     {
       "name": "Inspection",
-      "description": "Api for inspection"
+      "description": "API for inspections"
     }
   ],
-  "schemes": [
-    "http"
-  ],
-  "consumes": [
-    "application/json"
-  ],
-  "produces": [
-    "application/vnd.api+json"
-  ],
+  "schemes": ["http"],
+  "consumes": ["application/json"],
+  "produces": ["application/vnd.api+json"],
   "paths": {
     "/v0/properties/{propertyId}/jobs": {
       "parameters": [
@@ -57,19 +55,14 @@
         }
       ],
       "post": {
-        "tags": [
-          "Jobs"
-        ],
+        "tags": ["Jobs"],
         "summary": "Creating a new job inside a property using the property id.",
         "parameters": [
           {
             "name": "job",
             "in": "body",
             "description": "job details",
-            "required": [
-              "title",
-              "type"
-            ],
+            "required": ["title", "type"],
             "properties": {
               "title": {
                 "type": "string"
@@ -79,10 +72,7 @@
               },
               "type": {
                 "type": "string",
-                "enum": [
-                  "improvement",
-                  "maintenance"
-                ],
+                "enum": ["improvement", "maintenance"],
                 "default": "improvement"
               },
               "scopeOfWork": {
@@ -146,18 +136,13 @@
         }
       ],
       "put": {
-        "tags": [
-          "Jobs"
-        ],
+        "tags": ["Jobs"],
         "parameters": [
           {
             "name": "job",
             "in": "body",
             "description": "job details that needs to be updated",
-            "required": [
-              "title",
-              "type"
-            ],
+            "required": ["title", "type"],
             "properties": {
               "title": {
                 "type": "string"
@@ -167,10 +152,7 @@
               },
               "type": {
                 "type": "string",
-                "enum": [
-                  "improvement",
-                  "maintenance"
-                ],
+                "enum": ["improvement", "maintenance"],
                 "default": "improvement"
               },
               "scopeOfWork": {
@@ -247,9 +229,7 @@
         }
       ],
       "put": {
-        "tags": [
-          "Bids"
-        ],
+        "tags": ["Bids"],
         "parameters": [
           {
             "name": "bid",
@@ -344,9 +324,7 @@
         }
       ],
       "post": {
-        "tags": [
-          "Bids"
-        ],
+        "tags": ["Bids"],
         "parameters": [
           {
             "name": "bid",
@@ -434,18 +412,13 @@
         }
       ],
       "post": {
-        "tags": [
-          "Inspection"
-        ],
+        "tags": ["Inspection"],
         "parameters": [
           {
             "name": "inspection",
             "in": "body",
             "description": "inspection details that are needed for new inspection for a property.",
-            "required": [
-              "template",
-              "property"
-            ],
+            "required": ["template", "property"],
             "properties": {
               "template": {
                 "type": "string",
@@ -505,9 +478,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Property"
-        ],
+        "tags": ["Property"],
         "description": "Fetch all residents from the propertyId",
         "responses": {
           "404": {
@@ -544,17 +515,13 @@
         }
       ],
       "post": {
-        "tags": [
-          "Property"
-        ],
+        "tags": ["Property"],
         "description": "Creating a new property",
         "parameters": [
           {
             "name": "property",
             "in": "body",
-            "required": [
-              "name"
-            ],
+            "required": ["name"],
             "properties": {
               "team": {
                 "type": "string"
@@ -647,9 +614,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Property"
-        ],
+        "tags": ["Property"],
         "responses": {
           "404": {
             "schema": {
@@ -697,16 +662,12 @@
         }
       ],
       "put": {
-        "tags": [
-          "Property"
-        ],
+        "tags": ["Property"],
         "parameters": [
           {
             "name": "property",
             "in": "body",
-            "required": [
-              "name"
-            ],
+            "required": ["name"],
             "properties": {
               "team": {
                 "type": "string"
@@ -817,9 +778,7 @@
         }
       ],
       "post": {
-        "tags": [
-          "Property"
-        ],
+        "tags": ["Property"],
         "parameters": [
           {
             "name": "property",
@@ -853,6 +812,296 @@
           "500": {
             "schema": {
               "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/integrations/slack/authorization": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": ["Integrations"],
+        "parameters": [
+          {
+            "name": "integration",
+            "in": "body",
+            "description": "Intregration payload.",
+            "required": ["slackCode", "redirectUri"],
+            "properties": {
+              "slackCode": {
+                "type": "string"
+              },
+              "redirectUri": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/INTEGRATIONSUCCESS"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/integrations/slack/authorization/": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "tags": ["Integrations"],
+        "parameters": [
+          {
+            "name": "integration",
+            "in": "body",
+            "description": "Intregration payload.",
+            "required": [],
+            "properties": {}
+          }
+        ],
+        "responses": {
+          "204": {},
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/integrations/slack/events": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": ["Integrations"],
+        "parameters": [
+          {
+            "name": "integration",
+            "in": "body",
+            "description": "Intregration Event payload.",
+            "required": [],
+            "properties": {
+              "team_id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "event": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string"
+                  }
+                }
+              },
+              "challenge": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/CHALLENGE"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/integrations/trello/authorization": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": ["Integrations"],
+        "parameters": [
+          {
+            "name": "integration",
+            "in": "body",
+            "description": "Intregration trello payload.",
+            "required": ["apiKey", "authToken"],
+            "properties": {
+              "apiKey": {
+                "type": "string"
+              },
+              "authToken": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/INTEGRATIONSUCCESS"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/integrations/trello/authorization/": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "tags": ["Integrations"],
+        "parameters": [
+          {
+            "name": "integration",
+            "in": "body",
+            "description": "Intregration trello delete payload.",
+            "required": [],
+            "properties": {}
+          }
+        ],
+        "responses": {
+          "204": {
+            "type": "object"
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/integrations/trello/boards": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "get": {
+        "tags": ["Integrations"],
+        "responses": {
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/TRELLOBOARD"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/integrations/trello/boards/{boardId}/lists": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "boardId",
+          "in": "header",
+          "required": true,
+          "description": "board id.",
+          "type": "string"
+        }
+      ],
+      "get": {
+        "tags": ["Integrations"],
+        "responses": {
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/TRELLOBOARDLIST"
             }
           }
         }
@@ -1037,11 +1286,7 @@
                   "pointer": {
                     "type": "string"
                   },
-                  "enum": [
-                    "property",
-                    "job",
-                    "bid"
-                  ]
+                  "enum": ["property", "job", "bid"]
                 }
               },
               "title": {
@@ -1090,10 +1335,7 @@
                   "pointer": {
                     "type": "string"
                   },
-                  "enum": [
-                    "authorizedRules",
-                    "state"
-                  ]
+                  "enum": ["authorizedRules", "state"]
                 }
               },
               "detail": {
@@ -1326,6 +1568,205 @@
                 },
                 "trelloCardURL": {
                   "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "INTEGRATIONSUCCESS": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "grantedBy": {
+                  "type": "string"
+                },
+                "team": {
+                  "type": "string"
+                },
+                "teamName": {
+                  "type": "string"
+                },
+                "createdAt": {
+                  "type": "number"
+                },
+                "member": {
+                  "type": "string"
+                },
+                "trelloFullName": {
+                  "type": "string"
+                },
+                "trelloUsername": {
+                  "type": "string"
+                },
+                "closedBoard": {
+                  "type": "string"
+                },
+                "closedBoardName": {
+                  "type": "string"
+                },
+                "closedList": {
+                  "type": "string"
+                },
+                "closedListName": {
+                  "type": "string"
+                },
+                "openBoard": {
+                  "type": "string"
+                },
+                "openBoardName": {
+                  "type": "string"
+                },
+                "openList": {
+                  "type": "string"
+                },
+                "openListName": {
+                  "type": "string"
+                },
+                "yardiEntity": {
+                  "type": "string"
+                },
+                "yardiUserName": {
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "CHALLENGE": {
+      "type": "object",
+      "properties": {
+        "challenge": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "TRELLOBOARD": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              },
+              "relationships": {
+                "type": "object",
+                "properties": {
+                  "trelloOrganization": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "included": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "TRELLOBOARDLIST": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              },
+              "relationships": {
+                "type": "object",
+                "properties": {
+                  "board": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string"
+                      }
+                    }
+                  }
                 }
               }
             }
