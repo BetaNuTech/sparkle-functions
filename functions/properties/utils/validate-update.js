@@ -95,5 +95,6 @@ const propertySchema = new Schema({
  */
 module.exports = propertyUpdate => {
   assert(propertyUpdate && typeof propertyUpdate, 'has property update');
-  return propertySchema.validate(propertyUpdate);
+  const clone = JSON.parse(JSON.stringify(propertyUpdate));
+  return propertySchema.validate(clone);
 };
