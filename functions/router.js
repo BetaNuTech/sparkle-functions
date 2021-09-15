@@ -31,7 +31,7 @@ module.exports = (fs, auth, settings) => {
   const app = express();
   const { inspectionUrl } = settings;
   app.use(bodyParser.json(), cors({ origin: true, credentials: true }));
-  swaggerDocument.host = `localhost:${process.env.PORT || 6000}`
+  swaggerDocument.host = `localhost:${process.env.PORT || 6000}`;
   // API documentation
   app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
