@@ -25,7 +25,7 @@ describe('Users | API | PATCH', () => {
       const { body } = requests[i];
 
       await request(app)
-        .patch('/t')
+        .patch('/t/1')
         .send(body)
         .expect('Content-Type', /json/)
         .expect(400)
@@ -35,85 +35,68 @@ describe('Users | API | PATCH', () => {
     }
   });
 
-  it('rejects request from non super admin to update another super admin', done => {
+  it('rejects request from non super admin to update another super admin', async () => {
     // Stup auth requests
-    sinon.stub(usersModel, 'getCustomClaims').resolves({});
+    sinon.stub(usersModel, 'hasUpdatePermission').resolves(false);
     sinon.stub(usersModel, 'upsertCustomClaims').callsFake(() => {
       expect(true).to.equal(false, 'should not be called');
     });
 
-    request(createApp())
-      .patch('/t')
+    const res = await request(createApp())
+      .patch('/t/1')
       .send({ superAdmin: true })
       .expect('Content-Type', /json/)
-      .expect(401)
-      .then(res => {
-        expect(res.body.errors[0].detail).to.contain('do not have permission');
-        done();
-      })
-      .catch(done);
+      .expect(401);
+
+    expect(res.body.errors[0].detail).to.contain('do not have permission');
   });
 
-  it('rejects request from non admin to update another admin', done => {
+  it('rejects request from non admin to update another admin', async () => {
     // Stup auth requests
-    sinon.stub(usersModel, 'getCustomClaims').resolves({});
+    sinon.stub(usersModel, 'hasUpdatePermission').resolves(false);
     sinon.stub(usersModel, 'upsertCustomClaims').callsFake(() => {
       expect(true).to.equal(false, 'should not be called');
     });
 
-    request(createApp())
-      .patch('/t')
+    const res = await request(createApp())
+      .patch('/t/1')
       .send({ admin: true })
       .expect('Content-Type', /json/)
-      .expect(401)
-      .then(res => {
-        expect(res.body.errors[0].detail).to.contain('do not have permission');
-        done();
-      })
-      .catch(done);
+      .expect(401);
+
+    expect(res.body.errors[0].detail).to.contain('do not have permission');
   });
 
-  it('rejects request to create a corporate/admin user', done => {
-    request(createApp())
-      .patch('/t')
+  it('rejects request to create a corporate/admin user', async () => {
+    const res = await request(createApp())
+      .patch('/t/1')
       .send({ admin: true, corporate: true })
       .expect('Content-Type', /json/)
-      .expect(400)
-      .then(res => {
-        expect(res.body.errors[0].detail).to.contain('corporate admin');
-        done();
-      })
-      .catch(done);
+      .expect(400);
+
+    expect(res.body.errors[0].detail).to.contain('corporate admin');
   });
 
-  it('rejects request to update a non-existent user', done => {
+  it('rejects request to update a non-existent user', async () => {
     sinon.stub(usersModel, 'hasUpdatePermission').resolves(true);
     sinon.stub(usersModel, 'getAuthUser').resolves(null);
 
-    request(createApp())
-      .patch('/t')
+    const res = await request(createApp())
+      .patch('/t/1')
       .send({ admin: true })
       .expect('Content-Type', /json/)
-      .expect(404)
-      .then(res => {
-        expect(res.body.errors[0].detail).to.contain('does not exist');
-        done();
-      })
-      .catch(done);
+      .expect(404);
+
+    expect(res.body.errors[0].detail).to.contain('does not exist');
   });
 
-  it('allows setting the requested user as a super admin', done => {
+  it('allows setting the requested user as a super admin', async () => {
     // Stup auth requests
+    sinon.stub(usersModel, 'hasUpdatePermission').resolves(true);
     sinon.stub(usersModel, 'getAuthUser').resolves({});
     sinon
       .stub(usersModel, 'firestoreFindRecord')
       .resolves(createFirestoreSnap('1', { email: 'test' }));
-    sinon
-      .stub(usersModel, 'getCustomClaims')
-      .onFirstCall()
-      .resolves({ superAdmin: true }) // requestor's
-      .onSecondCall()
-      .resolves({});
     const setClaims = sinon.stub(usersModel, 'upsertCustomClaims').resolves();
     const setDisabled = sinon
       .stub(usersModel, 'setAuthUserDisabled')
@@ -122,35 +105,21 @@ describe('Users | API | PATCH', () => {
       .stub(usersModel, 'firestoreUpsertRecord')
       .resolves();
 
-    request(createApp())
-      .patch('/t')
+    await request(createApp())
+      .patch('/t/1')
       .send({ superAdmin: true })
       .expect('Content-Type', /json/)
-      .expect(200)
-      .then(() => {
-        expect(setClaims.called).to.equal(true, 'updated custom claim');
-        expect(userUpdate.called).to.equal(
-          false,
-          'does not update user record'
-        );
-        expect(setDisabled.called).to.equal(
-          false,
-          'did not update auth disabled'
-        );
-        done();
-      })
-      .catch(done);
+      .expect(200);
+
+    expect(setClaims.called).to.equal(true, 'updated custom claim');
+    expect(userUpdate.called).to.equal(false, 'does not update user record');
+    expect(setDisabled.called).to.equal(false, 'did not update auth disabled');
   });
 
-  it('allows setting the requested user as an admin', done => {
+  it('allows setting the requested user as an admin', async () => {
     // Stup auth requests
+    sinon.stub(usersModel, 'hasUpdatePermission').resolves(true);
     sinon.stub(usersModel, 'getAuthUser').resolves({});
-    sinon
-      .stub(usersModel, 'getCustomClaims')
-      .onFirstCall()
-      .resolves({ admin: true }) // requestor's
-      .onSecondCall()
-      .resolves({});
     sinon
       .stub(usersModel, 'firestoreFindRecord')
       .resolves(createFirestoreSnap('2', { email: 'test' }));
@@ -162,32 +131,30 @@ describe('Users | API | PATCH', () => {
       .stub(usersModel, 'firestoreUpsertRecord')
       .resolves();
 
-    request(createApp())
-      .patch('/t')
+    await request(createApp())
+      .patch('/t/1')
       .send({ admin: true })
       .expect('Content-Type', /json/)
-      .expect(200)
-      .then(() => {
-        expect(setClaims.called).to.equal(true, 'updated custom claim');
-        expect(userUpdate.called).to.equal(true, 'updated user record');
-        expect(setDisabled.called).to.equal(
-          false,
-          'did not update auth disabled'
-        );
-        done();
-      })
-      .catch(done);
+      .expect(200);
+
+    const userDbUpdates = (userUpdate.args || [[]])[0][2] || {};
+    const actualPropertiesUpdate = userDbUpdates.properties || null;
+    expect(setClaims.called).to.equal(true, 'updated custom claim');
+    expect(userUpdate.called).to.equal(true, 'updated user record');
+    if (userUpdate.called) {
+      expect(actualPropertiesUpdate).to.deep.equal(
+        {},
+        'removed admin user properties'
+      );
+    }
+
+    expect(setDisabled.called).to.equal(false, 'did not update auth disabled');
   });
 
-  it('allows setting the requested user as a corporate', done => {
+  it('allows setting the requested user as a corporate', async () => {
     // Stup auth requests
+    sinon.stub(usersModel, 'hasUpdatePermission').resolves(true);
     sinon.stub(usersModel, 'getAuthUser').resolves({});
-    sinon
-      .stub(usersModel, 'getCustomClaims')
-      .onFirstCall()
-      .resolves({ admin: true }) // requestor's
-      .onSecondCall()
-      .resolves({});
     sinon
       .stub(usersModel, 'firestoreFindRecord')
       .resolves(createFirestoreSnap('3', { email: 'test' }));
@@ -199,32 +166,29 @@ describe('Users | API | PATCH', () => {
       .stub(usersModel, 'firestoreUpsertRecord')
       .resolves();
 
-    request(createApp())
-      .patch('/t')
+    await request(createApp())
+      .patch('/t/1')
       .send({ corporate: true })
       .expect('Content-Type', /json/)
-      .expect(200)
-      .then(() => {
-        expect(setClaims.called).to.equal(true, 'updated custom claim');
-        expect(userUpdate.called).to.equal(true, 'updated user record');
-        expect(setDisabled.called).to.equal(
-          false,
-          'did not update auth disabled'
-        );
-        done();
-      })
-      .catch(done);
+      .expect(200);
+
+    const userDbUpdates = (userUpdate.args || [[]])[0][2] || {};
+    const actualPropertiesUpdate = userDbUpdates.properties || null;
+    expect(setClaims.called).to.equal(true, 'updated custom claim');
+    expect(userUpdate.called).to.equal(true, 'updated user record');
+    if (userUpdate.called) {
+      expect(actualPropertiesUpdate).to.deep.equal(
+        {},
+        'removed corporate user properties'
+      );
+    }
+    expect(setDisabled.called).to.equal(false, 'did not update auth disabled');
   });
 
-  it('allows admins to disable a user', done => {
+  it('allows admins to disable a user', async () => {
     // Stup auth requests
+    sinon.stub(usersModel, 'hasUpdatePermission').resolves(true);
     sinon.stub(usersModel, 'getAuthUser').resolves({});
-    sinon
-      .stub(usersModel, 'getCustomClaims')
-      .onFirstCall()
-      .resolves({ admin: true }) // requestor's
-      .onSecondCall()
-      .resolves({});
     sinon
       .stub(usersModel, 'firestoreFindRecord')
       .resolves(createFirestoreSnap('3', { email: 'test' }));
@@ -236,29 +200,21 @@ describe('Users | API | PATCH', () => {
       .stub(usersModel, 'firestoreUpsertRecord')
       .resolves();
 
-    request(createApp())
-      .patch('/t')
+    await request(createApp())
+      .patch('/t/1')
       .send({ isDisabled: true })
       .expect('Content-Type', /json/)
-      .expect(200)
-      .then(() => {
-        expect(setClaims.called).to.equal(false, 'did not update custom claim');
-        expect(setDisabled.called).to.equal(true, 'updated user auth disabled');
-        expect(userUpdate.called).to.equal(true, 'updated user record');
-        done();
-      })
-      .catch(done);
+      .expect(200);
+
+    expect(setClaims.called).to.equal(false, 'did not update custom claim');
+    expect(setDisabled.called).to.equal(true, 'updated user auth disabled');
+    expect(userUpdate.called).to.equal(true, 'updated user record');
   });
 
-  it('allows removing all users teams', done => {
+  it('allows removing all users teams', async () => {
     // Stup auth requests
+    sinon.stub(usersModel, 'hasUpdatePermission').resolves(true);
     sinon.stub(usersModel, 'getAuthUser').resolves({});
-    sinon
-      .stub(usersModel, 'getCustomClaims')
-      .onFirstCall()
-      .resolves({ admin: true }) // requestor's
-      .onSecondCall()
-      .resolves({});
     sinon
       .stub(usersModel, 'firestoreFindRecord')
       .resolves(createFirestoreSnap('3', { email: 'test' }));
@@ -269,19 +225,16 @@ describe('Users | API | PATCH', () => {
         return Promise.resolve();
       });
 
-    request(createApp())
-      .patch('/t')
+    await request(createApp())
+      .patch('/t/1')
       .send({ teams: null })
       .expect('Content-Type', /json/)
-      .expect(200)
-      .then(() => {
-        expect(userUpdate.called).to.equal(true, 'updated user record');
-        done();
-      })
-      .catch(done);
+      .expect(200);
+
+    expect(userUpdate.called).to.equal(true, 'updated user record');
   });
 
-  it('allows setting users teams', done => {
+  it('allows setting users teams', async () => {
     const teamId = '1';
     const property1Id = '2';
     const property2Id = '3';
@@ -293,13 +246,8 @@ describe('Users | API | PATCH', () => {
     };
 
     // Stup auth requests
+    sinon.stub(usersModel, 'hasUpdatePermission').resolves(true);
     sinon.stub(usersModel, 'getAuthUser').resolves({});
-    sinon
-      .stub(usersModel, 'getCustomClaims')
-      .onFirstCall()
-      .resolves({ admin: true }) // requestor's
-      .onSecondCall()
-      .resolves({});
     sinon
       .stub(usersModel, 'firestoreFindRecord')
       .resolves(createFirestoreSnap('4', { email: 'test' }));
@@ -321,27 +269,21 @@ describe('Users | API | PATCH', () => {
         return Promise.resolve();
       });
 
-    request(createApp())
-      .patch('/t')
+    await request(createApp())
+      .patch('/t/1')
       .send({ teams: { [teamId]: true } })
       .expect('Content-Type', /json/)
-      .expect(200)
-      .then(() => {
-        expect(getPropertyTeams.called).to.equal(
-          true,
-          'queried property teams'
-        );
-        expect(userUpdate.called).to.equal(true, 'updated user record');
-        done();
-      })
-      .catch(done);
+      .expect(200);
+
+    expect(getPropertyTeams.called).to.equal(true, 'queried property teams');
+    expect(userUpdate.called).to.equal(true, 'updated user record');
   });
 });
 
 function createApp() {
   const app = express();
   app.patch(
-    '/t',
+    '/t/:userId',
     bodyParser.json(),
     stubAuth,
     createPatchUser(
