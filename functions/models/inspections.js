@@ -4,10 +4,11 @@ const modelSetup = require('./utils/model-setup');
 const diModel = require('./deficient-items');
 const archiveModel = require('./_internal/archive');
 const itemUploads = require('../inspections/utils/item-uploads');
+const config = require('../config');
 
-const PREFIX = 'models: inspections:';
-const INSPECTION_COLLECTION = 'inspections';
-const PROPERTY_COLLECTION = 'properties';
+const INSPECTION_COLLECTION = config.models.collections.inspections;
+const PROPERTY_COLLECTION = config.models.collections.properties;
+const PREFIX = `models: ${INSPECTION_COLLECTION}:`;
 
 module.exports = modelSetup({
   /**
@@ -98,6 +99,16 @@ module.exports = modelSetup({
     }
 
     return batch.commit();
+  },
+
+  /**
+   * Create a firestore doc id for collection
+   * @param  {admin.firestore} db
+   * @return {string}
+   */
+  createId(db) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    return db.collection(INSPECTION_COLLECTION).doc().id;
   },
 
   /**

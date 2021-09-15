@@ -2,6 +2,7 @@ const assert = require('assert');
 const log = require('../../utils/logger');
 const propertiesModel = require('../../models/properties');
 const templatesModel = require('../../models/templates');
+const inspectionsModel = require('../../models/inspections');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
 const getFullName = require('../../utils/user');
 
@@ -25,7 +26,7 @@ module.exports = function post(fs) {
    */
   return async (req, res) => {
     const { body = {} } = req;
-    const { property: propertyId } = body;
+    const { propertyId } = req.params;
     const { template: templateId } = body;
     const user = req.user;
     const send500Error = create500ErrHandler(PREFIX, res);
@@ -34,15 +35,6 @@ module.exports = function post(fs) {
     // Set content type
     res.set('Content-Type', 'application/vnd.api+json');
     log.info('Create inspection requested');
-
-    // Missing property attribute
-    if (!propertyId) {
-      badReqPayload.errors.push({
-        source: { pointer: 'property' },
-        title: 'body missing "property" identifier',
-        detail: 'property is required',
-      });
-    }
 
     // Missing template attribute
     if (!templateId) {
@@ -108,23 +100,32 @@ module.exports = function post(fs) {
       });
     }
 
-    // generate and send inspection
-    let inspection = null;
+    // Assemble inspection
+    const inspectionId = inspectionsModel.createId();
+    const inspection = {
+      property: property.id,
+      template: JSON.parse(JSON.stringify(template)),
+      templateId: template.id,
+      inspectorName: getFullName(user),
+      inspector: user.id,
+    };
+
+    // Write inspection
     try {
-      inspection = {
-        property: property.id,
-        template: JSON.parse(JSON.stringify(template)),
-        templateId: template.id,
-        inspectorName: getFullName(user),
-        inspector: user.id,
-      };
+      await inspectionsModel.firestoreCreateRecord(
+        fs,
+        inspectionId,
+        inspection
+      );
     } catch (err) {
-      return send500Error(err, 'json parsing error', 'unexpected error');
+      return send500Error(err, 'inspection write failed', 'unexpected error');
     }
 
     res.status(201).send({
       data: {
-        inspection,
+        id: inspectionId,
+        type: 'inspection',
+        attributes: inspection,
       },
     });
   };

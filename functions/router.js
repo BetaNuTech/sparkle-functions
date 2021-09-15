@@ -15,6 +15,7 @@ const authUser = require('./utils/auth-firebase-user');
 const authUserCrud = require('./middleware/auth-user-crud');
 const authTrelloReq = require('./utils/auth-trello-request');
 const swaggerDocument = require('./swagger.json');
+const multer = require('./utils/multer');
 
 /**
  * Configure Express app with
@@ -22,9 +23,10 @@ const swaggerDocument = require('./swagger.json');
  * @param  {admin.firestore} fs - Firestore Admin DB instance
  * @param  {admin.auth} auth - Firebase Admin auth instance
  * @param  {Object} settings
+ * @param  {Object} storage
  * @return {Express}
  */
-module.exports = (fs, auth, settings) => {
+module.exports = (fs, auth, settings, storage) => {
   assert(Boolean(fs), 'has firestore database instance');
   assert(Boolean(auth), 'has firebase auth instance');
 
@@ -32,6 +34,7 @@ module.exports = (fs, auth, settings) => {
   const { inspectionUrl } = settings;
   app.use(bodyParser.json(), cors({ origin: true, credentials: true }));
   swaggerDocument.host = `localhost:${process.env.PORT || 6000}`;
+
   // API documentation
   app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
@@ -276,6 +279,14 @@ module.exports = (fs, auth, settings) => {
       property: true,
     }),
     jobs.api.postBid(fs)
+  );
+
+  // Request for uploading an image/logo to property
+  app.post(
+    '/v0/properties/:propertyId/uploadImage',
+    authUser(fs, auth),
+    multer.single('file'),
+    properties.api.uploadFile(fs, storage)
   );
 
   return app;
