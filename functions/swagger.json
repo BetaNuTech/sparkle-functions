@@ -418,15 +418,11 @@
             "name": "inspection",
             "in": "body",
             "description": "inspection details that are needed for new inspection for a property.",
-            "required": ["template", "property"],
+            "required": ["template"],
             "properties": {
               "template": {
                 "type": "string",
                 "description": "template details."
-              },
-              "property": {
-                "type": "string",
-                "description": "property details."
               }
             }
           }
@@ -1563,55 +1559,66 @@
         "data": {
           "type": "object",
           "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
             "property": {
               "type": "string"
             },
-            "template": {
+            "attributes": {
               "type": "object",
               "properties": {
-                "category": {
-                  "type": "string"
-                },
-                "description": {
-                  "type": "string"
-                },
-                "name": {
-                  "type": "string"
-                },
-                "requireDeficientItemNoteAndPhoto": {
-                  "type": "boolean"
-                },
-                "trackDeficientItems": {
-                  "type": "boolean"
-                },
-                "items": {
-                  "type": "array",
-                  "items": {
-                    "type": "object"
+                "template": {
+                  "type": "object",
+                  "properties": {
+                    "category": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "requireDeficientItemNoteAndPhoto": {
+                      "type": "boolean"
+                    },
+                    "trackDeficientItems": {
+                      "type": "boolean"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "properties": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "sections": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
                   }
                 },
-                "properties": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
+                "templateId": {
+                  "type": "string"
                 },
-                "sections": {
-                  "type": "array",
-                  "items": {
-                    "type": "object"
-                  }
+                "inspectorName": {
+                  "type": "string"
+                },
+                "inspector": {
+                  "type": "string"
                 }
               }
-            },
-            "templateId": {
-              "type": "string"
-            },
-            "inspectorName": {
-              "type": "string"
-            },
-            "inspector": {
-              "type": "string"
             }
           }
         }

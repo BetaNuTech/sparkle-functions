@@ -350,6 +350,26 @@ module.exports = modelSetup({
   },
 
   /**
+   * Uploading image to storage
+   * @param  {admin.storage} storage
+   * @param  {string} filePath, file path that need to be updated to storage
+   * @param {string} fileName, filename
+   * @return {Promise}
+   */
+  Upload(storage, filePath, fileName) {
+    assert(storage && typeof storage.bucket === 'function', 'has storage');
+    assert(filePath && typeof filePath === 'string', 'has file path string');
+
+    return storage
+      .bucket()
+      .upload(filePath, {
+        public: true,
+        destination: `${PROPERTY_BUCKET_NAME}/${fileName}`,
+        metadata: {},
+      })
+      .catch(err => Promise.reject(Error(`${PREFIX} upload: ${err}`)));
+  },
+  /**
    * Lookup Property's team relationships
    * @param  {admin.firestore} db - Firestore DB instance
    * @param  {firestore.transaction?} transaction
