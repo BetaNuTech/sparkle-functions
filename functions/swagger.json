@@ -1106,6 +1106,201 @@
           }
         }
       }
+    },
+    "/v0/inspections/{inspectionId}": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "inspectionId",
+          "in": "header",
+          "required": true,
+          "description": "inspection id.",
+          "type": "string"
+        }
+      ],
+      "patch": {
+        "tags": ["Inspection"],
+        "parameters": [
+          {
+            "name": "integration",
+            "in": "body",
+            "description": "Inspection patch property payload.",
+            "required": ["property"],
+            "properties": {
+              "property": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/RESPONSE"
+            }
+          },
+          "409": {
+            "schema": {
+              "$ref": "#/definitions/RESPONSE"
+            }
+          },
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/RESPONSE"
+            }
+          }
+        }
+      }
+    },
+    "/v0/inspections/{inspectionId}/report-pdf": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "inspectionId",
+          "in": "header",
+          "required": true,
+          "description": "inspection id.",
+          "type": "string"
+        }
+      ],
+      "patch": {
+        "tags": ["Inspection"],
+        "parameters": [
+          {
+            "name": "integration",
+            "in": "body",
+            "description": "Inspection report PDF update.",
+            "required": [],
+            "properties": {}
+          }
+        ],
+        "responses": {
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/REPORTPDFRESPONSE200"
+            }
+          },
+          "202": {
+            "schema": {
+              "$ref": "#/definitions/REPORTPDFRESPONSE"
+            }
+          }
+        }
+      }
+    },
+    "/v0/inspections/{inspection}/pdf-report": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "inspection",
+          "in": "header",
+          "required": true,
+          "description": "inspection id.",
+          "type": "string"
+        }
+      ],
+      "get": {
+        "tags": ["Integrations"],
+        "responses": {
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/PDFREPORTRESPONSE"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/RESPONSE"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/RESPONSE"
+            }
+          },
+          "304": {
+            "type": "object",
+            "properties": {}
+          }
+        }
+      }
+    },
+    "/v0/inspections/latest-completed": {
+      "parameters": [
+        {
+          "name": "before",
+          "in": "query",
+          "required": false,
+          "description": "before value.",
+          "type": "string"
+        },
+        {
+          "name": "propertyCode",
+          "in": "query",
+          "required": false,
+          "description": "propertyCode.",
+          "type": "string"
+        },
+        {
+          "name": "templateName",
+          "in": "query",
+          "required": false,
+          "description": "templateName.",
+          "type": "string"
+        }
+      ],
+      "get": {
+        "tags": ["Inspection"],
+        "responses": {
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/LATESTSUCCESS"
+            }
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -1766,6 +1961,169 @@
                         "type": "string"
                       }
                     }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "RESPONSE": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "REPORTPDFRESPONSE": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "inspectionReportStatus": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "REPORTPDFRESPONSE200": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "inspectionReportURL": {
+                  "type": "string"
+                },
+                "inspectionReportStatus": {
+                  "type": "string"
+                },
+                "inspectionReportUpdateLastDate": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "PDFREPORTRESPONSE": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        }
+      }
+    },
+    "PDFREPORTRESPONSE200": {
+      "type": "object",
+      "properties": {
+        "inspectionReportURL": {
+          "type": "string"
+        }
+      }
+    },
+    "LATESTSUCCESS": {
+      "type": "object",
+      "properties": {
+        "included": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "lastInspectionDate": {
+                    "type": "number"
+                  },
+                  "lastInspectionScore": {
+                    "type": "number"
+                  },
+                  "numOfInspections": {
+                    "type": "number"
+                  },
+                  "numOfDeficientItems": {
+                    "type": "number"
+                  },
+                  "numOfOverdueDeficientItems": {
+                    "type": "number"
+                  },
+                  "numOfRequiredActionsForDeficientItems": {
+                    "type": "number"
+                  },
+                  "numOfFollowUpActionsForDeficientItems": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "creationDate": {
+                    "type": "number"
+                  },
+                  "completionDate": {
+                    "type": "number"
+                  },
+                  "score": {
+                    "type": "string"
+                  },
+                  "templateName": {
+                    "type": "string"
+                  },
+                  "inspectionReportURL": {
+                    "type": "string"
+                  },
+                  "inspectionURL": {
+                    "type": "string"
                   }
                 }
               }
