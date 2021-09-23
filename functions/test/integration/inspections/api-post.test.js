@@ -96,9 +96,23 @@ describe('Inspections | API | POST', () => {
       items: {},
     };
     const inspection = {
+      templateId,
+      property: propertyId,
       template: { ...template },
       inspectorName: '',
       inspector: USER_ID,
+      totalItems: 1,
+      templateName: template.name,
+      itemsCompleted: 0,
+      inspectionCompleted: false,
+      completionDate: 0,
+      deficienciesExist: false,
+      score: 0,
+      createdAt: Math.floor(Date.now() / 1000),
+      creationDate: Math.floor(Date.now() / 1000),
+      updatedLastDate: Math.floor(Date.now() / 1000),
+      updatedAt: Math.floor(Date.now() / 1000),
+      templateCategory: '',
     };
     const property = mocking.createProperty();
     const expected = {

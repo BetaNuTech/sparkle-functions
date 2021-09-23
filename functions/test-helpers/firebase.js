@@ -136,7 +136,10 @@ module.exports = {
    */
   createQuerySnapshot(data = []) {
     assert(Array.isArray(data), 'has array');
-    assert(data.every(d => d && typeof d === 'object'), 'has array of objects');
+    assert(
+      data.every(d => d && typeof d === 'object'),
+      'has array of objects'
+    );
 
     const snap = {
       size: data.length,

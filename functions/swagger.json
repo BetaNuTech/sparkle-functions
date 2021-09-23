@@ -1589,22 +1589,16 @@
                     "trackDeficientItems": {
                       "type": "boolean"
                     },
+                    "sections": {
+                      "type": "object"
+                    },
                     "items": {
-                      "type": "array",
-                      "items": {
-                        "type": "object"
-                      }
+                      "type": "object"
                     },
                     "properties": {
                       "type": "array",
                       "items": {
                         "type": "string"
-                      }
-                    },
-                    "sections": {
-                      "type": "array",
-                      "items": {
-                        "type": "object"
                       }
                     }
                   }
@@ -1612,10 +1606,49 @@
                 "templateId": {
                   "type": "string"
                 },
+                "property": {
+                  "type": "string"
+                },
                 "inspectorName": {
                   "type": "string"
                 },
                 "inspector": {
+                  "type": "string"
+                },
+                "totalItems": {
+                  "type": "number"
+                },
+                "templateName": {
+                  "type": "string"
+                },
+                "itemsCompleted": {
+                  "type": "number"
+                },
+                "inspectionCompleted": {
+                  "type": "boolean"
+                },
+                "completionDate": {
+                  "type": "number"
+                },
+                "deficienciesExist": {
+                  "type": "boolean"
+                },
+                "score": {
+                  "type": "number"
+                },
+                "createdAt": {
+                  "type": "number"
+                },
+                "creationDate": {
+                  "type": "number"
+                },
+                "updatedLastDate": {
+                  "type": "number"
+                },
+                "updatedAt": {
+                  "type": "number"
+                },
+                "templateCategory": {
                   "type": "string"
                 }
               }

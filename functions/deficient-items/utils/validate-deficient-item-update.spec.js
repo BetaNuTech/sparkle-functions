@@ -119,7 +119,6 @@ describe('Deficient Items | Utils | Validate Deficient Item Update', function() 
       progressNote: 'note',
       currentDeferredDate: unixTime,
       currentReasonIncomplete: 'oops',
-      currentDeferredDate: unixTime,
       currentDeferredDateDay: '1/2/2025',
       currentCompleteNowReason: 'done',
       isDuplicate: true,

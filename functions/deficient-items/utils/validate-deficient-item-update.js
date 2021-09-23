@@ -32,9 +32,6 @@ const deficiencySchema = new Schema({
   currentReasonIncomplete: {
     type: String,
   },
-  currentDeferredDate: {
-    type: Number,
-  },
   currentDeferredDateDay: {
     type: String,
   },
