@@ -11,12 +11,11 @@ const PREFIX = 'inspection: api: post:';
 /**
  * Factory for creating a POST endpoint
  * that creates Firestore inspection
- * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
+ * @param  {firebaseAdmin.firestore} db - Firestore Admin DB instance
  * @return {Function} - onRequest handler
  */
-
-module.exports = function post(fs) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function post(db) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
 
   /**
    * Handle POST request
@@ -55,7 +54,7 @@ module.exports = function post(fs) {
     let property = null;
     try {
       const propertySnap = await propertiesModel.firestoreFindRecord(
-        fs,
+        db,
         propertyId
       );
       property = propertySnap.data() || null;
@@ -80,7 +79,7 @@ module.exports = function post(fs) {
     let template = null;
     try {
       const templateSnap = await templatesModel.firestoreFindRecord(
-        fs,
+        db,
         templateId
       );
       template = templateSnap.data() || null;
@@ -100,20 +99,34 @@ module.exports = function post(fs) {
       });
     }
 
-    // Assemble inspection
-    const inspectionId = inspectionsModel.createId();
-    const inspection = {
-      property: property.id,
-      template: JSON.parse(JSON.stringify(template)),
-      templateId: template.id,
-      inspectorName: getFullName(user),
-      inspector: user.id,
-    };
-
-    // Write inspection
+    let inspectionId = '';
+    let inspection = null;
     try {
+      // Assemble inspection
+      inspectionId = inspectionsModel.createId(db);
+      inspection = {
+        templateId,
+        property: propertyId,
+        template: JSON.parse(JSON.stringify(template)),
+        inspectorName: getFullName(user),
+        inspector: user.id,
+        totalItems: Object.keys(template.items || {}).length || 1,
+        templateName: template.name,
+        itemsCompleted: 0,
+        inspectionCompleted: false,
+        completionDate: 0,
+        deficienciesExist: false,
+        score: 0,
+        createdAt: Math.floor(Date.now() / 1000),
+        creationDate: Math.floor(Date.now() / 1000),
+        updatedLastDate: Math.floor(Date.now() / 1000),
+        updatedAt: Math.floor(Date.now() / 1000),
+        templateCategory: template.category || '',
+      };
+
+      // Write inspection
       await inspectionsModel.firestoreCreateRecord(
-        fs,
+        db,
         inspectionId,
         inspection
       );

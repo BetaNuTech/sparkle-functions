@@ -24,9 +24,10 @@ module.exports = {
       .forEach(attr => {
         const srcValue = src[attr];
         if (typeof srcValue === 'object') {
+          // eslint-disable-next-line
           return (updates[attr] = JSON.parse(JSON.stringify(srcValue)));
         }
-        return (updates[attr] = srcValue);
+        return (updates[attr] = srcValue); // eslint-disable-line
       });
 
     return updates;

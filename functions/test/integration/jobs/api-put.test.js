@@ -6,7 +6,6 @@ const sinon = require('sinon');
 const jobsModel = require('../../../models/jobs');
 const propertiesModel = require('../../../models/properties');
 const put = require('../../../jobs/api/put');
-const stubs = require('../../../test-helpers/stubs');
 const mocking = require('../../../test-helpers/mocking');
 const uuid = require('../../../test-helpers/uuid');
 const firebase = require('../../../test-helpers/firebase');
