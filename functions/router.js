@@ -3,6 +3,7 @@ const assert = require('assert');
 const express = require('express');
 const bodyParser = require('body-parser');
 const swaggerUi = require('swagger-ui-express');
+const fileUpload = require('express-fileupload');
 const slack = require('./slack');
 const trello = require('./trello');
 const deficiencies = require('./deficient-items');
@@ -15,7 +16,6 @@ const authUser = require('./utils/auth-firebase-user');
 const authUserCrud = require('./middleware/auth-user-crud');
 const authTrelloReq = require('./utils/auth-trello-request');
 const swaggerDocument = require('./swagger.json');
-const multer = require('./utils/multer');
 
 /**
  * Configure Express app with
@@ -33,7 +33,7 @@ module.exports = (fs, auth, settings, storage) => {
   const app = express();
   const { inspectionUrl } = settings;
   app.use(bodyParser.json(), cors({ origin: true, credentials: true }));
-  swaggerDocument.host = `localhost:${process.env.PORT || 6000}`;
+  swaggerDocument.host = process.env.FIREBASE_FUNCTIONS_DOMAIN;
 
   // API documentation
   app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
@@ -119,8 +119,19 @@ module.exports = (fs, auth, settings, storage) => {
     authUser(fs, auth, {
       admin: true,
       corporate: true,
-    }), // admin only
+    }),
     properties.api.put(fs)
+  );
+
+  // Upload an image/logo to property
+  app.post(
+    '/v0/properties/:propertyId/image',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+    }),
+    fileUpload(),
+    properties.api.postImage(fs, storage)
   );
 
   // Authorize Slack API credentials
@@ -279,14 +290,6 @@ module.exports = (fs, auth, settings, storage) => {
       property: true,
     }),
     jobs.api.postBid(fs)
-  );
-
-  // Request for uploading an image/logo to property
-  app.post(
-    '/v0/properties/:propertyId/uploadImage',
-    authUser(fs, auth),
-    multer.single('file'),
-    properties.api.uploadFile(fs, storage)
   );
 
   return app;

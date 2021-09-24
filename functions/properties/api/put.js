@@ -41,7 +41,6 @@ module.exports = function createPutProperty(fs) {
 
     // Set content type
     res.set('Content-Type', 'application/vnd.api+json');
-
     log.info('Update property requested');
 
     // Reject missing update request JSON
