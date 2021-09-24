@@ -6,7 +6,7 @@ const post = require('./api/post');
 const put = require('./api/put');
 const propertyCode = require('./middleware/property-code');
 const yardiIntegration = require('./middleware/yardi-integration');
-const uploadFile = require('./api/uploadFile');
+const postImage = require('./api/post-image');
 
 module.exports = {
   onDeleteWatcherV2,
@@ -16,7 +16,7 @@ module.exports = {
     getPropertyYardiWorkOrders,
     post,
     put,
-    uploadFile,
+    postImage,
   },
   middleware: { propertyCode, yardiIntegration },
 };

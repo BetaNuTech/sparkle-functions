@@ -1297,6 +1297,67 @@
           }
         }
       }
+    },
+    "/v0/properties/{propertyId}/image": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "propertyId",
+          "in": "path",
+          "required": true,
+          "description": "property id in which we want to upload an image.",
+          "type": "string"
+        },
+        {
+          "name": "target",
+          "in": "query",
+          "required": true,
+          "description": "flag mentioning type of image upload, logo or profile.",
+          "type": "string",
+          "enum": ["logo", "profile"]
+        }
+      ],
+      "post": {
+        "tags": ["Property"],
+        "consumes": ["multipart/form-data"],
+        "parameters": [
+          {
+            "name": "file",
+            "in": "formData",
+            "type": "file",
+            "required": true,
+            "description": "File that we need to upload to the property"
+          }
+        ],
+        "responses": {
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/PROPERTYIMGUPLOADSUCCESS"
+            }
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -2165,6 +2226,45 @@
                   "inspectionURL": {
                     "type": "string"
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "PROPERTYIMGUPLOADSUCCESS": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "logoURL": {
+                  "type": "string"
+                },
+                "logoName": {
+                  "type": "string"
+                },
+                "bannerPhotoURL": {
+                  "type": "string"
+                },
+                "bannerPhotoName": {
+                  "type": "string"
+                },
+                "photoURL": {
+                  "type": "string"
+                },
+                "photoName": {
+                  "type": "string"
                 }
               }
             }

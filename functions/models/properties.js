@@ -6,7 +6,6 @@ const modelSetup = require('./utils/model-setup');
 const defItemsModel = require('./deficient-items');
 const inspectionsModel = require('./inspections');
 const updateDeficientItemsAttrs = require('../properties/utils/update-deficient-items-attrs');
-
 const PREFIX = 'models: properties:';
 const PROPERTY_COLLECTION = modelsConfig.collections.properties;
 const PROPERTY_BUCKET_NAME = `propertyImages${
@@ -349,26 +348,6 @@ module.exports = modelSetup({
       .catch(err => Promise.reject(Error(`${PREFIX} deleteUpload: ${err}`)));
   },
 
-  /**
-   * Uploading image to storage
-   * @param  {admin.storage} storage
-   * @param  {string} filePath, file path that need to be updated to storage
-   * @param {string} fileName, filename
-   * @return {Promise}
-   */
-  Upload(storage, filePath, fileName) {
-    assert(storage && typeof storage.bucket === 'function', 'has storage');
-    assert(filePath && typeof filePath === 'string', 'has file path string');
-
-    return storage
-      .bucket()
-      .upload(filePath, {
-        public: true,
-        destination: `${PROPERTY_BUCKET_NAME}/${fileName}`,
-        metadata: {},
-      })
-      .catch(err => Promise.reject(Error(`${PREFIX} upload: ${err}`)));
-  },
   /**
    * Lookup Property's team relationships
    * @param  {admin.firestore} db - Firestore DB instance
