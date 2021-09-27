@@ -3,9 +3,13 @@ const log = require('../../utils/logger');
 const jobsModel = require('../../models/jobs');
 const propertiesModel = require('../../models/properties');
 const validate = require('../utils/validate-update');
-const canUpdateState = require('../utils/can-user-update-state');
+const canUserUpdateState = require('../utils/can-user-update-state');
 const doesContainInvalidAttr = require('../utils/does-contain-invalid-attr');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
+const {
+  getAuthorizedRules,
+  getMinBids,
+} = require('../utils/job-authorization');
 
 const PREFIX = 'jobs: api: put:';
 
@@ -28,7 +32,7 @@ module.exports = function createPutJob(fs) {
     const { params, body = {} } = req;
     const { propertyId, jobId } = params;
     const { user } = req;
-    const update = body;
+    const update = JSON.parse(JSON.stringify(body)); // clone
     const send500Error = create500ErrHandler(PREFIX, res);
     const hasUpdates = Boolean(Object.keys(update || {}).length);
 
@@ -38,7 +42,7 @@ module.exports = function createPutJob(fs) {
 
     // Reject missing update request JSON
     if (!hasUpdates) {
-      log.error(`${PREFIX} missing body`);
+      log.error(`${PREFIX} missing updates in payload`);
       return res.status(400).send({
         errors: [
           {
@@ -79,8 +83,8 @@ module.exports = function createPutJob(fs) {
       });
     }
 
-    // Lookup Firestore Property
-    let property;
+    // Lookup Property
+    let property = null;
     try {
       const propertySnap = await propertiesModel.firestoreFindRecord(
         fs,
@@ -104,8 +108,8 @@ module.exports = function createPutJob(fs) {
       });
     }
 
-    // Lookup Firestore Jobs
-    let job;
+    // Lookup Job
+    let job = null;
     try {
       const jobSnap = await jobsModel.findRecord(fs, jobId);
       job = jobSnap.data() || null;
@@ -142,10 +146,28 @@ module.exports = function createPutJob(fs) {
       });
     }
 
+    // Update changed authorized rules
+    const currentAuthorizedRules =
+      update.authorizedRules || job.authorizedRules;
+    const updatedAuthorizedRules = getAuthorizedRules(
+      currentAuthorizedRules,
+      update.type || job.type
+    );
+
+    if (currentAuthorizedRules !== updatedAuthorizedRules) {
+      update.authorizedRules = updatedAuthorizedRules;
+    }
+
+    // Update new min bids count
+    const updatedMinBids = getMinBids(updatedAuthorizedRules);
+    if (job.minBids !== updatedMinBids) {
+      update.minBids = updatedMinBids;
+    }
+
     // Lookup for associated bids
     const bids = [];
     try {
-      const jobsReference = await jobsModel.createDocRef(fs, jobId);
+      const jobsReference = jobsModel.createDocRef(fs, jobId);
       const bidsSnap = await jobsModel.findAssociatedBids(fs, jobsReference);
       bidsSnap.docs
         .filter(doc => Boolean(doc.data()))
@@ -153,9 +175,10 @@ module.exports = function createPutJob(fs) {
     } catch (err) {
       return send500Error(err, 'bids lookup failed', 'unexpected error');
     }
+
     // Check if job state can be updated
     const updateStateStatus = update.state
-      ? canUpdateState(update.state, job, bids, user)
+      ? canUserUpdateState(update.state, job, bids, user)
       : true;
 
     if (!updateStateStatus) {
@@ -172,7 +195,7 @@ module.exports = function createPutJob(fs) {
       });
     }
 
-    // Update job
+    // Persist job udates
     try {
       await jobsModel.updateRecord(fs, jobId, update);
     } catch (err) {

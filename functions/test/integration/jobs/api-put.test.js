@@ -191,17 +191,20 @@ describe('Jobs | API | PUT', () => {
   });
 
   it('accepts admins transitioning a expedited job to authorized when it only has a single approved bid', async () => {
-    const update = { state: 'authorized' };
+    const expected = 'authorized';
+    const update = { state: expected };
     const property = mocking.createProperty();
     const propertyRef = firebase.createDocRef({ id: PROPERTY_ID });
     const job = mocking.createJob({
       property: propertyRef,
       state: 'approved',
       authorizedRules: 'expedite',
+      minBids: 1,
     });
     const jobRef = firebase.createDocRef({ id: JOB_ID });
     const bid = mocking.createBid({ job: jobRef, state: 'approved' });
     const user = mocking.createUser({ admin: true });
+
     // Stubs
     sinon
       .stub(propertiesModel, 'firestoreFindRecord')
@@ -218,11 +221,143 @@ describe('Jobs | API | PUT', () => {
       .resolves(firebase.createDocSnapshot(JOB_ID, update));
 
     // Execute
-    await request(createApp(user))
+    const res = await request(createApp(user))
       .put(`/t/${PROPERTY_ID}/${JOB_ID}`)
       .send(update)
       .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(201); // assertion
+      .expect(201);
+
+    // Assertions
+    const attributes = ((res.body || {}).data || {}).attributes || {};
+    const actual = attributes.state || '';
+    expect(actual).to.equal(expected);
+  });
+
+  it('should update new min bids when authorized rules are expedited', async () => {
+    const update = { authorizedRules: 'expedite' };
+    const property = mocking.createProperty();
+    const propertyRef = firebase.createDocRef({ id: PROPERTY_ID });
+    const job = mocking.createJob({
+      property: propertyRef,
+      state: 'approved',
+      authorizedRules: 'default',
+      minBids: 3,
+    });
+
+    const clonedJob = JSON.parse(JSON.stringify(job));
+    clonedJob.minBids = 1;
+    clonedJob.authorizedRules = update.authorizedRules;
+    delete clonedJob.property;
+
+    const expected = {
+      data: {
+        attributes: clonedJob,
+        id: JOB_ID,
+        type: 'job',
+        relationships: {
+          property: {
+            data: {
+              id: PROPERTY_ID,
+              type: 'property',
+            },
+          },
+        },
+      },
+    };
+
+    const jobRef = firebase.createDocRef({ id: JOB_ID });
+    const bid = mocking.createBid({ job: jobRef, state: 'approved' });
+    const user = mocking.createUser({ admin: true });
+
+    // Stubs
+    sinon
+      .stub(propertiesModel, 'firestoreFindRecord')
+      .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
+    sinon
+      .stub(jobsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(JOB_ID, job));
+    sinon.stub(jobsModel, 'createDocRef').returns(jobRef);
+    sinon
+      .stub(jobsModel, 'findAssociatedBids')
+      .resolves(firebase.createQuerySnapshot([bid]));
+    sinon
+      .stub(jobsModel, 'updateRecord')
+      .resolves(firebase.createDocSnapshot(JOB_ID, update));
+
+    // Execute
+    const res = await request(createApp(user))
+      .put(`/t/${PROPERTY_ID}/${JOB_ID}`)
+      .send(update)
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(201);
+
+    // Assertions
+    const actual = res.body;
+    expect(actual).to.deep.equal(expected);
+  });
+
+  it('should update new min bids and authoriztion rules when job type increases to large', async () => {
+    const update = { type: 'large:am' };
+    const property = mocking.createProperty();
+    const propertyRef = firebase.createDocRef({ id: PROPERTY_ID });
+    const job = mocking.createJob({
+      property: propertyRef,
+      type: 'small:pm',
+      authorizedRules: 'default',
+      minBids: 2,
+    });
+
+    const clonedJob = JSON.parse(JSON.stringify(job));
+    clonedJob.minBids = 3;
+    clonedJob.authorizedRules = 'large';
+    clonedJob.type = update.type;
+    delete clonedJob.property;
+
+    const expected = {
+      data: {
+        attributes: clonedJob,
+        id: JOB_ID,
+        type: 'job',
+        relationships: {
+          property: {
+            data: {
+              id: PROPERTY_ID,
+              type: 'property',
+            },
+          },
+        },
+      },
+    };
+
+    const jobRef = firebase.createDocRef({ id: JOB_ID });
+    const bid = mocking.createBid({ job: jobRef, state: 'approved' });
+    const user = mocking.createUser({ admin: true });
+
+    // Stubs
+    sinon
+      .stub(propertiesModel, 'firestoreFindRecord')
+      .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
+    sinon
+      .stub(jobsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(JOB_ID, job));
+    sinon.stub(jobsModel, 'createDocRef').returns(jobRef);
+    sinon
+      .stub(jobsModel, 'findAssociatedBids')
+      .resolves(firebase.createQuerySnapshot([bid]));
+    sinon
+      .stub(jobsModel, 'updateRecord')
+      .resolves(firebase.createDocSnapshot(JOB_ID, update));
+
+    // Execute
+    const res = await request(createApp(user))
+      .put(`/t/${PROPERTY_ID}/${JOB_ID}`)
+      .send(update)
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(201);
+
+    // Assertions
+    const actual = res.body;
+    expect(actual).to.deep.equal(expected);
   });
 });
 

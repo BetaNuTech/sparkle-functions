@@ -14,6 +14,7 @@ module.exports = (targetState, job, bids, user) => {
   assert(job && typeof job === 'object', 'has job record');
   assert(bids && typeof bids === 'object', 'has bids record');
   assert(user && typeof user === 'object', 'has user record');
+
   switch (targetState) {
     case 'approved': {
       if (job.state === 'open') return true;
@@ -27,7 +28,7 @@ module.exports = (targetState, job, bids, user) => {
         0
       );
       // Regular job
-      if (approvedBids >= 1 && bids.length >= 3) {
+      if (approvedBids >= 1 && bids.length >= job.minBids) {
         return true;
       }
 
@@ -36,7 +37,7 @@ module.exports = (targetState, job, bids, user) => {
         user.admin &&
         job.authorizedRules === 'expedite' &&
         approvedBids >= 1 &&
-        bids.length >= 1
+        bids.length >= job.minBids
       ) {
         return true;
       }

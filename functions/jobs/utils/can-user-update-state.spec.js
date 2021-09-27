@@ -108,7 +108,7 @@ describe('Jobs | Utils | Can User Update State', () => {
     const jobId = uuid();
     const actual = canUpdateState(
       'authorized',
-      { id: jobId, state: 'approved', authorizedRules: 'expedite' },
+      { id: jobId, state: 'approved', authorizedRules: 'expedite', minBids: 1 },
       [{ job: jobId, state: 'approved' }],
       { admin: true }
     );

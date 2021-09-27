@@ -85,7 +85,7 @@ describe('Jobs | API | POST', () => {
     expect(actual).to.equal(expected);
   });
 
-  it('returns the job JSON API document on successfull creation', done => {
+  it('returns the job JSON API document on successful creation', async () => {
     const propertyId = uuid();
     const jobId = uuid();
     const property = mocking.createProperty();
@@ -120,17 +120,65 @@ describe('Jobs | API | POST', () => {
       .stub(jobsModel, 'createRecord')
       .resolves(firebase.createDocSnapshot(jobId, job));
 
-    request(createApp())
+    const res = await request(createApp())
       .post(`/t/${propertyId}`)
       .send({ ...job })
       .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(201)
-      .then(res => {
-        const actual = res.body;
-        expect(actual).to.deep.equal(expected);
-        done();
-      })
-      .catch(done);
+      .expect(201);
+
+    const actual = res.body;
+    expect(actual).to.deep.equal(expected);
+  });
+
+  it('creates a large job successfully', async () => {
+    const propertyId = uuid();
+    const jobId = uuid();
+    const property = mocking.createProperty();
+
+    const job = mocking.createJob({ type: 'large:am' });
+    delete job.property; // sanity check
+    delete job.trelloCardURL; // sanity check
+    const expected = {
+      data: {
+        id: jobId,
+        type: 'job',
+        attributes: {
+          ...job,
+          authorizedRules: 'large',
+          minBids: 3,
+        },
+        relationships: {
+          property: {
+            data: {
+              id: propertyId,
+              type: 'property',
+            },
+          },
+        },
+      },
+    };
+
+    // Stubs
+    sinon
+      .stub(propertiesModel, 'firestoreFindRecord')
+      .resolves(firebase.createDocSnapshot(propertyId, property));
+    sinon
+      .stub(propertiesModel, 'createDocRef')
+      .returns(firebase.createDocRef({ id: propertyId }));
+    sinon.stub(jobsModel, 'createId').returns(jobId);
+    sinon
+      .stub(jobsModel, 'createRecord')
+      .resolves(firebase.createDocSnapshot(jobId, job));
+
+    // Execute
+    const res = await request(createApp())
+      .post(`/t/${propertyId}`)
+      .send({ ...job })
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(201);
+
+    const actual = res.body;
+    expect(actual).to.deep.equal(expected);
   });
 });
 

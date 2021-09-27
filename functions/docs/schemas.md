@@ -146,6 +146,7 @@ interface team {
 ```
 
 ## User
+
 ```typescript
 interface user {
   id: string;
@@ -195,7 +196,7 @@ interface Job {
   id?: string;
   title: string;
   need: string;
-  authorizedRules?: 'default' | 'expedite';
+  authorizedRules: string;
   scopeOfWorkAttachment?: any; // Reference of attachment id
   scopeOfWork?: string;
   trelloCardURL?: string;
@@ -203,7 +204,7 @@ interface Job {
   createdAt?: number;
   updatedAt?: number;
   state?: 'open' | 'approved' | 'authorized' | 'complete';
-  type: 'asset management project' | 'property management project' | 'hybrid capital project';
+  type: string;
 }
 ```
 
@@ -226,5 +227,3 @@ interface bid {
   scope: 'local' | 'national';
 }
 ```
-
-

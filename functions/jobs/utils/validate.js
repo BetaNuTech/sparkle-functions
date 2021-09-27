@@ -2,6 +2,29 @@ const assert = require('assert');
 const Schema = require('validate');
 const config = require('../../config');
 
+/**
+ * Determin if job has valid type
+ * @param  {String} value
+ * @return {Boolean}
+ */
+const validateJobType = value => {
+  const currentRegex = [
+    { reg: /^large/ },
+    { reg: /^medium/ },
+    { reg: /^small/ },
+  ];
+
+  for (let i = 0; i < currentRegex.length; i++) {
+    const type = currentRegex[i];
+
+    if (type.reg.test(value)) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
 const jobSchema = new Schema({
   id: {
     type: String,
@@ -16,7 +39,6 @@ const jobSchema = new Schema({
   },
   authorizedRules: {
     type: String,
-    enum: config.jobs.authorizedRuleTypes,
     required: true,
   },
   scopeOfWork: {
@@ -41,8 +63,11 @@ const jobSchema = new Schema({
   },
   type: {
     type: String,
-    enum: config.jobs.typeValues,
     required: true,
+    use: { validateJobType },
+  },
+  minBids: {
+    type: Number,
   },
 });
 

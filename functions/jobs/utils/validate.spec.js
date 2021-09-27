@@ -97,6 +97,29 @@ describe('Jobs | Utils | Validate Job Create', () => {
     }
   });
 
+  it('rejects invalid job types', () => {
+    const data = [
+      { type: 'nope', expected: false },
+      { type: 'bad:am', expected: false },
+      { type: 'large:ok:fine', expected: true },
+      { type: 'Large:bad', expected: false }, // bad mixed-casing
+      { type: 'large:pm', expected: true },
+      { type: 'medium:pm', expected: true },
+      { type: 'small:pm', expected: true },
+    ];
+
+    for (let i = 0; i < data.length; i++) {
+      const { type, expected } = data[i];
+      const result = validate({ ...requiredAttrs, type });
+      const resultPaths = result.map(err => err.path).join(',');
+      const actual = !(resultPaths.search('type') > -1);
+      expect(actual).to.equal(
+        expected,
+        `${expected ? 'validated' : 'invalidated'} "${type}"`
+      );
+    }
+  });
+
   it('accpets a valid job', () => {
     const expected = [];
     const actual = validate({
