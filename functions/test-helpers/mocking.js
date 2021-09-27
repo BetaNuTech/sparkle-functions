@@ -476,6 +476,7 @@ module.exports = {
       state: config.jobs.stateTypes[0],
       type: config.jobs.typeValues[0],
       authorizedRules: config.jobs.authorizedRuleTypes[0],
+      minBids: 2,
       ...jobConfig,
     };
   },

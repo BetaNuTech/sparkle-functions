@@ -6,6 +6,7 @@ const modelSetup = require('./utils/model-setup');
 const defItemsModel = require('./deficient-items');
 const inspectionsModel = require('./inspections');
 const updateDeficientItemsAttrs = require('../properties/utils/update-deficient-items-attrs');
+
 const PREFIX = 'models: properties:';
 const PROPERTY_COLLECTION = modelsConfig.collections.properties;
 const PROPERTY_BUCKET_NAME = `propertyImages${

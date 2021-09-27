@@ -5,8 +5,14 @@ const propertiesModel = require('../../models/properties');
 const validate = require('../utils/validate');
 const config = require('../../config');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
+const {
+  getMinBids,
+  getAuthorizedRules,
+} = require('../utils/job-authorization');
 
 const PREFIX = 'jobs: api: post job:';
+const INITIAL_STATE = config.jobs.stateTypes[0];
+const DEFAULT_AUTH_RULES = config.jobs.authorizedRuleTypes[0];
 
 /**
  * Factory for creating a POST endpoint
@@ -52,7 +58,7 @@ module.exports = function createPostJob(fs) {
       return res.status(400).send(badReqPayload);
     }
 
-    // Lookup Firestore Property
+    // Lookup Property
     let property = null;
     try {
       const propertySnap = await propertiesModel.firestoreFindRecord(
@@ -78,14 +84,20 @@ module.exports = function createPostJob(fs) {
     }
 
     // Create Job object
+    const now = Math.round(Date.now() / 1000);
     const job = {
       ...body,
-      authorizedRules:
-        body.authorizedRules || config.jobs.authorizedRuleTypes[0],
-      state: config.jobs.stateTypes[0],
-      createdAt: Math.round(Date.now() / 1000),
-      updatedAt: Math.round(Date.now() / 1000),
+      state: INITIAL_STATE,
+      createdAt: now,
+      updatedAt: now,
     };
+
+    // Set authorized rules
+    const currentAuthorizedRules = body.authorizedRules || DEFAULT_AUTH_RULES;
+    job.authorizedRules = getAuthorizedRules(currentAuthorizedRules, job.type);
+
+    // Set minimum bids value
+    job.minBids = getMinBids(job.authorizedRules);
 
     // Validate job atrributes
     const jobValidationErrors = validate(job);
@@ -101,13 +113,13 @@ module.exports = function createPostJob(fs) {
       });
     }
 
-    // Generate Job id
+    // Generate Job ID
     const jobId = jobsModel.createId(fs);
 
     // Add property relationship
     job.property = propertiesModel.createDocRef(fs, propertyId);
 
-    // create firestore record
+    // Persist new job
     try {
       await jobsModel.createRecord(fs, jobId, job);
     } catch (err) {
