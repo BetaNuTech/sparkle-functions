@@ -14,7 +14,7 @@ module.exports = {
   /**
    * Create a snapshot of a
    * payload or a group of payloads
-   * @param  {Object|Array}
+   * @param  {Object|Array} payload
    * @param  {String} id
    * @return {Object} - snapshot lookalike
    */

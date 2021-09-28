@@ -1,13 +1,14 @@
 const assert = require('assert');
 const pipe = require('lodash/fp/flow');
 const FieldValue = require('firebase-admin').firestore.FieldValue;
+const { models: modelsConfig } = require('../config');
 const modelSetup = require('./utils/model-setup');
 const defItemsModel = require('./deficient-items');
 const inspectionsModel = require('./inspections');
 const updateDeficientItemsAttrs = require('../properties/utils/update-deficient-items-attrs');
 
 const PREFIX = 'models: properties:';
-const PROPERTY_COLLECTION = 'properties';
+const PROPERTY_COLLECTION = modelsConfig.collections.properties;
 const PROPERTY_BUCKET_NAME = `propertyImages${
   process.env.NODE_ENV === 'test' ? 'Test' : ''
 }`;
@@ -102,6 +103,27 @@ module.exports = modelSetup({
       .collection(PROPERTY_COLLECTION)
       .doc(propertyId)
       .create(data);
+  },
+
+  /**
+   * Create a firestore doc id for collection
+   * @param  {admin.firestore} fs
+   * @return {String}
+   */
+  createId(fs) {
+    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    return fs.collection(PROPERTY_COLLECTION).doc().id;
+  },
+
+  /**
+   * Create a firestore document reference
+   * @param  {admin.firestore} fs
+   * @param  {String} id
+   * @return {firestore.DocumentReference}
+   */
+  createDocRef(fs, id) {
+    assert(id && typeof id === 'string', 'has document reference id');
+    return fs.collection(PROPERTY_COLLECTION).doc(id);
   },
 
   /**

@@ -5,8 +5,8 @@ const mocking = require('../../../test-helpers/mocking');
 const systemModel = require('../../../models/system');
 const notificationsModel = require('../../../models/notifications');
 const integrationsModel = require('../../../models/integrations');
-const SLACK_API_JOIN_CHAN_RESPONSE = require('../../../test-helpers/mocks/slack-joined-channel');
-const SLACK_API_PUB_MSG_RESP = require('../../../test-helpers/mocks/slack-published-message');
+const SLACK_API_JOIN_CHAN_RESPONSE = require('../../../test-helpers/mocks/slack-joined-channel.json');
+const SLACK_API_PUB_MSG_RESP = require('../../../test-helpers/mocks/slack-published-message.json');
 const { cleanDb } = require('../../../test-helpers/firebase');
 const { fs, test, cloudFunctions } = require('../../setup');
 

@@ -2,16 +2,20 @@ const cors = require('cors');
 const assert = require('assert');
 const express = require('express');
 const bodyParser = require('body-parser');
+const swaggerUi = require('swagger-ui-express');
+const fileUpload = require('express-fileupload');
 const slack = require('./slack');
 const trello = require('./trello');
 const deficiencies = require('./deficient-items');
 const properties = require('./properties');
 const inspections = require('./inspections');
+const jobs = require('./jobs');
 const users = require('./users');
 const clients = require('./clients');
 const authUser = require('./utils/auth-firebase-user');
 const authUserCrud = require('./middleware/auth-user-crud');
 const authTrelloReq = require('./utils/auth-trello-request');
+const swaggerDocument = require('./swagger.json');
 
 /**
  * Configure Express app with
@@ -19,15 +23,20 @@ const authTrelloReq = require('./utils/auth-trello-request');
  * @param  {admin.firestore} fs - Firestore Admin DB instance
  * @param  {admin.auth} auth - Firebase Admin auth instance
  * @param  {Object} settings
+ * @param  {Object} storage
  * @return {Express}
  */
-module.exports = (fs, auth, settings) => {
+module.exports = (fs, auth, settings, storage) => {
   assert(Boolean(fs), 'has firestore database instance');
   assert(Boolean(auth), 'has firebase auth instance');
 
   const app = express();
   const { inspectionUrl } = settings;
   app.use(bodyParser.json(), cors({ origin: true, credentials: true }));
+  swaggerDocument.host = process.env.FIREBASE_FUNCTIONS_DOMAIN;
+
+  // API documentation
+  app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
   // Return latest published
   // client app versions
@@ -97,10 +106,32 @@ module.exports = (fs, auth, settings) => {
     properties.api.getPropertyYardiWorkOrders()
   );
 
+  // Create a property
   app.post(
     '/v0/properties',
     authUser(fs, auth, true), // admin only
     properties.api.post(fs)
+  );
+
+  // Update a property
+  app.put(
+    '/v0/properties/:propertyId',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+    }),
+    properties.api.put(fs)
+  );
+
+  // Upload an image/logo to property
+  app.post(
+    '/v0/properties/:propertyId/image',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+    }),
+    fileUpload(),
+    properties.api.postImage(fs, storage)
   );
 
   // Authorize Slack API credentials
@@ -148,6 +179,18 @@ module.exports = (fs, auth, settings) => {
     authUser(fs, auth, true),
     authTrelloReq(fs),
     trello.api.getBoardLists(fs)
+  );
+
+  app.post(
+    '/v0/properties/:propertyId/jobs/:jobId/trello',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    authTrelloReq(fs),
+    trello.api.postJobCard(fs)
   );
 
   // Create Trello Card for deficiency
@@ -199,6 +242,54 @@ module.exports = (fs, auth, settings) => {
     authUser(fs, auth),
     authUserCrud(auth),
     users.api.createDeleteUser(fs, auth)
+  );
+
+  // Create job
+  app.post(
+    '/v0/properties/:propertyId/jobs',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    jobs.api.post(fs)
+  );
+
+  // Update a job
+  app.put(
+    '/v0/properties/:propertyId/jobs/:jobId',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    jobs.api.put(fs)
+  );
+
+  // Update a bid
+  app.put(
+    '/v0/properties/:propertyId/jobs/:jobId/bids/:bidId',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    jobs.api.putBid(fs)
+  );
+
+  // Create bid
+  app.post(
+    '/v0/properties/:propertyId/jobs/:jobId/bids',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    jobs.api.postBid(fs)
   );
 
   return app;

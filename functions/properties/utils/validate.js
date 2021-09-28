@@ -96,7 +96,6 @@ const propertySchema = new Schema({
   },
   templates: {
     type: Object,
-    required: true,
   },
   team: {
     type: String,
@@ -123,5 +122,6 @@ const propertySchema = new Schema({
  */
 module.exports = propertyCreate => {
   assert(propertyCreate && typeof propertyCreate, 'has property create');
-  return propertySchema.validate(propertyCreate);
+  const clone = JSON.parse(JSON.stringify(propertyCreate));
+  return propertySchema.validate(clone);
 };

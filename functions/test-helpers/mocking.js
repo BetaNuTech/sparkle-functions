@@ -453,5 +453,74 @@ module.exports = {
     };
   },
 
+  /**
+   * Create a valid job
+   * @param  {Object} jobConfig
+   * @return {Object}
+   */
+  createJob(jobConfig = {}) {
+    if (jobConfig.property) {
+      assert(
+        jobConfig.property.id,
+        'has required firestore "property" document reference'
+      );
+    }
+
+    return {
+      title: 'test job',
+      need: 'test',
+      scopeOfWork: '1. fix it',
+      trelloCardURL: 'trello.com/card/1',
+      createdAt: nowUnix(),
+      updatedAt: nowUnix(),
+      state: config.jobs.stateTypes[0],
+      type: config.jobs.typeValues[0],
+      authorizedRules: config.jobs.authorizedRuleTypes[0],
+      minBids: 2,
+      ...jobConfig,
+    };
+  },
+
+  /**
+   * Create a valid bid
+   * @param  {Object} bidConfig
+   * @return {Object}
+   */
+  createBid(bidConfig = {}) {
+    if (bidConfig.job) {
+      assert(
+        bidConfig.job.id,
+        'has required firestore "job" document reference'
+      );
+    }
+
+    return {
+      vendor: 'test',
+      vendorDetails: 'test',
+      state: config.bids.stateTypes[0],
+      costMin: 1,
+      costMax: 2,
+      startAt: 1,
+      completeAt: 2,
+      scope: config.bids.scopeTypes[0],
+      createdAt: nowUnix(),
+      updatedAt: nowUnix(),
+      ...bidConfig,
+    };
+  },
+
+  /**
+   * Create a minimal template
+   * @param  {Object} tmplConfig
+   * @return {Object}
+   */
+  createTemplate(tmplConfig = {}) {
+    return {
+      name: 'test',
+      description: 'description',
+      ...tmplConfig,
+    };
+  },
+
   nowUnix,
 };

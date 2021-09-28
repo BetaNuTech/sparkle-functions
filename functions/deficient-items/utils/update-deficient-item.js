@@ -1,9 +1,9 @@
 const assert = require('assert');
 const pipe = require('../../utils/pipe');
-const config = require('../../config');
+const { deficientItems: deficientItemsConfig } = require('../../config');
 
 const FIVE_DAYS_IN_SEC = 432000;
-const OVERDUE_ELIGIBLE_STATES = config.deficientItems.overdueEligibleStates;
+const OVERDUE_ELIGIBLE_STATES = deficientItemsConfig.overdueEligibleStates;
 
 /**
  * Save a deficient item with updates

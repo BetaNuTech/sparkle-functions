@@ -1,6 +1,6 @@
 const assert = require('assert');
-const log = require('../utils/logger');
-const templatesModel = require('../models/templates');
+const log = require('../../utils/logger');
+const templatesModel = require('../../models/templates');
 
 const PREFIX = 'template-categories: on-delete-v2:';
 
@@ -34,7 +34,7 @@ module.exports = function createOnDeleteHandler(fs) {
     try {
       await templatesModel.firestoreRemoveCategory(fs, categoryId);
     } catch (err) {
-      log.error(`${PREFIX} Failed to remove category from templates | ${err}`);
+      log.error(`${PREFIX} Failed to remove category from templates: ${err}`);
     }
   };
 };

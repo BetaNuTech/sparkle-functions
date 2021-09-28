@@ -1,10 +1,23 @@
-const { fs, auth } = require('./setup'); // eslint-disable-line
+const express = require('express');
+const { fs, auth, storage } = require('./setup'); // eslint-disable-line
 const config = require('../config');
 const router = require('../router');
 
 const port = process.env.PORT || 6000;
-console.log(`listening on ${port}`); // eslint-disable-line no-console
 
-router(fs, auth, {
-  inspectionUrl: config.clientApps.web.inspectionURL,
-}).listen(port, '0.0.0.0');
+const routes = router(
+  fs,
+  auth,
+  {
+    inspectionUrl: config.clientApps.web.inspectionURL,
+  },
+  storage
+);
+
+// Make similar to production
+const api = express();
+api.use('/api', routes);
+
+api.listen(port, '0.0.0.0');
+console.log(`api: localhost:${port}/api`); // eslint-disable-line no-console
+console.log(`docs: localhost:${port}/api/docs`); // eslint-disable-line no-console

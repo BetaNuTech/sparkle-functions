@@ -19,6 +19,7 @@ const fs = defaultApp.firestore();
 const test = require('firebase-functions-test')(fbConfig); // eslint-disable-line
 const cloudFunctions = require('../index'); // eslint-disable-line
 const auth = admin.auth();
+const storage = admin.storage();
 
 module.exports = {
   admin,
@@ -28,4 +29,5 @@ module.exports = {
   cloudFunctions,
   config,
   uid: config.firebase.databaseAuthVariableOverride.uid,
+  storage,
 };

@@ -48,9 +48,9 @@ exports.deficiencyUpdateCompletedPhotos = functions.firestore
   .document('deficiencies/{deficiencyId}')
   .onUpdate(deficiency.onUpdateCompletedPhotoV2(fs));
 
-exports.templateCategoryDeleteV2 = functions.firestore
+exports.templateCategoryDelete = functions.firestore
   .document('/templateCategories/{categoryId}')
-  .onDelete(templateCategories.createOnDeleteWatcherV2(fs));
+  .onDelete(templateCategories.watchers.onDelete(fs));
 
 exports.propertyDeleteV2 = functions.firestore
   .document('/properties/{propertyId}')
@@ -140,7 +140,12 @@ exports.cleanupNotificationsV2 = notifications.pubsub.cleanPublished(
 exports.api = functions
   .runWith({ timeoutSeconds: 540, memory: '1GB' })
   .https.onRequest(
-    createRouter(fs, auth, {
-      inspectionUrl: config.clientApps.web.inspectionURL,
-    })
+    createRouter(
+      fs,
+      auth,
+      {
+        inspectionUrl: config.clientApps.web.inspectionURL,
+      },
+      storage
+    )
   );
