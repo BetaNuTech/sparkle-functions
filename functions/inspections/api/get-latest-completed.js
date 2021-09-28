@@ -130,7 +130,7 @@ module.exports = function createGetLatestCompleted(fs) {
     // Successful response
     res.status(200).send({
       included: property ? [createJsonApiProperty(property)] : [],
-      data: inspection ? createJsonApiInspection(inspection) : [],
+      data: inspection ? createJsonApiInspection(inspection) : null,
     });
   };
 };
