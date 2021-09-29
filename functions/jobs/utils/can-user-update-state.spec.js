@@ -58,12 +58,12 @@ describe('Jobs | Utils | Can User Update State', () => {
     }
   });
 
-  it('rejects transition to authorized when job does not have at least 3 associated bids, even if one of them is approved', () => {
+  it('rejects transition to authorized when job does not meet min bid requirement, even if one of them is approved', () => {
     const expected = false;
     const jobId = uuid();
     const actual = canUpdateState(
       'authorized',
-      { id: jobId, state: 'approved', authorizedRules: 'default' },
+      { id: jobId, state: 'approved', minBids: 3, authorizedRules: 'default' },
       [
         { job: uuid(), state: 'approved' },
         { job: jobId, state: 'open' },
@@ -90,12 +90,57 @@ describe('Jobs | Utils | Can User Update State', () => {
     expect(actual).to.equal(expected);
   });
 
-  it('rejects transition to authorized for job that only has 1 approved bid', () => {
+  it('rejects transition to authorized by non-admin for large job that meets all bid requirements', () => {
     const expected = false;
     const jobId = uuid();
     const actual = canUpdateState(
       'authorized',
-      { id: jobId, state: 'approved', authorizedRules: 'default' },
+      {
+        id: jobId,
+        type: 'large:am',
+        state: 'approved',
+        authorizedRules: 'large',
+        minBids: 3,
+      },
+      [
+        { job: jobId, state: 'approved' },
+        { job: jobId, state: 'open' },
+        { job: jobId, state: 'open' },
+      ],
+      { admin: false }
+    );
+
+    expect(actual).to.equal(expected);
+  });
+
+  it('rejects transition to authorized for job that does not meet approved bid requirement', () => {
+    const expected = false;
+    const jobId = uuid();
+    const actual = canUpdateState(
+      'authorized',
+      {
+        id: jobId,
+        type: 'small:pm',
+        state: 'approved',
+        authorizedRules: 'default',
+        minBids: 2,
+      },
+      [
+        { job: jobId, state: 'open' },
+        { job: jobId, state: 'open' },
+      ],
+      { admin: true }
+    );
+
+    expect(actual).to.equal(expected);
+  });
+
+  it('rejects transition to authorized for job that does not meet min bid requirement, even if bid is approved', () => {
+    const expected = false;
+    const jobId = uuid();
+    const actual = canUpdateState(
+      'authorized',
+      { id: jobId, state: 'approved', minBids: 2, authorizedRules: 'default' },
       [{ job: jobId, state: 'approved' }],
       { admin: true }
     );
@@ -103,13 +148,58 @@ describe('Jobs | Utils | Can User Update State', () => {
     expect(actual).to.equal(expected);
   });
 
-  it('accept transition to authorized by admin when an expedited job only has 1 approved bid', () => {
+  it('accepts transition to authorized by admin when an expedited job only has 1 approved bid', () => {
     const expected = true;
     const jobId = uuid();
     const actual = canUpdateState(
       'authorized',
       { id: jobId, state: 'approved', authorizedRules: 'expedite', minBids: 1 },
       [{ job: jobId, state: 'approved' }],
+      { admin: true }
+    );
+
+    expect(actual).to.equal(expected);
+  });
+
+  it('accepts transition to authorized by non-admin for small job that meets all bid requirements', () => {
+    const expected = true;
+    const jobId = uuid();
+    const actual = canUpdateState(
+      'authorized',
+      {
+        id: jobId,
+        type: 'small:pm',
+        state: 'approved',
+        authorizedRules: 'default',
+        minBids: 2,
+      },
+      [
+        { job: jobId, state: 'approved' },
+        { job: jobId, state: 'open' },
+      ],
+      { admin: false }
+    );
+
+    expect(actual).to.equal(expected);
+  });
+
+  it('accepts transition to authorized by admin for large job that meets all bid requirements', () => {
+    const expected = true;
+    const jobId = uuid();
+    const actual = canUpdateState(
+      'authorized',
+      {
+        id: jobId,
+        type: 'large:am',
+        state: 'approved',
+        authorizedRules: 'large',
+        minBids: 3,
+      },
+      [
+        { job: jobId, state: 'approved' },
+        { job: jobId, state: 'open' },
+        { job: jobId, state: 'rejected' },
+      ],
       { admin: true }
     );
 

@@ -1,4 +1,7 @@
 const assert = require('assert');
+const config = require('../../config');
+
+const { authorizedRuleTypes: AUTH_RULE_TYPES } = config.jobs;
 
 /**
  * Check permission and validate state attribute update
@@ -12,7 +15,11 @@ const assert = require('assert');
 module.exports = (targetState, job, bids, user) => {
   assert(targetState && typeof targetState === 'string', 'has targeted state');
   assert(job && typeof job === 'object', 'has job record');
-  assert(bids && typeof bids === 'object', 'has bids record');
+  assert(bids && Array.isArray(bids), 'has bids array');
+  assert(
+    bids.every(bid => typeof bid === 'object'),
+    'has array of bid objects'
+  );
   assert(user && typeof user === 'object', 'has user record');
 
   switch (targetState) {
@@ -23,26 +30,25 @@ module.exports = (targetState, job, bids, user) => {
     case 'authorized': {
       if (job.state !== 'approved') return false;
 
-      const approvedBids = bids.reduce(
-        (total, bid) => total + (bid.state === 'approved' ? 1 : 0),
-        0
-      );
-      // Regular job
-      if (approvedBids >= 1 && bids.length >= job.minBids) {
-        return true;
-      }
+      const isLargeRules = job.authorizedRules === AUTH_RULE_TYPES[2];
+      const isExpeditedRules = job.authorizedRules === AUTH_RULE_TYPES[1];
+      const minBids = job.minBids || Infinity;
+      const hasMetMinBidReq = bids.length >= minBids;
+      const hasMetApprovedBidReq =
+        bids.filter(bid => bid.state === 'approved').length > 0;
 
       // Expedited job
-      if (
-        user.admin &&
-        job.authorizedRules === 'expedite' &&
-        approvedBids >= 1 &&
-        bids.length >= job.minBids
-      ) {
-        return true;
+      if (isExpeditedRules) {
+        return user.admin && hasMetMinBidReq && hasMetApprovedBidReq;
       }
 
-      return false;
+      // Large job
+      if (isLargeRules) {
+        return user.admin && hasMetMinBidReq && hasMetApprovedBidReq;
+      }
+
+      // Default job
+      return hasMetApprovedBidReq && hasMetMinBidReq;
     }
     case 'complete': {
       if (job.state === 'authorized') return true;
