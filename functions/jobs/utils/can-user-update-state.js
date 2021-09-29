@@ -1,4 +1,7 @@
 const assert = require('assert');
+const config = require('../../config');
+
+const { authorizedRuleTypes: AUTH_RULE_TYPES } = config.jobs;
 
 /**
  * Check permission and validate state attribute update
@@ -27,26 +30,25 @@ module.exports = (targetState, job, bids, user) => {
     case 'authorized': {
       if (job.state !== 'approved') return false;
 
-      const approvedBids = bids.reduce(
-        (total, bid) => total + (bid.state === 'approved' ? 1 : 0),
-        0
-      );
+      const isLargeRules = job.authorizedRules === AUTH_RULE_TYPES[2];
+      const isExpeditedRules = job.authorizedRules === AUTH_RULE_TYPES[1];
       const minBids = job.minBids || Infinity;
-      const hasMetApprovedBidReq = approvedBids >= 1;
-      const hasMetBidRequirement = bids.length >= minBids;
+      const hasMetMinBidReq = bids.length >= minBids;
+      const hasMetApprovedBidReq =
+        bids.filter(bid => bid.state === 'approved').length > 0;
 
       // Expedited job
-      if (job.authorizedRules === 'expedite') {
-        return user.admin && hasMetBidRequirement && hasMetBidRequirement;
+      if (isExpeditedRules) {
+        return user.admin && hasMetMinBidReq && hasMetApprovedBidReq;
       }
 
       // Large job
-      if (job.authorizedRules === 'large') {
-        return user.admin && hasMetBidRequirement && hasMetBidRequirement;
+      if (isLargeRules) {
+        return user.admin && hasMetMinBidReq && hasMetApprovedBidReq;
       }
 
       // Default job
-      return hasMetApprovedBidReq && hasMetBidRequirement;
+      return hasMetApprovedBidReq && hasMetMinBidReq;
     }
     case 'complete': {
       if (job.state === 'authorized') return true;

@@ -113,6 +113,28 @@ describe('Jobs | Utils | Can User Update State', () => {
     expect(actual).to.equal(expected);
   });
 
+  it('rejects transition to authorized for job that does not meet approved bid requirement', () => {
+    const expected = false;
+    const jobId = uuid();
+    const actual = canUpdateState(
+      'authorized',
+      {
+        id: jobId,
+        type: 'small:pm',
+        state: 'approved',
+        authorizedRules: 'default',
+        minBids: 2,
+      },
+      [
+        { job: jobId, state: 'open' },
+        { job: jobId, state: 'open' },
+      ],
+      { admin: true }
+    );
+
+    expect(actual).to.equal(expected);
+  });
+
   it('rejects transition to authorized for job that does not meet min bid requirement, even if bid is approved', () => {
     const expected = false;
     const jobId = uuid();
