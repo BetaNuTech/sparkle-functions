@@ -8,6 +8,7 @@ const mocking = require('../../../test-helpers/mocking');
 const uuid = require('../../../test-helpers/uuid');
 const propertiesModel = require('../../../models/properties');
 const templatesModel = require('../../../models/templates');
+const inspectionsModel = require('../../../models/inspections');
 const postInspection = require('../../../inspections/api/post');
 const firebase = require('../../../test-helpers/firebase');
 
@@ -21,10 +22,11 @@ describe('Inspections | API | POST', () => {
   afterEach(() => sinon.restore());
 
   it('rejects request to create inspection without required request values', async () => {
-    const expected = 'property,template';
+    const expected = 'template';
+    const propertyId = uuid();
 
     const res = await request(createApp())
-      .post('/t')
+      .post(`/t/${propertyId}`)
       .send()
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(400);
@@ -37,6 +39,7 @@ describe('Inspections | API | POST', () => {
 
   it('rejects request to create inspection with non-existent property', async () => {
     const expected = 'Property not found';
+    const propertyId = uuid();
 
     // Stub Requests
     sinon
@@ -44,8 +47,8 @@ describe('Inspections | API | POST', () => {
       .resolves(firebase.createDocSnapshot()); // empty
 
     const res = await request(createApp())
-      .post('/t')
-      .send({ property: '-invalid', template: '1' })
+      .post(`/t/${propertyId}`)
+      .send({ template: '1' })
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(404);
 
@@ -71,8 +74,8 @@ describe('Inspections | API | POST', () => {
     // Execute & Get Result
     const app = createApp();
     const res = await request(app)
-      .post('/t')
-      .send({ property: propertyId, template: '-invalid' })
+      .post(`/t/${propertyId}`)
+      .send({ template: '-invalid' })
       .expect('Content-Type', /json/)
       .expect(404);
 
@@ -85,20 +88,38 @@ describe('Inspections | API | POST', () => {
   it('returns new inspection document on successfull creation', async () => {
     const propertyId = uuid();
     const templateId = uuid();
+    const inspectionId = uuid();
     const template = {
       trackDeficientItems: false,
       name: 'Test template',
       sections: {},
       items: {},
     };
+    const inspection = {
+      templateId,
+      property: propertyId,
+      template: { ...template },
+      inspectorName: '',
+      inspector: USER_ID,
+      totalItems: 1,
+      templateName: template.name,
+      itemsCompleted: 0,
+      inspectionCompleted: false,
+      completionDate: 0,
+      deficienciesExist: false,
+      score: 0,
+      createdAt: Math.floor(Date.now() / 1000),
+      creationDate: Math.floor(Date.now() / 1000),
+      updatedLastDate: Math.floor(Date.now() / 1000),
+      updatedAt: Math.floor(Date.now() / 1000),
+      templateCategory: '',
+    };
     const property = mocking.createProperty();
     const expected = {
       data: {
-        inspection: {
-          template: { ...template },
-          inspectorName: '',
-          inspector: USER_ID,
-        },
+        id: inspectionId,
+        type: 'inspection',
+        attributes: inspection,
       },
     };
 
@@ -109,10 +130,14 @@ describe('Inspections | API | POST', () => {
     sinon
       .stub(templatesModel, 'firestoreFindRecord')
       .resolves(firebase.createDocSnapshot(templateId, template));
+    sinon.stub(inspectionsModel, 'createId').returns(inspectionId);
+    sinon
+      .stub(inspectionsModel, 'firestoreCreateRecord')
+      .resolves(firebase.createDocSnapshot(templateId, inspection));
 
     const res = await request(createApp())
-      .post(`/t`)
-      .send({ property: propertyId, template: templateId })
+      .post(`/t/${propertyId}`)
+      .send({ template: templateId })
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(201);
 
@@ -125,7 +150,7 @@ describe('Inspections | API | POST', () => {
 function createApp() {
   const app = express();
   app.post(
-    '/t/',
+    '/t/:propertyId',
     bodyParser.json(),
     stubAuth,
     postInspection({ collection: () => {} })

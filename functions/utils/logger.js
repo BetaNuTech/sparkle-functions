@@ -42,7 +42,7 @@ consoleTransport.log = function log(info, callback) {
   // Remark: what if there is no raw...?
   if (this.stderrLevels[info[LEVEL]]) {
     // console.error adds a newline
-    console.error(info[MESSAGE]);
+    console.error(info[MESSAGE]); // eslint-disable-line no-console
 
     if (callback) {
       callback(); // eslint-disable-line callback-return
@@ -52,7 +52,7 @@ consoleTransport.log = function log(info, callback) {
   }
   if (this.consoleWarnLevels[info[LEVEL]]) {
     // console.warn adds a newline
-    console.warn(info[MESSAGE]);
+    console.warn(info[MESSAGE]); // eslint-disable-line no-console
 
     if (callback) {
       callback(); // eslint-disable-line callback-return
@@ -61,7 +61,7 @@ consoleTransport.log = function log(info, callback) {
   }
 
   // console.log adds a newline.
-  console.log(info[MESSAGE]);
+  console.log(info[MESSAGE]); // eslint-disable-line no-console
 
   if (callback) {
     callback(); // eslint-disable-line callback-return

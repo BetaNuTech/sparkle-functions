@@ -20,7 +20,10 @@ module.exports = modelSetup({
   findMany(fs, ...ids) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(Array.isArray(ids) && ids.length, 'has 1 or more lookup ids');
-    assert(ids.every(id => typeof id === 'string'), 'has array of string ids');
+    assert(
+      ids.every(id => typeof id === 'string'),
+      'has array of string ids'
+    );
 
     return fs
       .collection(DEFICIENT_COLLECTION)

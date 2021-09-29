@@ -1,7 +1,6 @@
 const assert = require('assert');
 const config = require('../config');
 const modelSetup = require('./utils/model-setup');
-const propertyModel = require('./properties');
 const bidsModel = require('./bids');
 
 const JOB_COLLECTION = config.models.collections.jobs;
@@ -73,7 +72,7 @@ module.exports = modelSetup({
   /**
    * Create a firestore doc id for collection
    * @param  {admin.firestore} fs
-   * @return {Promise}
+   * @return {string}
    */
   createId(fs) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');

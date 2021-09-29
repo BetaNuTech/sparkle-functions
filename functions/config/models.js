@@ -3,5 +3,6 @@ module.exports = {
     jobs: 'jobs',
     bids: 'bids',
     properties: 'properties',
+    inspections: 'inspections',
   },
 };

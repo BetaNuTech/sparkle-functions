@@ -11,7 +11,6 @@ const jobSchema = new Schema({
   },
   authorizedRules: {
     type: String,
-    enum: config.jobs.authorizedRuleTypes,
   },
   scopeOfWork: {
     type: String,
@@ -22,7 +21,6 @@ const jobSchema = new Schema({
   },
   type: {
     type: String,
-    enum: config.jobs.typeValues,
   },
   trelloCardURL: {
     type: String,

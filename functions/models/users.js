@@ -349,7 +349,9 @@ module.exports = modelSetup({
     try {
       existingClaims = await this.getCustomClaims(auth, uid);
     } catch (err) {
-      throw Error(`${PREFIX} unexpected claims lookup error`);
+      throw Error(
+        `${PREFIX} upsertCustomClaims: unexpected claims lookup error`
+      );
     }
 
     return auth.setCustomUserClaims(uid, { ...existingClaims, ...updates });
@@ -421,7 +423,9 @@ module.exports = modelSetup({
     try {
       reqUserClaims = await this.getCustomClaims(auth, requestingUserId);
     } catch (err) {
-      throw Error(`${PREFIX} unexpected claims lookup error`);
+      throw Error(
+        `${PREFIX} hasCrudPermission: unexpected claims lookup error`
+      );
     }
 
     return Boolean(reqUserClaims.admin);
@@ -452,7 +456,9 @@ module.exports = modelSetup({
     try {
       reqUserClaims = await this.getCustomClaims(auth, requestingUserId);
     } catch (err) {
-      throw Error(`${PREFIX} unexpected claims lookup error`);
+      throw Error(
+        `${PREFIX} hasUpdatePermission: unexpected claims lookup error`
+      );
     }
 
     // Non super admins may not set super admins

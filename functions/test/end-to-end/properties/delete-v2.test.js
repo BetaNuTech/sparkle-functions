@@ -1,7 +1,7 @@
-const path = require('path');
 const { expect } = require('chai');
 const uuid = require('../../../test-helpers/uuid');
 const mocking = require('../../../test-helpers/mocking');
+const storageHelper = require('../../../test-helpers/storage');
 const { cleanDb, findStorageFile } = require('../../../test-helpers/firebase');
 const propertiesModel = require('../../../models/properties');
 const archiveModel = require('../../../models/_internal/archive');
@@ -13,12 +13,6 @@ const inspectionsModel = require('../../../models/inspections');
 const { fs, test, storage, cloudFunctions } = require('../../setup');
 const jobsModel = require('../../../models/jobs');
 const bidsModel = require('../../../models/bids');
-
-const SRC_PROFILE_IMG = 'test-image.jpg';
-const PROFILE_IMG_PATH = path.join(__dirname, `../${SRC_PROFILE_IMG}`);
-const PROP_UPLOAD_DIR = 'propertyImagesTest';
-const INSP_UPLOAD_DIR = 'inspectionItemImagesTest';
-const DEFICENT_UPLOAD_DIR = 'deficientItemImages';
 
 describe('Properties | Delete | V2', () => {
   afterEach(() => cleanDb(null, fs));
@@ -272,10 +266,11 @@ describe('Properties | Delete | V2', () => {
     const propertyData = createProperty();
 
     // Setup storage & database
-    const { url, destination, directory } = await uploadPropertyImage(
-      bucket,
-      propertyId
-    );
+    const {
+      url,
+      destination,
+      directory,
+    } = await storageHelper.uploadPropertyImage(bucket, propertyId);
     propertyData.photoURL = url;
     await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
     const snap = await propertiesModel.firestoreFindRecord(fs, propertyId);
@@ -297,10 +292,11 @@ describe('Properties | Delete | V2', () => {
     const propertyData = createProperty();
 
     // Setup storage & database
-    const { url, destination, directory } = await uploadPropertyImage(
-      bucket,
-      propertyId
-    );
+    const {
+      url,
+      destination,
+      directory,
+    } = await storageHelper.uploadPropertyImage(bucket, propertyId);
     propertyData.bannerPhotoURL = url;
     await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
     const snap = await propertiesModel.firestoreFindRecord(fs, propertyId);
@@ -325,10 +321,11 @@ describe('Properties | Delete | V2', () => {
     const inspData = createInspection(propertyId, itemId);
 
     // Setup storage & database
-    const { url, directory, destination } = await uploadInspectionItemImage(
-      bucket,
-      inspectionId
-    );
+    const {
+      url,
+      directory,
+      destination,
+    } = await storageHelper.uploadInspectionItemImage(bucket, inspectionId);
     Object.assign(
       inspData.template.items[itemId],
       { photosData: { [Date.now()]: { downloadURL: url } } } // merge in photo data
@@ -357,10 +354,11 @@ describe('Properties | Delete | V2', () => {
     const inspData = createInspection(propertyId, itemId);
 
     // Setup storage & database
-    const { url, directory, destination } = await uploadInspectionItemImage(
-      bucket,
-      inspectionId
-    );
+    const {
+      url,
+      directory,
+      destination,
+    } = await storageHelper.uploadInspectionItemImage(bucket, inspectionId);
     Object.assign(
       inspData.template.items[itemId],
       { photosData: { [Date.now()]: { downloadURL: url } } } // merge in photo data
@@ -394,7 +392,11 @@ describe('Properties | Delete | V2', () => {
     const deficiencyData = createDeficientItem(propertyId, inspId, itemId);
 
     // Setup storage & database
-    const { url, directory, destination } = await uploadDeficiencyImage(
+    const {
+      url,
+      directory,
+      destination,
+    } = await storageHelper.uploadDeficiencyImage(
       bucket,
       propertyId,
       deficiencyId
@@ -428,7 +430,11 @@ describe('Properties | Delete | V2', () => {
     const deficiencyData = createDeficientItem(propertyId, inspId, itemId);
 
     // Setup storage & database
-    const { url, directory, destination } = await uploadDeficiencyImage(
+    const {
+      url,
+      directory,
+      destination,
+    } = await storageHelper.uploadDeficiencyImage(
       bucket,
       propertyId,
       deficiencyId
@@ -538,61 +544,4 @@ function createUser(teamId, propertyId) {
   if (propertyId) result.teams[teamId] = { [propertyId]: true };
 
   return result;
-}
-
-async function uploadPropertyImage(bucket, propertyId) {
-  const destination = `${PROP_UPLOAD_DIR}/${propertyId}-${Date.now()}${uuid().replace(
-    '-',
-    ''
-  )}-${SRC_PROFILE_IMG}`;
-  await bucket.upload(PROFILE_IMG_PATH, {
-    gzip: true,
-    destination,
-  }); // upload file
-  const uploadedFile = await findStorageFile(
-    bucket,
-    PROP_UPLOAD_DIR,
-    destination
-  ); // find the file
-  const [url] = await uploadedFile.getSignedUrl({
-    action: 'read',
-    expires: '01-01-2491',
-  }); // get download URL
-  return { url, directory: PROP_UPLOAD_DIR, destination };
-}
-
-async function uploadInspectionItemImage(bucket, inspectionId) {
-  const destination = `${INSP_UPLOAD_DIR}/${inspectionId}-${Date.now()}-${SRC_PROFILE_IMG}`;
-  await bucket.upload(PROFILE_IMG_PATH, {
-    gzip: true,
-    destination,
-  }); // upload file
-  const uploadedFile = await findStorageFile(
-    bucket,
-    INSP_UPLOAD_DIR,
-    destination
-  ); // find the file
-  const [url] = await uploadedFile.getSignedUrl({
-    action: 'read',
-    expires: '01-01-2491',
-  }); // get download URL
-  return { url, directory: INSP_UPLOAD_DIR, destination };
-}
-
-async function uploadDeficiencyImage(bucket, propertyId, deficiencyId) {
-  const destination = `${DEFICENT_UPLOAD_DIR}/${propertyId}/${deficiencyId}/${SRC_PROFILE_IMG}`;
-  await bucket.upload(PROFILE_IMG_PATH, {
-    gzip: true,
-    destination,
-  }); // upload file
-  const uploadedFile = await findStorageFile(
-    bucket,
-    DEFICENT_UPLOAD_DIR,
-    destination
-  ); // find the file
-  const [url] = await uploadedFile.getSignedUrl({
-    action: 'read',
-    expires: '01-01-2491',
-  }); // get download URL
-  return { url, directory: DEFICENT_UPLOAD_DIR, destination };
 }

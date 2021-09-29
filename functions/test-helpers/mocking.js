@@ -476,6 +476,7 @@ module.exports = {
       state: config.jobs.stateTypes[0],
       type: config.jobs.typeValues[0],
       authorizedRules: config.jobs.authorizedRuleTypes[0],
+      minBids: 2,
       ...jobConfig,
     };
   },
@@ -505,6 +506,19 @@ module.exports = {
       createdAt: nowUnix(),
       updatedAt: nowUnix(),
       ...bidConfig,
+    };
+  },
+
+  /**
+   * Create a minimal template
+   * @param  {Object} tmplConfig
+   * @return {Object}
+   */
+  createTemplate(tmplConfig = {}) {
+    return {
+      name: 'test',
+      description: 'description',
+      ...tmplConfig,
     };
   },
 

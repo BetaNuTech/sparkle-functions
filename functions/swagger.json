@@ -10,7 +10,7 @@
     }
   },
   "host": "localhost:3000",
-  "basePath": "/api/v0",
+  "basePath": "/api",
   "tags": [
     {
       "name": "Jobs",
@@ -19,13 +19,31 @@
     {
       "name": "Bids",
       "description": "API for bids"
+    },
+    {
+      "name": "Integrations",
+      "description": "API for integrations"
+    },
+    {
+      "name": "Property",
+      "description": "API for properties"
+    },
+    {
+      "name": "Inspection",
+      "description": "API for inspections"
     }
   ],
-  "schemes": ["http"],
-  "consumes": ["application/json"],
-  "produces": ["application/vnd.api+json"],
+  "schemes": [
+    "http"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/vnd.api+json"
+  ],
   "paths": {
-    "/properties/{propertyId}/jobs": {
+    "/v0/properties/{propertyId}/jobs": {
       "parameters": [
         {
           "name": "propertyId",
@@ -43,14 +61,19 @@
         }
       ],
       "post": {
-        "tags": ["Jobs"],
+        "tags": [
+          "Jobs"
+        ],
         "summary": "Creating a new job inside a property using the property id.",
         "parameters": [
           {
             "name": "job",
             "in": "body",
             "description": "job details",
-            "required": ["title", "type"],
+            "required": [
+              "title",
+              "type"
+            ],
             "properties": {
               "title": {
                 "type": "string"
@@ -60,8 +83,13 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["improvement", "maintenance"],
-                "default": "improvement"
+                "enum": [
+                  "small:pm",
+                  "small:hybrid",
+                  "large:am",
+                  "large:sc"
+                ],
+                "default": "small:pm"
               },
               "scopeOfWork": {
                 "type": "string"
@@ -73,13 +101,33 @@
           "201": {
             "description": "Success for creating job api",
             "schema": {
-              "$ref": "#/definitions/jobs"
+              "$ref": "#/definitions/JOBS"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
             }
           }
         }
       }
     },
-    "properties/{propertyId}/jobs/{jobId}": {
+    "/v0/properties/{propertyId}/jobs/{jobId}": {
       "parameters": [
         {
           "name": "propertyId",
@@ -104,13 +152,18 @@
         }
       ],
       "put": {
-        "tags": ["Jobs"],
+        "tags": [
+          "Jobs"
+        ],
         "parameters": [
           {
             "name": "job",
             "in": "body",
             "description": "job details that needs to be updated",
-            "required": ["title", "type"],
+            "required": [
+              "title",
+              "type"
+            ],
             "properties": {
               "title": {
                 "type": "string"
@@ -120,8 +173,13 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["improvement", "maintenance"],
-                "default": "improvement"
+                "enum": [
+                  "small:pm",
+                  "small:hybrid",
+                  "large:am",
+                  "large:sc"
+                ],
+                "default": "small:pm"
               },
               "scopeOfWork": {
                 "type": "string"
@@ -139,17 +197,17 @@
           "201": {
             "description": "Success for creating job api",
             "schema": {
-              "$ref": "#/definitions/jobs"
+              "$ref": "#/definitions/JOBS"
             }
           },
           "400": {
             "schema": {
-              "$ref": "#/definitions/BadStatus400"
+              "$ref": "#/definitions/BADSTATUS400"
             }
           },
           "404": {
             "schema": {
-              "$ref": "#/definitions/BadStatus404"
+              "$ref": "#/definitions/BADSTATUS404"
             }
           },
           "403": {
@@ -165,7 +223,7 @@
         }
       }
     },
-    "properties/{propertyId}/jobs/{jobId}/bids/{bidId}": {
+    "/v0/properties/{propertyId}/jobs/{jobId}/bids/{bidId}": {
       "parameters": [
         {
           "name": "Authorization",
@@ -197,7 +255,9 @@
         }
       ],
       "put": {
-        "tags": ["Bids"],
+        "tags": [
+          "Bids"
+        ],
         "parameters": [
           {
             "name": "bid",
@@ -241,17 +301,17 @@
           "201": {
             "description": "Success for updating bid api",
             "schema": {
-              "$ref": "#/definitions/jobs"
+              "$ref": "#/definitions/JOBS"
             }
           },
           "400": {
             "schema": {
-              "$ref": "#/definitions/BadStatus400"
+              "$ref": "#/definitions/BADSTATUS400"
             }
           },
           "404": {
             "schema": {
-              "$ref": "#/definitions/BadStatus404"
+              "$ref": "#/definitions/BADSTATUS404"
             }
           },
           "403": {
@@ -267,7 +327,7 @@
         }
       }
     },
-    "properties/{propertyId}/jobs/{jobId}/bids": {
+    "/v0/properties/{propertyId}/jobs/{jobId}/bids": {
       "parameters": [
         {
           "name": "Authorization",
@@ -292,7 +352,9 @@
         }
       ],
       "post": {
-        "tags": ["Bids"],
+        "tags": [
+          "Bids"
+        ],
         "parameters": [
           {
             "name": "bid",
@@ -336,17 +398,17 @@
           "201": {
             "description": "Success for adding a new bid",
             "schema": {
-              "$ref": "#/definitions/jobs"
+              "$ref": "#/definitions/JOBS"
             }
           },
           "400": {
             "schema": {
-              "$ref": "#/definitions/BadStatus400"
+              "$ref": "#/definitions/BADSTATUS400"
             }
           },
           "404": {
             "schema": {
-              "$ref": "#/definitions/BadStatus404"
+              "$ref": "#/definitions/BADSTATUS404"
             }
           },
           "403": {
@@ -362,7 +424,7 @@
         }
       }
     },
-    "properties/{propertyId}/jobs/{jobId}/trello": {
+    "/v0/properties/{propertyId}/inspections": {
       "parameters": [
         {
           "name": "Authorization",
@@ -375,34 +437,354 @@
           "name": "propertyId",
           "in": "path",
           "required": true,
-          "description": "property id.",
-          "type": "string"
-        },
-        {
-          "name": "jobId",
-          "in": "path",
-          "required": true,
-          "description": "job id.",
+          "description": "property id in which we want to create an inspection for.",
           "type": "string"
         }
       ],
       "post": {
-        "tags": ["Jobs"],
-        "parameters": [],
+        "tags": [
+          "Inspection"
+        ],
+        "parameters": [
+          {
+            "name": "inspection",
+            "in": "body",
+            "description": "inspection details that are needed for new inspection for a property.",
+            "required": [
+              "template"
+            ],
+            "properties": {
+              "template": {
+                "type": "string",
+                "description": "template details."
+              }
+            }
+          }
+        ],
         "responses": {
-          "201": {
+          "400": {
             "schema": {
-              "$ref": "#/definitions/TRELLO_SUCCESS"
+              "$ref": "#/definitions/BADSTATUS400"
             }
           },
           "404": {
             "schema": {
-              "$ref": "#/definitions/BadStatus404"
+              "$ref": "#/definitions/BADSTATUS404"
             }
           },
-          "409": {
+          "403": {
             "schema": {
-              "$ref": "#/definitions/BadStatus409"
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/CREATEINSPECTION"
+            }
+          }
+        }
+      }
+    },
+    "/v0/properties/{propertyId}/yardi/residents": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "propertyId",
+          "in": "path",
+          "required": true,
+          "description": "property id in which we want to edit a bid assigned to a job.",
+          "type": "string"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Property"
+        ],
+        "description": "Fetch all residents from the propertyId",
+        "responses": {
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "407": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/RESIDENTS"
+            }
+          }
+        }
+      }
+    },
+    "/v0/properties": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Property"
+        ],
+        "description": "Creating a new property",
+        "parameters": [
+          {
+            "name": "property",
+            "in": "body",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "team": {
+                "type": "string"
+              },
+              "templates": {
+                "type": "object"
+              },
+              "num_of_units": {
+                "type": "number"
+              },
+              "name": {
+                "type": "string"
+              },
+              "loan_type": {
+                "type": "string"
+              },
+              "maint_super_name": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "addr2": {
+                "type": "string"
+              },
+              "city": {
+                "type": "string"
+              },
+              "addr1": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string"
+              },
+              "manager_name": {
+                "type": "string"
+              },
+              "zip": {
+                "type": "string"
+              },
+              "photoURL": {
+                "type": "string"
+              },
+              "logoURL": {
+                "type": "string"
+              },
+              "year_built": {
+                "type": "number"
+              },
+              "slackChannel": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/PROPERTY"
+            }
+          }
+        }
+      }
+    },
+    "/v0/properties/{propertyId}/yardi/work-orders": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "propertyId",
+          "in": "path",
+          "required": true,
+          "description": "property id in which we want to get worker orders.",
+          "type": "string"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Property"
+        ],
+        "responses": {
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "407": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/WORKORDER"
+            }
+          }
+        }
+      }
+    },
+    "/v0/properties/{propertyId}": {
+      "parameters": [
+        {
+          "name": "propertyId",
+          "in": "path",
+          "required": true,
+          "description": "property id in which we want to edit a property.",
+          "type": "string"
+        },
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "put": {
+        "tags": [
+          "Property"
+        ],
+        "parameters": [
+          {
+            "name": "property",
+            "in": "body",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "team": {
+                "type": "string"
+              },
+              "templates": {
+                "type": "object"
+              },
+              "num_of_units": {
+                "type": "number"
+              },
+              "name": {
+                "type": "string"
+              },
+              "loan_type": {
+                "type": "string"
+              },
+              "maint_super_name": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "addr2": {
+                "type": "string"
+              },
+              "city": {
+                "type": "string"
+              },
+              "addr1": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string"
+              },
+              "manager_name": {
+                "type": "string"
+              },
+              "zip": {
+                "type": "string"
+              },
+              "photoURL": {
+                "type": "string"
+              },
+              "logoURL": {
+                "type": "string"
+              },
+              "year_built": {
+                "type": "number"
+              },
+              "slackChannel": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success for creating property api",
+            "schema": {
+              "$ref": "#/definitions/PROPERTY"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
             }
           },
           "500": {
@@ -412,10 +794,652 @@
           }
         }
       }
+    },
+    "/v0/properties/{propertyId}/jobs/{jobId}/trello": {
+      "parameters": [
+        {
+          "name": "propertyId",
+          "in": "path",
+          "required": true,
+          "description": "property id in which we want to edit a property.",
+          "type": "string"
+        },
+        {
+          "name": "jobId",
+          "in": "path",
+          "required": true,
+          "description": "job id in which we want to create a trello card.",
+          "type": "string"
+        },
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Property"
+        ],
+        "parameters": [
+          {
+            "name": "property",
+            "in": "body",
+            "required": [],
+            "properties": {}
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success for creating trello card.",
+            "schema": {
+              "$ref": "#/definitions/TRELLO"
+            }
+          },
+          "409": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS409"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/integrations/slack/authorization": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "parameters": [
+          {
+            "name": "integration",
+            "in": "body",
+            "description": "Intregration payload.",
+            "required": [
+              "slackCode",
+              "redirectUri"
+            ],
+            "properties": {
+              "slackCode": {
+                "type": "string"
+              },
+              "redirectUri": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/INTEGRATIONSUCCESS"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/integrations/slack/authorization/": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "tags": [
+          "Integrations"
+        ],
+        "parameters": [
+          {
+            "name": "integration",
+            "in": "body",
+            "description": "Intregration payload.",
+            "required": [],
+            "properties": {}
+          }
+        ],
+        "responses": {
+          "204": {},
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/integrations/slack/events": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "parameters": [
+          {
+            "name": "integration",
+            "in": "body",
+            "description": "Intregration Event payload.",
+            "required": [],
+            "properties": {
+              "team_id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "event": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string"
+                  }
+                }
+              },
+              "challenge": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/CHALLENGE"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/integrations/trello/authorization": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "parameters": [
+          {
+            "name": "integration",
+            "in": "body",
+            "description": "Intregration trello payload.",
+            "required": [
+              "apiKey",
+              "authToken"
+            ],
+            "properties": {
+              "apiKey": {
+                "type": "string"
+              },
+              "authToken": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/INTEGRATIONSUCCESS"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/integrations/trello/authorization/": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "tags": [
+          "Integrations"
+        ],
+        "parameters": [
+          {
+            "name": "integration",
+            "in": "body",
+            "description": "Intregration trello delete payload.",
+            "required": [],
+            "properties": {}
+          }
+        ],
+        "responses": {
+          "204": {
+            "type": "object"
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/integrations/trello/boards": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/TRELLOBOARD"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/integrations/trello/boards/{boardId}/lists": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "boardId",
+          "in": "header",
+          "required": true,
+          "description": "board id.",
+          "type": "string"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "responses": {
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/TRELLOBOARDLIST"
+            }
+          }
+        }
+      }
+    },
+    "/v0/inspections/{inspectionId}": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "inspectionId",
+          "in": "header",
+          "required": true,
+          "description": "inspection id.",
+          "type": "string"
+        }
+      ],
+      "patch": {
+        "tags": [
+          "Inspection"
+        ],
+        "parameters": [
+          {
+            "name": "integration",
+            "in": "body",
+            "description": "Inspection patch property payload.",
+            "required": [
+              "property"
+            ],
+            "properties": {
+              "property": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/RESPONSE"
+            }
+          },
+          "409": {
+            "schema": {
+              "$ref": "#/definitions/RESPONSE"
+            }
+          },
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/RESPONSE"
+            }
+          }
+        }
+      }
+    },
+    "/v0/inspections/{inspectionId}/report-pdf": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "inspectionId",
+          "in": "header",
+          "required": true,
+          "description": "inspection id.",
+          "type": "string"
+        }
+      ],
+      "patch": {
+        "tags": [
+          "Inspection"
+        ],
+        "parameters": [
+          {
+            "name": "integration",
+            "in": "body",
+            "description": "Inspection report PDF update.",
+            "required": [],
+            "properties": {}
+          }
+        ],
+        "responses": {
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/REPORTPDFRESPONSE200"
+            }
+          },
+          "202": {
+            "schema": {
+              "$ref": "#/definitions/REPORTPDFRESPONSE"
+            }
+          }
+        }
+      }
+    },
+    "/v0/inspections/{inspection}/pdf-report": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "inspection",
+          "in": "header",
+          "required": true,
+          "description": "inspection id.",
+          "type": "string"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/PDFREPORTRESPONSE"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/RESPONSE"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/RESPONSE"
+            }
+          },
+          "304": {
+            "type": "object",
+            "properties": {}
+          }
+        }
+      }
+    },
+    "/v0/inspections/latest-completed": {
+      "parameters": [
+        {
+          "name": "before",
+          "in": "query",
+          "required": false,
+          "description": "before value.",
+          "type": "string"
+        },
+        {
+          "name": "propertyCode",
+          "in": "query",
+          "required": false,
+          "description": "propertyCode.",
+          "type": "string"
+        },
+        {
+          "name": "templateName",
+          "in": "query",
+          "required": false,
+          "description": "templateName.",
+          "type": "string"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Inspection"
+        ],
+        "responses": {
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/LATESTSUCCESS"
+            }
+          }
+        }
+      }
+    },
+    "/v0/properties/{propertyId}/image": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "propertyId",
+          "in": "path",
+          "required": true,
+          "description": "property id in which we want to upload an image.",
+          "type": "string"
+        },
+        {
+          "name": "target",
+          "in": "query",
+          "required": true,
+          "description": "flag mentioning type of image upload, logo or profile.",
+          "type": "string",
+          "enum": ["logo", "profile"]
+        }
+      ],
+      "post": {
+        "tags": ["Property"],
+        "consumes": ["multipart/form-data"],
+        "parameters": [
+          {
+            "name": "file",
+            "in": "formData",
+            "type": "file",
+            "required": true,
+            "description": "File that we need to upload to the property"
+          }
+        ],
+        "responses": {
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/PROPERTYIMGUPLOADSUCCESS"
+            }
+          }
+        }
+      }
     }
   },
   "definitions": {
-    "jobs": {
+    "JOBS": {
       "type": "object",
       "properties": {
         "data": {
@@ -453,19 +1477,33 @@
                 },
                 "updatedAt": {
                   "type": "number"
+                },
+                "minBids": {
+                  "type": "number"
                 }
               }
             },
             "relationships": {
-              "schema": {
-                "$ref": "#/definitions/property"
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  }
+                }
               }
             }
           }
         }
       }
     },
-    "property": {
+    "PROPERTY": {
       "type": "object",
       "properties": {
         "data": {
@@ -476,12 +1514,71 @@
             },
             "type": {
               "type": "string"
+            },
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "team": {
+                  "type": "string"
+                },
+                "templates": {
+                  "type": "object"
+                },
+                "num_of_units": {
+                  "type": "number"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "loan_type": {
+                  "type": "string"
+                },
+                "maint_super_name": {
+                  "type": "string"
+                },
+                "state": {
+                  "type": "string"
+                },
+                "addr2": {
+                  "type": "string"
+                },
+                "city": {
+                  "type": "string"
+                },
+                "addr1": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "manager_name": {
+                  "type": "string"
+                },
+                "zip": {
+                  "type": "string"
+                },
+                "photoURL": {
+                  "type": "string"
+                },
+                "logoURL": {
+                  "type": "string"
+                },
+                "year_built": {
+                  "type": "number"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "slackChannel": {
+                  "type": "string"
+                }
+              }
             }
           }
         }
       }
     },
-    "BadStatus400": {
+    "BADSTATUS400": {
       "type": "object",
       "properties": {
         "errors": {
@@ -508,7 +1605,7 @@
         }
       }
     },
-    "BadStatus404": {
+    "BADSTATUS404": {
       "type": "object",
       "properties": {
         "errors": {
@@ -522,7 +1619,11 @@
                   "pointer": {
                     "type": "string"
                   },
-                  "enum": ["property", "job", "bid"]
+                  "enum": [
+                    "property",
+                    "job",
+                    "bid"
+                  ]
                 }
               },
               "title": {
@@ -533,7 +1634,7 @@
         }
       }
     },
-    "BadStatus409": {
+    "BADSTATUS409": {
       "type": "object",
       "properties": {
         "errors": {
@@ -571,7 +1672,10 @@
                   "pointer": {
                     "type": "string"
                   },
-                  "enum": ["authorizedRules", "state"]
+                  "enum": [
+                    "authorizedRules",
+                    "state"
+                  ]
                 }
               },
               "detail": {
@@ -598,7 +1702,237 @@
         }
       }
     },
-    "TRELLO_SUCCESS": {
+    "CREATEINSPECTION": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "property": {
+              "type": "string"
+            },
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "template": {
+                  "type": "object",
+                  "properties": {
+                    "category": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "requireDeficientItemNoteAndPhoto": {
+                      "type": "boolean"
+                    },
+                    "trackDeficientItems": {
+                      "type": "boolean"
+                    },
+                    "sections": {
+                      "type": "object"
+                    },
+                    "items": {
+                      "type": "object"
+                    },
+                    "properties": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "templateId": {
+                  "type": "string"
+                },
+                "property": {
+                  "type": "string"
+                },
+                "inspectorName": {
+                  "type": "string"
+                },
+                "inspector": {
+                  "type": "string"
+                },
+                "totalItems": {
+                  "type": "number"
+                },
+                "templateName": {
+                  "type": "string"
+                },
+                "itemsCompleted": {
+                  "type": "number"
+                },
+                "inspectionCompleted": {
+                  "type": "boolean"
+                },
+                "completionDate": {
+                  "type": "number"
+                },
+                "deficienciesExist": {
+                  "type": "boolean"
+                },
+                "score": {
+                  "type": "number"
+                },
+                "createdAt": {
+                  "type": "number"
+                },
+                "creationDate": {
+                  "type": "number"
+                },
+                "updatedLastDate": {
+                  "type": "number"
+                },
+                "updatedAt": {
+                  "type": "number"
+                },
+                "templateCategory": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "RESIDENTS": {
+      "type": "object",
+      "properties": {
+        "meta": {
+          "type": "object",
+          "properties": {}
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {}
+              },
+              "relationships": {
+                "type": "object",
+                "properties": {
+                  "occupants": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "array",
+                        "items": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "included": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {}
+              },
+              "relationships": {
+                "type": "object",
+                "properties": {
+                  "resident": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "object"
+                          },
+                          "type": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "WORKORDER": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {}
+              },
+              "relationships": {
+                "type": "object",
+                "properties": {
+                  "resident": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "TRELLO": {
       "type": "object",
       "properties": {
         "data": {
@@ -613,11 +1947,412 @@
             "attributes": {
               "type": "object",
               "properties": {
+                "updatedAt": {
+                  "type": "number"
+                },
                 "trelloCardURL": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "INTEGRATIONSUCCESS": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "grantedBy": {
+                  "type": "string"
+                },
+                "team": {
+                  "type": "string"
+                },
+                "teamName": {
+                  "type": "string"
+                },
+                "createdAt": {
+                  "type": "number"
+                },
+                "member": {
+                  "type": "string"
+                },
+                "trelloFullName": {
+                  "type": "string"
+                },
+                "trelloUsername": {
+                  "type": "string"
+                },
+                "closedBoard": {
+                  "type": "string"
+                },
+                "closedBoardName": {
+                  "type": "string"
+                },
+                "closedList": {
+                  "type": "string"
+                },
+                "closedListName": {
+                  "type": "string"
+                },
+                "openBoard": {
+                  "type": "string"
+                },
+                "openBoardName": {
+                  "type": "string"
+                },
+                "openList": {
+                  "type": "string"
+                },
+                "openListName": {
+                  "type": "string"
+                },
+                "yardiEntity": {
+                  "type": "string"
+                },
+                "yardiUserName": {
                   "type": "string"
                 },
                 "updatedAt": {
                   "type": "number"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "CHALLENGE": {
+      "type": "object",
+      "properties": {
+        "challenge": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "TRELLOBOARD": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              },
+              "relationships": {
+                "type": "object",
+                "properties": {
+                  "trelloOrganization": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "included": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "TRELLOBOARDLIST": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              },
+              "relationships": {
+                "type": "object",
+                "properties": {
+                  "board": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "RESPONSE": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "REPORTPDFRESPONSE": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "inspectionReportStatus": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "REPORTPDFRESPONSE200": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "inspectionReportURL": {
+                  "type": "string"
+                },
+                "inspectionReportStatus": {
+                  "type": "string"
+                },
+                "inspectionReportUpdateLastDate": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "PDFREPORTRESPONSE": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        }
+      }
+    },
+    "PDFREPORTRESPONSE200": {
+      "type": "object",
+      "properties": {
+        "inspectionReportURL": {
+          "type": "string"
+        }
+      }
+    },
+    "LATESTSUCCESS": {
+      "type": "object",
+      "properties": {
+        "included": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "lastInspectionDate": {
+                    "type": "number"
+                  },
+                  "lastInspectionScore": {
+                    "type": "number"
+                  },
+                  "numOfInspections": {
+                    "type": "number"
+                  },
+                  "numOfDeficientItems": {
+                    "type": "number"
+                  },
+                  "numOfOverdueDeficientItems": {
+                    "type": "number"
+                  },
+                  "numOfRequiredActionsForDeficientItems": {
+                    "type": "number"
+                  },
+                  "numOfFollowUpActionsForDeficientItems": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "creationDate": {
+                    "type": "number"
+                  },
+                  "completionDate": {
+                    "type": "number"
+                  },
+                  "score": {
+                    "type": "string"
+                  },
+                  "templateName": {
+                    "type": "string"
+                  },
+                  "inspectionReportURL": {
+                    "type": "string"
+                  },
+                  "inspectionURL": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "PROPERTYIMGUPLOADSUCCESS": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "logoURL": {
+                  "type": "string"
+                },
+                "logoName": {
+                  "type": "string"
+                },
+                "bannerPhotoURL": {
+                  "type": "string"
+                },
+                "bannerPhotoName": {
+                  "type": "string"
+                },
+                "photoURL": {
+                  "type": "string"
+                },
+                "photoName": {
+                  "type": "string"
                 }
               }
             }

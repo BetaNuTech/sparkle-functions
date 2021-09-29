@@ -64,7 +64,10 @@ describe('Jobs | Utils | Can User Update State', () => {
     const actual = canUpdateState(
       'authorized',
       { id: jobId, state: 'approved', authorizedRules: 'default' },
-      [{ job: uuid(), state: 'approved' }, { job: jobId, state: 'open' }],
+      [
+        { job: uuid(), state: 'approved' },
+        { job: jobId, state: 'open' },
+      ],
       { admin: false }
     );
 
@@ -77,7 +80,10 @@ describe('Jobs | Utils | Can User Update State', () => {
     const actual = canUpdateState(
       'authorized',
       { id: jobId, state: 'approved', authorizedRules: 'expedite' },
-      [{ job: uuid(), state: 'open' }, { job: jobId, state: 'open' }],
+      [
+        { job: uuid(), state: 'open' },
+        { job: jobId, state: 'open' },
+      ],
       { admin: true }
     );
 
@@ -102,7 +108,7 @@ describe('Jobs | Utils | Can User Update State', () => {
     const jobId = uuid();
     const actual = canUpdateState(
       'authorized',
-      { id: jobId, state: 'approved', authorizedRules: 'expedite' },
+      { id: jobId, state: 'approved', authorizedRules: 'expedite', minBids: 1 },
       [{ job: jobId, state: 'approved' }],
       { admin: true }
     );

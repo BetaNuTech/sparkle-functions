@@ -1,13 +1,18 @@
 const express = require('express');
-const { fs, auth } = require('./setup'); // eslint-disable-line
+const { fs, auth, storage } = require('./setup'); // eslint-disable-line
 const config = require('../config');
 const router = require('../router');
 
 const port = process.env.PORT || 6000;
 
-const routes = router(fs, auth, {
-  inspectionUrl: config.clientApps.web.inspectionURL,
-});
+const routes = router(
+  fs,
+  auth,
+  {
+    inspectionUrl: config.clientApps.web.inspectionURL,
+  },
+  storage
+);
 
 // Make similar to production
 const api = express();

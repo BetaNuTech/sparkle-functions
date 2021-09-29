@@ -18,6 +18,7 @@ module.exports = update => {
     'startAt',
     'completeAt',
     'state',
+    'scope',
   ];
 
   return keys.some(key => !attrs.includes(key));

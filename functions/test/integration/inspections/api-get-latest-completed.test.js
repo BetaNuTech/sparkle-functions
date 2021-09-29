@@ -129,7 +129,7 @@ describe('Inspections | API | GET Latest Completed', () => {
   });
 
   it('returns an empty response when no inspections can be found', done => {
-    const expected = [];
+    const expected = null;
     const inspectionsSnap = stubs.wrapSnapshot([]); // empty
 
     // Stup requests
@@ -144,7 +144,7 @@ describe('Inspections | API | GET Latest Completed', () => {
       .expect(200)
       .then(res => {
         const actual = res.body.data;
-        expect(actual).to.deep.equal(expected);
+        expect(actual).to.equal(expected);
         done();
       })
       .catch(done);

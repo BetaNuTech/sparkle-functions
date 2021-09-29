@@ -5,13 +5,9 @@ const trelloCardDescriptionTemplate = `Job
 Sparkle job: {{{clientUrl}}}{{/if}}`;
 
 module.exports = {
-  authorizedRuleTypes: ['default', 'expedite'], // 1st is default
+  authorizedRuleTypes: ['default', 'expedite', 'large'], // 1st is default
   stateTypes: ['open', 'approved', 'authorized', 'complete'], // 1st is default
-  typeValues: [
-    'asset management project',
-    'property management project',
-    'hybrid capital project',
-  ],
+  typeValues: ['small:pm', 'small:hybrid', 'large:am', 'large:sc'], // 1st is default
 
   /**
    * Template for all Jobs Trello card

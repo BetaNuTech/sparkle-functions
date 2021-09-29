@@ -3,6 +3,7 @@ const assert = require('assert');
 const express = require('express');
 const bodyParser = require('body-parser');
 const swaggerUi = require('swagger-ui-express');
+const fileUpload = require('express-fileupload');
 const slack = require('./slack');
 const trello = require('./trello');
 const deficiencies = require('./deficient-items');
@@ -22,16 +23,18 @@ const swaggerDocument = require('./swagger.json');
  * @param  {admin.firestore} fs - Firestore Admin DB instance
  * @param  {admin.auth} auth - Firebase Admin auth instance
  * @param  {Object} settings
+ * @param  {Object} storage
  * @return {Express}
  */
-module.exports = (fs, auth, settings) => {
+module.exports = (fs, auth, settings, storage) => {
   assert(Boolean(fs), 'has firestore database instance');
   assert(Boolean(auth), 'has firebase auth instance');
 
   const app = express();
   const { inspectionUrl } = settings;
   app.use(bodyParser.json(), cors({ origin: true, credentials: true }));
-  swaggerDocument.host = `localhost:${process.env.PORT || 6000}`
+  swaggerDocument.host = process.env.FIREBASE_FUNCTIONS_DOMAIN;
+
   // API documentation
   app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
@@ -116,8 +119,19 @@ module.exports = (fs, auth, settings) => {
     authUser(fs, auth, {
       admin: true,
       corporate: true,
-    }), // admin only
+    }),
     properties.api.put(fs)
+  );
+
+  // Upload an image/logo to property
+  app.post(
+    '/v0/properties/:propertyId/image',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+    }),
+    fileUpload(),
+    properties.api.postImage(fs, storage)
   );
 
   // Authorize Slack API credentials

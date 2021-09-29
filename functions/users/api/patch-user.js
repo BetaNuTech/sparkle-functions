@@ -47,7 +47,8 @@ module.exports = function createPatch(db, auth) {
       });
     }
 
-    // Reject setting to Corprate/Admin
+    // Reject setting user to a Corprate Admin
+    // user can either be an admin or a corporate (not both)
     if (claimsUpdates.admin && claimsUpdates.corporate) {
       return res.status(400).send({
         errors: [{ detail: 'Cannot set corporate admin' }],
@@ -63,7 +64,7 @@ module.exports = function createPatch(db, auth) {
         body
       );
     } catch (err) {
-      return send500Error(err);
+      return send500Error(err, 'Failed to lookup requestor update permissions');
     }
 
     // Reject request from non-admin
@@ -109,6 +110,11 @@ module.exports = function createPatch(db, auth) {
     }
 
     const dbUpdate = { ...claimsUpdates };
+
+    // Remove Corporate / Admin properties
+    if (claimsUpdates.admin || claimsUpdates.corporate) {
+      dbUpdate.properties = {};
+    }
 
     try {
       await db.runTransaction(async transaction => {

@@ -26,7 +26,7 @@ module.exports = function createPutProperty(fs) {
    */
   return async (req, res) => {
     const { params, body = {} } = req;
-    const authorName = getFullName(req.user);
+    const authorName = getFullName(req.user || {});
     const authorEmail = req.user ? req.user.email : '';
     const { propertyId } = params;
     const update = body;
@@ -41,7 +41,6 @@ module.exports = function createPutProperty(fs) {
 
     // Set content type
     res.set('Content-Type', 'application/vnd.api+json');
-
     log.info('Update property requested');
 
     // Reject missing update request JSON

@@ -140,7 +140,12 @@ exports.cleanupNotificationsV2 = notifications.pubsub.cleanPublished(
 exports.api = functions
   .runWith({ timeoutSeconds: 540, memory: '1GB' })
   .https.onRequest(
-    createRouter(fs, auth, {
-      inspectionUrl: config.clientApps.web.inspectionURL,
-    })
+    createRouter(
+      fs,
+      auth,
+      {
+        inspectionUrl: config.clientApps.web.inspectionURL,
+      },
+      storage
+    )
   );
