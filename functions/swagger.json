@@ -33,19 +33,17 @@
       "description": "API for inspections"
     },
     {
+      "name": "Deficient",
+      "description": "API for deficient"
+    },
+    {
       "name": "Users",
       "description": "API for users"
     }
   ],
-  "schemes": [
-    "http"
-  ],
-  "consumes": [
-    "application/json"
-  ],
-  "produces": [
-    "application/vnd.api+json"
-  ],
+  "schemes": ["http"],
+  "consumes": ["application/json"],
+  "produces": ["application/vnd.api+json"],
   "paths": {
     "/v0/properties/{propertyId}/jobs": {
       "parameters": [
@@ -65,19 +63,14 @@
         }
       ],
       "post": {
-        "tags": [
-          "Jobs"
-        ],
+        "tags": ["Jobs"],
         "summary": "Creating a new job inside a property using the property id.",
         "parameters": [
           {
             "name": "job",
             "in": "body",
             "description": "job details",
-            "required": [
-              "title",
-              "type"
-            ],
+            "required": ["title", "type"],
             "properties": {
               "title": {
                 "type": "string"
@@ -87,12 +80,7 @@
               },
               "type": {
                 "type": "string",
-                "enum": [
-                  "small:pm",
-                  "small:hybrid",
-                  "large:am",
-                  "large:sc"
-                ],
+                "enum": ["small:pm", "small:hybrid", "large:am", "large:sc"],
                 "default": "small:pm"
               },
               "scopeOfWork": {
@@ -156,18 +144,13 @@
         }
       ],
       "put": {
-        "tags": [
-          "Jobs"
-        ],
+        "tags": ["Jobs"],
         "parameters": [
           {
             "name": "job",
             "in": "body",
             "description": "job details that needs to be updated",
-            "required": [
-              "title",
-              "type"
-            ],
+            "required": ["title", "type"],
             "properties": {
               "title": {
                 "type": "string"
@@ -177,12 +160,7 @@
               },
               "type": {
                 "type": "string",
-                "enum": [
-                  "small:pm",
-                  "small:hybrid",
-                  "large:am",
-                  "large:sc"
-                ],
+                "enum": ["small:pm", "small:hybrid", "large:am", "large:sc"],
                 "default": "small:pm"
               },
               "scopeOfWork": {
@@ -259,9 +237,7 @@
         }
       ],
       "put": {
-        "tags": [
-          "Bids"
-        ],
+        "tags": ["Bids"],
         "parameters": [
           {
             "name": "bid",
@@ -356,9 +332,7 @@
         }
       ],
       "post": {
-        "tags": [
-          "Bids"
-        ],
+        "tags": ["Bids"],
         "parameters": [
           {
             "name": "bid",
@@ -446,17 +420,13 @@
         }
       ],
       "post": {
-        "tags": [
-          "Inspection"
-        ],
+        "tags": ["Inspection"],
         "parameters": [
           {
             "name": "inspection",
             "in": "body",
             "description": "inspection details that are needed for new inspection for a property.",
-            "required": [
-              "template"
-            ],
+            "required": ["template"],
             "properties": {
               "template": {
                 "type": "string",
@@ -512,9 +482,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Property"
-        ],
+        "tags": ["Property"],
         "description": "Fetch all residents from the propertyId",
         "responses": {
           "404": {
@@ -551,17 +519,13 @@
         }
       ],
       "post": {
-        "tags": [
-          "Property"
-        ],
+        "tags": ["Property"],
         "description": "Creating a new property",
         "parameters": [
           {
             "name": "property",
             "in": "body",
-            "required": [
-              "name"
-            ],
+            "required": ["name"],
             "properties": {
               "team": {
                 "type": "string"
@@ -654,9 +618,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Property"
-        ],
+        "tags": ["Property"],
         "responses": {
           "404": {
             "schema": {
@@ -704,16 +666,12 @@
         }
       ],
       "put": {
-        "tags": [
-          "Property"
-        ],
+        "tags": ["Property"],
         "parameters": [
           {
             "name": "property",
             "in": "body",
-            "required": [
-              "name"
-            ],
+            "required": ["name"],
             "properties": {
               "team": {
                 "type": "string"
@@ -824,9 +782,7 @@
         }
       ],
       "post": {
-        "tags": [
-          "Property"
-        ],
+        "tags": ["Property"],
         "parameters": [
           {
             "name": "property",
@@ -876,18 +832,13 @@
         }
       ],
       "post": {
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "parameters": [
           {
             "name": "integration",
             "in": "body",
             "description": "Intregration payload.",
-            "required": [
-              "slackCode",
-              "redirectUri"
-            ],
+            "required": ["slackCode", "redirectUri"],
             "properties": {
               "slackCode": {
                 "type": "string"
@@ -928,9 +879,7 @@
         }
       ],
       "delete": {
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "parameters": [
           {
             "name": "integration",
@@ -966,9 +915,7 @@
         }
       ],
       "post": {
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "parameters": [
           {
             "name": "integration",
@@ -1021,18 +968,13 @@
         }
       ],
       "post": {
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "parameters": [
           {
             "name": "integration",
             "in": "body",
             "description": "Intregration trello payload.",
-            "required": [
-              "apiKey",
-              "authToken"
-            ],
+            "required": ["apiKey", "authToken"],
             "properties": {
               "apiKey": {
                 "type": "string"
@@ -1078,9 +1020,7 @@
         }
       ],
       "delete": {
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "parameters": [
           {
             "name": "integration",
@@ -1113,9 +1053,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "responses": {
           "200": {
             "schema": {
@@ -1153,9 +1091,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "responses": {
           "500": {
             "schema": {
@@ -1193,17 +1129,13 @@
         }
       ],
       "patch": {
-        "tags": [
-          "Inspection"
-        ],
+        "tags": ["Inspection"],
         "parameters": [
           {
             "name": "integration",
             "in": "body",
             "description": "Inspection patch property payload.",
-            "required": [
-              "property"
-            ],
+            "required": ["property"],
             "properties": {
               "property": {
                 "type": "string"
@@ -1253,9 +1185,7 @@
         }
       ],
       "patch": {
-        "tags": [
-          "Inspection"
-        ],
+        "tags": ["Inspection"],
         "parameters": [
           {
             "name": "integration",
@@ -1307,9 +1237,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "responses": {
           "200": {
             "schema": {
@@ -1358,9 +1286,7 @@
         }
       ],
       "get": {
-        "tags": [
-          "Inspection"
-        ],
+        "tags": ["Inspection"],
         "responses": {
           "400": {
             "schema": {
@@ -1402,19 +1328,12 @@
           "required": true,
           "description": "flag mentioning type of image upload, logo or profile.",
           "type": "string",
-          "enum": [
-            "logo",
-            "profile"
-          ]
+          "enum": ["logo", "profile"]
         }
       ],
       "post": {
-        "tags": [
-          "Property"
-        ],
-        "consumes": [
-          "multipart/form-data"
-        ],
+        "tags": ["Property"],
+        "consumes": ["multipart/form-data"],
         "parameters": [
           {
             "name": "file",
@@ -1448,6 +1367,110 @@
         }
       }
     },
+    "/v0/deficiencies/{deficiencyId}/trello/card": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "deficiencyId",
+          "in": "path",
+          "required": true,
+          "description": "deficiency id.",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": ["Deficient"],
+        "parameters": [
+          {
+            "name": "deficient",
+            "in": "body",
+            "description": "Deficienies payload.",
+            "required": [],
+            "properties": {}
+          }
+        ],
+        "responses": {
+          "409": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/DEFICIENT"
+            }
+          }
+        }
+      }
+    },
+    "/v0/deficiencies": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "put": {
+        "tags": ["Deficient"],
+        "parameters": [
+          {
+            "name": "deficient",
+            "in": "body",
+            "description": "Deficienies payload.",
+            "required": [],
+            "properties": {
+              "currentStartDate": {
+                "type": "number"
+              },
+              "currentDueDate": {
+                "type": "number"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/DEFICIENTUPDATE"
+            }
+          }
+        }
+      }
+    },
     "/v0/users": {
       "parameters": [
         {
@@ -1459,21 +1482,13 @@
         }
       ],
       "post": {
-        "tags": [
-          "Users"
-        ],
-        "consumes": [
-          "application/json"
-        ],
+        "tags": ["Users"],
+        "consumes": ["application/json"],
         "parameters": [
           {
             "name": "users",
             "in": "body",
-            "required": [
-              "firstName",
-              "lastName",
-              "email"
-            ],
+            "required": ["firstName", "lastName", "email"],
             "properties": {
               "firstName": {
                 "type": "string"
@@ -1529,12 +1544,8 @@
         }
       ],
       "post": {
-        "tags": [
-          "Users"
-        ],
-        "consumes": [
-          "application/json"
-        ],
+        "tags": ["Users"],
+        "consumes": ["application/json"],
         "parameters": [
           {
             "name": "user",
@@ -1607,12 +1618,8 @@
         }
       ],
       "delete": {
-        "tags": [
-          "Users"
-        ],
-        "consumes": [
-          "application/json"
-        ],
+        "tags": ["Users"],
+        "consumes": ["application/json"],
         "parameters": [],
         "responses": {
           "500": {
@@ -1815,11 +1822,7 @@
                   "pointer": {
                     "type": "string"
                   },
-                  "enum": [
-                    "property",
-                    "job",
-                    "bid"
-                  ]
+                  "enum": ["property", "job", "bid"]
                 }
               },
               "title": {
@@ -1868,10 +1871,7 @@
                   "pointer": {
                     "type": "string"
                   },
-                  "enum": [
-                    "authorizedRules",
-                    "state"
-                  ]
+                  "enum": ["authorizedRules", "state"]
                 }
               },
               "detail": {
@@ -2551,6 +2551,64 @@
                   "type": "string"
                 }
               }
+            }
+          }
+        }
+      }
+    },
+    "DEFICIENT": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "data": {
+              "type": "object",
+              "properties": {
+                "shortUrl": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "relationships": {
+          "type": "object",
+          "properties": {
+            "deficiency": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "DEFICIENTUPDATE": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {}
+        },
+        "meta": {
+          "type": "object",
+          "properties": {
+            "warnings": {
+              "type": "array",
+              "items": {}
             }
           }
         }
