@@ -128,7 +128,6 @@ describe('Inspections | API | Utils | Report PDF', function() {
     const { color: defaultColor } = instance1.scoreContent[0] || {};
     const instance2 = createReportPdf(deficientInsp, property);
     const { color: deficientColor } = instance2.scoreContent[0] || {};
-
     const actual = [defaultColor, deficientColor];
     expect(actual).to.deep.equal(expected);
   });
@@ -234,7 +233,6 @@ describe('Inspections | API | Utils | Report PDF', function() {
         expected: settings.images.cItemIcon.src,
         msg: 'created C image for 3rd ABC selection',
       },
-
       {
         data: { mainInputType: MAIN_INPUTS.oneToFive, mainInputSelection: 0 },
         expected: settings.images.oneItemIcon.src,
@@ -292,7 +290,6 @@ describe('Inspections | API | Utils | Report PDF', function() {
     });
     item.id = itemId;
     inspection.template.items[itemId] = item;
-
     const instance = createReportPdf(inspection, property, {
       [itemId]: { signatureData: { datauri: expected } },
     });
@@ -332,7 +329,6 @@ describe('Inspections | API | Utils | Report PDF', function() {
             admin_name: 'a-2',
             action: 'e-2',
           },
-
           older: {
             edit_date: older,
             admin_name: 'a-1',
@@ -341,6 +337,7 @@ describe('Inspections | API | Utils | Report PDF', function() {
         },
       }
     );
+
     const [
       heading,
       ...bodies
@@ -373,7 +370,6 @@ describe('Inspections | API | Utils | Report PDF', function() {
     );
     item.id = itemId;
     inspection.template.items[itemId] = item;
-
     const instance = createReportPdf(inspection, property, {
       [itemId]: {
         photosData: {
@@ -386,6 +382,7 @@ describe('Inspections | API | Utils | Report PDF', function() {
         },
       },
     });
+
     const result = instance.getContentItemPhotos(item);
     const actual = result.map(({ image }) => image).join(' | ');
     expect(actual).to.equal(expected);
@@ -407,7 +404,6 @@ describe('Inspections | API | Utils | Report PDF', function() {
     });
     item.id = itemId;
     inspection.template.items[itemId] = item;
-
     const instance = createReportPdf(inspection, property, {
       [itemId]: {
         signatureData: { datauri: expected },
@@ -441,7 +437,6 @@ describe('Inspections | API | Utils | Report PDF', function() {
     );
     item.id = itemId;
     inspection.template.items[itemId] = item;
-
     const instance = createReportPdf(inspection, property, {
       [itemId]: {
         photosData: {
@@ -476,14 +471,12 @@ Testor One made a total of 1 edit.`;
     items.forEach(item => {
       inspection.template.items[uuid()] = item;
     });
-
     const instance = createReportPdf(inspection, property);
     const result = instance.adminActivitySummaryContent;
     const actual = result
       .map(r => r.text || '')
       .filter(Boolean)
       .join('\n');
-
     expect(actual).to.equal(expected);
   });
 
@@ -504,7 +497,195 @@ Testor One made a total of 1 edit.`;
     const instance = createReportPdf(inspection, property);
     const result = instance.adminActivitySummaryContent;
     const actual = result.length;
+    expect(actual).to.equal(expected);
+  });
 
+  it('contains separate section for deficient items when inspection has deficient items', async () => {
+    const expected = 'DEFICIENT ITEMS';
+    const propertyId = uuid();
+    const itemId = uuid();
+    const sectionId = uuid();
+    const inspection = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: propertyId,
+      template: {
+        trackDeficientItems: true,
+        items: {
+          // Create single deficient item on inspection
+          [itemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true
+          ),
+        },
+        sections: {
+          [sectionId]: mocking.createSection(),
+        },
+      },
+    });
+    inspection.template.items[itemId].sectionId = sectionId;
+    const inspectionId = uuid();
+    const property = mocking.createProperty({ inspections: [inspectionId] });
+    const reportPdf = createReportPdf(
+      inspection,
+      property,
+      inspection.template.items
+    ).deficientItems;
+    expect(reportPdf[0].text).to.be.equal(expected);
+  });
+
+  it('does not contain separate section for deficient items when inspection has no deficient items', async () => {
+    const expected = true;
+    const propertyId = uuid();
+    const itemId = uuid();
+    const sectionId = uuid();
+    const inspection = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: propertyId,
+      template: {
+        trackDeficientItems: true,
+        items: {
+          // Create single deficient item on inspection
+          [itemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            false
+          ),
+        },
+        sections: {
+          [sectionId]: mocking.createSection(),
+        },
+      },
+    });
+    inspection.template.items[itemId].sectionId = sectionId;
+    const inspectionId = uuid();
+    const property = mocking.createProperty({ inspections: [inspectionId] });
+    const result = createReportPdf(
+      inspection,
+      property,
+      inspection.template.items
+    ).deficientItems;
+    const actual = result.length === 0;
+    expect(actual).to.equal(expected);
+  });
+
+  it('adds all deficient items to deficient items section', async () => {
+    const expected = 2;
+    const propertyId = uuid();
+    const itemId = uuid();
+    const secondItemId = uuid();
+    const thirdItemId = uuid();
+    const sectionId = uuid();
+    const secondSectionId = uuid();
+    const thirdSectionId = uuid();
+    const inspection = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: propertyId,
+      template: {
+        trackDeficientItems: true,
+        items: {
+          // Create single deficient item on inspection
+          [itemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true
+          ),
+          [secondItemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true
+          ),
+          [thirdItemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            false
+          ),
+        },
+        sections: {
+          [sectionId]: mocking.createSection(),
+          [secondSectionId]: mocking.createSection(),
+          [thirdSectionId]: mocking.createSection(),
+        },
+      },
+    });
+    inspection.template.items[itemId].sectionId = sectionId;
+    inspection.template.items[secondItemId].sectionId = secondSectionId;
+    inspection.template.items[thirdItemId].sectionId = thirdSectionId;
+
+    const inspectionId = uuid();
+    const property = mocking.createProperty({ inspections: [inspectionId] });
+    const result = createReportPdf(
+      inspection,
+      property,
+      inspection.template.items
+    ).deficientItems;
+
+    const actual = result.reduce((acc, entry) => {
+      if (entry.style && entry.style === 'item') {
+        acc += 1;
+      }
+      return acc;
+    }, 0);
+
+    expect(actual).to.equal(expected);
+  });
+
+  it('sorts all deficient items by section index and then item index', async () => {
+    const expected = '1st,2nd,3rd';
+    const propertyId = uuid();
+    const itemId = uuid();
+    const secondItemId = uuid();
+    const thirdItemId = uuid();
+    const sectionId = uuid();
+    const secondSectionId = uuid();
+    const inspection = mocking.createInspection({
+      deficienciesExist: true,
+      inspectionCompleted: true,
+      property: propertyId,
+      template: {
+        trackDeficientItems: true,
+        items: {
+          // Create single deficient item on inspection
+          [itemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true,
+            { index: 1, title: '3rd' }
+          ),
+          [secondItemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true,
+            { index: 0, title: '2nd' }
+          ),
+          [thirdItemId]: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true,
+            { index: 0, title: '1st' }
+          ),
+        },
+        sections: {
+          [sectionId]: mocking.createSection({ index: 1, title: '2nd' }),
+          [secondSectionId]: mocking.createSection({ index: 0, title: '1st' }),
+        },
+      },
+    });
+    inspection.template.items[itemId].sectionId = sectionId;
+    inspection.template.items[secondItemId].sectionId = sectionId;
+    inspection.template.items[thirdItemId].sectionId = secondSectionId;
+
+    const inspectionId = uuid();
+    const property = mocking.createProperty({ inspections: [inspectionId] });
+    const result = createReportPdf(
+      inspection,
+      property,
+      inspection.template.items
+    ).deficientItems;
+
+    const actual = result
+      .reduce((acc, entry) => {
+        if (entry.style && entry.style === 'item' && entry.text) {
+          acc.push(entry.text);
+        }
+        return acc;
+      }, [])
+      .join(',');
     expect(actual).to.equal(expected);
   });
 });

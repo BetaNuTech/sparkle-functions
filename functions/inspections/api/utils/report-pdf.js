@@ -118,6 +118,7 @@ const prototype = {
       ...this.scoreContent,
       ...this.sectionsContent,
       ...this.adminActivitySummaryContent,
+      ...this.deficientItems,
     ];
   },
 
@@ -181,6 +182,76 @@ const prototype = {
     return [].concat(...sections);
   },
 
+  /**
+   * PDF steps for creating separate deficient items
+   * @return {Object[]}
+   */
+  get deficientItems() {
+    const template = Object.assign({}, this._inspection.template);
+    const items = Object.keys(template.items).map(id =>
+      Object.assign({ id }, template.items[id])
+    );
+
+    const sections = Object.keys(template.sections)
+      .map(id => {
+        const s = Object.assign({}, template.sections[id]);
+        s.id = id;
+        s.items = items
+          .filter(({ sectionId }) => id === sectionId) // collect section's items
+          .filter(({ isItemNA }) => !isItemNA) // collect only applicable items
+          .filter(({ deficient }) => Boolean(deficient)) // collect deficient
+          .sort((a, b) => a.index - b.index); // sort items ascending
+        return s;
+      })
+      .filter(section => Boolean(section.items.length))
+      .sort((a, b) => a.index - b.index) // sort sections ascending
+      .map(section => {
+        const itemsContent = section.items
+          .sort((a, b) => a.index - b.index)
+          .map(item => [
+            ...this.getContentItemHeader(item),
+            ...this.getContentItemBody(item),
+            ...this.getContentItemBodyNotes(item),
+            ...this.getContentItemAdminUpdates(item),
+            ...this.getContentItemPhotos(item),
+          ]);
+
+        // Flatten
+        return [].concat(...itemsContent);
+      });
+
+    const bottomMargin = settings.fonts.summaryHeader.margin[3] || 0;
+    const lineY = -1 * Math.max(bottomMargin - 1, 0);
+
+    // Empty when sections contain deficient items
+    if (!sections.length) {
+      return [];
+    }
+
+    // flatten sections steps
+    return [
+      {
+        text: 'DEFICIENT ITEMS',
+        style: 'summaryHeader',
+        color: settings.colors.red.hex,
+        margin: settings.fonts.summaryHeader.margin,
+      },
+      {
+        canvas: [
+          {
+            type: 'line',
+            x1: 0,
+            x2: settings.page.width - LINE_LEFT_GUTTER - LINE_RIGHT_GUTTER,
+            y1: lineY,
+            y2: lineY,
+            lineColor: settings.colors.lightGray.hex,
+            lineWidth: 0.5,
+            lineCap: 'square',
+          },
+        ],
+      },
+    ].concat(...sections);
+  },
   /**
    * Admin edit summary section
    * @return {Object[]}
