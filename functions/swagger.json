@@ -1142,7 +1142,7 @@
         },
         {
           "name": "boardId",
-          "in": "header",
+          "in": "path",
           "required": true,
           "description": "board id.",
           "type": "string"
@@ -1182,7 +1182,7 @@
         },
         {
           "name": "inspectionId",
-          "in": "header",
+          "in": "path",
           "required": true,
           "description": "inspection id.",
           "type": "string"
@@ -1242,7 +1242,7 @@
         },
         {
           "name": "inspectionId",
-          "in": "header",
+          "in": "path",
           "required": true,
           "description": "inspection id.",
           "type": "string"
@@ -1296,7 +1296,7 @@
         },
         {
           "name": "inspection",
-          "in": "header",
+          "in": "path",
           "required": true,
           "description": "inspection id.",
           "type": "string"
@@ -1398,12 +1398,19 @@
           "required": true,
           "description": "flag mentioning type of image upload, logo or profile.",
           "type": "string",
-          "enum": ["logo", "profile"]
+          "enum": [
+            "logo",
+            "profile"
+          ]
         }
       ],
       "post": {
-        "tags": ["Property"],
-        "consumes": ["multipart/form-data"],
+        "tags": [
+          "Property"
+        ],
+        "consumes": [
+          "multipart/form-data"
+        ],
         "parameters": [
           {
             "name": "file",
