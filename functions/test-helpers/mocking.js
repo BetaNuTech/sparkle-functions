@@ -470,6 +470,7 @@ module.exports = {
       title: 'test job',
       need: 'test',
       scopeOfWork: '1. fix it',
+      scopeOfWorkAttachments: [],
       trelloCardURL: 'trello.com/card/1',
       createdAt: nowUnix(),
       updatedAt: nowUnix(),
@@ -497,6 +498,7 @@ module.exports = {
     return {
       vendor: 'test',
       vendorDetails: 'test',
+      attachments: [],
       state: config.bids.stateTypes[0],
       costMin: 1,
       costMax: 2,
@@ -506,6 +508,24 @@ module.exports = {
       createdAt: nowUnix(),
       updatedAt: nowUnix(),
       ...bidConfig,
+    };
+  },
+
+  /**
+   * Create mock attachment record
+   * @param  {Object} attachmentConfig
+   * @return {Object}
+   */
+  createAttachment(attachmentConfig = {}) {
+    return {
+      createdAt: nowUnix(), // Unix timestamp
+      name: 'exterior.jpg',
+      type: 'image/jpeg',
+      url:
+        'https://firebasestorage.googleapis.com/v0/b/a.appspot.com/o/properties%2F398%2Fjobs%2FkL%2Fattachments%2Fexterior.jpg',
+      storageRef: 'properties/123/jobs/456/attachments/pic.jpg',
+      size: 1,
+      ...attachmentConfig,
     };
   },
 
