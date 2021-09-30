@@ -3,7 +3,7 @@ const log = require('../../utils/logger');
 const jobsModel = require('../../models/jobs');
 const propertiesModel = require('../../models/properties');
 const validate = require('../utils/validate-update');
-const canUserUpdateState = require('../utils/can-user-update-state');
+const validateStateTransition = require('../utils/validate-state-transition');
 const doesContainInvalidAttr = require('../utils/does-contain-invalid-attr');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
 const {
@@ -177,21 +177,29 @@ module.exports = function createPutJob(fs) {
     }
 
     // Check if job state can be updated
-    const updateStateStatus = update.state
-      ? canUserUpdateState(update.state, job, bids, user)
-      : true;
+    const stateValidationErrors = update.state
+      ? validateStateTransition(update.state, job, bids, user)
+      : [];
+    const hasStateValidationErrors = stateValidationErrors.length > 0;
 
-    if (!updateStateStatus) {
-      log.error(
-        `${PREFIX} user does not have the permission to transition to state: "${update.state}`
-      );
-      return res.status(403).send({
-        errors: [
-          {
-            source: { pointer: 'state' },
-            detail: `Forbidden: you do not have permission to update state to "${update.state}"`,
-          },
-        ],
+    // Reject invalid state transition request
+    if (hasStateValidationErrors) {
+      const hasPermissionsError =
+        stateValidationErrors
+          .map(({ path }) => path)
+          .join('')
+          .search('admin') > -1;
+      const statusCode = hasPermissionsError ? 403 : 400;
+      const logErrMsg = hasPermissionsError
+        ? `${PREFIX} user lacks permission to transition to state: "${update.state}"`
+        : `${PREFIX} failed to transition to state: "${update.state}"`;
+      log.error(logErrMsg);
+
+      return res.status(statusCode).send({
+        errors: stateValidationErrors.map(({ message, path }) => ({
+          detail: message,
+          source: { pointer: path },
+        })),
       });
     }
 

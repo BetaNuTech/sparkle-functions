@@ -197,8 +197,8 @@ interface Job {
   title: string;
   need: string;
   authorizedRules: string;
-  scopeOfWorkAttachment?: any; // Reference of attachment id
   scopeOfWork?: string;
+  scopeOfWorkAttachments?: Array<attachment>;
   trelloCardURL?: string;
   property: string;
   createdAt?: number;
@@ -213,7 +213,7 @@ interface Job {
 ```typescript
 interface bid {
   id?: string;
-  attachments: Array<bidAttachmentModel>;
+  attachments: Array<attachment>;
   completeAt?: number; // Unix timestamp
   costMax: number;
   costMin: number;
@@ -225,5 +225,18 @@ interface bid {
   vendor: string;
   vendorDetails?: string;
   scope: 'local' | 'national';
+}
+```
+
+## Attachments
+
+```typescript
+interface attachment {
+  createdAt: number; // Unix timestamp
+  name: string;
+  type: string;
+  url: string;
+  storageRef: string;
+  size: number;
 }
 ```

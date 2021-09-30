@@ -102,10 +102,14 @@ describe('Jobs | API | PUT', () => {
     expect(actual).to.equal(expected);
   });
 
-  it('reject forbidden request to update job without necessary permission', async () => {
-    const update = { authorizedRules: 'expedite' };
+  it('forbids authorization rule update by non-admin', async () => {
+    const update = { authorizedRules: 'expedite' }; // only admins can expedite jobs
     const property = mocking.createProperty();
-    const job = mocking.createJob();
+    const propertyRef = firebase.createDocRef({ id: PROPERTY_ID });
+    const job = mocking.createJob({ property: propertyRef });
+    const unpermissionedUser = mocking.createUser({
+      admin: false,
+    });
 
     // Stubs
     sinon
@@ -114,10 +118,6 @@ describe('Jobs | API | PUT', () => {
     sinon
       .stub(jobsModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(JOB_ID, job));
-
-    const unpermissionedUser = mocking.createUser({
-      admin: false,
-    });
 
     // Execute
     await request(createApp(unpermissionedUser))
@@ -131,7 +131,8 @@ describe('Jobs | API | PUT', () => {
     const expected = 'Can not update non-updatable attributes';
     const update = { state: 'open', invalid: 'invalid' };
     const property = mocking.createProperty();
-    const job = mocking.createJob();
+    const propertyRef = firebase.createDocRef({ id: PROPERTY_ID });
+    const job = mocking.createJob({ property: propertyRef });
 
     // Stubs
     sinon
@@ -154,18 +155,21 @@ describe('Jobs | API | PUT', () => {
     expect(actual).to.contain(expected);
   });
 
-  it('forbids transitioning a job to authorized when it only has a single approved bid', async () => {
+  it('rejects request to transition job state when job lacks minimum bids requirements', async () => {
+    const expected = 'minBids';
     const update = { state: 'authorized' };
+    const admin = mocking.createUser({ admin: true });
     const property = mocking.createProperty();
     const propertyRef = firebase.createDocRef({ id: PROPERTY_ID });
     const job = mocking.createJob({
       property: propertyRef,
       state: 'approved',
-      authorizedRules: 'default',
+      type: 'small:pm',
+      minBids: 2, // requires 2 bids
     });
     const jobRef = firebase.createDocRef({ id: JOB_ID });
     const bid = mocking.createBid({ job: jobRef, state: 'approved' });
-    const user = mocking.createUser({ admin: true });
+
     // Stubs
     sinon
       .stub(propertiesModel, 'firestoreFindRecord')
@@ -176,23 +180,70 @@ describe('Jobs | API | PUT', () => {
     sinon.stub(jobsModel, 'createDocRef').returns(jobRef);
     sinon
       .stub(jobsModel, 'findAssociatedBids')
-      .resolves(firebase.createQuerySnapshot([bid]));
+      .resolves(firebase.createQuerySnapshot([bid])); // only 1 bid
 
+    // Execute
+    const res = await request(createApp(admin))
+      .put(`/t/${PROPERTY_ID}/${JOB_ID}`)
+      .send(update)
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(400); // Assertion
+
+    // Assertions
+    const [error] = res.body.errors || [];
+    const source = error.source || {};
+    const actual = source.pointer || '';
+    expect(actual).to.contain(expected);
+  });
+
+  it('rejects transitioning a job to authorized when it lacks approved bid requirement', async () => {
+    const expected = 'bids';
+    const update = { state: 'authorized' };
+    const property = mocking.createProperty();
+    const propertyRef = firebase.createDocRef({ id: PROPERTY_ID });
+    const job = mocking.createJob({
+      property: propertyRef,
+      state: 'approved',
+      authorizedRules: 'default',
+      type: 'small:pm',
+      minBids: 2, // requires 2 bids
+    });
+    const jobRef = firebase.createDocRef({ id: JOB_ID });
+    const bid = mocking.createBid({ job: jobRef, state: 'open' });
+    const bid2 = mocking.createBid({ job: jobRef, state: 'open' });
+    const admin = mocking.createUser({ admin: true });
+
+    // Stubs
+    sinon
+      .stub(propertiesModel, 'firestoreFindRecord')
+      .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
+    sinon
+      .stub(jobsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(JOB_ID, job));
+    sinon.stub(jobsModel, 'createDocRef').returns(jobRef);
+    sinon
+      .stub(jobsModel, 'findAssociatedBids')
+      .resolves(firebase.createQuerySnapshot([bid, bid2]));
     sinon
       .stub(jobsModel, 'updateRecord')
       .resolves(firebase.createDocSnapshot(JOB_ID, update));
 
     // Execute
-    await request(createApp(user))
+    const res = await request(createApp(admin))
       .put(`/t/${PROPERTY_ID}/${JOB_ID}`)
       .send(update)
       .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(403); // assertion
+      .expect(400); // assertion
+
+    // Assertions
+    const [error] = res.body.errors || [];
+    const source = error.source || {};
+    const actual = source.pointer || '';
+    expect(actual).to.contain(expected);
   });
 
-  it('accepts admins transitioning a expedited job to authorized when it only has a single approved bid', async () => {
-    const expected = 'authorized';
-    const update = { state: expected };
+  it('forbids non-admin from transitioning an expedited job to authorized', async () => {
+    const update = { state: 'authorized' };
     const property = mocking.createProperty();
     const propertyRef = firebase.createDocRef({ id: PROPERTY_ID });
     const job = mocking.createJob({
@@ -202,8 +253,8 @@ describe('Jobs | API | PUT', () => {
       minBids: 1,
     });
     const jobRef = firebase.createDocRef({ id: JOB_ID });
-    const bid = mocking.createBid({ job: jobRef, state: 'approved' });
-    const user = mocking.createUser({ admin: true });
+    const bid = mocking.createBid({ job: jobRef, state: 'approved' }); // meets bid requirements
+    const unpermissionedUser = mocking.createUser({ admin: false });
 
     // Stubs
     sinon
@@ -221,16 +272,11 @@ describe('Jobs | API | PUT', () => {
       .resolves(firebase.createDocSnapshot(JOB_ID, update));
 
     // Execute
-    const res = await request(createApp(user))
+    await request(createApp(unpermissionedUser))
       .put(`/t/${PROPERTY_ID}/${JOB_ID}`)
       .send(update)
       .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(201);
-
-    // Assertions
-    const attributes = ((res.body || {}).data || {}).attributes || {};
-    const actual = attributes.state || '';
-    expect(actual).to.equal(expected);
+      .expect(403);
   });
 
   it('should update new min bids when authorized rules are expedited', async () => {
@@ -267,7 +313,7 @@ describe('Jobs | API | PUT', () => {
 
     const jobRef = firebase.createDocRef({ id: JOB_ID });
     const bid = mocking.createBid({ job: jobRef, state: 'approved' });
-    const user = mocking.createUser({ admin: true });
+    const admin = mocking.createUser({ admin: true });
 
     // Stubs
     sinon
@@ -285,7 +331,7 @@ describe('Jobs | API | PUT', () => {
       .resolves(firebase.createDocSnapshot(JOB_ID, update));
 
     // Execute
-    const res = await request(createApp(user))
+    const res = await request(createApp(admin))
       .put(`/t/${PROPERTY_ID}/${JOB_ID}`)
       .send(update)
       .expect('Content-Type', /application\/vnd.api\+json/)
@@ -331,7 +377,7 @@ describe('Jobs | API | PUT', () => {
 
     const jobRef = firebase.createDocRef({ id: JOB_ID });
     const bid = mocking.createBid({ job: jobRef, state: 'approved' });
-    const user = mocking.createUser({ admin: true });
+    const admin = mocking.createUser({ admin: true });
 
     // Stubs
     sinon
@@ -349,7 +395,7 @@ describe('Jobs | API | PUT', () => {
       .resolves(firebase.createDocSnapshot(JOB_ID, update));
 
     // Execute
-    const res = await request(createApp(user))
+    const res = await request(createApp(admin))
       .put(`/t/${PROPERTY_ID}/${JOB_ID}`)
       .send(update)
       .expect('Content-Type', /application\/vnd.api\+json/)
