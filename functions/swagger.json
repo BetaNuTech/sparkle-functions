@@ -31,6 +31,10 @@
     {
       "name": "Inspection",
       "description": "API for inspections"
+    },
+    {
+      "name": "Users",
+      "description": "API for users"
     }
   ],
   "schemes": [
@@ -1443,6 +1447,191 @@
           }
         }
       }
+    },
+    "/v0/users": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "users",
+            "in": "body",
+            "required": [
+              "firstName",
+              "lastName",
+              "email"
+            ],
+            "properties": {
+              "firstName": {
+                "type": "string"
+              },
+              "lastName": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/USER"
+            }
+          }
+        }
+      }
+    },
+    "/v0/users/{userId}": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "userId",
+          "in": "path",
+          "required": true,
+          "description": "user id to update a specific user.",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "user",
+            "in": "body",
+            "required": [],
+            "properties": {
+              "superAdmin": {
+                "type": "boolean"
+              },
+              "admin": {
+                "type": "boolean"
+              },
+              "corporate": {
+                "type": "boolean"
+              },
+              "isDisabled": {
+                "type": "boolean"
+              },
+              "teams": {
+                "type": "object",
+                "properties": {}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/USER"
+            }
+          }
+        }
+      }
+    },
+    "/v0/users/{userId}/": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "userId",
+          "in": "path",
+          "required": true,
+          "description": "user id to update a specific user.",
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [],
+        "responses": {
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/DELETEUSER"
+            }
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -2364,6 +2553,59 @@
               }
             }
           }
+        }
+      }
+    },
+    "USER": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "firstName": {
+                  "type": "string"
+                },
+                "lastName": {
+                  "type": "string"
+                },
+                "email": {
+                  "type": "string"
+                },
+                "admin": {
+                  "type": "boolean"
+                },
+                "corporate": {
+                  "type": "boolean"
+                },
+                "isDisabled": {
+                  "type": "boolean"
+                },
+                "pushOptOut": {
+                  "type": "boolean"
+                },
+                "createdAt": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "DELETEUSER": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
         }
       }
     }
