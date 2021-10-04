@@ -52,14 +52,10 @@ describe('Deficiency | Pubsub | Trello Card State Comment', () => {
     };
 
     // Setup database
-    await systemModel.firestoreUpsertTrello(fs, credentials);
-    await systemModel.firestoreCreateTrelloProperty(
-      fs,
-      propertyId,
-      trelloProperty
-    );
-    await deficiencyModel.firestoreCreateRecord(fs, deficiencyId, deficiency);
-    await usersModel.firestoreCreateRecord(fs, userId, user);
+    await systemModel.upsertTrello(fs, credentials);
+    await systemModel.createTrelloProperty(fs, propertyId, trelloProperty);
+    await deficiencyModel.createRecord(fs, deficiencyId, deficiency);
+    await usersModel.createRecord(fs, userId, user);
 
     // Stub Requests
     let commentTxt = '';
@@ -159,14 +155,10 @@ describe('Deficiency | Pubsub | Trello Card State Comment', () => {
       .reply(201, {});
 
     // Setup database
-    await systemModel.firestoreUpsertTrello(fs, credentials);
-    await systemModel.firestoreCreateTrelloProperty(
-      fs,
-      propertyId,
-      trelloProperty
-    );
-    await deficiencyModel.firestoreCreateRecord(fs, deficiencyId, deficiency);
-    await usersModel.firestoreCreateRecord(fs, userId, user);
+    await systemModel.upsertTrello(fs, credentials);
+    await systemModel.createTrelloProperty(fs, propertyId, trelloProperty);
+    await deficiencyModel.createRecord(fs, deficiencyId, deficiency);
+    await usersModel.createRecord(fs, userId, user);
 
     // Execute
     await test.wrap(cloudFunctions.deficiencyTrelloCardStateComments)(
@@ -213,14 +205,10 @@ describe('Deficiency | Pubsub | Trello Card State Comment', () => {
     };
 
     // Setup database
-    await systemModel.firestoreUpsertTrello(fs, credentials);
-    await systemModel.firestoreCreateTrelloProperty(
-      fs,
-      propertyId,
-      trelloProperty
-    );
-    await deficiencyModel.firestoreCreateRecord(fs, deficiencyId, deficiency);
-    await usersModel.firestoreCreateRecord(fs, userId, user);
+    await systemModel.upsertTrello(fs, credentials);
+    await systemModel.createTrelloProperty(fs, propertyId, trelloProperty);
+    await deficiencyModel.createRecord(fs, deficiencyId, deficiency);
+    await usersModel.createRecord(fs, userId, user);
 
     // Stub Requests
     nock('https://api.trello.com')
@@ -236,14 +224,11 @@ describe('Deficiency | Pubsub | Trello Card State Comment', () => {
     } catch (err) {} // eslint-disable-line no-empty
 
     // Test Results
-    const trelloPropertySnap = await systemModel.firestoreFindTrelloProperty(
+    const trelloPropertySnap = await systemModel.findTrelloProperty(
       fs,
       propertyId
     );
-    const deficiencySnap = await deficiencyModel.firestoreFindRecord(
-      fs,
-      deficiencyId
-    );
+    const deficiencySnap = await deficiencyModel.findRecord(fs, deficiencyId);
     const deficiencyResults = deficiencySnap.data() || {
       trelloCardURL: 'test',
     };

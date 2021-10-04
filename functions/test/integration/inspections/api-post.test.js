@@ -43,7 +43,7 @@ describe('Inspections | API | POST', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot()); // empty
 
     const res = await request(createApp())
@@ -65,10 +65,10 @@ describe('Inspections | API | POST', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
     sinon
-      .stub(templatesModel, 'firestoreFindRecord')
+      .stub(templatesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot()); // empty
 
     // Execute & Get Result
@@ -125,14 +125,14 @@ describe('Inspections | API | POST', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
     sinon
-      .stub(templatesModel, 'firestoreFindRecord')
+      .stub(templatesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(templateId, template));
     sinon.stub(inspectionsModel, 'createId').returns(inspectionId);
     sinon
-      .stub(inspectionsModel, 'firestoreCreateRecord')
+      .stub(inspectionsModel, 'createRecord')
       .resolves(firebase.createDocSnapshot(templateId, inspection));
 
     const res = await request(createApp())

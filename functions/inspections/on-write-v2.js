@@ -54,7 +54,7 @@ module.exports = function createOnWriteHandler(fs) {
       try {
         // Calculate expected and lookup current DI's
         const expectedDeficientItems = diUtils.createDeficientItems(inspection);
-        const currentDeficientItemRefs = await diModel.firestoreQueryByInspection(
+        const currentDeficientItemRefs = await diModel.queryByInspection(
           fs,
           inspectionId
         );
@@ -75,7 +75,7 @@ module.exports = function createOnWriteHandler(fs) {
 
         for (let i = 0; i < removeDeficiencyIds.length; i++) {
           const removeDeficiencyId = removeDeficiencyIds[i];
-          await diModel.firestoreDeactivateRecord(fs, removeDeficiencyId);
+          await diModel.deactivateRecord(fs, removeDeficiencyId);
           log.info(`${PREFIX} deactivated deficiency "${removeDeficiencyId}"`);
         }
 
@@ -109,7 +109,7 @@ module.exports = function createOnWriteHandler(fs) {
           // Write, log, and set in memory w/ any updates
           if (Object.keys(itemUpdates).length) {
             itemUpdates.updatedAt = Math.round(Date.now() / 1000); // modify updatedAt
-            await diModel.firestoreUpdateRecord(fs, updateDeficiencyId, {
+            await diModel.updateRecord(fs, updateDeficiencyId, {
               ...deficientItem,
               ...itemUpdates,
             });
@@ -136,11 +136,7 @@ module.exports = function createOnWriteHandler(fs) {
           const deficiencyData = expectedDeficientItems[inspectionItemId];
           deficiencyData.property = propertyId;
           const newDeficiencyId = diModel.uuid(fs);
-          await diModel.firestoreSafelyCreateRecord(
-            fs,
-            newDeficiencyId,
-            deficiencyData
-          );
+          await diModel.safelyCreateRecord(fs, newDeficiencyId, deficiencyData);
           log.info(`${PREFIX} added new deficiency "${newDeficiencyId}"`);
         }
       } catch (err) {

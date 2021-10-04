@@ -46,7 +46,7 @@ module.exports = function createOnDiStateUpdateHandler(
     // Lookup parent record
     let deficiency = null;
     try {
-      const diSnap = await diModel.firestoreFindRecord(fs, deficiencyId);
+      const diSnap = await diModel.findRecord(fs, deficiencyId);
       deficiency = diSnap.data() || {};
       if (!deficiency.property) {
         throw Error('invalid deficiency missing property');

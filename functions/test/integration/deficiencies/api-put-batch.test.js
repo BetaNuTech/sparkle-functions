@@ -109,7 +109,7 @@ describe('Deficiencies | API | PUT Batch', () => {
     sinon
       .stub(deficiencyModel, 'findMany')
       .resolves(stubs.wrapSnapshot([deficiency]));
-    sinon.stub(deficiencyModel, 'firestoreUpdateRecord').rejects(Error('fail'));
+    sinon.stub(deficiencyModel, 'updateRecord').rejects(Error('fail'));
     const logStub = sinon.stub(log, 'error').callsFake(() => {});
 
     request(createApp())
@@ -146,9 +146,7 @@ describe('Deficiencies | API | PUT Batch', () => {
       .stub(deficiencyModel, 'findMany')
       .resolves(stubs.wrapSnapshot([deficiency]));
     sinon.stub(log, 'warn').callsFake(() => {}); // silence
-    const updateRecord = sinon
-      .stub(deficiencyModel, 'firestoreUpdateRecord')
-      .resolves();
+    const updateRecord = sinon.stub(deficiencyModel, 'updateRecord').resolves();
 
     request(createApp())
       .put(`/t?id=${deficiencyId}`)
@@ -182,7 +180,7 @@ describe('Deficiencies | API | PUT Batch', () => {
       .stub(deficiencyModel, 'findMany')
       .resolves(stubs.wrapSnapshot([deficiency]));
     sinon.stub(log, 'warn').callsFake(() => {}); // silence
-    sinon.stub(deficiencyModel, 'firestoreUpdateRecord').resolves();
+    sinon.stub(deficiencyModel, 'updateRecord').resolves();
 
     request(createApp())
       .put(`/t?id=${deficiencyId}`)
@@ -216,7 +214,7 @@ describe('Deficiencies | API | PUT Batch', () => {
     sinon
       .stub(deficiencyModel, 'findMany')
       .resolves(stubs.wrapSnapshot([deficiency]));
-    sinon.stub(deficiencyModel, 'firestoreUpdateRecord').resolves();
+    sinon.stub(deficiencyModel, 'updateRecord').resolves();
     const unpermissionedUser = mocking.createUser({
       admin: false,
       corporate: false,
@@ -244,7 +242,7 @@ describe('Deficiencies | API | PUT Batch', () => {
     sinon
       .stub(deficiencyModel, 'findMany')
       .resolves(stubs.wrapSnapshot([deficiency]));
-    sinon.stub(deficiencyModel, 'firestoreUpdateRecord').resolves();
+    sinon.stub(deficiencyModel, 'updateRecord').resolves();
 
     const updatedAt = Math.round(Date.now() / 1000);
     const expected = {

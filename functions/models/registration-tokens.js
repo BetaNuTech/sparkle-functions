@@ -12,7 +12,7 @@ module.exports = modelSetup({
    * @param  {String} userId
    * @return {Promise}
    */
-  firestoreFindRecord(fs, userId) {
+  findRecord(fs, userId) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(userId && typeof userId === 'string', 'has user id');
     return fs
@@ -28,7 +28,7 @@ module.exports = modelSetup({
    * @param  {Object} data
    * @return {Promise} - resolves {WriteResult}
    */
-  firestoreCreateRecord(fs, userId, data) {
+  createRecord(fs, userId, data) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(userId && typeof userId === 'string', 'has user id');
     assert(data && typeof data === 'object', 'has data');
@@ -46,7 +46,7 @@ module.exports = modelSetup({
    * @param  {firestore.batch?}  parentBatch
    * @return {Promise} - {resolves} DocumentSnapshot
    */
-  async firestoreRemoveOutdated(fs, maxTimestamp, parentBatch) {
+  async removeOutdated(fs, maxTimestamp, parentBatch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       typeof maxTimestamp === 'number' && maxTimestamp === maxTimestamp,
@@ -67,7 +67,7 @@ module.exports = modelSetup({
       tokensSnap = await fs.collection(TOKEN_COLLECTION).get();
     } catch (err) {
       throw Error(
-        `${PREFIX} firestoreRemoveOutdated: Failed to lookup all tokens: ${err}`
+        `${PREFIX} removeOutdated: Failed to lookup all tokens: ${err}`
       );
     }
 
@@ -99,9 +99,7 @@ module.exports = modelSetup({
       try {
         await batch.commit();
       } catch (err) {
-        throw Error(
-          `${PREFIX} firestoreRemoveOutdated: Failed to commit batch: ${err}`
-        );
+        throw Error(`${PREFIX} removeOutdated: Failed to commit batch: ${err}`);
       }
     }
 

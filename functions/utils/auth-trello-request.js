@@ -26,7 +26,7 @@ module.exports = function authTrelloRequest(db) {
 
     let trelloCredentials = null;
     try {
-      const trelloCredentialsSnap = await systemModel.firestoreFindTrello(db);
+      const trelloCredentialsSnap = await systemModel.findTrello(db);
       const isTrelloAuthorized = trelloCredentialsSnap.exists;
 
       if (!isTrelloAuthorized) {

@@ -58,8 +58,8 @@ describe('Trello | API | POST Auth', () => {
       .expect(201);
 
     // Get Results
-    const systemDoc = await systemModel.firestoreFindTrello(fs);
-    const integrationDoc = await integrationsModel.firestoreFindTrello(fs);
+    const systemDoc = await systemModel.findTrello(fs);
+    const integrationDoc = await integrationsModel.findTrello(fs);
 
     // Assertions
     [

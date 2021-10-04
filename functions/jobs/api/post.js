@@ -61,10 +61,7 @@ module.exports = function createPostJob(fs) {
     // Lookup Property
     let property = null;
     try {
-      const propertySnap = await propertiesModel.firestoreFindRecord(
-        fs,
-        propertyId
-      );
+      const propertySnap = await propertiesModel.findRecord(fs, propertyId);
       property = propertySnap.data() || null;
     } catch (err) {
       return send500Error(err, 'property lookup failed', 'unexpected error');

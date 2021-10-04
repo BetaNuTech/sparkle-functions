@@ -34,7 +34,7 @@ module.exports = function publishPushNotification(
       // Select all notifications
       // done publishing to both
       // slack and push
-      const notificationsSnap = await notificationsModel.firestoreQuery(fs, {
+      const notificationsSnap = await notificationsModel.query(fs, {
         'publishedMediums.slack': ['==', true],
         'publishedMediums.push': ['==', true],
       });
@@ -58,11 +58,7 @@ module.exports = function publishPushNotification(
         const notificationId = notificationIdsSegment[i];
 
         try {
-          await notificationsModel.firestoreDestroyRecord(
-            fs,
-            notificationId,
-            batch
-          );
+          await notificationsModel.destroyRecord(fs, notificationId, batch);
         } catch (err) {
           log.error(
             `${PREFIX} failed to delete notification: "${notificationId}" | ${err}`

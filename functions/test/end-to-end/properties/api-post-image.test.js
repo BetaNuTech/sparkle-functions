@@ -26,7 +26,7 @@ describe('Properties | API | POST Image', () => {
     const propertyData = mocking.createProperty();
 
     // Setup
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
+    await propertiesModel.createRecord(fs, propertyId, propertyData);
 
     // Execute
     await request(createApp())
@@ -35,10 +35,7 @@ describe('Properties | API | POST Image', () => {
       .expect(201);
 
     // Test results
-    const propertySnap = await propertiesModel.firestoreFindRecord(
-      fs,
-      propertyId
-    );
+    const propertySnap = await propertiesModel.findRecord(fs, propertyId);
     const property = propertySnap.data() || {};
     expect(property.photoURL).to.be.ok;
     expect(property.photoName).to.be.ok;

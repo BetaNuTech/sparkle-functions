@@ -21,7 +21,7 @@ describe('Trello | API | DELETE Auth', () => {
     };
 
     // Setup Database
-    await systemModel.firestoreUpsertTrello(fs, trelloCredentials);
+    await systemModel.upsertTrello(fs, trelloCredentials);
 
     // Execute
     const app = createApp();
@@ -31,7 +31,7 @@ describe('Trello | API | DELETE Auth', () => {
       .expect(204);
 
     // Get Results
-    const systemDoc = await systemModel.firestoreFindTrello(fs);
+    const systemDoc = await systemModel.findTrello(fs);
     const actual = systemDoc.exists;
 
     // Assertions
@@ -49,12 +49,8 @@ describe('Trello | API | DELETE Auth', () => {
     };
 
     // Setup Database
-    await systemModel.firestoreUpsertTrello(fs, trelloCredentials);
-    await systemModel.firestoreCreateTrelloProperty(
-      fs,
-      propertyId,
-      trelloProperty
-    );
+    await systemModel.upsertTrello(fs, trelloCredentials);
+    await systemModel.createTrelloProperty(fs, propertyId, trelloProperty);
 
     // Execute
     const app = createApp();
@@ -64,10 +60,7 @@ describe('Trello | API | DELETE Auth', () => {
       .expect(204);
 
     // Get Results
-    const systemDoc = await systemModel.firestoreFindTrelloProperty(
-      fs,
-      propertyId
-    );
+    const systemDoc = await systemModel.findTrelloProperty(fs, propertyId);
     const actual = systemDoc.exists;
 
     // Assertions
@@ -90,12 +83,12 @@ describe('Trello | API | DELETE Auth', () => {
     };
 
     // Setup Database
-    await integrationsModel.firestoreCreateTrelloProperty(
+    await integrationsModel.createTrelloProperty(
       fs,
       uuid(),
       propertyTrelloIntegration
     );
-    await integrationsModel.firestoreCreateTrelloProperty(
+    await integrationsModel.createTrelloProperty(
       fs,
       uuid(),
       propertyTrelloIntegration
@@ -109,7 +102,7 @@ describe('Trello | API | DELETE Auth', () => {
       .expect(204);
 
     // Get Results
-    const propertyTrelloIntegrations = await integrationsModel.firestoreFindAllTrelloProperties(
+    const propertyTrelloIntegrations = await integrationsModel.findAllTrelloProperties(
       fs
     );
     const actual = propertyTrelloIntegrations.length;
@@ -128,7 +121,7 @@ describe('Trello | API | DELETE Auth', () => {
     };
 
     // Setup Database
-    await integrationsModel.firestoreCreateTrello(fs, trelloOrg);
+    await integrationsModel.createTrello(fs, trelloOrg);
 
     // Execute
     const app = createApp();
@@ -138,7 +131,7 @@ describe('Trello | API | DELETE Auth', () => {
       .expect(204);
 
     // Get Results
-    const orgDoc = await integrationsModel.firestoreFindTrello(fs);
+    const orgDoc = await integrationsModel.findTrello(fs);
     const actual = orgDoc.exists;
 
     // Assertions

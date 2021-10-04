@@ -13,7 +13,7 @@ module.exports = modelSetup({
    * @param  {firestore.transaction?} transaction
    * @return {Promise}
    */
-  firestoreFindRecord(fs, teamId, transaction) {
+  findRecord(fs, teamId, transaction) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(teamId && typeof teamId === 'string', 'has team id');
 
@@ -37,7 +37,7 @@ module.exports = modelSetup({
    * @param  {Object} data
    * @return {Promise} - resolves {WriteResult}
    */
-  firestoreCreateRecord(fs, teamId, data) {
+  createRecord(fs, teamId, data) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(teamId && typeof teamId === 'string', 'has team id');
     assert(data && typeof data === 'object', 'has data');
@@ -54,7 +54,7 @@ module.exports = modelSetup({
    * @param  {Object}  data
    * @return {Promise} - resolves {DocumentReference}
    */
-  async firestoreUpsertRecord(fs, teamId, data) {
+  async upsertRecord(fs, teamId, data) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(teamId && typeof teamId === 'string', 'has team id');
     assert(data && typeof data === 'object', 'has upsert data');
@@ -65,9 +65,7 @@ module.exports = modelSetup({
     try {
       docSnap = await docRef.get();
     } catch (err) {
-      throw Error(
-        `${PREFIX} firestoreUpsertRecord: Failed to get document: ${err}`
-      );
+      throw Error(`${PREFIX} upsertRecord: Failed to get document: ${err}`);
     }
 
     const { exists } = docSnap;
@@ -90,7 +88,7 @@ module.exports = modelSetup({
       }
     } catch (err) {
       throw Error(
-        `${PREFIX} firestoreUpsertRecord: ${
+        `${PREFIX} upsertRecord: ${
           exists ? 'updating' : 'creating'
         } document: ${err}`
       );
@@ -105,7 +103,7 @@ module.exports = modelSetup({
    * @param  {String} teamId
    * @return {Promise}
    */
-  firestoreRemoveRecord(fs, teamId) {
+  removeRecord(fs, teamId) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(teamId && typeof teamId === 'string', 'has team id');
     return fs

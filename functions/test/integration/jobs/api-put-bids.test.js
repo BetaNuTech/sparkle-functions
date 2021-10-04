@@ -77,7 +77,7 @@ describe('Bids | API | PUT', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot()); // empty
 
     const res = await request(createApp())
@@ -99,7 +99,7 @@ describe('Bids | API | PUT', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
 
     // Stub Requests
@@ -125,7 +125,7 @@ describe('Bids | API | PUT', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
     sinon
       .stub(jobsModel, 'findRecord')
@@ -155,7 +155,7 @@ describe('Bids | API | PUT', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
     sinon
       .stub(jobsModel, 'findRecord')
@@ -196,7 +196,7 @@ describe('Bids | API | PUT', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
     sinon
       .stub(jobsModel, 'findRecord')
@@ -236,7 +236,7 @@ describe('Bids | API | PUT', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
     sinon
       .stub(jobsModel, 'findRecord')

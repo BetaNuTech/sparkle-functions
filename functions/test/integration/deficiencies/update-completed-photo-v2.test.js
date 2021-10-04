@@ -33,7 +33,7 @@ describe('Deficiencies | On Update Completed Photo V2', function() {
     });
 
     const trelloCardLookup = sinon
-      .stub(systemModel, 'firestoreFindTrelloCardId')
+      .stub(systemModel, 'findTrelloCardId')
       .resolves();
 
     await createHandler(stubFirestore())(
@@ -80,10 +80,8 @@ describe('Deficiencies | On Update Completed Photo V2', function() {
       createdAt: now() + 1,
     };
 
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves('');
-    const credentialsLookup = sinon
-      .stub(systemModel, 'firestoreFindTrello')
-      .resolves();
+    sinon.stub(systemModel, 'findTrelloCardId').resolves('');
+    const credentialsLookup = sinon.stub(systemModel, 'findTrello').resolves();
 
     await createHandler(stubFirestore())(
       {
@@ -131,10 +129,8 @@ describe('Deficiencies | On Update Completed Photo V2', function() {
       createdAt: now() + 1,
     };
 
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves(cardId);
-    const credentialsLookup = sinon
-      .stub(systemModel, 'firestoreFindTrello')
-      .resolves();
+    sinon.stub(systemModel, 'findTrelloCardId').resolves(cardId);
+    const credentialsLookup = sinon.stub(systemModel, 'findTrello').resolves();
 
     await createHandler(stubFirestore())(
       {
@@ -181,10 +177,8 @@ describe('Deficiencies | On Update Completed Photo V2', function() {
       createdAt: now() + 1,
     };
 
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves(cardId);
-    sinon
-      .stub(systemModel, 'firestoreFindTrello')
-      .resolves(createSnapshot('trello'));
+    sinon.stub(systemModel, 'findTrelloCardId').resolves(cardId);
+    sinon.stub(systemModel, 'findTrello').resolves(createSnapshot('trello'));
     const publishPhoto = sinon
       .stub(trelloService, 'publishCardAttachment')
       .resolves();

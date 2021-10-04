@@ -71,10 +71,7 @@ module.exports = function createOnTrelloDeficientItemCard(
     let deficiency = null;
     let propertyId = '';
     try {
-      const deficiencySnap = await deficiencyModel.firestoreFindRecord(
-        fs,
-        deficiencyId
-      );
+      const deficiencySnap = await deficiencyModel.findRecord(fs, deficiencyId);
       deficiency = deficiencySnap.data() || null;
       if (!deficiency) {
         throw Error(`deficiency: "${deficiencyId}" does not exist`);
@@ -99,10 +96,7 @@ module.exports = function createOnTrelloDeficientItemCard(
     // Lookup Property
     let property = null;
     try {
-      const propertySnap = await propertiesModel.firestoreFindRecord(
-        fs,
-        propertyId
-      );
+      const propertySnap = await propertiesModel.findRecord(fs, propertyId);
       property = propertySnap.data() || null;
       if (!property) throw Error(`property: "${propertyId}" does not exist`);
     } catch (err) {
@@ -119,7 +113,7 @@ module.exports = function createOnTrelloDeficientItemCard(
     // Reject request to re-create a
     // previously published Trello Card
     try {
-      const trelloCardId = await systemModel.firestoreFindTrelloCardId(
+      const trelloCardId = await systemModel.findTrelloCardId(
         fs,
         propertyId,
         deficiencyId
@@ -141,7 +135,7 @@ module.exports = function createOnTrelloDeficientItemCard(
     // Lookup public integration data
     let trelloPropertyConfig = null;
     try {
-      const trelloIntegrationSnap = await integrationsModel.firestoreFindTrelloProperty(
+      const trelloIntegrationSnap = await integrationsModel.findTrelloProperty(
         fs,
         propertyId
       );
@@ -171,7 +165,7 @@ module.exports = function createOnTrelloDeficientItemCard(
     // Lookup Deficiency's Inspection
     let inspectionItem = null;
     try {
-      const inspectionSnap = await inspectionsModel.firestoreFindRecord(
+      const inspectionSnap = await inspectionsModel.findRecord(
         fs,
         deficiency.inspection
       );
@@ -198,7 +192,7 @@ module.exports = function createOnTrelloDeficientItemCard(
     // Lookup Trello public facing details
     let trelloOrganization = null;
     try {
-      const trelloOrgSnap = await integrationsModel.firestoreFindTrello(fs);
+      const trelloOrgSnap = await integrationsModel.findTrello(fs);
       trelloOrganization = trelloOrgSnap.data() || {};
     } catch (err) {
       // Allow failure
@@ -269,7 +263,7 @@ module.exports = function createOnTrelloDeficientItemCard(
 
     // Update system trello/property cards
     try {
-      await systemModel.firestoreUpsertPropertyTrello(
+      await systemModel.upsertPropertyTrello(
         fs,
         propertyId,
         { cards: { [cardId]: deficiencyId } },
@@ -285,7 +279,7 @@ module.exports = function createOnTrelloDeficientItemCard(
 
     // Update deficiency trello card url
     try {
-      await deficiencyModel.firestoreUpdateRecord(
+      await deficiencyModel.updateRecord(
         fs,
         deficiencyId,
         {

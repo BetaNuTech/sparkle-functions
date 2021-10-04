@@ -49,7 +49,7 @@ module.exports = function createSyncOverdueDeficientItems(
       // may be eligible for overdue status
       let deficiencies = null;
       try {
-        const collectionSnap = await deficiencyModel.firestoreQuery(fs, {
+        const collectionSnap = await deficiencyModel.query(fs, {
           state: ['in', OVERDUE_ELIGIBLE_STATES],
         });
 
@@ -79,7 +79,7 @@ module.exports = function createSyncOverdueDeficientItems(
           );
 
           try {
-            await deficiencyModel.firestoreUpdateRecord(
+            await deficiencyModel.updateRecord(
               fs,
               deficiencyId,
               updates,
@@ -111,7 +111,7 @@ module.exports = function createSyncOverdueDeficientItems(
 
           if (!property) {
             try {
-              const propertySnap = await propertyModel.firestoreFindRecord(
+              const propertySnap = await propertyModel.findRecord(
                 fs,
                 propertyId
               );
@@ -163,7 +163,7 @@ module.exports = function createSyncOverdueDeficientItems(
           }
 
           try {
-            await notificationsModel.firestoreCreateRecord(
+            await notificationsModel.createRecord(
               fs,
               undefined, // auto generate ID
               {

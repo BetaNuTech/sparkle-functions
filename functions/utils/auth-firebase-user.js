@@ -57,7 +57,7 @@ module.exports = function authFirebaseUser(
     let decodedToken = null;
     try {
       decodedToken = await auth.verifyIdToken(idToken);
-      userSnap = await usersModel.firestoreFindRecord(db, decodedToken.uid);
+      userSnap = await usersModel.findRecord(db, decodedToken.uid);
     } catch (err) {
       log.error(`${PREFIX} invalid auth token: ${err}`);
       return sendInvalidAuth();

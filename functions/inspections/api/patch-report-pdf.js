@@ -47,7 +47,7 @@ module.exports = function createOnGetReportPdfHandler(db) {
 
     // Prioritize firestore record
     try {
-      const inspectionSnap = await inspectionsModel.firestoreFindRecord(
+      const inspectionSnap = await inspectionsModel.findRecord(
         db,
         inspectionId
       );
@@ -130,10 +130,7 @@ module.exports = function createOnGetReportPdfHandler(db) {
     // Lookup property
     let property = null;
     try {
-      const propertySnap = await propertiesModel.firestoreFindRecord(
-        db,
-        propertyId
-      );
+      const propertySnap = await propertiesModel.findRecord(db, propertyId);
       property = propertySnap.data() || null;
     } catch (err) {
       log.error(`${PREFIX} property lookup failed | ${err}`);
@@ -153,7 +150,7 @@ module.exports = function createOnGetReportPdfHandler(db) {
 
     // Set generating report generation status
     try {
-      await inspectionsModel.firestoreUpsertRecord(db, inspectionId, {
+      await inspectionsModel.upsertRecord(db, inspectionId, {
         inspectionReportStatus: 'generating',
       });
     } catch (err) {
@@ -217,11 +214,7 @@ module.exports = function createOnGetReportPdfHandler(db) {
       inspectionReportUpdateLastDate: Math.round(Date.now() / 1000),
     };
     try {
-      await inspectionsModel.firestoreUpsertRecord(
-        db,
-        inspectionId,
-        inspectionUpdates
-      );
+      await inspectionsModel.upsertRecord(db, inspectionId, inspectionUpdates);
     } catch (err) {
       log.error(`${PREFIX} setting PDF report url failed`);
       await failInspectionReport(db, inspectionId);
@@ -255,7 +248,7 @@ module.exports = function createOnGetReportPdfHandler(db) {
           .replace('{{inspectionId}}', inspectionId);
 
         // Notify of new inspection report
-        await notificationsModel.firestoreAddRecord(db, {
+        await notificationsModel.addRecord(db, {
           title: property.name,
           summary: notifyTemplate(summaryTemplate, {
             createdAt,
@@ -320,7 +313,7 @@ function inspectionReportUpToDate({
  */
 function failInspectionReport(db, inspectionId) {
   return inspectionsModel
-    .firestoreUpsertRecord(db, inspectionId, {
+    .upsertRecord(db, inspectionId, {
       inspectionReportStatus: 'completed_failure',
     })
     .then(() => {

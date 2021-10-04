@@ -80,7 +80,7 @@ module.exports = function patch(db) {
     // Lookup Inspection
     let inspection = null;
     try {
-      const inspectionSnap = await inspectionsModel.firestoreFindRecord(
+      const inspectionSnap = await inspectionsModel.findRecord(
         db,
         inspectionId
       );

@@ -58,10 +58,7 @@ module.exports = function createPostTrelloJob(
     // Property lookup
     let property = null;
     try {
-      const propertySnap = await propertiesModel.firestoreFindRecord(
-        fs,
-        propertyId
-      );
+      const propertySnap = await propertiesModel.findRecord(fs, propertyId);
       property = propertySnap.data() || null;
     } catch (err) {
       return send500Error(err, 'property lookup failed', 'unexpected error');
@@ -133,7 +130,7 @@ module.exports = function createPostTrelloJob(
     // Lookup Trello integration
     let trelloOrg = null;
     try {
-      const trelloOrgSnap = await integrationsModel.firestoreFindTrello(fs);
+      const trelloOrgSnap = await integrationsModel.findTrello(fs);
       trelloOrg = trelloOrgSnap.data() || null;
     } catch (err) {
       return send500Error(
@@ -159,7 +156,7 @@ module.exports = function createPostTrelloJob(
     // Lookup public integration data
     let trelloPropertyConfig = null;
     try {
-      const trelloIntegrationSnap = await integrationsModel.firestoreFindTrelloProperty(
+      const trelloIntegrationSnap = await integrationsModel.findTrelloProperty(
         fs,
         propertyId
       );
@@ -263,7 +260,7 @@ module.exports = function createPostTrelloJob(
 
     // Update system trello/property cards
     try {
-      await systemModel.firestoreUpsertPropertyTrello(
+      await systemModel.upsertPropertyTrello(
         fs,
         propertyId,
         { cards: { [cardId]: jobId } },

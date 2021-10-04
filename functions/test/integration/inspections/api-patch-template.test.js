@@ -43,7 +43,7 @@ describe('Inspections PATCH TEMPLATE | API | PATCH Template', () => {
 
     // Stub Requests
     sinon
-      .stub(inspectionsModel, 'firestoreFindRecord')
+      .stub(inspectionsModel, 'findRecord')
       .resolves(firebase.createDocSnapshot()); // empty
 
     // Execute
@@ -98,7 +98,7 @@ describe('Inspections PATCH TEMPLATE | API | PATCH Template', () => {
 
     // Stub Requests
     sinon
-      .stub(inspectionsModel, 'firestoreFindRecord')
+      .stub(inspectionsModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(inspectionId, inspection));
 
     // Execute
@@ -149,7 +149,7 @@ describe('Inspections PATCH TEMPLATE | API | PATCH Template', () => {
 
     // Stub Requests
     sinon
-      .stub(inspectionsModel, 'firestoreFindRecord')
+      .stub(inspectionsModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(inspectionId, inspection));
     const inspectionUpdate = sinon
       .stub(inspectionsModel, 'setRecord')

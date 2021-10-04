@@ -89,7 +89,7 @@ module.exports = function createPostAuth(db) {
 
     try {
       // Set private credentials
-      await systemModel.firestoreUpsertSlack(
+      await systemModel.upsertSlack(
         db,
         {
           token: slackResponse.access_token,
@@ -127,7 +127,7 @@ module.exports = function createPostAuth(db) {
       }
 
       // Set public integration details
-      integrationDetails = await integrationsModel.firestoreSetSlack(
+      integrationDetails = await integrationsModel.setSlack(
         db,
         integrationUpdate,
         batch

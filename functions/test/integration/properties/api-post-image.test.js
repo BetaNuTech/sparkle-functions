@@ -89,7 +89,7 @@ describe('Properties | API | POST Image', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot()); // empty
 
     const res = await request(createApp())
@@ -135,12 +135,12 @@ describe('Properties | API | POST Image', () => {
 
     // Stubs
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon.stub(imageUtil, 'createImage').resolves(Buffer.from([]));
     sinon.stub(imageUtil, 'optimizeImage').resolves(Buffer.from([]));
     sinon.stub(storage, 'propertyUpload').resolves(expected.photoURL);
-    sinon.stub(propertiesModel, 'firestoreUpdateRecord').resolves();
+    sinon.stub(propertiesModel, 'updateRecord').resolves();
 
     // Execute
     const res = await request(createApp())
@@ -166,12 +166,12 @@ describe('Properties | API | POST Image', () => {
 
     // Stubs
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon.stub(imageUtil, 'createImage').resolves(Buffer.from([]));
     sinon.stub(imageUtil, 'optimizeImage').resolves(Buffer.from([]));
     sinon.stub(storage, 'propertyUpload').resolves(expected.logoURL);
-    sinon.stub(propertiesModel, 'firestoreUpdateRecord').resolves();
+    sinon.stub(propertiesModel, 'updateRecord').resolves();
 
     // Execute
     const res = await request(createApp())

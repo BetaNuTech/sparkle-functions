@@ -69,7 +69,7 @@ module.exports = function createPatch(db, auth) {
     let existingRealtimeUser = null;
     try {
       authUser = await usersModel.getAuthUserByEmail(auth, email);
-      const userSnap = await usersModel.firestoreFindRecord(db, authUser.uid);
+      const userSnap = await usersModel.findRecord(db, authUser.uid);
       existingRealtimeUser = userSnap.data() || null;
     } catch (err) {
       log.info(`${PREFIX} provided email "${email}" has no auth user record`);
@@ -111,7 +111,7 @@ module.exports = function createPatch(db, auth) {
     };
     // Create user
     try {
-      await usersModel.firestoreUpsertRecord(db, authUser.uid, attributes);
+      await usersModel.upsertRecord(db, authUser.uid, attributes);
     } catch (err) {
       return send500Error(
         err,

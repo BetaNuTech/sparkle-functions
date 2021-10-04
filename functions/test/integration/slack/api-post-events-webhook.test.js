@@ -35,9 +35,7 @@ describe('Slack | API | POST Events Webhooks', () => {
 
     // Stub integrations
     sinon.stub(integrationsModel, 'isAuthorizedSlackTeam').resolves(false);
-    const removeCredentials = sinon
-      .stub(systemModel, 'firestoreRemoveSlack')
-      .resolves();
+    const removeCredentials = sinon.stub(systemModel, 'removeSlack').resolves();
 
     request(createApp())
       .post('/t')
@@ -53,17 +51,13 @@ describe('Slack | API | POST Events Webhooks', () => {
 
   it('removes all slack records on uninstall event', done => {
     sinon.stub(integrationsModel, 'isAuthorizedSlackTeam').resolves(true);
-    sinon
-      .stub(systemModel, 'firestoreFindSlack')
-      .resolves(stubSlackCredentials());
-    const removeCredentials = sinon
-      .stub(systemModel, 'firestoreRemoveSlack')
-      .resolves();
+    sinon.stub(systemModel, 'findSlack').resolves(stubSlackCredentials());
+    const removeCredentials = sinon.stub(systemModel, 'removeSlack').resolves();
     const removeIntegration = sinon
-      .stub(integrationsModel, 'firestoreRemoveSlack')
+      .stub(integrationsModel, 'removeSlack')
       .resolves();
     const removeNotifications = sinon
-      .stub(notificationsModel, 'firestoreRemoveAllSlack')
+      .stub(notificationsModel, 'removeAllSlack')
       .resolves();
 
     request(createApp())
