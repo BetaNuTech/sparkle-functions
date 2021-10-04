@@ -183,7 +183,10 @@ function createApp() {
     '/t/:inspectionId',
     bodyParser.json(),
     stubAuth,
-    patchInspection({ collection: () => {} })
+    patchInspection({
+      collection: () => {},
+      batch: () => ({ commit: () => Promise.resolve() }),
+    })
   );
   return app;
 }
