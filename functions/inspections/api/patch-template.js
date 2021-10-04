@@ -5,6 +5,7 @@ const create500ErrHandler = require('../../utils/unexpected-api-error');
 const doesContainInvalidAttr = require('../utils/does-contain-invalid-attr');
 const validate = require('../utils/validate-update');
 const updateInspection = require('../utils/update');
+const propertiesModel = require('../../models/properties');
 
 const PREFIX = 'inspection: api: patch-template:';
 
@@ -114,17 +115,46 @@ module.exports = function patch(db) {
       return res.status(204).send();
     }
 
+    // Start batch update
+    const batch = db.batch();
+
     // Persist inspection updates
     try {
       await inspectionsModel.setRecord(
         db,
         inspectionId,
         inspectionUpdates,
-        null,
+        batch,
         true
       );
     } catch (err) {
       return send500Error(err, 'inspection write failed', 'unexpected error');
+    }
+
+    // checking for property meta data updates
+    const { updatedLastDate } = inspectionUpdates;
+    const hasUpdatedLastDate = Boolean(
+      updatedLastDate && updatedLastDate !== inspection.updatedLastDate
+    );
+
+    // Update property meta data on inspection update
+    if (hasUpdatedLastDate) {
+      try {
+        await propertiesModel.updateMetaData(db, inspection.property, batch);
+      } catch (err) {
+        log.error(`${PREFIX} property meta data update failed: ${err}`);
+      }
+    }
+
+    // Atomically commit inspection/property writes
+    try {
+      await batch.commit();
+    } catch (err) {
+      return send500Error(
+        err,
+        'inspection/property batch commit failed',
+        'unexpected error'
+      );
     }
 
     // Successful
