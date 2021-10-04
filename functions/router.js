@@ -61,6 +61,19 @@ module.exports = (fs, auth, settings, storage) => {
     }),
     inspections.api.post(fs)
   );
+
+  // Update Inspection Items
+  app.patch(
+    '/v0/inspections/:inspectionId/template',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    inspections.api.patchTemplate(fs)
+  );
+
   // Inspection property
   // reassignment endpoint
   app.patch(

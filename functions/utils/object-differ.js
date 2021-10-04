@@ -33,6 +33,37 @@ module.exports = {
     return updates;
   },
 
+  /**
+   * Get differences between two object
+   * @param  {Object} src
+   * @param  {Object} dest
+   * @param  {Object?} attrs - key of attributes to diff
+   * @return {Boolean}
+   */
+  hasDiffs(src = {}, dest = {}, attrs = []) {
+    assert(src && typeof src === 'object', 'has source object');
+    assert(dest && typeof dest === 'object', 'has destination object');
+
+    const updates = {};
+
+    if (!Array.isArray(attrs) || attrs.length === 0) {
+      attrs = Object.keys(src); // diff all of source
+    }
+
+    attrs
+      .filter(attr => diff(src[attr], dest[attr])) // different attrs only
+      .forEach(attr => {
+        const srcValue = src[attr];
+        if (typeof srcValue === 'object') {
+          // eslint-disable-next-line
+          return (updates[attr] = JSON.parse(JSON.stringify(srcValue)));
+        }
+        return (updates[attr] = srcValue); // eslint-disable-line
+      });
+
+    return Object.keys(updates).length > 0;
+  },
+
   diff,
 };
 

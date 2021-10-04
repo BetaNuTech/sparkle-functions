@@ -5,6 +5,7 @@ const post = require('./api/post');
 const createAPIGetInspectionPDF = require('./on-get-pdf-report');
 const getLatestCompletedInspection = require('./api/get-latest-completed');
 const createPatchReportPDF = require('./api/patch-report-pdf');
+const patchTemplate = require('./api/patch-template');
 
 module.exports = {
   onDeleteV2,
@@ -16,5 +17,6 @@ module.exports = {
     createPatchReportPDF,
     getLatestCompletedInspection,
     post,
+    patchTemplate,
   },
 };
