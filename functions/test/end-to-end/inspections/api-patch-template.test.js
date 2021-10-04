@@ -45,7 +45,7 @@ describe('Inspections | API | PATCH Template', () => {
       update.items[itemId].textInputValue;
 
     // Setup database
-    await inspectionsModel.firestoreCreateRecord(db, inspectionId, inspection);
+    await inspectionsModel.createRecord(db, inspectionId, inspection);
 
     // Execute
     await request(createApp())
@@ -55,7 +55,7 @@ describe('Inspections | API | PATCH Template', () => {
       .expect(201);
 
     // Get Results
-    const updatedInspection = await inspectionsModel.firestoreFindRecord(
+    const updatedInspection = await inspectionsModel.findRecord(
       db,
       inspectionId
     );

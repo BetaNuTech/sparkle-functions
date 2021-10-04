@@ -60,11 +60,11 @@ describe('Trello | API | POST Deficiency Card', () => {
       });
 
     // Setup Database
-    await deficiencyModel.firestoreCreateRecord(fs, deficiencyId, deficiency);
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, property);
-    await inspectionsModel.firestoreCreateRecord(fs, inspectionId, inspection);
-    await integrationsModel.firestoreUpsertTrello(fs, trelloIntegration);
-    await integrationsModel.firestoreCreateTrelloProperty(
+    await deficiencyModel.createRecord(fs, deficiencyId, deficiency);
+    await propertiesModel.createRecord(fs, propertyId, property);
+    await inspectionsModel.createRecord(fs, inspectionId, inspection);
+    await integrationsModel.upsertTrello(fs, trelloIntegration);
+    await integrationsModel.createTrelloProperty(
       fs,
       propertyId,
       trelloPropIntegration
@@ -79,14 +79,8 @@ describe('Trello | API | POST Deficiency Card', () => {
       .expect(201);
 
     // Get Results
-    const systemDoc = await systemModel.firestoreFindTrelloProperty(
-      fs,
-      propertyId
-    );
-    const deficiencyDoc = await deficiencyModel.firestoreFindRecord(
-      fs,
-      deficiencyId
-    );
+    const systemDoc = await systemModel.findTrelloProperty(fs, propertyId);
+    const deficiencyDoc = await deficiencyModel.findRecord(fs, deficiencyId);
 
     // Assertions
     [

@@ -17,17 +17,14 @@ module.exports = {
     deficiencyId,
     cardId
   ) {
-    const trelloCardDetailsSnap = await systemModel.firestoreFindTrelloProperty(
+    const trelloCardDetailsSnap = await systemModel.findTrelloProperty(
       fs,
       propertyId
     );
     const actualTrelloCardDetails = Boolean(
       ((trelloCardDetailsSnap.data() || {}).cards || {})[cardId]
     );
-    const deficiencySnap = await deficiencyModel.firestoreFindRecord(
-      fs,
-      deficiencyId
-    );
+    const deficiencySnap = await deficiencyModel.findRecord(fs, deficiencyId);
     const actualTrelloCardUrl = Boolean(
       (deficiencySnap.data() || {}).trelloCardURL
     );

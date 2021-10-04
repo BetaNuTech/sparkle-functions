@@ -24,7 +24,7 @@ describe('Trello | API | POST Deficiency Card', () => {
     const deficiencyId = uuid();
 
     sinon
-      .stub(deficiencyModel, 'firestoreFindRecord')
+      .stub(deficiencyModel, 'findRecord')
       .resolves(createSnapshot(deficiencyId));
 
     request(createApp())
@@ -53,10 +53,10 @@ describe('Trello | API | POST Deficiency Card', () => {
     });
 
     sinon
-      .stub(deficiencyModel, 'firestoreFindRecord')
+      .stub(deficiencyModel, 'findRecord')
       .resolves(createSnapshot(deficiencyId, deficiency));
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(createSnapshot(propertyId));
 
     request(createApp())
@@ -86,12 +86,12 @@ describe('Trello | API | POST Deficiency Card', () => {
     const property = mocking.createProperty();
 
     sinon
-      .stub(deficiencyModel, 'firestoreFindRecord')
+      .stub(deficiencyModel, 'findRecord')
       .resolves(createSnapshot(deficiencyId, deficiency));
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(createSnapshot(propertyId, property));
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves(uuid());
+    sinon.stub(systemModel, 'findTrelloCardId').resolves(uuid());
 
     request(createApp())
       .post(`/t/${deficiencyId}`)
@@ -121,14 +121,14 @@ describe('Trello | API | POST Deficiency Card', () => {
     const property = mocking.createProperty();
 
     sinon
-      .stub(deficiencyModel, 'firestoreFindRecord')
+      .stub(deficiencyModel, 'findRecord')
       .resolves(createSnapshot(deficiencyId, deficiency));
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(createSnapshot(propertyId, property));
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves('');
+    sinon.stub(systemModel, 'findTrelloCardId').resolves('');
     sinon
-      .stub(integrationsModel, 'firestoreFindTrelloProperty')
+      .stub(integrationsModel, 'findTrelloProperty')
       .resolves(createSnapshot(integrationId));
 
     request(createApp())
@@ -160,17 +160,17 @@ describe('Trello | API | POST Deficiency Card', () => {
     const trelloIntegration = mocking.createPropertyTrelloIntegration();
 
     sinon
-      .stub(deficiencyModel, 'firestoreFindRecord')
+      .stub(deficiencyModel, 'findRecord')
       .resolves(createSnapshot(deficiencyId, deficiency));
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(createSnapshot(propertyId, property));
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves('');
+    sinon.stub(systemModel, 'findTrelloCardId').resolves('');
     sinon
-      .stub(integrationsModel, 'firestoreFindTrelloProperty')
+      .stub(integrationsModel, 'findTrelloProperty')
       .resolves(createSnapshot(integrationId, trelloIntegration));
     sinon
-      .stub(inspectionsModel, 'firestoreFindRecord')
+      .stub(inspectionsModel, 'findRecord')
       .resolves(createSnapshot(inspectionId));
 
     request(createApp())
@@ -224,20 +224,20 @@ describe('Trello | API | POST Deficiency Card', () => {
     });
 
     sinon
-      .stub(deficiencyModel, 'firestoreFindRecord')
+      .stub(deficiencyModel, 'findRecord')
       .resolves(createSnapshot(deficiencyId, deficiency));
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(createSnapshot(propertyId, property));
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves('');
+    sinon.stub(systemModel, 'findTrelloCardId').resolves('');
     sinon
-      .stub(integrationsModel, 'firestoreFindTrello')
+      .stub(integrationsModel, 'findTrello')
       .resolves(createSnapshot('trello'));
     sinon
-      .stub(integrationsModel, 'firestoreFindTrelloProperty')
+      .stub(integrationsModel, 'findTrelloProperty')
       .resolves(createSnapshot(integrationId, trelloIntegration));
     sinon
-      .stub(inspectionsModel, 'firestoreFindRecord')
+      .stub(inspectionsModel, 'findRecord')
       .resolves(createSnapshot(inspectionId, inspection));
 
     const actual = {};
@@ -311,24 +311,24 @@ describe('Trello | API | POST Deficiency Card', () => {
     };
 
     sinon
-      .stub(deficiencyModel, 'firestoreFindRecord')
+      .stub(deficiencyModel, 'findRecord')
       .resolves(createSnapshot(deficiencyId, deficiency));
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(createSnapshot(propertyId, property));
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves('');
+    sinon.stub(systemModel, 'findTrelloCardId').resolves('');
     sinon
-      .stub(integrationsModel, 'firestoreFindTrello')
+      .stub(integrationsModel, 'findTrello')
       .resolves(createSnapshot('trello'));
     sinon
-      .stub(integrationsModel, 'firestoreFindTrelloProperty')
+      .stub(integrationsModel, 'findTrelloProperty')
       .resolves(createSnapshot(integrationId, trelloIntegration));
     sinon
-      .stub(inspectionsModel, 'firestoreFindRecord')
+      .stub(inspectionsModel, 'findRecord')
       .resolves(createSnapshot(inspectionId, inspection));
     sinon.stub(trelloService, 'publishListCard').resolves(trelloResponse);
-    sinon.stub(systemModel, 'firestoreUpsertPropertyTrello').resolves();
-    sinon.stub(deficiencyModel, 'firestoreUpdateRecord').resolves();
+    sinon.stub(systemModel, 'upsertPropertyTrello').resolves();
+    sinon.stub(deficiencyModel, 'updateRecord').resolves();
 
     request(createApp())
       .post(`/t/${deficiencyId}`)
@@ -382,23 +382,23 @@ describe('Trello | API | POST Deficiency Card', () => {
     const trelloResponse = { id: uuid(), shortUrl: 'test.com/img.png' };
 
     sinon
-      .stub(deficiencyModel, 'firestoreFindRecord')
+      .stub(deficiencyModel, 'findRecord')
       .resolves(createSnapshot(deficiencyId, deficiency));
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(createSnapshot(propertyId, property));
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves('');
+    sinon.stub(systemModel, 'findTrelloCardId').resolves('');
     sinon
-      .stub(integrationsModel, 'firestoreFindTrello')
+      .stub(integrationsModel, 'findTrello')
       .resolves(createSnapshot('trello'));
     sinon
-      .stub(integrationsModel, 'firestoreFindTrelloProperty')
+      .stub(integrationsModel, 'findTrelloProperty')
       .resolves(createSnapshot(integrationId, trelloIntegration));
     sinon
-      .stub(inspectionsModel, 'firestoreFindRecord')
+      .stub(inspectionsModel, 'findRecord')
       .resolves(createSnapshot(inspectionId, inspection));
-    sinon.stub(systemModel, 'firestoreUpsertPropertyTrello').resolves();
-    sinon.stub(deficiencyModel, 'firestoreUpdateRecord').resolves();
+    sinon.stub(systemModel, 'upsertPropertyTrello').resolves();
+    sinon.stub(deficiencyModel, 'updateRecord').resolves();
     let actual = '';
     sinon
       .stub(trelloService, 'publishListCard')
@@ -452,23 +452,23 @@ describe('Trello | API | POST Deficiency Card', () => {
     const trelloResponse = { id: uuid(), shortUrl: 'test.com/image.png' };
 
     sinon
-      .stub(deficiencyModel, 'firestoreFindRecord')
+      .stub(deficiencyModel, 'findRecord')
       .resolves(createSnapshot(deficiencyId, deficiency));
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(createSnapshot(propertyId, property));
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves('');
+    sinon.stub(systemModel, 'findTrelloCardId').resolves('');
     sinon
-      .stub(integrationsModel, 'firestoreFindTrello')
+      .stub(integrationsModel, 'findTrello')
       .resolves(createSnapshot('trello'));
     sinon
-      .stub(integrationsModel, 'firestoreFindTrelloProperty')
+      .stub(integrationsModel, 'findTrelloProperty')
       .resolves(createSnapshot(integrationId, trelloIntegration));
     sinon
-      .stub(inspectionsModel, 'firestoreFindRecord')
+      .stub(inspectionsModel, 'findRecord')
       .resolves(createSnapshot(inspectionId, inspection));
-    sinon.stub(systemModel, 'firestoreUpsertPropertyTrello').resolves();
-    sinon.stub(deficiencyModel, 'firestoreUpdateRecord').resolves();
+    sinon.stub(systemModel, 'upsertPropertyTrello').resolves();
+    sinon.stub(deficiencyModel, 'updateRecord').resolves();
     let actual = '';
     sinon
       .stub(trelloService, 'publishListCard')
@@ -541,23 +541,23 @@ ${CLIENT_API_DOMAIN.replace('{{propertyId}}', propertyId).replace(
 )}`;
 
     sinon
-      .stub(deficiencyModel, 'firestoreFindRecord')
+      .stub(deficiencyModel, 'findRecord')
       .resolves(createSnapshot(deficiencyId, deficiency));
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(createSnapshot(propertyId, property));
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves('');
+    sinon.stub(systemModel, 'findTrelloCardId').resolves('');
     sinon
-      .stub(integrationsModel, 'firestoreFindTrello')
+      .stub(integrationsModel, 'findTrello')
       .resolves(createSnapshot('trello'));
     sinon
-      .stub(integrationsModel, 'firestoreFindTrelloProperty')
+      .stub(integrationsModel, 'findTrelloProperty')
       .resolves(createSnapshot(integrationId, trelloIntegration));
     sinon
-      .stub(inspectionsModel, 'firestoreFindRecord')
+      .stub(inspectionsModel, 'findRecord')
       .resolves(createSnapshot(inspectionId, inspection));
-    sinon.stub(systemModel, 'firestoreUpsertPropertyTrello').resolves();
-    sinon.stub(deficiencyModel, 'firestoreUpdateRecord').resolves();
+    sinon.stub(systemModel, 'upsertPropertyTrello').resolves();
+    sinon.stub(deficiencyModel, 'updateRecord').resolves();
     let actual = '';
     sinon
       .stub(trelloService, 'publishListCard')

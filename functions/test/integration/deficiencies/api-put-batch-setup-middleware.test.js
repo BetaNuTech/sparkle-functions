@@ -30,7 +30,7 @@ describe('Deficiencies | API | PUT Batch Setup Middlware', () => {
 
   it('rejects when first deficient item read fails', done => {
     sinon.stub(log, 'error').callsFake(() => true);
-    sinon.stub(deficiencyModel, 'firestoreFindRecord').rejects(Error('dang'));
+    sinon.stub(deficiencyModel, 'findRecord').rejects(Error('dang'));
 
     request(createApp())
       .put(`/t?id=${uuid()}`)
@@ -51,7 +51,7 @@ describe('Deficiencies | API | PUT Batch Setup Middlware', () => {
     });
     deficiency.id = deficiencyId;
     sinon
-      .stub(deficiencyModel, 'firestoreFindRecord')
+      .stub(deficiencyModel, 'findRecord')
       .resolves(stubs.wrapSnapshot(deficiency));
 
     request(createApp())

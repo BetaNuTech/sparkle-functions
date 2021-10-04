@@ -75,9 +75,7 @@ describe('Users | API | POST', () => {
     // Stup auth requests
     sinon.stub(usersModel, 'hasCrudPermission').resolves(true);
     sinon.stub(usersModel, 'getAuthUserByEmail').resolves({ uid: '-1' });
-    sinon
-      .stub(usersModel, 'firestoreFindRecord')
-      .resolves({ data: () => ({}) }); // truethy user record
+    sinon.stub(usersModel, 'findRecord').resolves({ data: () => ({}) }); // truethy user record
 
     request(createApp())
       .post('/t')
@@ -97,8 +95,8 @@ describe('Users | API | POST', () => {
     const emptySnap = createEmptySnapshot();
     sinon.stub(usersModel, 'hasCrudPermission').resolves(true);
     sinon.stub(usersModel, 'getAuthUserByEmail').rejects(notFoundErr);
-    sinon.stub(usersModel, 'firestoreFindRecord').resolves(emptySnap);
-    sinon.stub(usersModel, 'firestoreUpsertRecord').resolves();
+    sinon.stub(usersModel, 'findRecord').resolves(emptySnap);
+    sinon.stub(usersModel, 'upsertRecord').resolves();
     const createUser = sinon
       .stub(usersModel, 'createAuthUser')
       .resolves({ uid: '-1' });
@@ -120,8 +118,8 @@ describe('Users | API | POST', () => {
     const emptySnap = createEmptySnapshot();
     sinon.stub(usersModel, 'hasCrudPermission').resolves(true);
     sinon.stub(usersModel, 'getAuthUserByEmail').resolves({ uid: '-1' });
-    sinon.stub(usersModel, 'firestoreFindRecord').resolves(emptySnap);
-    sinon.stub(usersModel, 'firestoreUpsertRecord').resolves();
+    sinon.stub(usersModel, 'findRecord').resolves(emptySnap);
+    sinon.stub(usersModel, 'upsertRecord').resolves();
     const createUser = sinon
       .stub(usersModel, 'createAuthUser')
       .resolves({ uid: '-1' });
@@ -153,9 +151,9 @@ describe('Users | API | POST', () => {
     const emptySnap = createEmptySnapshot();
     sinon.stub(usersModel, 'hasCrudPermission').resolves(true);
     sinon.stub(usersModel, 'getAuthUserByEmail').resolves({ uid });
-    sinon.stub(usersModel, 'firestoreFindRecord').resolves(emptySnap);
+    sinon.stub(usersModel, 'findRecord').resolves(emptySnap);
     const createUser = sinon
-      .stub(usersModel, 'firestoreUpsertRecord')
+      .stub(usersModel, 'upsertRecord')
       .callsFake((_, actualUid, actual) => {
         expect(actualUid).to.equal(uid, 'has expected UID');
         expect(actual.createdAt).to.be.a('number', 'has a createdAt timestamp');
@@ -196,8 +194,8 @@ describe('Users | API | POST', () => {
     const emptySnap = createEmptySnapshot();
     sinon.stub(usersModel, 'hasCrudPermission').resolves(true);
     sinon.stub(usersModel, 'getAuthUserByEmail').resolves({ uid });
-    sinon.stub(usersModel, 'firestoreFindRecord').resolves(emptySnap);
-    sinon.stub(usersModel, 'firestoreUpsertRecord').resolves();
+    sinon.stub(usersModel, 'findRecord').resolves(emptySnap);
+    sinon.stub(usersModel, 'upsertRecord').resolves();
 
     request(createApp())
       .post('/t')

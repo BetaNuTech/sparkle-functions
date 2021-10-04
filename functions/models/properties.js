@@ -39,7 +39,7 @@ module.exports = modelSetup({
    * @param  {firestore.batch?} parentBatch
    * @return {Promise}
    */
-  firestoreBatchRemoveTeam(fs, propertyIds, parentBatch) {
+  batchRemoveTeam(fs, propertyIds, parentBatch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       propertyIds && Array.isArray(propertyIds),
@@ -78,7 +78,7 @@ module.exports = modelSetup({
    * @param  {String} propertyId
    * @return {Promise}
    */
-  firestoreFindRecord(fs, propertyId) {
+  findRecord(fs, propertyId) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     return fs
@@ -94,7 +94,7 @@ module.exports = modelSetup({
    * @param  {Object} data
    * @return {Promise} - resolves {WriteResult}
    */
-  firestoreCreateRecord(fs, propertyId, data) {
+  createRecord(fs, propertyId, data) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(data && typeof data === 'object', 'has data');
     if (propertyId === undefined)
@@ -134,7 +134,7 @@ module.exports = modelSetup({
    * @param  {firestore.batch?} parentBatch
    * @return {Promise}
    */
-  firestoreUpdateRecord(fs, propertyId, data, parentBatch) {
+  updateRecord(fs, propertyId, data, parentBatch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(data && typeof data === 'object', 'has update data');
@@ -156,7 +156,7 @@ module.exports = modelSetup({
    * @param  {Object}  data
    * @return {Promise} - resolves {DocumentReference}
    */
-  async firestoreUpsertRecord(fs, propertyId, data) {
+  async upsertRecord(fs, propertyId, data) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(data && typeof data === 'object', 'has upsert data');
@@ -167,9 +167,7 @@ module.exports = modelSetup({
     try {
       docSnap = await docRef.get();
     } catch (err) {
-      throw Error(
-        `${PREFIX} firestoreUpsertRecord: Failed to get document: ${err}`
-      );
+      throw Error(`${PREFIX} upsertRecord: Failed to get document: ${err}`);
     }
 
     const { exists } = docSnap;
@@ -205,7 +203,7 @@ module.exports = modelSetup({
       }
     } catch (err) {
       throw Error(
-        `${PREFIX} firestoreUpsertRecord: ${
+        `${PREFIX} upsertRecord: ${
           exists ? 'updating' : 'creating'
         } document: ${err}`
       );
@@ -220,7 +218,7 @@ module.exports = modelSetup({
    * @param  {String} propertyId
    * @return {Promise}
    */
-  firestoreRemoveRecord(fs, propertyId) {
+  removeRecord(fs, propertyId) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     return fs
@@ -236,7 +234,7 @@ module.exports = modelSetup({
    * @param  {firestore.transaction?} transaction
    * @return {Promise} - resolves {DataSnapshot}
    */
-  firestoreQuery(fs, query, transaction) {
+  query(fs, query, transaction) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(query && typeof query === 'object', 'has query');
 
@@ -278,7 +276,7 @@ module.exports = modelSetup({
     // Lookup all property's inspections
     const inspections = [];
     try {
-      const inspectionsSnap = await inspectionsModel.firestoreQuery(fs, {
+      const inspectionsSnap = await inspectionsModel.query(fs, {
         property: ['==', propertyId],
         completionDate: ['>', 0],
       });
@@ -292,7 +290,7 @@ module.exports = modelSetup({
     // Find any deficient items data for property
     const propertyDeficiencies = [];
     try {
-      const deficienciesSnap = await defItemsModel.firestoreQueryByProperty(
+      const deficienciesSnap = await defItemsModel.queryByProperty(
         fs,
         propertyId
       );
@@ -319,7 +317,7 @@ module.exports = modelSetup({
 
     // Update Firebase Property
     try {
-      await this.firestoreUpdateRecord(fs, propertyId, updates, parentBatch);
+      await this.updateRecord(fs, propertyId, updates, parentBatch);
     } catch (err) {
       throw Error(`${PREFIX} failed to update property metadata: ${err}`);
     }

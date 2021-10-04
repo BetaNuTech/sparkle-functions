@@ -65,25 +65,22 @@ describe('Deficiency |  Pubsub | Overdue Sync V2', () => {
     // Setup Database
     for (let i = 0; i < deficiencies.length; i++) {
       const deficiency = deficiencies[i];
-      await deficiencyModel.firestoreCreateRecord(fs, uuid(), deficiency);
+      await deficiencyModel.createRecord(fs, uuid(), deficiency);
     }
     for (let i = 0; i < inspections.length; i++) {
       const inspection = inspections[i];
       const inspectionId = inspection.id;
       delete inspection.id;
-      await inspectionModel.firestoreCreateRecord(fs, inspectionId, inspection);
+      await inspectionModel.createRecord(fs, inspectionId, inspection);
     }
-    await propertyModel.firestoreCreateRecord(fs, propertyId, property);
+    await propertyModel.createRecord(fs, propertyId, property);
 
     // Execute
     await test.wrap(cloudFunctions.deficiencySyncOverdue)();
 
     // Test result
-    const propertySnap = await propertyModel.firestoreFindRecord(
-      fs,
-      propertyId
-    );
-    const deficienciesSnap = await deficiencyModel.firestoreQuery(fs, {
+    const propertySnap = await propertyModel.findRecord(fs, propertyId);
+    const deficienciesSnap = await deficiencyModel.query(fs, {
       property: ['==', propertyId],
     });
     const propertyData = propertySnap.data() || {};
@@ -176,18 +173,15 @@ describe('Deficiency |  Pubsub | Overdue Sync V2', () => {
     );
 
     // Setup database
-    await deficiencyModel.firestoreCreateRecord(fs, deficiencyId, deficiency);
-    await inspectionModel.firestoreCreateRecord(fs, inspectionId, inspection);
-    await propertyModel.firestoreCreateRecord(fs, propertyId, property);
+    await deficiencyModel.createRecord(fs, deficiencyId, deficiency);
+    await inspectionModel.createRecord(fs, inspectionId, inspection);
+    await propertyModel.createRecord(fs, propertyId, property);
 
     // Execute
     await test.wrap(cloudFunctions.deficiencySyncOverdue)();
 
     // Test Result
-    const deficiencySnap = await deficiencyModel.firestoreFindRecord(
-      fs,
-      deficiencyId
-    );
+    const deficiencySnap = await deficiencyModel.findRecord(fs, deficiencyId);
     const actual = (deficiencySnap.data() || {}).state;
 
     // Assertions
@@ -256,15 +250,15 @@ describe('Deficiency |  Pubsub | Overdue Sync V2', () => {
     };
 
     // Setup database
-    await deficiencyModel.firestoreCreateRecord(fs, deficiencyId, deficiency);
-    await inspectionModel.firestoreCreateRecord(fs, inspectionId, inspection);
-    await propertyModel.firestoreCreateRecord(fs, propertyId, property);
+    await deficiencyModel.createRecord(fs, deficiencyId, deficiency);
+    await inspectionModel.createRecord(fs, inspectionId, inspection);
+    await propertyModel.createRecord(fs, propertyId, property);
 
     // Execute
     await test.wrap(cloudFunctions.deficiencySyncOverdue)();
 
     // Test Result
-    const resultsSnap = await notificationsModel.firestoreQuery(fs, {
+    const resultsSnap = await notificationsModel.query(fs, {
       property: ['==', propertyId],
     });
     const actual = resultsSnap.docs[0] ? resultsSnap.docs[0].data() || {} : {};

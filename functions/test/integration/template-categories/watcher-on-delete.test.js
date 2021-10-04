@@ -18,7 +18,7 @@ describe('Template Categories | Delete Template Categories', () => {
 
     // Stub requests
     const removeCategory = sinon
-      .stub(templatesModel, 'firestoreRemoveCategory')
+      .stub(templatesModel, 'removeCategory')
       .resolves();
 
     // Execute

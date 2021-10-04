@@ -32,9 +32,9 @@ describe('Inspections | API | GET Latest Completed', () => {
     });
 
     // Setup database
-    await inspectionsModel.firestoreCreateRecord(fs, uuid(), insp2Data);
-    await inspectionsModel.firestoreCreateRecord(fs, uuid(), insp3Data);
-    await inspectionsModel.firestoreCreateRecord(fs, expected, insp1Data);
+    await inspectionsModel.createRecord(fs, uuid(), insp2Data);
+    await inspectionsModel.createRecord(fs, uuid(), insp3Data);
+    await inspectionsModel.createRecord(fs, expected, insp1Data);
 
     // Execute
     const app = createApp();
@@ -67,10 +67,10 @@ describe('Inspections | API | GET Latest Completed', () => {
     });
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
-    await inspectionsModel.firestoreCreateRecord(fs, uuid(), insp1Data);
-    await inspectionsModel.firestoreCreateRecord(fs, expected, insp2Data);
-    await inspectionsModel.firestoreCreateRecord(fs, uuid(), insp3Data);
+    await propertiesModel.createRecord(fs, propertyId, propertyData);
+    await inspectionsModel.createRecord(fs, uuid(), insp1Data);
+    await inspectionsModel.createRecord(fs, expected, insp2Data);
+    await inspectionsModel.createRecord(fs, uuid(), insp3Data);
 
     // Execute
     const app = createApp();
@@ -100,9 +100,9 @@ describe('Inspections | API | GET Latest Completed', () => {
     });
 
     // Setup database
-    await inspectionsModel.firestoreCreateRecord(fs, uuid(), insp1Data);
-    await inspectionsModel.firestoreCreateRecord(fs, expected, insp2Data);
-    await inspectionsModel.firestoreCreateRecord(fs, uuid(), insp3Data);
+    await inspectionsModel.createRecord(fs, uuid(), insp1Data);
+    await inspectionsModel.createRecord(fs, expected, insp2Data);
+    await inspectionsModel.createRecord(fs, uuid(), insp3Data);
 
     // Execute
     const app = createApp();
@@ -129,9 +129,9 @@ describe('Inspections | API | GET Latest Completed', () => {
     });
 
     // Setup database
-    await inspectionsModel.firestoreCreateRecord(fs, uuid(), insp1Data);
-    await inspectionsModel.firestoreCreateRecord(fs, expected, insp2Data);
-    await inspectionsModel.firestoreCreateRecord(fs, uuid(), insp3Data);
+    await inspectionsModel.createRecord(fs, uuid(), insp1Data);
+    await inspectionsModel.createRecord(fs, expected, insp2Data);
+    await inspectionsModel.createRecord(fs, uuid(), insp3Data);
 
     // Execute
     const app = createApp();
@@ -175,12 +175,12 @@ describe('Inspections | API | GET Latest Completed', () => {
     });
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
-    await inspectionsModel.firestoreCreateRecord(fs, uuid(), insp1Data);
-    await inspectionsModel.firestoreCreateRecord(fs, expected, insp2Data);
-    await inspectionsModel.firestoreCreateRecord(fs, uuid(), insp3Data);
-    await inspectionsModel.firestoreCreateRecord(fs, uuid(), insp4Data);
-    await inspectionsModel.firestoreCreateRecord(fs, uuid(), insp5Data);
+    await propertiesModel.createRecord(fs, propertyId, propertyData);
+    await inspectionsModel.createRecord(fs, uuid(), insp1Data);
+    await inspectionsModel.createRecord(fs, expected, insp2Data);
+    await inspectionsModel.createRecord(fs, uuid(), insp3Data);
+    await inspectionsModel.createRecord(fs, uuid(), insp4Data);
+    await inspectionsModel.createRecord(fs, uuid(), insp5Data);
 
     // Execute
     const app = createApp();
@@ -228,12 +228,12 @@ describe('Inspections | API | GET Latest Completed', () => {
     });
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
-    await inspectionsModel.firestoreCreateRecord(fs, uuid(), insp1Data);
-    await inspectionsModel.firestoreCreateRecord(fs, expected, insp2Data);
-    await inspectionsModel.firestoreCreateRecord(fs, uuid(), insp3Data);
-    await inspectionsModel.firestoreCreateRecord(fs, uuid(), insp4Data);
-    await inspectionsModel.firestoreCreateRecord(fs, uuid(), insp5Data);
+    await propertiesModel.createRecord(fs, propertyId, propertyData);
+    await inspectionsModel.createRecord(fs, uuid(), insp1Data);
+    await inspectionsModel.createRecord(fs, expected, insp2Data);
+    await inspectionsModel.createRecord(fs, uuid(), insp3Data);
+    await inspectionsModel.createRecord(fs, uuid(), insp4Data);
+    await inspectionsModel.createRecord(fs, uuid(), insp5Data);
 
     // Execute
     const app = createApp();

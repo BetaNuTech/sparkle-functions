@@ -69,27 +69,13 @@ describe('Deficiency | Update Progress Notes V2', () => {
       .reply(200, {});
 
     // Setup database
-    await deficiencyModel.firestoreCreateRecord(
-      fs,
-      deficiencyId,
-      deficiencyData
-    );
-    await systemModel.firestoreUpsertTrello(fs, trelloCredentials);
-    await systemModel.firestoreCreateTrelloProperty(
-      fs,
-      propertyId,
-      trelloPropertyData
-    );
-    await userModel.firestoreCreateRecord(fs, userId, userData);
-    const beforeSnap = await deficiencyModel.firestoreFindRecord(
-      fs,
-      deficiencyId
-    );
-    await deficiencyModel.firestoreUpdateRecord(fs, deficiencyId, defUpdate);
-    const afterSnap = await deficiencyModel.firestoreFindRecord(
-      fs,
-      deficiencyId
-    );
+    await deficiencyModel.createRecord(fs, deficiencyId, deficiencyData);
+    await systemModel.upsertTrello(fs, trelloCredentials);
+    await systemModel.createTrelloProperty(fs, propertyId, trelloPropertyData);
+    await userModel.createRecord(fs, userId, userData);
+    const beforeSnap = await deficiencyModel.findRecord(fs, deficiencyId);
+    await deficiencyModel.updateRecord(fs, deficiencyId, defUpdate);
+    const afterSnap = await deficiencyModel.findRecord(fs, deficiencyId);
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
 
     // Execute
@@ -158,27 +144,13 @@ describe('Deficiency | Update Progress Notes V2', () => {
       .reply(404, {});
 
     // Setup database
-    await deficiencyModel.firestoreCreateRecord(
-      fs,
-      deficiencyId,
-      deficiencyData
-    );
-    await systemModel.firestoreUpsertTrello(fs, trelloCredentials);
-    await systemModel.firestoreCreateTrelloProperty(
-      fs,
-      propertyId,
-      trelloPropertyData
-    );
-    await userModel.firestoreCreateRecord(fs, userId, userData);
-    const beforeSnap = await deficiencyModel.firestoreFindRecord(
-      fs,
-      deficiencyId
-    );
-    await deficiencyModel.firestoreUpdateRecord(fs, deficiencyId, defUpdate);
-    const afterSnap = await deficiencyModel.firestoreFindRecord(
-      fs,
-      deficiencyId
-    );
+    await deficiencyModel.createRecord(fs, deficiencyId, deficiencyData);
+    await systemModel.upsertTrello(fs, trelloCredentials);
+    await systemModel.createTrelloProperty(fs, propertyId, trelloPropertyData);
+    await userModel.createRecord(fs, userId, userData);
+    const beforeSnap = await deficiencyModel.findRecord(fs, deficiencyId);
+    await deficiencyModel.updateRecord(fs, deficiencyId, defUpdate);
+    const afterSnap = await deficiencyModel.findRecord(fs, deficiencyId);
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
 
     // Execute
@@ -186,14 +158,11 @@ describe('Deficiency | Update Progress Notes V2', () => {
     await wrapped(changeSnap, { params: { deficiencyId } });
 
     // Test Results
-    const trelloPropertySnap = await systemModel.firestoreFindTrelloProperty(
+    const trelloPropertySnap = await systemModel.findTrelloProperty(
       fs,
       propertyId
     );
-    const deficiencySnap = await deficiencyModel.firestoreFindRecord(
-      fs,
-      deficiencyId
-    );
+    const deficiencySnap = await deficiencyModel.findRecord(fs, deficiencyId);
     const deficiency = deficiencySnap.data() || { trelloCardURL: 'test' };
     const completedPhoto = (deficiency.completedPhotos || {})[
       completedPhotoId

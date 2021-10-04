@@ -176,7 +176,7 @@ module.exports = function createPatch(db, auth) {
         if (Object.keys(dbUpdate).length) {
           try {
             // Update Firestore
-            await usersModel.firestoreUpsertRecord(
+            await usersModel.upsertRecord(
               db,
               targetUserId,
               dbUpdate,
@@ -193,7 +193,7 @@ module.exports = function createPatch(db, auth) {
 
         let targetUser = null;
         try {
-          targetUser = await usersModel.firestoreFindRecord(db, targetUserId);
+          targetUser = await usersModel.findRecord(db, targetUserId);
           if (!targetUser.exists) throw Error('target user does not exist');
         } catch (err) {
           return send500Error(

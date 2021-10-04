@@ -36,7 +36,7 @@ const INSP_URL = '{{propertyId}}/{{inspectionId}}';
 
 describe('Inspections | PDF Report', () => {
   afterEach(async () => {
-    const inspDoc = await inspectionsModel.firestoreFindRecord(fs, INSP_ID);
+    const inspDoc = await inspectionsModel.findRecord(fs, INSP_ID);
     const reportURL = (inspDoc.data() || {}).inspectionReportURL || '';
 
     // Delete any generated PDF
@@ -66,8 +66,8 @@ describe('Inspections | PDF Report', () => {
     };
 
     // Setup database
-    await inspectionsModel.firestoreCreateRecord(fs, INSP_ID, inspData);
-    await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
+    await inspectionsModel.createRecord(fs, INSP_ID, inspData);
+    await propertiesModel.createRecord(fs, PROPERTY_ID, PROPERTY_DATA);
 
     // Execute & Get Result
     const app = createApp(fs, null, INSP_URL);
@@ -80,8 +80,8 @@ describe('Inspections | PDF Report', () => {
 
   it("should resolve an uploaded PDF's download link", async function() {
     // Setup database
-    await inspectionsModel.firestoreCreateRecord(fs, INSP_ID, INSPECTION_DATA);
-    await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
+    await inspectionsModel.createRecord(fs, INSP_ID, INSPECTION_DATA);
+    await propertiesModel.createRecord(fs, PROPERTY_ID, PROPERTY_DATA);
 
     // Execute & Get Result
     const app = createApp(fs, null, INSP_URL);
@@ -97,8 +97,8 @@ describe('Inspections | PDF Report', () => {
 
   it('should add an `inspectionReportUpdateLastDate` to inspection', async function() {
     // Setup database
-    await inspectionsModel.firestoreCreateRecord(fs, INSP_ID, INSPECTION_DATA);
-    await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
+    await inspectionsModel.createRecord(fs, INSP_ID, INSPECTION_DATA);
+    await propertiesModel.createRecord(fs, PROPERTY_ID, PROPERTY_DATA);
 
     // Execute
     const app = createApp(fs, null, INSP_URL);
@@ -109,10 +109,7 @@ describe('Inspections | PDF Report', () => {
       .expect(200);
 
     // Get Result
-    const resultFirestore = await inspectionsModel.firestoreFindRecord(
-      fs,
-      INSP_ID
-    );
+    const resultFirestore = await inspectionsModel.findRecord(fs, INSP_ID);
 
     // Assertions
     [
@@ -132,8 +129,8 @@ describe('Inspections | PDF Report', () => {
     delete inspData.inspectionReportURL;
 
     // Setup database
-    await inspectionsModel.firestoreCreateRecord(fs, INSP_ID, inspData);
-    await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
+    await inspectionsModel.createRecord(fs, INSP_ID, inspData);
+    await propertiesModel.createRecord(fs, PROPERTY_ID, PROPERTY_DATA);
 
     // Execute
     const app = createApp(fs, null, INSP_URL);
@@ -144,10 +141,7 @@ describe('Inspections | PDF Report', () => {
       .expect(200);
 
     // Get Result
-    const resultFirestore = await inspectionsModel.firestoreFindRecord(
-      fs,
-      INSP_ID
-    );
+    const resultFirestore = await inspectionsModel.findRecord(fs, INSP_ID);
 
     // Assertions
     [
@@ -165,8 +159,8 @@ describe('Inspections | PDF Report', () => {
     const final = 'completed_success';
 
     // Setup database
-    await inspectionsModel.firestoreCreateRecord(fs, INSP_ID, INSPECTION_DATA);
-    await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
+    await inspectionsModel.createRecord(fs, INSP_ID, INSPECTION_DATA);
+    await propertiesModel.createRecord(fs, PROPERTY_ID, PROPERTY_DATA);
 
     // Execute
     const app = createApp(fs, null, INSP_URL);
@@ -177,10 +171,7 @@ describe('Inspections | PDF Report', () => {
       .expect(200);
 
     // Get Result
-    const resultFirestore = await inspectionsModel.firestoreFindRecord(
-      fs,
-      INSP_ID
-    );
+    const resultFirestore = await inspectionsModel.findRecord(fs, INSP_ID);
 
     // Assertions
     [
@@ -205,9 +196,9 @@ describe('Inspections | PDF Report', () => {
     };
 
     // Setup database
-    await inspectionsModel.firestoreCreateRecord(fs, INSP_ID, INSPECTION_DATA);
-    await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
-    await usersModel.firestoreCreateRecord(fs, userId, userData);
+    await inspectionsModel.createRecord(fs, INSP_ID, INSPECTION_DATA);
+    await propertiesModel.createRecord(fs, PROPERTY_ID, PROPERTY_DATA);
+    await usersModel.createRecord(fs, userId, userData);
 
     // Execute
     const app = createApp(
@@ -225,7 +216,7 @@ describe('Inspections | PDF Report', () => {
       .expect(200);
 
     // Get Result
-    const snap = await notificationsModel.firestoreFindAll(fs);
+    const snap = await notificationsModel.findAll(fs);
     const actual = Boolean(snap.size);
 
     // Assertions
@@ -239,8 +230,8 @@ describe('Inspections | PDF Report', () => {
     };
 
     // Setup database
-    await inspectionsModel.firestoreCreateRecord(fs, INSP_ID, inspData);
-    await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
+    await inspectionsModel.createRecord(fs, INSP_ID, inspData);
+    await propertiesModel.createRecord(fs, PROPERTY_ID, PROPERTY_DATA);
 
     // Execute & Get Result
     const app = createApp(fs, null, INSP_URL);
@@ -264,8 +255,8 @@ describe('Inspections | PDF Report', () => {
     };
 
     // Setup database
-    await inspectionsModel.firestoreCreateRecord(fs, INSP_ID, inspData);
-    await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
+    await inspectionsModel.createRecord(fs, INSP_ID, inspData);
+    await propertiesModel.createRecord(fs, PROPERTY_ID, PROPERTY_DATA);
 
     // Execute, get result, and assertion
     const app = createApp(fs, null, INSP_URL);

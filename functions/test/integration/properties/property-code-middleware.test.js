@@ -10,9 +10,7 @@ describe('Properties | Middleware | Property Code', () => {
 
   it('rejects request to non-existent property', done => {
     // Stup requests
-    sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
-      .resolves(createEmptyDoc());
+    sinon.stub(propertiesModel, 'findRecord').resolves(createEmptyDoc());
 
     request(createApp())
       .get('/t/123')
@@ -28,7 +26,7 @@ describe('Properties | Middleware | Property Code', () => {
 
   it('rejects when property is missing a yardi code', done => {
     // Stup requests
-    sinon.stub(propertiesModel, 'firestoreFindRecord').resolves(createDoc({}));
+    sinon.stub(propertiesModel, 'findRecord').resolves(createDoc({}));
 
     request(createApp())
       .get('/t/123')
@@ -44,7 +42,7 @@ describe('Properties | Middleware | Property Code', () => {
 
   it('continues pipeline when property exists with a usable code', done => {
     // Stup requests
-    sinon.stub(propertiesModel, 'firestoreFindRecord').resolves(
+    sinon.stub(propertiesModel, 'findRecord').resolves(
       createDoc({
         code: 'test',
       })

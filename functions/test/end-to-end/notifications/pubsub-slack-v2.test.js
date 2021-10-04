@@ -68,18 +68,10 @@ describe('Notifications | Pubsub | Publish Slack V2', () => {
       .reply(200, SLACK_API_PUB_MSG_RESP);
 
     // Setup Database
-    await systemModel.firestoreUpsertSlack(fs, credentials);
-    await integrationsModel.firestoreSetSlack(fs, integration);
-    await notificationsModel.firestoreCreateRecord(
-      fs,
-      notification1Id,
-      notification1
-    );
-    await notificationsModel.firestoreCreateRecord(
-      fs,
-      notification2Id,
-      notification2
-    );
+    await systemModel.upsertSlack(fs, credentials);
+    await integrationsModel.setSlack(fs, integration);
+    await notificationsModel.createRecord(fs, notification1Id, notification1);
+    await notificationsModel.createRecord(fs, notification2Id, notification2);
 
     // Execute
     await test.wrap(cloudFunctions.publishSlackNotificationsV2)();
@@ -159,42 +151,30 @@ describe('Notifications | Pubsub | Publish Slack V2', () => {
       .reply(200, SLACK_API_PUB_MSG_RESP);
 
     // Setup Database
-    await systemModel.firestoreUpsertSlack(fs, credentials);
-    await integrationsModel.firestoreSetSlack(fs, integration);
-    await notificationsModel.firestoreCreateRecord(
-      fs,
-      notification1Id,
-      notification1
-    );
-    await notificationsModel.firestoreCreateRecord(
-      fs,
-      notification2Id,
-      notification2
-    );
-    await notificationsModel.firestoreCreateRecord(
-      fs,
-      notification3Id,
-      notification3
-    );
+    await systemModel.upsertSlack(fs, credentials);
+    await integrationsModel.setSlack(fs, integration);
+    await notificationsModel.createRecord(fs, notification1Id, notification1);
+    await notificationsModel.createRecord(fs, notification2Id, notification2);
+    await notificationsModel.createRecord(fs, notification3Id, notification3);
 
     // Execute
     const message = { data: Buffer.from(channel).toString('base64') };
     await test.wrap(cloudFunctions.publishSlackNotificationsV2)(message);
 
     // Test result
-    const notification1Snap = await notificationsModel.firestoreFindRecord(
+    const notification1Snap = await notificationsModel.findRecord(
       fs,
       notification1Id
     );
     const notification1PubMediums =
       (notification1Snap.data() || {}).publishedMediums || {};
-    const notification2Snap = await notificationsModel.firestoreFindRecord(
+    const notification2Snap = await notificationsModel.findRecord(
       fs,
       notification2Id
     );
     const notification2PubMediums =
       (notification2Snap.data() || {}).publishedMediums || {};
-    const notification3Snap = await notificationsModel.firestoreFindRecord(
+    const notification3Snap = await notificationsModel.findRecord(
       fs,
       notification3Id
     );
@@ -260,19 +240,15 @@ describe('Notifications | Pubsub | Publish Slack V2', () => {
       .reply(200, SLACK_API_PUB_MSG_RESP);
 
     // Setup Database
-    await systemModel.firestoreUpsertSlack(fs, credentials);
-    await integrationsModel.firestoreSetSlack(fs, integration);
-    await notificationsModel.firestoreCreateRecord(
-      fs,
-      notificationId,
-      notification
-    );
+    await systemModel.upsertSlack(fs, credentials);
+    await integrationsModel.setSlack(fs, integration);
+    await notificationsModel.createRecord(fs, notificationId, notification);
     // Execute
     const message = { data: Buffer.from(channel).toString('base64') };
     await test.wrap(cloudFunctions.publishSlackNotificationsV2)(message);
 
     // Test result
-    const integrationSnap = await integrationsModel.firestoreFindSlack(fs);
+    const integrationSnap = await integrationsModel.findSlack(fs);
     const actual =
       ((integrationSnap.data() || {}).joinedChannelNames || {})[channel] || 0;
 

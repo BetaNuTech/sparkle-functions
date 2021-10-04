@@ -29,7 +29,7 @@ module.exports = {
     // Lookup Cobalt credentials
     // TODO: move to parent scopes
     try {
-      const credentialsSnap = await systemModel.firestoreFindCobalt(fs);
+      const credentialsSnap = await systemModel.findCobalt(fs);
       const credentials = credentialsSnap.data() || null;
 
       if (!credentials || !credentials.token) {

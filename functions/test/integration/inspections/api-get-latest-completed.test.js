@@ -33,7 +33,7 @@ describe('Inspections | API | GET Latest Completed', () => {
   it('rejects request with bad property code', done => {
     const propertiesSnap = stubs.wrapSnapshot([]); // empty
 
-    sinon.stub(propertiesModel, 'firestoreQuery').resolves(propertiesSnap);
+    sinon.stub(propertiesModel, 'query').resolves(propertiesSnap);
 
     request(createApp())
       .get(`/t?propertyCode=bad`)
@@ -56,7 +56,7 @@ describe('Inspections | API | GET Latest Completed', () => {
 
     // Stup requests
     sinon
-      .stub(inspectionsModel, 'firestoreLatestCompletedQuery')
+      .stub(inspectionsModel, 'latestCompletedQuery')
       .callsFake((_, beforeQuery) => {
         actual = beforeQuery;
         return Promise.resolve(inspectionsSnap);
@@ -81,7 +81,7 @@ describe('Inspections | API | GET Latest Completed', () => {
 
     // Stup requests
     sinon
-      .stub(inspectionsModel, 'firestoreLatestCompletedQuery')
+      .stub(inspectionsModel, 'latestCompletedQuery')
       .callsFake((_, before, query) => {
         actual = query.templateName ? query.templateName[1] : 'error';
         return Promise.resolve(inspectionsSnap);
@@ -108,9 +108,9 @@ describe('Inspections | API | GET Latest Completed', () => {
     let actual = '';
 
     // Stup requests
-    sinon.stub(propertiesModel, 'firestoreQuery').resolves(propertiesSnap);
+    sinon.stub(propertiesModel, 'query').resolves(propertiesSnap);
     sinon
-      .stub(inspectionsModel, 'firestoreLatestCompletedQuery')
+      .stub(inspectionsModel, 'latestCompletedQuery')
       .callsFake((_, before, query) => {
         actual = query.property ? query.property[1] : 'error';
         return Promise.resolve(inspectionsSnap);
@@ -134,7 +134,7 @@ describe('Inspections | API | GET Latest Completed', () => {
 
     // Stup requests
     sinon
-      .stub(inspectionsModel, 'firestoreLatestCompletedQuery')
+      .stub(inspectionsModel, 'latestCompletedQuery')
       .resolves(inspectionsSnap);
 
     request(createApp())
@@ -178,9 +178,9 @@ describe('Inspections | API | GET Latest Completed', () => {
     };
 
     // Stup requests
-    sinon.stub(propertiesModel, 'firestoreFindRecord').resolves(propertySnap);
+    sinon.stub(propertiesModel, 'findRecord').resolves(propertySnap);
     sinon
-      .stub(inspectionsModel, 'firestoreLatestCompletedQuery')
+      .stub(inspectionsModel, 'latestCompletedQuery')
       .resolves(inspectionsSnap);
 
     request(createApp())
@@ -237,9 +237,9 @@ describe('Inspections | API | GET Latest Completed', () => {
     };
 
     // Stup requests
-    sinon.stub(propertiesModel, 'firestoreFindRecord').resolves(propertySnap);
+    sinon.stub(propertiesModel, 'findRecord').resolves(propertySnap);
     sinon
-      .stub(inspectionsModel, 'firestoreLatestCompletedQuery')
+      .stub(inspectionsModel, 'latestCompletedQuery')
       .resolves(inspectionsSnap);
 
     request(createApp())
@@ -264,12 +264,12 @@ describe('Inspections | API | GET Latest Completed', () => {
     const propertiesQuerySnap = stubs.wrapSnapshot([property]);
 
     // Stup requests
-    sinon.stub(propertiesModel, 'firestoreQuery').resolves(propertiesQuerySnap);
+    sinon.stub(propertiesModel, 'query').resolves(propertiesQuerySnap);
     sinon
-      .stub(inspectionsModel, 'firestoreLatestCompletedQuery')
+      .stub(inspectionsModel, 'latestCompletedQuery')
       .resolves(inspectionsSnap);
     const propertyLookup = sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(propertySnap);
 
     request(createApp())

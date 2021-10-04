@@ -57,7 +57,7 @@ describe('Properties | API | PUT', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot()); // empty
 
     const res = await request(createApp())
@@ -86,10 +86,10 @@ describe('Properties | API | PUT', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
 
-    sinon.stub(propertiesModel, 'firestoreUpdateRecord').resolves();
+    sinon.stub(propertiesModel, 'updateRecord').resolves();
 
     const res = await request(createApp())
       .put(`/t/${propertyId}`)
@@ -107,16 +107,14 @@ describe('Properties | API | PUT', () => {
 
     // Stubs
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
 
     sinon
-      .stub(propertiesModel, 'firestoreUpdateRecord')
+      .stub(propertiesModel, 'updateRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
 
-    const result = sinon
-      .stub(notificationsModel, 'firestoreAddRecord')
-      .resolves();
+    const result = sinon.stub(notificationsModel, 'addRecord').resolves();
 
     await request(createApp())
       .put(`/t/${propertyId}`)
@@ -133,16 +131,14 @@ describe('Properties | API | PUT', () => {
 
     // Stubs
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
 
     sinon
-      .stub(propertiesModel, 'firestoreUpdateRecord')
+      .stub(propertiesModel, 'updateRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
 
-    const result = sinon
-      .stub(notificationsModel, 'firestoreAddRecord')
-      .resolves();
+    const result = sinon.stub(notificationsModel, 'addRecord').resolves();
 
     await request(createApp())
       .put(`/t/${propertyId}?incognitoMode=true`)

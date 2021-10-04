@@ -15,7 +15,7 @@ module.exports = modelSetup({
    * @param  {firestore.batch?} parentBatch
    * @return {Promise}
    */
-  firestoreBatchRemoveTeam(fs, userIds, teamId, parentBatch) {
+  batchRemoveTeam(fs, userIds, teamId, parentBatch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(userIds && Array.isArray(userIds), 'has user ids is an array');
     assert(
@@ -52,7 +52,7 @@ module.exports = modelSetup({
    * @param  {String} userId
    * @return {Promise}
    */
-  firestoreFindRecord(fs, userId) {
+  findRecord(fs, userId) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(userId && typeof userId === 'string', 'has user id');
     return fs
@@ -69,7 +69,7 @@ module.exports = modelSetup({
    * @param  {firestore.transaction?} transaction
    * @return {Promise} - resolves {DocumentReference}
    */
-  async firestoreUpsertRecord(db, userId, data, transaction) {
+  async upsertRecord(db, userId, data, transaction) {
     assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(userId && typeof userId === 'string', 'has user id');
     assert(data && typeof data === 'object', 'has upsert data');
@@ -88,9 +88,7 @@ module.exports = modelSetup({
         docSnap = await docRef.get();
       }
     } catch (err) {
-      throw Error(
-        `${PREFIX} firestoreUpsertRecord: Failed to get document: ${err}`
-      );
+      throw Error(`${PREFIX} upsertRecord: Failed to get document: ${err}`);
     }
 
     const { exists } = docSnap;
@@ -141,7 +139,7 @@ module.exports = modelSetup({
       }
     } catch (err) {
       throw Error(
-        `${PREFIX} firestoreUpsertRecord: ${
+        `${PREFIX} upsertRecord: ${
           exists ? 'updating' : 'creating'
         } document: ${err}`
       );
@@ -157,7 +155,7 @@ module.exports = modelSetup({
    * @param  {Object} data
    * @return {Promise} - resolves {WriteResult}
    */
-  firestoreCreateRecord(fs, userId, data) {
+  createRecord(fs, userId, data) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(userId && typeof userId === 'string', 'has user id');
     assert(data && typeof data === 'object', 'has data');
@@ -173,7 +171,7 @@ module.exports = modelSetup({
    * @param  {String} userId
    * @return {Promise}
    */
-  firestoreRemoveRecord(fs, userId) {
+  removeRecord(fs, userId) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(userId && typeof userId === 'string', 'has user id');
     return fs
@@ -189,7 +187,7 @@ module.exports = modelSetup({
    * @param  {firestore.transaction?} transaction
    * @return {Promise} - resolves {QuerySnapshot}
    */
-  firestoreFindByTeam(fs, teamId, transaction) {
+  findByTeam(fs, teamId, transaction) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(teamId && typeof teamId === 'string', 'has team id');
 
@@ -216,7 +214,7 @@ module.exports = modelSetup({
    * @param  {firestore.transaction?} transaction
    * @return {Promise} - resolves {DataSnapshot}
    */
-  firestoreQuery(fs, query, transaction) {
+  query(fs, query, transaction) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(query && typeof query === 'object', 'has query');
     if (transaction) {
@@ -250,7 +248,7 @@ module.exports = modelSetup({
    * @param  {admin.firestore} fs
    * @return {Promise} - resolves {DocumentSnapshot[]}
    */
-  firestoreFindAll(fs) {
+  findAll(fs) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     return fs.collection(USERS_COLLECTION).get();
   },

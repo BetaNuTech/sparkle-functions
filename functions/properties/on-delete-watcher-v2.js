@@ -29,11 +29,7 @@ module.exports = function createOnDeleteV2Handler(fs, storage) {
       const [
         activeInspDocSnaps,
         archivedInspDocSnaps,
-      ] = await inspectionsModel.firestoreRemoveForProperty(
-        fs,
-        propertyId,
-        batch
-      );
+      ] = await inspectionsModel.removeForProperty(fs, propertyId, batch);
       inspectionDocSnaps = [
         ...activeInspDocSnaps.docs,
         ...archivedInspDocSnaps.docs,
@@ -49,7 +45,7 @@ module.exports = function createOnDeleteV2Handler(fs, storage) {
       const [
         activeDiDocSnaps,
         archivedDiDocSnaps,
-      ] = await diModel.firestoreRemoveForProperty(fs, propertyId, batch);
+      ] = await diModel.removeForProperty(fs, propertyId, batch);
       diDocSnaps = [...activeDiDocSnaps.docs, ...archivedDiDocSnaps.docs];
     } catch (err) {
       log.error(`${PREFIX} failed to remove deficiencies | ${err}`);
@@ -76,7 +72,7 @@ module.exports = function createOnDeleteV2Handler(fs, storage) {
     // Cleanup team/user associations
     if (property.team) {
       try {
-        await teamUsersModel.firestoreRemoveProperty(
+        await teamUsersModel.removeProperty(
           fs,
           property.team,
           propertyId,

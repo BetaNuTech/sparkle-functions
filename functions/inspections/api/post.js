@@ -53,10 +53,7 @@ module.exports = function post(db) {
     // Lookup Firestore Property
     let property = null;
     try {
-      const propertySnap = await propertiesModel.firestoreFindRecord(
-        db,
-        propertyId
-      );
+      const propertySnap = await propertiesModel.findRecord(db, propertyId);
       property = propertySnap.data() || null;
     } catch (err) {
       return send500Error(err, 'property lookup failed', 'unexpected error');
@@ -78,10 +75,7 @@ module.exports = function post(db) {
     // Lookup Firestore Template
     let template = null;
     try {
-      const templateSnap = await templatesModel.firestoreFindRecord(
-        db,
-        templateId
-      );
+      const templateSnap = await templatesModel.findRecord(db, templateId);
       template = templateSnap.data() || null;
     } catch (err) {
       return send500Error(err, 'template lookup failed', 'unexpected error');
@@ -125,11 +119,7 @@ module.exports = function post(db) {
       };
 
       // Write inspection
-      await inspectionsModel.firestoreCreateRecord(
-        db,
-        inspectionId,
-        inspection
-      );
+      await inspectionsModel.createRecord(db, inspectionId, inspection);
     } catch (err) {
       return send500Error(err, 'inspection write failed', 'unexpected error');
     }

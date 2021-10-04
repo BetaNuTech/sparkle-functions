@@ -25,8 +25,8 @@ describe('Inspections | API | POST', () => {
     });
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(db, propertyId, property);
-    await templatesModel.firestoreCreateRecord(db, templateId, template);
+    await propertiesModel.createRecord(db, propertyId, property);
+    await templatesModel.createRecord(db, templateId, template);
 
     // Execute
     const app = createApp();
@@ -40,7 +40,7 @@ describe('Inspections | API | POST', () => {
     const body = res ? res.body : {};
     const inspDoc = body ? body.data : {};
     const jobId = inspDoc.id || 'na';
-    const job = await inspectionsModel.firestoreFindRecord(db, jobId);
+    const job = await inspectionsModel.findRecord(db, jobId);
     const actual = Boolean(job.data() || null);
 
     expect(actual).to.equal(expected);

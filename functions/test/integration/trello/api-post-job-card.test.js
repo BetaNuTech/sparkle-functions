@@ -34,7 +34,7 @@ describe('Trello | API | POST Job Card', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot()); // empty
 
     // Execute
@@ -56,7 +56,7 @@ describe('Trello | API | POST Job Card', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon.stub(jobsModel, 'findRecord').resolves(firebase.createDocSnapshot()); // empty
 
@@ -84,7 +84,7 @@ describe('Trello | API | POST Job Card', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon
       .stub(jobsModel, 'findRecord')
@@ -114,7 +114,7 @@ describe('Trello | API | POST Job Card', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon
       .stub(jobsModel, 'findRecord')
@@ -144,12 +144,12 @@ describe('Trello | API | POST Job Card', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon
       .stub(jobsModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(JOB_ID, job));
-    sinon.stub(integrationsModel, 'firestoreFindTrello').rejects();
+    sinon.stub(integrationsModel, 'findTrello').rejects();
 
     // Execute
     const res = await request(createApp())
@@ -175,13 +175,13 @@ describe('Trello | API | POST Job Card', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon
       .stub(jobsModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(JOB_ID, job));
     sinon
-      .stub(integrationsModel, 'firestoreFindTrello')
+      .stub(integrationsModel, 'findTrello')
       .resolves(firebase.createDocSnapshot());
 
     // Execute
@@ -209,16 +209,16 @@ describe('Trello | API | POST Job Card', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon
       .stub(jobsModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(JOB_ID, job));
     sinon
-      .stub(integrationsModel, 'firestoreFindTrello')
+      .stub(integrationsModel, 'findTrello')
       .resolves(firebase.createDocSnapshot('trello', { member: uuid() }));
     sinon
-      .stub(integrationsModel, 'firestoreFindTrelloProperty')
+      .stub(integrationsModel, 'findTrelloProperty')
       .resolves(firebase.createDocSnapshot());
 
     // Execute
@@ -246,16 +246,16 @@ describe('Trello | API | POST Job Card', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon
       .stub(jobsModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(JOB_ID, job));
     sinon
-      .stub(integrationsModel, 'firestoreFindTrello')
+      .stub(integrationsModel, 'findTrello')
       .resolves(firebase.createDocSnapshot('trello', { member: uuid() }));
     sinon
-      .stub(integrationsModel, 'firestoreFindTrelloProperty')
+      .stub(integrationsModel, 'findTrelloProperty')
       .resolves(
         firebase.createDocSnapshot(`trello-${PROPERTY_ID}`, trelloIntegration)
       );
@@ -300,16 +300,16 @@ describe('Trello | API | POST Job Card', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon
       .stub(jobsModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(JOB_ID, job));
     sinon
-      .stub(integrationsModel, 'firestoreFindTrello')
+      .stub(integrationsModel, 'findTrello')
       .resolves(firebase.createDocSnapshot('trello', { member: uuid() }));
     sinon
-      .stub(integrationsModel, 'firestoreFindTrelloProperty')
+      .stub(integrationsModel, 'findTrelloProperty')
       .resolves(
         firebase.createDocSnapshot(`trello-${PROPERTY_ID}`, trelloIntegration)
       );
@@ -359,24 +359,24 @@ Sparkle job: ${CLIENT_API_DOMAIN.replace('{{propertyId}}', PROPERTY_ID).replace(
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon
       .stub(jobsModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(JOB_ID, job));
 
     sinon
-      .stub(integrationsModel, 'firestoreFindTrello')
+      .stub(integrationsModel, 'findTrello')
       .resolves(firebase.createDocSnapshot('trello', { member: uuid() }));
     sinon
-      .stub(integrationsModel, 'firestoreFindTrelloProperty')
+      .stub(integrationsModel, 'findTrelloProperty')
       .resolves(
         firebase.createDocSnapshot(`trello-${PROPERTY_ID}`, trelloIntegration)
       );
     sinon
       .stub(jobsModel, 'findAssociatedBids')
       .resolves(stubs.wrapSnapshot([]));
-    sinon.stub(systemModel, 'firestoreUpsertPropertyTrello').resolves();
+    sinon.stub(systemModel, 'upsertPropertyTrello').resolves();
     sinon.stub(jobsModel, 'updateRecord').resolves();
 
     let actual = '';

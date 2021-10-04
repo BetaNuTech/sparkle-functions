@@ -46,10 +46,7 @@ module.exports = function createOnGETPDFReportHandler(fs, inspectionUrl) {
 
     // Prioritize firestore record
     try {
-      const inspectionDoc = await inspectionsModel.firestoreFindRecord(
-        fs,
-        inspectionId
-      );
+      const inspectionDoc = await inspectionsModel.findRecord(fs, inspectionId);
       inspectionData = inspectionDoc.data() || null;
     } catch (err) {
       log.error(`${PREFIX} inspection lookup failed | ${err}`);
@@ -76,10 +73,7 @@ module.exports = function createOnGETPDFReportHandler(fs, inspectionUrl) {
     // Prioritize Firestore property record
     let property = null;
     try {
-      const propertySnap = await propertiesModel.firestoreFindRecord(
-        fs,
-        propertyId
-      );
+      const propertySnap = await propertiesModel.findRecord(fs, propertyId);
       property = propertySnap.data() || null;
     } catch (err) {
       log.error(`${PREFIX} firestore property lookup failed | ${err}`);
@@ -125,7 +119,7 @@ module.exports = function createOnGETPDFReportHandler(fs, inspectionUrl) {
 
     // Set generating report generation status
     try {
-      await inspectionsModel.firestoreUpsertRecord(fs, inspectionId, {
+      await inspectionsModel.upsertRecord(fs, inspectionId, {
         inspectionReportStatus: 'generating',
       });
       log.info(`${PREFIX} updated report status to "generating"`);
@@ -152,7 +146,7 @@ module.exports = function createOnGETPDFReportHandler(fs, inspectionUrl) {
 
       // Set the report's URL
       try {
-        await inspectionsModel.firestoreUpsertRecord(fs, inspectionId, {
+        await inspectionsModel.upsertRecord(fs, inspectionId, {
           inspectionReportURL,
         });
         log.info(`${PREFIX} updated inspection report url`);
@@ -163,7 +157,7 @@ module.exports = function createOnGETPDFReportHandler(fs, inspectionUrl) {
 
       // Set inspetion reports last update date
       try {
-        await inspectionsModel.firestoreUpsertRecord(fs, inspectionId, {
+        await inspectionsModel.upsertRecord(fs, inspectionId, {
           inspectionReportUpdateLastDate: Math.round(Date.now() / 1000),
         });
         log.info(`${PREFIX} updated PDF report last update date`);
@@ -174,7 +168,7 @@ module.exports = function createOnGETPDFReportHandler(fs, inspectionUrl) {
 
       // Set PDF status to successful
       try {
-        await inspectionsModel.firestoreUpsertRecord(fs, inspectionId, {
+        await inspectionsModel.upsertRecord(fs, inspectionId, {
           inspectionReportStatus: 'completed_success',
         });
         log.info(`${PREFIX} updated report status to successful`);
@@ -187,7 +181,7 @@ module.exports = function createOnGETPDFReportHandler(fs, inspectionUrl) {
 
       // Update report status to failed
       try {
-        await inspectionsModel.firestoreUpsertRecord(fs, inspectionId, {
+        await inspectionsModel.upsertRecord(fs, inspectionId, {
           inspectionReportStatus: 'completed_failure',
         });
         log.info(`${PREFIX} updated report status to failure`);
@@ -227,7 +221,7 @@ module.exports = function createOnGETPDFReportHandler(fs, inspectionUrl) {
           .replace('{{inspectionId}}', inspectionId);
 
         // Notify of new inspection report
-        await notificationsModel.firestoreAddRecord(fs, {
+        await notificationsModel.addRecord(fs, {
           title: property.name,
           summary: notifyTemplate(summaryTemplate, {
             createdAt,

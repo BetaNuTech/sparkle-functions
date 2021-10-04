@@ -55,7 +55,7 @@ if (claimsUpdates.corporate) {
 
   try {
     // Update Firestore
-    await usersModel.firestoreUpsertRecord(db, userId, claimsUpdates);
+    await usersModel.upsertRecord(db, userId, claimsUpdates);
   } catch (err) {
     throw Error(`failed to complete user record update | ${err}`);
   }

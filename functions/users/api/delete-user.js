@@ -32,7 +32,7 @@ module.exports = function createDelete(db, auth) {
     let existingRealtimeUser = null;
     try {
       authUser = await usersModel.getAuthUser(auth, targetUserId);
-      const userSnap = await usersModel.firestoreFindRecord(db, targetUserId);
+      const userSnap = await usersModel.findRecord(db, targetUserId);
       existingRealtimeUser = userSnap.data() || null;
     } catch (err) {
       log.info(

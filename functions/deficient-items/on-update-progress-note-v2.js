@@ -70,7 +70,7 @@ module.exports = function createOnUpdateDeficiencyProgNote(fs) {
     // Find created Trello Card reference
     let trelloCardId = '';
     try {
-      trelloCardId = await systemModel.firestoreFindTrelloCardId(
+      trelloCardId = await systemModel.findTrelloCardId(
         fs,
         propertyId,
         deficiencyId
@@ -89,10 +89,7 @@ module.exports = function createOnUpdateDeficiencyProgNote(fs) {
     // Lookup user that created Progress Note
     let progressNoteAuthor = null;
     try {
-      const userSnap = await usersModel.firestoreFindRecord(
-        fs,
-        progressNote.user
-      );
+      const userSnap = await usersModel.findRecord(fs, progressNote.user);
       progressNoteAuthor = userSnap.data() || null;
       if (!progressNoteAuthor) {
         log.info(
@@ -116,7 +113,7 @@ module.exports = function createOnUpdateDeficiencyProgNote(fs) {
 
     let trelloCredentials = null;
     try {
-      const trelloCredentialsSnap = await systemModel.firestoreFindTrello(fs);
+      const trelloCredentialsSnap = await systemModel.findTrello(fs);
       trelloCredentials = trelloCredentialsSnap.data();
       if (!trelloCredentials) {
         throw Error('Organization has not authorized Trello');
@@ -140,7 +137,7 @@ module.exports = function createOnUpdateDeficiencyProgNote(fs) {
     } catch (err) {
       if (err.code === 'ERR_TRELLO_CARD_DELETED') {
         try {
-          await systemModel.firestoreCleanupDeletedTrelloCard(
+          await systemModel.cleanupDeletedTrelloCard(
             fs,
             deficiencyId,
             trelloCardId

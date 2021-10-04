@@ -53,7 +53,7 @@ module.exports = function createDeleteSlackAppHandler(fs) {
 
         // Delete system's Slack App credentials
         try {
-          await systemModel.firestoreRemoveSlack(fs, batch);
+          await systemModel.removeSlack(fs, batch);
         } catch (err) {
           return send500Error(
             err,
@@ -64,7 +64,7 @@ module.exports = function createDeleteSlackAppHandler(fs) {
 
         // Delete public facing Slack App's integration details
         try {
-          await integrationsModel.firestoreRemoveSlack(fs, batch);
+          await integrationsModel.removeSlack(fs, batch);
         } catch (err) {
           return send500Error(
             err,
@@ -75,7 +75,7 @@ module.exports = function createDeleteSlackAppHandler(fs) {
 
         // Cleanup all lingering Slack notifications
         try {
-          await notificationsModel.firestoreRemoveAllSlack(fs, batch);
+          await notificationsModel.removeAllSlack(fs, batch);
         } catch (err) {
           log.error(`${PREFIX} failed to remove slack notifications | ${err}`);
         }

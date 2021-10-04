@@ -46,7 +46,7 @@ const templatesModel = require('../models/templates');
   let templatesSnap = null;
 
   try {
-    templatesSnap = await templatesModel.firestoreFindAll(fs);
+    templatesSnap = await templatesModel.findAll(fs);
   } catch (err) {
     console.error(`Failed to lookup all templates | ${err}`); // eslint-disable-line
     throw err;

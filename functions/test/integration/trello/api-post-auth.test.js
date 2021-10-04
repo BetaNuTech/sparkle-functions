@@ -79,7 +79,7 @@ describe('Trello | API | POST Authorization', () => {
       .resolves({ username: 'testor' });
 
     const actual = { authToken: '', apikey: '' };
-    sinon.stub(systemModel, 'firestoreUpsertTrello').callsFake((_, result) => {
+    sinon.stub(systemModel, 'upsertTrello').callsFake((_, result) => {
       actual.authToken = result.authToken;
       actual.apikey = result.apikey;
       return Promise.reject(Error('fail'));
@@ -120,16 +120,14 @@ describe('Trello | API | POST Authorization', () => {
       trelloEmail: '',
       trelloFullName: 'user',
     };
-    sinon.stub(systemModel, 'firestoreUpsertTrello').resolves();
-    sinon
-      .stub(integrationsModel, 'firestoreUpsertTrello')
-      .callsFake((_, result) => {
-        actual.member = result.member;
-        actual.trelloUsername = result.trelloUsername;
-        actual.trelloEmail = result.trelloEmail;
-        actual.trelloFullName = result.trelloFullName;
-        return Promise.reject(Error('fail'));
-      });
+    sinon.stub(systemModel, 'upsertTrello').resolves();
+    sinon.stub(integrationsModel, 'upsertTrello').callsFake((_, result) => {
+      actual.member = result.member;
+      actual.trelloUsername = result.trelloUsername;
+      actual.trelloEmail = result.trelloEmail;
+      actual.trelloFullName = result.trelloFullName;
+      return Promise.reject(Error('fail'));
+    });
 
     request(createApp())
       .post('/t')
@@ -167,10 +165,8 @@ describe('Trello | API | POST Authorization', () => {
       fullName: integrationData.trelloFullName,
     });
 
-    sinon.stub(systemModel, 'firestoreUpsertTrello').resolves();
-    sinon
-      .stub(integrationsModel, 'firestoreUpsertTrello')
-      .resolves(integrationData);
+    sinon.stub(systemModel, 'upsertTrello').resolves();
+    sinon.stub(integrationsModel, 'upsertTrello').resolves(integrationData);
 
     request(createApp())
       .post('/t')

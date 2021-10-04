@@ -31,21 +31,21 @@ describe('Template Categories | Watchers | On Delete', () => {
     const catData = { name: `category${categoryId}` };
 
     // Setup database
-    await templatesModel.firestoreCreateRecord(fs, tmpl1Id, tmpl1Data); // add template #1
-    await templatesModel.firestoreCreateRecord(fs, tmpl2Id, tmpl2Data); // add template #2
-    await templatesModel.firestoreCreateRecord(fs, tmpl3Id, tmpl3Data); // add template #3
-    await templateCategories.firestoreCreateRecord(fs, categoryId, catData); // add category
-    const snap = await templateCategories.firestoreFindRecord(fs, categoryId);
-    await templateCategories.firestoreRemoveRecord(fs, categoryId);
+    await templatesModel.createRecord(fs, tmpl1Id, tmpl1Data); // add template #1
+    await templatesModel.createRecord(fs, tmpl2Id, tmpl2Data); // add template #2
+    await templatesModel.createRecord(fs, tmpl3Id, tmpl3Data); // add template #3
+    await templateCategories.createRecord(fs, categoryId, catData); // add category
+    const snap = await templateCategories.findRecord(fs, categoryId);
+    await templateCategories.removeRecord(fs, categoryId);
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.templateCategoryDelete);
     await wrapped(snap, { params: { categoryId } });
 
     // Test result
-    const template1 = await templatesModel.firestoreFindRecord(fs, tmpl1Id);
-    const template2 = await templatesModel.firestoreFindRecord(fs, tmpl2Id);
-    const template3 = await templatesModel.firestoreFindRecord(fs, tmpl3Id);
+    const template1 = await templatesModel.findRecord(fs, tmpl1Id);
+    const template2 = await templatesModel.findRecord(fs, tmpl2Id);
+    const template3 = await templatesModel.findRecord(fs, tmpl3Id);
     const actualTmpl1Cat = (template1.data() || {}).category || null;
     const actualTmpl2Cat = (template2.data() || {}).category || null;
     const actualTmpl3Cat = (template3.data() || {}).category || null;

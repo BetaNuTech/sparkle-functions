@@ -27,15 +27,15 @@ describe('Notifications | On Create V2', function() {
     const notificiation = mocking.createNotification({ property: propertyId });
 
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(createSnapshot(propertyId, property));
     sinon
-      .stub(integrationsModel, 'firestoreFindSlack')
+      .stub(integrationsModel, 'findSlack')
       .resolves(
         createSnapshot('slack', { defaultChannelName: 'default-channel' })
       );
-    sinon.stub(usersModel, 'firestoreFindAll').resolves(createCollection());
-    sinon.stub(notificationsModel, 'firestoreUpdateRecord').resolves();
+    sinon.stub(usersModel, 'findAll').resolves(createCollection());
+    sinon.stub(notificationsModel, 'updateRecord').resolves();
 
     let actual = '';
 
@@ -66,17 +66,17 @@ describe('Notifications | On Create V2', function() {
     const notificiation = mocking.createNotification({ property: propertyId });
 
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(createSnapshot(propertyId, property));
     sinon
-      .stub(integrationsModel, 'firestoreFindSlack')
+      .stub(integrationsModel, 'findSlack')
       .resolves(
         createSnapshot('slack', { defaultChannelName: 'default-channel' })
       );
-    sinon.stub(usersModel, 'firestoreFindAll').resolves(createCollection());
+    sinon.stub(usersModel, 'findAll').resolves(createCollection());
     let actual = '*';
     sinon
-      .stub(notificationsModel, 'firestoreUpdateRecord')
+      .stub(notificationsModel, 'updateRecord')
       .onFirstCall()
       .callsFake((_, id, update) => {
         actual = update.slack.title;
@@ -107,13 +107,13 @@ describe('Notifications | On Create V2', function() {
     const notificiation = mocking.createNotification({ property: propertyId });
 
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(createSnapshot(propertyId, property));
-    sinon.stub(integrationsModel, 'firestoreFindSlack').resolves(
+    sinon.stub(integrationsModel, 'findSlack').resolves(
       createSnapshot('slack', { defaultChannelName: `#${expected}` }) // test "#" removal
     );
-    sinon.stub(usersModel, 'firestoreFindAll').resolves(createCollection());
-    sinon.stub(notificationsModel, 'firestoreUpdateRecord').resolves();
+    sinon.stub(usersModel, 'findAll').resolves(createCollection());
+    sinon.stub(notificationsModel, 'updateRecord').resolves();
 
     let actual = '';
 
@@ -140,13 +140,13 @@ describe('Notifications | On Create V2', function() {
     const notificiation = mocking.createNotification();
 
     sinon
-      .stub(integrationsModel, 'firestoreFindSlack')
+      .stub(integrationsModel, 'findSlack')
       .resolves(createSnapshot('slack', null));
-    sinon.stub(usersModel, 'firestoreFindAll').resolves(createCollection());
+    sinon.stub(usersModel, 'findAll').resolves(createCollection());
 
     let actual = false;
     sinon
-      .stub(notificationsModel, 'firestoreUpdateRecord')
+      .stub(notificationsModel, 'updateRecord')
       .onFirstCall()
       .callsFake((_, id, update) => {
         actual = update['publishedMediums.slack'];
@@ -174,13 +174,13 @@ describe('Notifications | On Create V2', function() {
     const slackOrg = { defaultChannelName: '' };
 
     sinon
-      .stub(integrationsModel, 'firestoreFindSlack')
+      .stub(integrationsModel, 'findSlack')
       .resolves(createSnapshot('slack', slackOrg));
-    sinon.stub(usersModel, 'firestoreFindAll').resolves(createCollection());
+    sinon.stub(usersModel, 'findAll').resolves(createCollection());
 
     let actual = false;
     sinon
-      .stub(notificationsModel, 'firestoreUpdateRecord')
+      .stub(notificationsModel, 'updateRecord')
       .onFirstCall()
       .callsFake((_, id, update) => {
         actual = update['publishedMediums.slack'];
@@ -208,13 +208,13 @@ describe('Notifications | On Create V2', function() {
     const slackOrg = { defaultChannelName: 'org-channel' };
 
     sinon
-      .stub(integrationsModel, 'firestoreFindSlack')
+      .stub(integrationsModel, 'findSlack')
       .resolves(createSnapshot('slack', slackOrg));
-    sinon.stub(usersModel, 'firestoreFindAll').resolves(createCollection());
+    sinon.stub(usersModel, 'findAll').resolves(createCollection());
 
     let actual = '';
     sinon
-      .stub(notificationsModel, 'firestoreUpdateRecord')
+      .stub(notificationsModel, 'updateRecord')
       .onFirstCall()
       .callsFake((_, id, update) => {
         actual = update.slack.message;
@@ -244,13 +244,13 @@ describe('Notifications | On Create V2', function() {
     const slackOrg = { defaultChannelName: 'org-channel' };
 
     sinon
-      .stub(integrationsModel, 'firestoreFindSlack')
+      .stub(integrationsModel, 'findSlack')
       .resolves(createSnapshot('slack', slackOrg));
-    sinon.stub(usersModel, 'firestoreFindAll').resolves(createCollection());
+    sinon.stub(usersModel, 'findAll').resolves(createCollection());
 
     let actual = '';
     sinon
-      .stub(notificationsModel, 'firestoreUpdateRecord')
+      .stub(notificationsModel, 'updateRecord')
       .onFirstCall()
       .callsFake((_, id, update) => {
         actual = update.slack.message;
@@ -280,13 +280,13 @@ describe('Notifications | On Create V2', function() {
     const slackOrg = { defaultChannelName: 'org-channel' };
 
     sinon
-      .stub(integrationsModel, 'firestoreFindSlack')
+      .stub(integrationsModel, 'findSlack')
       .resolves(createSnapshot('slack', slackOrg));
-    sinon.stub(usersModel, 'firestoreFindAll').resolves(createCollection());
+    sinon.stub(usersModel, 'findAll').resolves(createCollection());
 
     let actual = '';
     sinon
-      .stub(notificationsModel, 'firestoreUpdateRecord')
+      .stub(notificationsModel, 'updateRecord')
       .onFirstCall()
       .callsFake((_, id, update) => {
         actual = update.slack.message;
@@ -318,7 +318,7 @@ describe('Notifications | On Create V2', function() {
     });
 
     sinon
-      .stub(integrationsModel, 'firestoreFindSlack')
+      .stub(integrationsModel, 'findSlack')
       .resolves(createSnapshot('slack', integrationConfig));
 
     const tests = [
@@ -355,11 +355,8 @@ describe('Notifications | On Create V2', function() {
       },
     ];
 
-    const queryUsers = sinon.stub(usersModel, 'firestoreFindAll');
-    const updateNotification = sinon.stub(
-      notificationsModel,
-      'firestoreUpdateRecord'
-    );
+    const queryUsers = sinon.stub(usersModel, 'findAll');
+    const updateNotification = sinon.stub(notificationsModel, 'updateRecord');
 
     for (let i = 0; i < tests.length; i++) {
       let actual;
@@ -393,10 +390,10 @@ describe('Notifications | On Create V2', function() {
     });
 
     sinon
-      .stub(integrationsModel, 'firestoreFindSlack')
+      .stub(integrationsModel, 'findSlack')
       .resolves(createSnapshot('slack', integrationConfig));
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(createSnapshot(propertyId, property));
 
     const tests = [
@@ -449,11 +446,8 @@ describe('Notifications | On Create V2', function() {
       },
     ];
 
-    const queryUsers = sinon.stub(usersModel, 'firestoreFindAll');
-    const updateNotification = sinon.stub(
-      notificationsModel,
-      'firestoreUpdateRecord'
-    );
+    const queryUsers = sinon.stub(usersModel, 'findAll');
+    const updateNotification = sinon.stub(notificationsModel, 'updateRecord');
 
     for (let i = 0; i < tests.length; i++) {
       let actual;
@@ -485,16 +479,16 @@ describe('Notifications | On Create V2', function() {
     });
 
     sinon
-      .stub(integrationsModel, 'firestoreFindSlack')
+      .stub(integrationsModel, 'findSlack')
       .resolves(createSnapshot('slack', integrationConfig));
     sinon
-      .stub(usersModel, 'firestoreFindAll')
+      .stub(usersModel, 'findAll')
       .resolves(
         createCollection(
           createSnapshot(userId, { firstName: 'recipient', admin: true })
         )
       );
-    sinon.stub(notificationsModel, 'firestoreUpdateRecord').resolves();
+    sinon.stub(notificationsModel, 'updateRecord').resolves();
 
     let actual = '';
 
@@ -524,10 +518,10 @@ describe('Notifications | On Create V2', function() {
     });
 
     sinon
-      .stub(integrationsModel, 'firestoreFindSlack')
+      .stub(integrationsModel, 'findSlack')
       .resolves(createSnapshot('slack', integrationConfig));
     sinon
-      .stub(usersModel, 'firestoreFindAll')
+      .stub(usersModel, 'findAll')
       .resolves(
         createCollection(
           createSnapshot(expected, { firstName: 'recipient', admin: true }),
@@ -537,7 +531,7 @@ describe('Notifications | On Create V2', function() {
 
     let actual = '';
     sinon
-      .stub(notificationsModel, 'firestoreUpdateRecord')
+      .stub(notificationsModel, 'updateRecord')
       .callsFake((fs, id, update) => {
         actual = Object.keys(update.push || {}).join(',');
         return Promise.resolve();
@@ -561,13 +555,13 @@ describe('Notifications | On Create V2', function() {
     const slackOrg = { defaultChannelName: 'org-channel' };
 
     sinon
-      .stub(integrationsModel, 'firestoreFindSlack')
+      .stub(integrationsModel, 'findSlack')
       .resolves(createSnapshot('slack', slackOrg));
-    sinon.stub(usersModel, 'firestoreFindAll').resolves(createCollection());
+    sinon.stub(usersModel, 'findAll').resolves(createCollection());
 
     let actual = '';
     sinon
-      .stub(notificationsModel, 'firestoreUpdateRecord')
+      .stub(notificationsModel, 'updateRecord')
       .onFirstCall()
       .callsFake((_, id, update) => {
         actual = update.slack.message;
@@ -597,13 +591,13 @@ describe('Notifications | On Create V2', function() {
     const slackOrg = { defaultChannelName: 'org-channel' };
 
     sinon
-      .stub(integrationsModel, 'firestoreFindSlack')
+      .stub(integrationsModel, 'findSlack')
       .resolves(createSnapshot('slack', slackOrg));
-    sinon.stub(usersModel, 'firestoreFindAll').resolves(createCollection());
+    sinon.stub(usersModel, 'findAll').resolves(createCollection());
 
     let actual = '';
     sinon
-      .stub(notificationsModel, 'firestoreUpdateRecord')
+      .stub(notificationsModel, 'updateRecord')
       .onFirstCall()
       .callsFake((_, id, update) => {
         actual = update.slack.message;
@@ -631,13 +625,13 @@ describe('Notifications | On Create V2', function() {
     const slackOrg = { defaultChannelName: '' };
 
     sinon
-      .stub(integrationsModel, 'firestoreFindSlack')
+      .stub(integrationsModel, 'findSlack')
       .resolves(createSnapshot('slack', slackOrg));
-    sinon.stub(usersModel, 'firestoreFindAll').resolves(createCollection());
+    sinon.stub(usersModel, 'findAll').resolves(createCollection());
 
     let actual = false;
     sinon
-      .stub(notificationsModel, 'firestoreUpdateRecord')
+      .stub(notificationsModel, 'updateRecord')
       .onFirstCall()
       .resolves()
       .onSecondCall()

@@ -68,8 +68,8 @@ describe('Slack | API | POST Auth', () => {
       .expect(201);
 
     // Get Results
-    const systemDoc = await systemModel.firestoreFindSlack(fs);
-    const integrationDoc = await integrationsModel.firestoreFindSlack(fs);
+    const systemDoc = await systemModel.findSlack(fs);
+    const integrationDoc = await integrationsModel.findSlack(fs);
 
     // Assertions
     [

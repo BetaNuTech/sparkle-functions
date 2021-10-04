@@ -43,7 +43,7 @@ module.exports = async (fs, notificationId, notification) => {
   // Lookup all users
   const users = [];
   try {
-    const userDocs = await usersModel.firestoreFindAll(fs);
+    const userDocs = await usersModel.findAll(fs);
     userDocs.docs
       .filter(({ id }) => id !== creatorId) // remove notification creator
       .filter(doc => !(doc.data() || {}).pushOptOut)
@@ -72,7 +72,7 @@ module.exports = async (fs, notificationId, notification) => {
   // notification without any recipients
   if (!recipientUserIds.length) {
     try {
-      await notificationsModel.firestoreUpdateRecord(fs, notificationId, {
+      await notificationsModel.updateRecord(fs, notificationId, {
         unpublishedPush: 0,
         'publishedMediums.push': true,
       });
@@ -98,7 +98,7 @@ module.exports = async (fs, notificationId, notification) => {
   // Update notification record
   // with data for all push notifications
   try {
-    await notificationsModel.firestoreUpdateRecord(fs, notificationId, {
+    await notificationsModel.updateRecord(fs, notificationId, {
       push: result,
       unpublishedPush: Object.keys(result).length,
       'publishedMediums.push': false,

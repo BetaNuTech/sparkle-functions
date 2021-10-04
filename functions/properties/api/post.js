@@ -59,7 +59,7 @@ module.exports = function createPost(fs) {
 
     // Create new property record
     try {
-      await propertiesModel.firestoreCreateRecord(fs, propertyId, property);
+      await propertiesModel.createRecord(fs, propertyId, property);
     } catch (err) {
       return send500Error(err, 'property creation failed', 'unexpected error');
     }
@@ -67,7 +67,7 @@ module.exports = function createPost(fs) {
     if (!incognitoMode) {
       try {
         // Notify of new inspection report
-        await notificationsModel.firestoreAddRecord(fs, undefined, {
+        await notificationsModel.addRecord(fs, undefined, {
           name: property.name,
           summary: notifyTemplate('property-creation-summary', {
             authorName,

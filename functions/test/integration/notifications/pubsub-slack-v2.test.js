@@ -20,11 +20,11 @@ describe('Notifications | Pubsub | Publish Slack V2', function() {
     const message = Buffer.from(expected).toString('base64');
 
     sinon
-      .stub(systemModel, 'firestoreFindSlack')
+      .stub(systemModel, 'findSlack')
       .resolves(createSnapshot('slack', credentials));
 
     let actual = '';
-    sinon.stub(notificationsModel, 'firestoreQuery').callsFake((_, query) => {
+    sinon.stub(notificationsModel, 'query').callsFake((_, query) => {
       actual = (query['slack.channel'] && query['slack.channel'][1]) || '';
       return Promise.resolve(createCollection()); // empty
     });
@@ -43,11 +43,11 @@ describe('Notifications | Pubsub | Publish Slack V2', function() {
     const credentials = mocking.createSlackCredentials();
 
     sinon
-      .stub(systemModel, 'firestoreFindSlack')
+      .stub(systemModel, 'findSlack')
       .resolves(createSnapshot('slack', credentials));
 
     let actual = '';
-    sinon.stub(notificationsModel, 'firestoreQuery').callsFake((_, query) => {
+    sinon.stub(notificationsModel, 'query').callsFake((_, query) => {
       actual = query['slack.createdAt'] ? query['slack.createdAt'][1] : NaN;
       return Promise.resolve(createCollection()); // empty
     });

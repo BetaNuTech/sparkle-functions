@@ -86,12 +86,10 @@ describe('Slack | API | POST Slack Authorization', () => {
     sinon.stub(globalApiService, 'updateSlackTeam').resolves();
 
     let actual = '';
-    sinon
-      .stub(systemModel, 'firestoreUpsertSlack')
-      .callsFake((_, { token }) => {
-        actual = token;
-        return Promise.reject(Error('fail'));
-      });
+    sinon.stub(systemModel, 'upsertSlack').callsFake((_, { token }) => {
+      actual = token;
+      return Promise.reject(Error('fail'));
+    });
 
     request(createApp())
       .post('/t')
@@ -116,15 +114,13 @@ describe('Slack | API | POST Slack Authorization', () => {
       scope: 'test',
     });
     sinon.stub(globalApiService, 'updateSlackTeam').resolves();
-    sinon.stub(systemModel, 'firestoreUpsertSlack').resolves();
+    sinon.stub(systemModel, 'upsertSlack').resolves();
 
     let actual = '';
-    sinon
-      .stub(integrationsModel, 'firestoreSetSlack')
-      .callsFake((_, { team }) => {
-        actual = team;
-        return Promise.reject(Error('fail'));
-      });
+    sinon.stub(integrationsModel, 'setSlack').callsFake((_, { team }) => {
+      actual = team;
+      return Promise.reject(Error('fail'));
+    });
 
     request(createApp())
       .post('/t')
@@ -157,10 +153,8 @@ describe('Slack | API | POST Slack Authorization', () => {
     sinon.stub(slackService, 'authorizeCredentials').resolves({
       team: { id: '456', name: 'test' },
     });
-    sinon.stub(systemModel, 'firestoreUpsertSlack').resolves();
-    sinon
-      .stub(integrationsModel, 'firestoreSetSlack')
-      .resolves(integrationData);
+    sinon.stub(systemModel, 'upsertSlack').resolves();
+    sinon.stub(integrationsModel, 'setSlack').resolves(integrationData);
 
     request(createApp())
       .post('/t')

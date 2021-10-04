@@ -18,7 +18,7 @@ module.exports = fs => {
 
     // Lookup Yardi Integration
     try {
-      const yardiSnap = await systemModel.firestoreFindYardi(fs);
+      const yardiSnap = await systemModel.findYardi(fs);
       yardiConfig = yardiSnap.data() || null;
       if (!yardiConfig) throw Error('Yardi not configured for organization');
     } catch (err) {

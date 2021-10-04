@@ -57,7 +57,7 @@ module.exports = function createGetLatestCompleted(fs) {
     let property = null;
     if (propertyCode) {
       try {
-        const snap = await propertiesModel.firestoreQuery(fs, {
+        const snap = await propertiesModel.query(fs, {
           code: ['==', `${propertyCode}`],
         });
         if (snap.size === 0) {
@@ -92,7 +92,7 @@ module.exports = function createGetLatestCompleted(fs) {
     // Lookup properties completed inspections
     let inspection = null;
     try {
-      const snap = await inspectionsModel.firestoreLatestCompletedQuery(
+      const snap = await inspectionsModel.latestCompletedQuery(
         fs,
         beforeQuery,
         inspQuery
@@ -114,7 +114,7 @@ module.exports = function createGetLatestCompleted(fs) {
     // when not previously discovered
     if (inspection && !property) {
       try {
-        const propertySnap = await propertiesModel.firestoreFindRecord(
+        const propertySnap = await propertiesModel.findRecord(
           fs,
           inspection.property
         );
