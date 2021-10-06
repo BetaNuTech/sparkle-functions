@@ -1,7 +1,7 @@
 const { expect } = require('chai');
 const express = require('express');
 const request = require('supertest');
-const fileUpload = require('express-fileupload');
+const fileParser = require('express-multipart-file-parser');
 const uuid = require('../../../test-helpers/uuid');
 const storageHelper = require('../../../test-helpers/storage');
 const mocking = require('../../../test-helpers/mocking');
@@ -51,7 +51,7 @@ describe('Properties | API | POST Image', () => {
 
 function createApp() {
   const app = express();
-  app.post('/t/:propertyId', stubAuth, fileUpload(), handler(fs, storage));
+  app.post('/t/:propertyId', stubAuth, fileParser, handler(fs, storage));
   return app;
 }
 

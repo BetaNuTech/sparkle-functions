@@ -2,7 +2,7 @@ const request = require('supertest');
 const { expect } = require('chai');
 const path = require('path');
 const express = require('express');
-const fileUpload = require('express-fileupload');
+const fileParser = require('express-multipart-file-parser');
 const sinon = require('sinon');
 const imageUtil = require('../../../properties/utils/images');
 const storage = require('../../../services/storage');
@@ -192,7 +192,7 @@ function createApp() {
   app.post(
     '/t/:propertyId',
     stubAuth,
-    fileUpload(),
+    fileParser,
     handler({ collection: () => {} }, { bucket: () => {} })
   );
   return app;
