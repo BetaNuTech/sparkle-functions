@@ -30,7 +30,7 @@ module.exports = function uploadImage(fs, stg) {
    */
   return async (req, res) => {
     const { propertyId } = req.params;
-    const { file: uploadFile } = req.files || {};
+    const uploadFile = (req.files || [])[0] || null;
     const target = `${req.query.target || 'profile'}`.toLowerCase();
     const mimeType = imageUtil.getMimeType(
       uploadFile ? uploadFile.mimetype : 'n/a'
@@ -107,7 +107,7 @@ module.exports = function uploadImage(fs, stg) {
     // Create base64 image to manipulate
     let image = null;
     try {
-      image = await imageUtil.createImage(uploadFile.data);
+      image = await imageUtil.createImage(uploadFile.buffer);
     } catch (err) {
       return send500Error(err, 'Image read failed', 'unexpected error');
     }
@@ -123,11 +123,11 @@ module.exports = function uploadImage(fs, stg) {
     let fileName = '';
     const updatedData = {};
     if (target === 'profile') {
-      fileName = `${propertyId}${path.extname(uploadFile.name)}`;
+      fileName = `${propertyId}${path.extname(uploadFile.originalname)}`;
       updatedData.photoURL = '';
       updatedData.photoName = fileName;
     } else if (target === 'logo') {
-      fileName = `${propertyId}_logo${path.extname(uploadFile.name)}`;
+      fileName = `${propertyId}_logo${path.extname(uploadFile.originalname)}`;
       updatedData.logoURL = '';
       updatedData.logoName = fileName;
       updatedData.bannerPhotoName = fileName;
@@ -140,7 +140,7 @@ module.exports = function uploadImage(fs, stg) {
         stg,
         image,
         fileName,
-        path.extname(uploadFile.name).split('.')[1]
+        path.extname(uploadFile.originalname).split('.')[1]
       );
     } catch (err) {
       return send500Error(

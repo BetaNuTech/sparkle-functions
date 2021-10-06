@@ -3,7 +3,7 @@ const assert = require('assert');
 const express = require('express');
 const bodyParser = require('body-parser');
 const swaggerUi = require('swagger-ui-express');
-const fileUpload = require('express-fileupload');
+const fileParser = require('express-multipart-file-parser');
 const slack = require('./slack');
 const trello = require('./trello');
 const deficiencies = require('./deficient-items');
@@ -143,7 +143,7 @@ module.exports = (fs, auth, settings, storage) => {
       admin: true,
       corporate: true,
     }),
-    fileUpload(),
+    fileParser,
     properties.api.postImage(fs, storage)
   );
 
