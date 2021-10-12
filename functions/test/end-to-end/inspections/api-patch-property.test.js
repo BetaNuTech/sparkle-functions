@@ -71,17 +71,13 @@ describe('Inspections | API | Patch Property', () => {
 
   it('successfully reassigns an inspection to a new property', async () => {
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
-    await propertiesModel.firestoreCreateRecord(
+    await propertiesModel.createRecord(fs, PROPERTY_ID, PROPERTY_DATA);
+    await propertiesModel.createRecord(
       fs,
       DEST_PROPERTY_ID,
       DEST_PROPERTY_DATA
     );
-    await inspectionsModel.firestoreCreateRecord(
-      fs,
-      INSPECTION_ID,
-      INSPECTION_DATA
-    );
+    await inspectionsModel.createRecord(fs, INSPECTION_ID, INSPECTION_DATA);
 
     // Execute
     const app = createApp();
@@ -92,19 +88,13 @@ describe('Inspections | API | Patch Property', () => {
       .expect(201);
 
     // Get Results
-    const inspectionSnap = await inspectionsModel.firestoreFindRecord(
+    const inspectionSnap = await inspectionsModel.findRecord(fs, INSPECTION_ID);
+    const archivedInsp = await archiveModel.inspection.findRecord(
       fs,
       INSPECTION_ID
     );
-    const archivedInsp = await archiveModel.inspection.firestoreFindRecord(
-      fs,
-      INSPECTION_ID
-    );
-    const srcPropertySnap = await propertiesModel.firestoreFindRecord(
-      fs,
-      PROPERTY_ID
-    );
-    const destPropertySnap = await propertiesModel.firestoreFindRecord(
+    const srcPropertySnap = await propertiesModel.findRecord(fs, PROPERTY_ID);
+    const destPropertySnap = await propertiesModel.findRecord(
       fs,
       DEST_PROPERTY_ID
     );
@@ -157,31 +147,23 @@ describe('Inspections | API | Patch Property', () => {
     };
 
     // Setup database
-    await propertiesModel.firestoreUpsertRecord(
-      fs,
-      PROPERTY_ID,
-      srcPropertyData
-    );
-    await propertiesModel.firestoreUpsertRecord(
+    await propertiesModel.upsertRecord(fs, PROPERTY_ID, srcPropertyData);
+    await propertiesModel.upsertRecord(
       fs,
       DEST_PROPERTY_ID,
       DEST_PROPERTY_DATA
     );
-    await inspectionsModel.firestoreUpsertRecord(
-      fs,
-      INSPECTION_ID,
-      INSPECTION_DATA
-    );
-    await inspectionsModel.firestoreUpsertRecord(
+    await inspectionsModel.upsertRecord(fs, INSPECTION_ID, INSPECTION_DATA);
+    await inspectionsModel.upsertRecord(
       fs,
       INSPECTION_TWO_ID,
       INSPECTION_TWO_DATA
     );
-    await deficientItemsModel.firestoreCreateRecord(fs, diOneId, {
+    await deficientItemsModel.createRecord(fs, diOneId, {
       ...DEFICIENT_ITEM_ONE_DATA,
       property: PROPERTY_ID,
     });
-    await deficientItemsModel.firestoreCreateRecord(fs, diTwoId, {
+    await deficientItemsModel.createRecord(fs, diTwoId, {
       ...DEFICIENT_ITEM_TWO_DATA,
       property: PROPERTY_ID,
     });
@@ -195,11 +177,8 @@ describe('Inspections | API | Patch Property', () => {
       .expect(201);
 
     // Test results
-    const srcPropertyDoc = await propertiesModel.firestoreFindRecord(
-      fs,
-      PROPERTY_ID
-    );
-    const destPropertyDoc = await propertiesModel.firestoreFindRecord(
+    const srcPropertyDoc = await propertiesModel.findRecord(fs, PROPERTY_ID);
+    const destPropertyDoc = await propertiesModel.findRecord(
       fs,
       DEST_PROPERTY_ID
     );
@@ -259,28 +238,24 @@ describe('Inspections | API | Patch Property', () => {
     const diThreeId = uuid();
 
     // setup database
-    await propertiesModel.firestoreUpsertRecord(fs, PROPERTY_ID, PROPERTY_DATA);
-    await propertiesModel.firestoreUpsertRecord(
+    await propertiesModel.upsertRecord(fs, PROPERTY_ID, PROPERTY_DATA);
+    await propertiesModel.upsertRecord(
       fs,
       DEST_PROPERTY_ID,
       DEST_PROPERTY_DATA
     );
-    await inspectionsModel.firestoreUpsertRecord(
-      fs,
-      INSPECTION_ID,
-      INSPECTION_DATA
-    );
+    await inspectionsModel.upsertRecord(fs, INSPECTION_ID, INSPECTION_DATA);
 
     // Stup active DI database
-    await deficientItemsModel.firestoreCreateRecord(fs, diOneId, {
+    await deficientItemsModel.createRecord(fs, diOneId, {
       ...DEFICIENT_ITEM_ONE_DATA,
       property: PROPERTY_ID,
     });
-    await deficientItemsModel.firestoreCreateRecord(fs, diTwoId, {
+    await deficientItemsModel.createRecord(fs, diTwoId, {
       ...DEFICIENT_ITEM_TWO_DATA,
       property: PROPERTY_ID,
     });
-    await deficientItemsModel.firestoreCreateRecord(fs, diThreeId, {
+    await deficientItemsModel.createRecord(fs, diThreeId, {
       ...RAND_DEF_ITEM_DATA,
       property: RAND_PROP_ID,
     });
@@ -294,20 +269,11 @@ describe('Inspections | API | Patch Property', () => {
       .expect(201);
 
     // Get Results
-    const srcPropDoc = await propertiesModel.firestoreFindRecord(
-      fs,
-      PROPERTY_ID
-    );
-    const destPropDoc = await propertiesModel.firestoreFindRecord(
-      fs,
-      DEST_PROPERTY_ID
-    );
-    const diOneDoc = await deficientItemsModel.firestoreFindRecord(fs, diOneId);
-    const diTwoDoc = await deficientItemsModel.firestoreFindRecord(fs, diTwoId);
-    const diThreeDoc = await deficientItemsModel.firestoreFindRecord(
-      fs,
-      diThreeId
-    );
+    const srcPropDoc = await propertiesModel.findRecord(fs, PROPERTY_ID);
+    const destPropDoc = await propertiesModel.findRecord(fs, DEST_PROPERTY_ID);
+    const diOneDoc = await deficientItemsModel.findRecord(fs, diOneId);
+    const diTwoDoc = await deficientItemsModel.findRecord(fs, diTwoId);
+    const diThreeDoc = await deficientItemsModel.findRecord(fs, diThreeId);
 
     // Assertions
     [
@@ -351,28 +317,24 @@ describe('Inspections | API | Patch Property', () => {
     const diThreeId = uuid();
 
     // setup database
-    await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
-    await propertiesModel.firestoreCreateRecord(
+    await propertiesModel.createRecord(fs, PROPERTY_ID, PROPERTY_DATA);
+    await propertiesModel.createRecord(
       fs,
       DEST_PROPERTY_ID,
       DEST_PROPERTY_DATA
     );
-    await inspectionsModel.firestoreCreateRecord(
-      fs,
-      INSPECTION_ID,
-      INSPECTION_DATA
-    );
+    await inspectionsModel.createRecord(fs, INSPECTION_ID, INSPECTION_DATA);
 
     // Stup archive DI database
-    await archiveModel.deficientItem.firestoreCreateRecord(fs, diOneId, {
+    await archiveModel.deficientItem.createRecord(fs, diOneId, {
       ...DEFICIENT_ITEM_ONE_DATA,
       property: PROPERTY_ID,
     });
-    await archiveModel.deficientItem.firestoreCreateRecord(fs, diTwoId, {
+    await archiveModel.deficientItem.createRecord(fs, diTwoId, {
       ...DEFICIENT_ITEM_TWO_DATA,
       property: PROPERTY_ID,
     });
-    await archiveModel.deficientItem.firestoreCreateRecord(fs, diThreeId, {
+    await archiveModel.deficientItem.createRecord(fs, diThreeId, {
       ...RAND_DEF_ITEM_DATA,
       property: RAND_PROP_ID,
     });
@@ -386,15 +348,9 @@ describe('Inspections | API | Patch Property', () => {
       .expect(201);
 
     // Get Results
-    const diOneDoc = await archiveModel.deficientItem.firestoreFindRecord(
-      fs,
-      diOneId
-    );
-    const diTwoDoc = await archiveModel.deficientItem.firestoreFindRecord(
-      fs,
-      diTwoId
-    );
-    const diThreeDoc = await archiveModel.deficientItem.firestoreFindRecord(
+    const diOneDoc = await archiveModel.deficientItem.findRecord(fs, diOneId);
+    const diTwoDoc = await archiveModel.deficientItem.findRecord(fs, diTwoId);
+    const diThreeDoc = await archiveModel.deficientItem.findRecord(
       fs,
       diThreeId
     );

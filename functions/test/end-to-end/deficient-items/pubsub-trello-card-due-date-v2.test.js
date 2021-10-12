@@ -63,19 +63,19 @@ describe('Deficiency |  Pubsub | Trello Card Due Date V2', function() {
     };
 
     // Setup database
-    await propertyModel.firestoreCreateRecord(fs, propertyId, property);
-    await systemModel.firestoreUpsertTrello(fs, credentials);
-    await systemModel.firestoreCreateTrelloProperty(
+    await propertyModel.createRecord(fs, propertyId, property);
+    await systemModel.upsertTrello(fs, credentials);
+    await systemModel.createTrelloProperty(
       fs,
       propertyId,
       systemTrelloProperty
     );
-    await integrationModel.firestoreCreateTrelloProperty(
+    await integrationModel.createTrelloProperty(
       fs,
       propertyId,
       intTrelloProperty
     );
-    await deficiencyModel.firestoreCreateRecord(fs, deficiencyId, deficiency);
+    await deficiencyModel.createRecord(fs, deficiencyId, deficiency);
 
     // Stub Requests
     const cardUpdate = nock('https://api.trello.com')
@@ -137,19 +137,19 @@ describe('Deficiency |  Pubsub | Trello Card Due Date V2', function() {
     };
 
     // Setup database
-    await propertyModel.firestoreCreateRecord(fs, propertyId, property);
-    await systemModel.firestoreUpsertTrello(fs, credentials);
-    await systemModel.firestoreCreateTrelloProperty(
+    await propertyModel.createRecord(fs, propertyId, property);
+    await systemModel.upsertTrello(fs, credentials);
+    await systemModel.createTrelloProperty(
       fs,
       propertyId,
       systemTrelloProperty
     );
-    await integrationModel.firestoreCreateTrelloProperty(
+    await integrationModel.createTrelloProperty(
       fs,
       propertyId,
       intTrelloProperty
     );
-    await deficiencyModel.firestoreCreateRecord(fs, deficiencyId, deficiency);
+    await deficiencyModel.createRecord(fs, deficiencyId, deficiency);
 
     // Stub Requests
     nock('https://api.trello.com')
@@ -165,14 +165,11 @@ describe('Deficiency |  Pubsub | Trello Card Due Date V2', function() {
     } catch (err) {} // eslint-disable-line no-empty
 
     // Test Results
-    const trelloPropertySnap = await systemModel.firestoreFindTrelloProperty(
+    const trelloPropertySnap = await systemModel.findTrelloProperty(
       fs,
       propertyId
     );
-    const deficiencySnap = await deficiencyModel.firestoreFindRecord(
-      fs,
-      deficiencyId
-    );
+    const deficiencySnap = await deficiencyModel.findRecord(fs, deficiencyId);
     const deficiencyResults = deficiencySnap.data() || {
       trelloCardURL: 'test',
     };

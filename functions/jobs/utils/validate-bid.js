@@ -9,13 +9,15 @@ const config = require('../../config');
  * @return {Boolean}
  */
 const isValidCostMin = (value, ctx) => {
-  if (!value) return true;
-
-  if (ctx.costMax) {
-    return value <= ctx.costMax;
+  if (typeof value !== 'number') {
+    return true; // unanswered
   }
 
-  return value >= 0;
+  if (value === 0) {
+    return true; // unset answer
+  }
+
+  return ctx.costMax ? value <= ctx.costMax : Boolean(value);
 };
 
 /**
@@ -25,19 +27,51 @@ const isValidCostMin = (value, ctx) => {
  * @return {Boolean}
  */
 const isValidCostMax = (value, ctx) => {
-  if (!value) return true;
-
-  if (ctx.costMin) {
-    return value >= ctx.costMin;
+  if (typeof value !== 'number') {
+    return true; // unanswered
   }
 
-  return value >= 0;
+  if (value === 0) {
+    return true; // unset answer
+  }
+
+  return ctx.costMin ? value >= ctx.costMin : Boolean(value);
 };
 
-const isValidCompleteOrStartAt = (value, ctx) => {
-  return value && (ctx.completeAt || ctx.startAt)
-    ? value < ctx.completeAt || value > ctx.startAt
-    : true;
+/**
+ * Validate bid start at timestamp
+ * @param  {Number?} value
+ * @param  {Object} ctx
+ * @return {Boolean}
+ */
+const isValidStartAt = (value, ctx) => {
+  if (typeof value !== 'number') {
+    return true; // unanswered
+  }
+
+  if (value === 0) {
+    return true; // unset answer
+  }
+
+  return ctx.completeAt ? value < ctx.completeAt : Boolean(value);
+};
+
+/**
+ * Validate bid completed at timestamp
+ * @param  {Number?} value
+ * @param  {Object} ctx
+ * @return {Boolean}
+ */
+const isValidCompleteAt = (value, ctx) => {
+  if (typeof value !== 'number') {
+    return true; // unanswered
+  }
+
+  if (value === 0) {
+    return true; // unset answer
+  }
+
+  return ctx.startAt ? value > ctx.startAt : Boolean(value);
 };
 
 const bidSchema = new Schema({
@@ -62,12 +96,12 @@ const bidSchema = new Schema({
   startAt: {
     type: Number,
     required: false,
-    use: { isValidCompleteOrStartAt },
+    use: { isValidStartAt },
   },
   completeAt: {
     type: Number,
     required: false,
-    use: { isValidCompleteOrStartAt },
+    use: { isValidCompleteAt },
   },
   scope: {
     type: String,

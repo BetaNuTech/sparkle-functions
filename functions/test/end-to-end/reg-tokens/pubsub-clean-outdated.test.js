@@ -19,7 +19,7 @@ describe('Reg Token | Pubsub | Sync Outdated', () => {
     const unchangedTokenId = uuid();
 
     // Setup database
-    await tokensModel.firestoreCreateRecord(fs, userId, {
+    await tokensModel.createRecord(fs, userId, {
       [deletedTokenId]: nowUnix - ONE_MONTHS_SEC,
       [deletedTokenId2]: nowUnix - SIX_MONTHS_SEC,
       [unchangedTokenId]: nowUnix - TWENTY_SEVEN_DAYS_SEC,
@@ -29,7 +29,7 @@ describe('Reg Token | Pubsub | Sync Outdated', () => {
     await test.wrap(cloudFunctions.regTokensSync)();
 
     // Results
-    const resultSnap = await tokensModel.firestoreFindRecord(fs, userId);
+    const resultSnap = await tokensModel.findRecord(fs, userId);
     const results = resultSnap.data();
 
     // Assertions

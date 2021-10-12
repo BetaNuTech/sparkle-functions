@@ -29,8 +29,8 @@ describe('Deficiencies | Pubsub | Trello Card Close V2', function() {
       `${propertyId}/${deficiencyId}/status/${status}`
     ).toString('base64');
 
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves('');
-    const query = sinon.stub(deficiencyModel, 'firestoreFindRecord').resolves();
+    sinon.stub(systemModel, 'findTrelloCardId').resolves('');
+    const query = sinon.stub(deficiencyModel, 'findRecord').resolves();
 
     await createHandler(
       createFirestore(),
@@ -53,9 +53,9 @@ describe('Deficiencies | Pubsub | Trello Card Close V2', function() {
       `${propertyId}/${deficiencyId}/status/${status}`
     ).toString('base64');
 
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves(cardId);
-    sinon.stub(systemModel, 'firestoreFindTrello').resolves(createSnapshot());
-    const query = sinon.stub(deficiencyModel, 'firestoreFindRecord').resolves();
+    sinon.stub(systemModel, 'findTrelloCardId').resolves(cardId);
+    sinon.stub(systemModel, 'findTrello').resolves(createSnapshot());
+    const query = sinon.stub(deficiencyModel, 'findRecord').resolves();
 
     await createHandler(
       createFirestore(),
@@ -89,15 +89,15 @@ describe('Deficiencies | Pubsub | Trello Card Close V2', function() {
       `${propertyId}/${deficiencyId}/status/${status}`
     ).toString('base64');
 
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves(cardId);
+    sinon.stub(systemModel, 'findTrelloCardId').resolves(cardId);
     sinon
-      .stub(systemModel, 'firestoreFindTrello')
+      .stub(systemModel, 'findTrello')
       .resolves(createSnapshot('trello', credentials));
     sinon
-      .stub(integrationModel, 'firestoreFindTrelloProperty')
+      .stub(integrationModel, 'findTrelloProperty')
       .resolves(createSnapshot(`trello-${propertyId}`, trelloProperty));
     sinon
-      .stub(deficiencyModel, 'firestoreFindRecord')
+      .stub(deficiencyModel, 'findRecord')
       .resolves(createSnapshot(deficiencyId, deficiency));
     const publish = sinon.stub(trello, 'updateTrelloCard').resolves();
 
@@ -135,15 +135,15 @@ describe('Deficiencies | Pubsub | Trello Card Close V2', function() {
       `${propertyId}/${deficiencyId}/status/${status}`
     ).toString('base64');
 
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves(cardId);
+    sinon.stub(systemModel, 'findTrelloCardId').resolves(cardId);
     sinon
-      .stub(systemModel, 'firestoreFindTrello')
+      .stub(systemModel, 'findTrello')
       .resolves(createSnapshot('trello', credentials));
     sinon
-      .stub(integrationModel, 'firestoreFindTrelloProperty')
+      .stub(integrationModel, 'findTrelloProperty')
       .resolves(createSnapshot(`trello-${propertyId}`, trelloProperty));
     sinon
-      .stub(deficiencyModel, 'firestoreFindRecord')
+      .stub(deficiencyModel, 'findRecord')
       .resolves(createSnapshot(deficiencyId, deficiency));
     const result = {};
     sinon
@@ -226,15 +226,15 @@ describe('Deficiencies | Pubsub | Trello Card Close V2', function() {
       `${propertyId}/${deficiencyId}/status/${status}`
     ).toString('base64');
 
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves(cardId);
+    sinon.stub(systemModel, 'findTrelloCardId').resolves(cardId);
     sinon
-      .stub(systemModel, 'firestoreFindTrello')
+      .stub(systemModel, 'findTrello')
       .resolves(createSnapshot('trello', credentials));
     sinon
-      .stub(integrationModel, 'firestoreFindTrelloProperty')
+      .stub(integrationModel, 'findTrelloProperty')
       .resolves(createSnapshot(`trello-${propertyId}`, trelloProperty));
     sinon
-      .stub(deficiencyModel, 'firestoreFindRecord')
+      .stub(deficiencyModel, 'findRecord')
       .resolves(createSnapshot(deficiencyId, deficiency));
     let actual;
     sinon

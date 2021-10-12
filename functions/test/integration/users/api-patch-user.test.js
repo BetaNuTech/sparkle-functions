@@ -95,15 +95,13 @@ describe('Users | API | PATCH', () => {
     sinon.stub(usersModel, 'hasUpdatePermission').resolves(true);
     sinon.stub(usersModel, 'getAuthUser').resolves({});
     sinon
-      .stub(usersModel, 'firestoreFindRecord')
+      .stub(usersModel, 'findRecord')
       .resolves(createFirestoreSnap('1', { email: 'test' }));
     const setClaims = sinon.stub(usersModel, 'upsertCustomClaims').resolves();
     const setDisabled = sinon
       .stub(usersModel, 'setAuthUserDisabled')
       .resolves({});
-    const userUpdate = sinon
-      .stub(usersModel, 'firestoreUpsertRecord')
-      .resolves();
+    const userUpdate = sinon.stub(usersModel, 'upsertRecord').resolves();
 
     await request(createApp())
       .patch('/t/1')
@@ -121,15 +119,13 @@ describe('Users | API | PATCH', () => {
     sinon.stub(usersModel, 'hasUpdatePermission').resolves(true);
     sinon.stub(usersModel, 'getAuthUser').resolves({});
     sinon
-      .stub(usersModel, 'firestoreFindRecord')
+      .stub(usersModel, 'findRecord')
       .resolves(createFirestoreSnap('2', { email: 'test' }));
     const setClaims = sinon.stub(usersModel, 'upsertCustomClaims').resolves();
     const setDisabled = sinon
       .stub(usersModel, 'setAuthUserDisabled')
       .resolves({});
-    const userUpdate = sinon
-      .stub(usersModel, 'firestoreUpsertRecord')
-      .resolves();
+    const userUpdate = sinon.stub(usersModel, 'upsertRecord').resolves();
 
     await request(createApp())
       .patch('/t/1')
@@ -156,15 +152,13 @@ describe('Users | API | PATCH', () => {
     sinon.stub(usersModel, 'hasUpdatePermission').resolves(true);
     sinon.stub(usersModel, 'getAuthUser').resolves({});
     sinon
-      .stub(usersModel, 'firestoreFindRecord')
+      .stub(usersModel, 'findRecord')
       .resolves(createFirestoreSnap('3', { email: 'test' }));
     const setClaims = sinon.stub(usersModel, 'upsertCustomClaims').resolves();
     const setDisabled = sinon
       .stub(usersModel, 'setAuthUserDisabled')
       .resolves({});
-    const userUpdate = sinon
-      .stub(usersModel, 'firestoreUpsertRecord')
-      .resolves();
+    const userUpdate = sinon.stub(usersModel, 'upsertRecord').resolves();
 
     await request(createApp())
       .patch('/t/1')
@@ -190,15 +184,13 @@ describe('Users | API | PATCH', () => {
     sinon.stub(usersModel, 'hasUpdatePermission').resolves(true);
     sinon.stub(usersModel, 'getAuthUser').resolves({});
     sinon
-      .stub(usersModel, 'firestoreFindRecord')
+      .stub(usersModel, 'findRecord')
       .resolves(createFirestoreSnap('3', { email: 'test' }));
     const setClaims = sinon.stub(usersModel, 'upsertCustomClaims').resolves();
     const setDisabled = sinon
       .stub(usersModel, 'setAuthUserDisabled')
       .resolves({});
-    const userUpdate = sinon
-      .stub(usersModel, 'firestoreUpsertRecord')
-      .resolves();
+    const userUpdate = sinon.stub(usersModel, 'upsertRecord').resolves();
 
     await request(createApp())
       .patch('/t/1')
@@ -216,10 +208,10 @@ describe('Users | API | PATCH', () => {
     sinon.stub(usersModel, 'hasUpdatePermission').resolves(true);
     sinon.stub(usersModel, 'getAuthUser').resolves({});
     sinon
-      .stub(usersModel, 'firestoreFindRecord')
+      .stub(usersModel, 'findRecord')
       .resolves(createFirestoreSnap('3', { email: 'test' }));
     const userUpdate = sinon
-      .stub(usersModel, 'firestoreUpsertRecord')
+      .stub(usersModel, 'upsertRecord')
       .callsFake((_, id, update) => {
         expect(update.teams).to.deep.equal({}, 'removing users teams');
         return Promise.resolve();
@@ -249,7 +241,7 @@ describe('Users | API | PATCH', () => {
     sinon.stub(usersModel, 'hasUpdatePermission').resolves(true);
     sinon.stub(usersModel, 'getAuthUser').resolves({});
     sinon
-      .stub(usersModel, 'firestoreFindRecord')
+      .stub(usersModel, 'findRecord')
       .resolves(createFirestoreSnap('4', { email: 'test' }));
     const getPropertyTeams = sinon
       .stub(propertiesModel, 'findAllTeamRelationships')
@@ -260,7 +252,7 @@ describe('Users | API | PATCH', () => {
         ],
       });
     const userUpdate = sinon
-      .stub(usersModel, 'firestoreUpsertRecord')
+      .stub(usersModel, 'upsertRecord')
       .callsFake((_, id, update) => {
         expect(update.teams).to.deep.equal(
           expected,

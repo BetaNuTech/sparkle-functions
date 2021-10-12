@@ -77,10 +77,7 @@ _${userAgent}_`; // Add Slack indent formatting
   if (propertyId) {
     let property = null;
     try {
-      const propertySnap = await propertiesModel.firestoreFindRecord(
-        fs,
-        propertyId
-      );
+      const propertySnap = await propertiesModel.findRecord(fs, propertyId);
       property = propertySnap.data();
       if (property) channel = property.slackChannel; // Set channel from property
     } catch (err) {
@@ -91,7 +88,7 @@ _${userAgent}_`; // Add Slack indent formatting
   // Admin notification
   if (!channel) {
     try {
-      const slackOrgSnap = await integrationsModel.firestoreFindSlack(fs);
+      const slackOrgSnap = await integrationsModel.findSlack(fs);
       const adminChannelName = (slackOrgSnap.data() || {}).defaultChannelName;
       if (adminChannelName) channel = adminChannelName;
     } catch (err) {
@@ -105,7 +102,7 @@ _${userAgent}_`; // Add Slack indent formatting
   // marking slack medium as done publishing
   if (!channel) {
     try {
-      await notificationsModel.firestoreUpdateRecord(fs, notificationId, {
+      await notificationsModel.updateRecord(fs, notificationId, {
         'publishedMediums.slack': true,
       });
     } catch (err) {
@@ -121,7 +118,7 @@ _${userAgent}_`; // Add Slack indent formatting
   // Update notification record
   // with data to publish Slack message
   try {
-    await notificationsModel.firestoreUpdateRecord(fs, notificationId, {
+    await notificationsModel.updateRecord(fs, notificationId, {
       slack: result,
       'publishedMediums.slack': false,
     });

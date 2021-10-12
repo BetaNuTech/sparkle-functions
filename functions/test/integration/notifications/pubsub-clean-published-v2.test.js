@@ -19,10 +19,10 @@ describe('Notifications | Pubsub | Clean Published V2', function() {
     );
 
     sinon
-      .stub(notificationsModel, 'firestoreQuery')
+      .stub(notificationsModel, 'query')
       .resolves(stubs.wrapSnapshot(notifications));
 
-    sinon.stub(notificationsModel, 'firestoreDestroyRecord').resolves();
+    sinon.stub(notificationsModel, 'destroyRecord').resolves();
     const fs = createFirestore();
     const commit = { commit: () => Promise.resolve() };
     const commitStub = sinon.spy(commit, 'commit');

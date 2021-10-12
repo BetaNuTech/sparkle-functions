@@ -24,7 +24,7 @@ describe('Properties | API | POST', () => {
     const template = mocking.createTemplate();
 
     // Setup Database
-    await templatesModel.firestoreCreateRecord(fs, templateId, template);
+    await templatesModel.createRecord(fs, templateId, template);
 
     // Execute
     const app = createApp();
@@ -38,10 +38,7 @@ describe('Properties | API | POST', () => {
     const body = res ? res.body : {};
     const propDoc = body ? body.data : {};
     const propertyId = propDoc.id || 'na';
-    const propertyDoc = await propertiesModel.firestoreFindRecord(
-      fs,
-      propertyId
-    );
+    const propertyDoc = await propertiesModel.findRecord(fs, propertyId);
     const actual = propertyDoc.data() || {};
 
     // Assertions

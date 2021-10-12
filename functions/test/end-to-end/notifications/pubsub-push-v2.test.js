@@ -37,23 +37,16 @@ describe('Notifications | Pubsub | Publish Push V2', () => {
     sinon.stub(messaging, 'sendToDevice').resolves(sendtoDevicePayload);
 
     // Setup Database
-    await regTokenModel.firestoreCreateRecord(fs, user1Id, regTokens);
-    await regTokenModel.firestoreCreateRecord(fs, user2Id, regTokens);
-    await notificationsModel.firestoreCreateRecord(
-      fs,
-      notificationId,
-      notification
-    );
+    await regTokenModel.createRecord(fs, user1Id, regTokens);
+    await regTokenModel.createRecord(fs, user2Id, regTokens);
+    await notificationsModel.createRecord(fs, notificationId, notification);
 
     // Execute
     const message = { data: Buffer.from(notificationId) };
     await test.wrap(cloudFunctions.publishPushNotificationsV2)(message);
 
     // Test Results
-    const resultSnap = await notificationsModel.firestoreFindRecord(
-      fs,
-      notificationId
-    );
+    const resultSnap = await notificationsModel.findRecord(fs, notificationId);
     const result = resultSnap.data() || {};
 
     // Assertions
@@ -101,21 +94,14 @@ describe('Notifications | Pubsub | Publish Push V2', () => {
     sinon.stub(messaging, 'sendToDevice').resolves(sendtoDevicePayload);
 
     // Setup Database
-    await notificationsModel.firestoreCreateRecord(
-      fs,
-      notificationId,
-      notification
-    );
+    await notificationsModel.createRecord(fs, notificationId, notification);
 
     // Execute
     const message = { data: Buffer.from(notificationId) };
     await test.wrap(cloudFunctions.publishPushNotificationsV2)(message);
 
     // Test Results
-    const resultSnap = await notificationsModel.firestoreFindRecord(
-      fs,
-      notificationId
-    );
+    const resultSnap = await notificationsModel.findRecord(fs, notificationId);
     const result = resultSnap.data() || {};
     const actual = (result.push || {})[userId];
 

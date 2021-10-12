@@ -35,10 +35,7 @@ module.exports = function createPatchProperty(fs) {
     // Lookup Firestore Property
     let property = null;
     try {
-      const propertySnap = await propertiesModel.firestoreFindRecord(
-        fs,
-        propertyId
-      );
+      const propertySnap = await propertiesModel.findRecord(fs, propertyId);
       property = propertySnap.data() || null;
       if (!property) throw Error('Not found');
     } catch (err) {
@@ -49,7 +46,7 @@ module.exports = function createPatchProperty(fs) {
     // Lookup Firestore Inspection
     let inspection = null;
     try {
-      const inspectionSnap = await inspectionsModel.firestoreFindRecord(
+      const inspectionSnap = await inspectionsModel.findRecord(
         fs,
         inspectionId
       );
@@ -66,7 +63,7 @@ module.exports = function createPatchProperty(fs) {
 
     // Perform reassign on Firestore
     try {
-      await inspectionsModel.firestoreReassignProperty(
+      await inspectionsModel.reassignProperty(
         fs,
         inspectionId,
         srcPropertyId,

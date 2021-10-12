@@ -39,7 +39,7 @@ describe('Slack | API | DELETE Auth', () => {
       });
 
     // setup database
-    await systemModel.firestoreUpsertSlack(fs, {
+    await systemModel.upsertSlack(fs, {
       token: result.accessToken,
       scope: result.scope,
     });
@@ -77,7 +77,7 @@ describe('Slack | API | DELETE Auth', () => {
       });
 
     // setup database
-    await systemModel.firestoreUpsertSlack(fs, {
+    await systemModel.upsertSlack(fs, {
       token: credentials.accessToken,
       scope: credentials.scope,
     });
@@ -90,7 +90,7 @@ describe('Slack | API | DELETE Auth', () => {
       .expect(204);
 
     // Get Results
-    const result = await systemModel.firestoreFindSlack(fs);
+    const result = await systemModel.findSlack(fs);
     const actual = result.exists;
 
     // Assertions
@@ -116,11 +116,11 @@ describe('Slack | API | DELETE Auth', () => {
       });
 
     // setup database
-    await systemModel.firestoreUpsertSlack(fs, {
+    await systemModel.upsertSlack(fs, {
       token: credentials.accessToken,
       scope: credentials.scope,
     });
-    await integrationsModel.firestoreSetSlack(fs, {
+    await integrationsModel.setSlack(fs, {
       grantedBy: '123',
       team: '456',
       teamName: 'testers',
@@ -134,7 +134,7 @@ describe('Slack | API | DELETE Auth', () => {
       .expect(204);
 
     // Get Results
-    const result = await integrationsModel.firestoreFindSlack(fs);
+    const result = await integrationsModel.findSlack(fs);
     const actual = result.exists;
 
     // Assertions
@@ -160,11 +160,11 @@ describe('Slack | API | DELETE Auth', () => {
       });
 
     // setup database
-    await systemModel.firestoreUpsertSlack(fs, {
+    await systemModel.upsertSlack(fs, {
       token: credentials.accessToken,
       scope: credentials.scope,
     });
-    await notificationsModel.firestoreAddRecord(fs, {
+    await notificationsModel.addRecord(fs, {
       medium: 'slack',
       channel: 'test',
       title: 'test',
@@ -180,7 +180,7 @@ describe('Slack | API | DELETE Auth', () => {
       .expect(204);
 
     // Get Results
-    const result = await notificationsModel.firestoreFindAllSlack(fs);
+    const result = await notificationsModel.findAllSlack(fs);
     const actual = result.size;
 
     // Assertions

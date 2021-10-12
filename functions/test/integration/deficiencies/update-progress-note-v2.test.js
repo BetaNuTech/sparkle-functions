@@ -32,7 +32,7 @@ describe('Deficiencies | On Update Progress Note V2', function() {
     });
 
     const trelloCardLookup = sinon
-      .stub(systemModel, 'firestoreFindTrelloCardId')
+      .stub(systemModel, 'findTrelloCardId')
       .resolves();
 
     await createHandler(stubFirestore())(
@@ -77,8 +77,8 @@ describe('Deficiencies | On Update Progress Note V2', function() {
       createdAt: now() + 1,
     };
 
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves('');
-    const userLookup = sinon.stub(usersModel, 'firestoreFindRecord').resolves();
+    sinon.stub(systemModel, 'findTrelloCardId').resolves('');
+    const userLookup = sinon.stub(usersModel, 'findRecord').resolves();
 
     await createHandler(stubFirestore())(
       {
@@ -123,12 +123,10 @@ describe('Deficiencies | On Update Progress Note V2', function() {
       createdAt: now() + 1,
     };
 
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves(cardId);
-    sinon
-      .stub(usersModel, 'firestoreFindRecord')
-      .resolves(createSnapshot(userId));
+    sinon.stub(systemModel, 'findTrelloCardId').resolves(cardId);
+    sinon.stub(usersModel, 'findRecord').resolves(createSnapshot(userId));
     const credentialsLookup = sinon
-      .stub(systemModel, 'firestoreFindTrello')
+      .stub(systemModel, 'findTrello')
       .resolves({});
 
     await createHandler(stubFirestore())(

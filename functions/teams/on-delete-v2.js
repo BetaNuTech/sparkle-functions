@@ -25,7 +25,7 @@ module.exports = function teamDeleteV2(fs) {
         // Lookup team's properties
         const propertiesOfTeamIds = [];
         try {
-          const propertiesOfTeamSnap = await propertiesModel.firestoreQuery(
+          const propertiesOfTeamSnap = await propertiesModel.query(
             fs,
             {
               team: ['==', teamId],
@@ -44,7 +44,7 @@ module.exports = function teamDeleteV2(fs) {
         // Lookup team's users
         const usersOfTeamIds = [];
         try {
-          const usersInRemovedTeamSnap = await usersModel.firestoreFindByTeam(
+          const usersInRemovedTeamSnap = await usersModel.findByTeam(
             fs,
             teamId,
             transaction
@@ -61,7 +61,7 @@ module.exports = function teamDeleteV2(fs) {
         // Cleanup team's properties
         if (propertiesOfTeamIds.length) {
           try {
-            await propertiesModel.firestoreBatchRemoveTeam(
+            await propertiesModel.batchRemoveTeam(
               fs,
               propertiesOfTeamIds,
               transaction
@@ -74,12 +74,7 @@ module.exports = function teamDeleteV2(fs) {
         // Cleanup team's users
         if (usersOfTeamIds.length) {
           try {
-            usersModel.firestoreBatchRemoveTeam(
-              fs,
-              usersOfTeamIds,
-              teamId,
-              transaction
-            );
+            usersModel.batchRemoveTeam(fs, usersOfTeamIds, teamId, transaction);
           } catch (err) {
             log.error(`${PREFIX} error removing team from users | ${err}`);
           }

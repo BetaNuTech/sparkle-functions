@@ -75,16 +75,12 @@ describe('Deficiency |  Archiving | V2', () => {
     };
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
-    await inspectionsModel.firestoreCreateRecord(
-      fs,
-      inspectionId,
-      inspectionData
-    );
-    await diModel.firestoreCreateRecord(fs, deficiencyId, deficiencyData);
-    const beforeSnap = await diModel.firestoreFindRecord(fs, deficiencyId);
-    await diModel.firestoreUpdateRecord(fs, deficiencyId, { archive: false });
-    const afterSnap = await diModel.firestoreFindRecord(fs, deficiencyId);
+    await propertiesModel.createRecord(fs, propertyId, propertyData);
+    await inspectionsModel.createRecord(fs, inspectionId, inspectionData);
+    await diModel.createRecord(fs, deficiencyId, deficiencyData);
+    const beforeSnap = await diModel.findRecord(fs, deficiencyId);
+    await diModel.updateRecord(fs, deficiencyId, { archive: false });
+    const afterSnap = await diModel.findRecord(fs, deficiencyId);
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -94,7 +90,7 @@ describe('Deficiency |  Archiving | V2', () => {
     });
 
     // Test result
-    const result = await archiveModel.deficientItem.firestoreFindRecord(
+    const result = await archiveModel.deficientItem.findRecord(
       fs,
       deficiencyId
     );
@@ -139,16 +135,12 @@ describe('Deficiency |  Archiving | V2', () => {
     };
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
-    await inspectionsModel.firestoreCreateRecord(
-      fs,
-      inspectionId,
-      inspectionData
-    );
-    await diModel.firestoreCreateRecord(fs, deficiencyId, deficiencyData);
-    const beforeSnap = await diModel.firestoreFindRecord(fs, deficiencyId);
-    await diModel.firestoreUpdateRecord(fs, deficiencyId, { archive: true });
-    const afterSnap = await diModel.firestoreFindRecord(fs, deficiencyId);
+    await propertiesModel.createRecord(fs, propertyId, propertyData);
+    await inspectionsModel.createRecord(fs, inspectionId, inspectionData);
+    await diModel.createRecord(fs, deficiencyId, deficiencyData);
+    const beforeSnap = await diModel.findRecord(fs, deficiencyId);
+    await diModel.updateRecord(fs, deficiencyId, { archive: true });
+    const afterSnap = await diModel.findRecord(fs, deficiencyId);
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -158,7 +150,7 @@ describe('Deficiency |  Archiving | V2', () => {
     });
 
     // Test result
-    const result = await archiveModel.deficientItem.firestoreFindRecord(
+    const result = await archiveModel.deficientItem.findRecord(
       fs,
       deficiencyId
     );
@@ -212,17 +204,13 @@ describe('Deficiency |  Archiving | V2', () => {
     };
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
-    await inspectionsModel.firestoreCreateRecord(
-      fs,
-      inspectionId,
-      inspectionData
-    );
-    await diModel.firestoreCreateRecord(fs, deficiencyId, deficiencyData);
+    await propertiesModel.createRecord(fs, propertyId, propertyData);
+    await inspectionsModel.createRecord(fs, inspectionId, inspectionData);
+    await diModel.createRecord(fs, deficiencyId, deficiencyData);
     await createTrelloCardDiSystemRecord();
-    const beforeSnap = await diModel.firestoreFindRecord(fs, deficiencyId);
-    await diModel.firestoreUpdateRecord(fs, deficiencyId, { archive: true });
-    const afterSnap = await diModel.firestoreFindRecord(fs, deficiencyId);
+    const beforeSnap = await diModel.findRecord(fs, deficiencyId);
+    await diModel.updateRecord(fs, deficiencyId, { archive: true });
+    const afterSnap = await diModel.findRecord(fs, deficiencyId);
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -276,17 +264,13 @@ describe('Deficiency |  Archiving | V2', () => {
       .reply(404);
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
-    await inspectionsModel.firestoreCreateRecord(
-      fs,
-      inspectionId,
-      inspectionData
-    );
-    await diModel.firestoreCreateRecord(fs, deficiencyId, deficiencyData);
+    await propertiesModel.createRecord(fs, propertyId, propertyData);
+    await inspectionsModel.createRecord(fs, inspectionId, inspectionData);
+    await diModel.createRecord(fs, deficiencyId, deficiencyData);
     await createTrelloCardDiSystemRecord();
-    const beforeSnap = await diModel.firestoreFindRecord(fs, deficiencyId);
-    await diModel.firestoreUpdateRecord(fs, deficiencyId, { archive: true });
-    const afterSnap = await diModel.firestoreFindRecord(fs, deficiencyId);
+    const beforeSnap = await diModel.findRecord(fs, deficiencyId);
+    await diModel.updateRecord(fs, deficiencyId, { archive: true });
+    const afterSnap = await diModel.findRecord(fs, deficiencyId);
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -336,25 +320,21 @@ describe('Deficiency | Unarchiving | V2', () => {
     };
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
-    await inspectionsModel.firestoreCreateRecord(
-      fs,
-      inspectionId,
-      inspectionData
-    );
-    await archiveModel.deficientItem.firestoreCreateRecord(
+    await propertiesModel.createRecord(fs, propertyId, propertyData);
+    await inspectionsModel.createRecord(fs, inspectionId, inspectionData);
+    await archiveModel.deficientItem.createRecord(
       fs,
       deficiencyId,
       deficiencyData
     );
-    const beforeSnap = await archiveModel.deficientItem.firestoreFindRecord(
+    const beforeSnap = await archiveModel.deficientItem.findRecord(
       fs,
       deficiencyId
     );
-    await archiveModel.deficientItem.firestoreUpdateRecord(fs, deficiencyId, {
+    await archiveModel.deficientItem.updateRecord(fs, deficiencyId, {
       archive: true,
     });
-    const afterSnap = await archiveModel.deficientItem.firestoreFindRecord(
+    const afterSnap = await archiveModel.deficientItem.findRecord(
       fs,
       deficiencyId
     );
@@ -367,7 +347,7 @@ describe('Deficiency | Unarchiving | V2', () => {
     });
 
     // Test result
-    const result = await diModel.firestoreFindRecord(fs, deficiencyId);
+    const result = await diModel.findRecord(fs, deficiencyId);
     const actual = result.data() || null;
 
     // Assertions
@@ -407,25 +387,21 @@ describe('Deficiency | Unarchiving | V2', () => {
     };
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
-    await inspectionsModel.firestoreCreateRecord(
-      fs,
-      inspectionId,
-      inspectionData
-    );
-    await archiveModel.deficientItem.firestoreCreateRecord(
+    await propertiesModel.createRecord(fs, propertyId, propertyData);
+    await inspectionsModel.createRecord(fs, inspectionId, inspectionData);
+    await archiveModel.deficientItem.createRecord(
       fs,
       deficiencyId,
       deficiencyData
     );
-    const beforeSnap = await archiveModel.deficientItem.firestoreFindRecord(
+    const beforeSnap = await archiveModel.deficientItem.findRecord(
       fs,
       deficiencyId
     );
-    await archiveModel.deficientItem.firestoreUpdateRecord(fs, deficiencyId, {
+    await archiveModel.deficientItem.updateRecord(fs, deficiencyId, {
       archive: false,
     });
-    const afterSnap = await archiveModel.deficientItem.firestoreFindRecord(
+    const afterSnap = await archiveModel.deficientItem.findRecord(
       fs,
       deficiencyId
     );
@@ -436,7 +412,7 @@ describe('Deficiency | Unarchiving | V2', () => {
     await wrapped(changeSnap, { params: { deficiencyId } });
 
     // Test result
-    const result = await diModel.firestoreFindRecord(fs, deficiencyId);
+    const result = await diModel.findRecord(fs, deficiencyId);
     const actual = result.data() || null;
 
     // Assertions
@@ -485,26 +461,22 @@ describe('Deficiency | Unarchiving | V2', () => {
     };
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
-    await inspectionsModel.firestoreCreateRecord(
-      fs,
-      inspectionId,
-      inspectionData
-    );
-    await archiveModel.deficientItem.firestoreCreateRecord(
+    await propertiesModel.createRecord(fs, propertyId, propertyData);
+    await inspectionsModel.createRecord(fs, inspectionId, inspectionData);
+    await archiveModel.deficientItem.createRecord(
       fs,
       deficiencyId,
       deficiencyData
     );
     await createTrelloCardDiSystemRecord();
-    const beforeSnap = await archiveModel.deficientItem.firestoreFindRecord(
+    const beforeSnap = await archiveModel.deficientItem.findRecord(
       fs,
       deficiencyId
     );
-    await archiveModel.deficientItem.firestoreUpdateRecord(fs, deficiencyId, {
+    await archiveModel.deficientItem.updateRecord(fs, deficiencyId, {
       archive: false,
     });
-    const afterSnap = await archiveModel.deficientItem.firestoreFindRecord(
+    const afterSnap = await archiveModel.deficientItem.findRecord(
       fs,
       deficiencyId
     );
@@ -558,26 +530,22 @@ describe('Deficiency | Unarchiving | V2', () => {
       .reply(404);
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
-    await inspectionsModel.firestoreCreateRecord(
-      fs,
-      inspectionId,
-      inspectionData
-    );
-    await archiveModel.deficientItem.firestoreCreateRecord(
+    await propertiesModel.createRecord(fs, propertyId, propertyData);
+    await inspectionsModel.createRecord(fs, inspectionId, inspectionData);
+    await archiveModel.deficientItem.createRecord(
       fs,
       deficiencyId,
       deficiencyData
     );
     await createTrelloCardDiSystemRecord();
-    const beforeSnap = await archiveModel.deficientItem.firestoreFindRecord(
+    const beforeSnap = await archiveModel.deficientItem.findRecord(
       fs,
       deficiencyId
     );
-    await archiveModel.deficientItem.firestoreUpdateRecord(fs, deficiencyId, {
+    await archiveModel.deficientItem.updateRecord(fs, deficiencyId, {
       archive: false,
     });
-    const afterSnap = await archiveModel.deficientItem.firestoreFindRecord(
+    const afterSnap = await archiveModel.deficientItem.findRecord(
       fs,
       deficiencyId
     );
@@ -598,11 +566,11 @@ describe('Deficiency | Unarchiving | V2', () => {
 });
 
 async function createTrelloCardDiSystemRecord() {
-  await systemModel.firestoreUpsertTrello(fs, TRELLO_SYSTEM_INTEGRATION_DATA);
-  await systemModel.firestoreCreateTrelloProperty(fs, PROPERTY_ID, {
+  await systemModel.upsertTrello(fs, TRELLO_SYSTEM_INTEGRATION_DATA);
+  await systemModel.createTrelloProperty(fs, PROPERTY_ID, {
     cards: TRELLO_SYSTEM_PROPERTY_CARDS_DATA,
   });
-  await integrationsModel.firestoreCreateTrelloProperty(
+  await integrationsModel.createTrelloProperty(
     fs,
     PROPERTY_ID,
     INTEGRATIONS_DATA

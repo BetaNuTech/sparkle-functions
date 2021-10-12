@@ -44,10 +44,10 @@ describe('Trello | API | POST Job Card', () => {
       });
 
     // Setup Database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, property);
+    await propertiesModel.createRecord(fs, propertyId, property);
     await jobsModel.createRecord(fs, jobId, job);
-    await integrationsModel.firestoreUpsertTrello(fs, trelloIntegration);
-    await integrationsModel.firestoreCreateTrelloProperty(
+    await integrationsModel.upsertTrello(fs, trelloIntegration);
+    await integrationsModel.createTrelloProperty(
       fs,
       propertyId,
       trelloPropIntegration
@@ -62,10 +62,7 @@ describe('Trello | API | POST Job Card', () => {
       .expect(201);
 
     // Get Results
-    const systemDoc = await systemModel.firestoreFindTrelloProperty(
-      fs,
-      propertyId
-    );
+    const systemDoc = await systemModel.findTrelloProperty(fs, propertyId);
     const jobDoc = await jobsModel.findRecord(fs, jobId);
     const resAttrs = ((res.body || {}).data || {}).attributes || {};
     const expectedResponse = JSON.stringify({

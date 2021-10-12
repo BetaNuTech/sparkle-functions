@@ -22,38 +22,17 @@ describe('Notifications | Pubsub | Clean Published V2', () => {
     notification3.publishedMediums.push = true; // only published to push
 
     // Setup database
-    await notificationsModel.firestoreCreateRecord(
-      fs,
-      notification1Id,
-      notification1
-    );
-    await notificationsModel.firestoreCreateRecord(
-      fs,
-      notification2Id,
-      notification2
-    );
-    await notificationsModel.firestoreCreateRecord(
-      fs,
-      notification3Id,
-      notification3
-    );
+    await notificationsModel.createRecord(fs, notification1Id, notification1);
+    await notificationsModel.createRecord(fs, notification2Id, notification2);
+    await notificationsModel.createRecord(fs, notification3Id, notification3);
 
     // Execute
     await test.wrap(cloudFunctions.cleanupNotificationsV2)();
 
     // Test results
-    const note1Snap = await notificationsModel.firestoreFindRecord(
-      fs,
-      notification1Id
-    );
-    const note2Snap = await notificationsModel.firestoreFindRecord(
-      fs,
-      notification2Id
-    );
-    const note3Snap = await notificationsModel.firestoreFindRecord(
-      fs,
-      notification3Id
-    );
+    const note1Snap = await notificationsModel.findRecord(fs, notification1Id);
+    const note2Snap = await notificationsModel.findRecord(fs, notification2Id);
+    const note3Snap = await notificationsModel.findRecord(fs, notification3Id);
 
     // Assertions
     [

@@ -20,11 +20,11 @@ describe('Slack | API | POST events webhook', () => {
     const teamId = uuid();
 
     // setup database
-    await systemModel.firestoreUpsertSlack(fs, {
+    await systemModel.upsertSlack(fs, {
       token: 'abc-123',
       scope: 'scope',
     });
-    await integrationsModel.firestoreSetSlack(fs, {
+    await integrationsModel.setSlack(fs, {
       grantedBy: '123',
       team: teamId,
       teamName: 'testers',
@@ -38,7 +38,7 @@ describe('Slack | API | POST events webhook', () => {
       .expect(200);
 
     // Get Results
-    const result = await systemModel.firestoreFindSlack(fs);
+    const result = await systemModel.findSlack(fs);
     const actual = result.exists;
 
     // Assertions
@@ -50,11 +50,11 @@ describe('Slack | API | POST events webhook', () => {
     const teamId = uuid();
 
     // setup database
-    await systemModel.firestoreUpsertSlack(fs, {
+    await systemModel.upsertSlack(fs, {
       token: 'abc-123',
       scope: 'scope',
     });
-    await integrationsModel.firestoreSetSlack(fs, {
+    await integrationsModel.setSlack(fs, {
       grantedBy: '123',
       team: teamId,
       teamName: 'testers',
@@ -68,7 +68,7 @@ describe('Slack | API | POST events webhook', () => {
       .expect(200);
 
     // Get Results
-    const result = await integrationsModel.firestoreFindSlack(fs);
+    const result = await integrationsModel.findSlack(fs);
     const actual = result.exists;
 
     // Assertions
@@ -80,16 +80,16 @@ describe('Slack | API | POST events webhook', () => {
     const teamId = uuid();
 
     // setup database
-    await systemModel.firestoreUpsertSlack(fs, {
+    await systemModel.upsertSlack(fs, {
       token: 'abc-123',
       scope: 'scope',
     });
-    await integrationsModel.firestoreSetSlack(fs, {
+    await integrationsModel.setSlack(fs, {
       grantedBy: '123',
       team: teamId,
       teamName: 'testers',
     });
-    await notificationsModel.firestoreAddRecord(fs, {
+    await notificationsModel.addRecord(fs, {
       medium: 'slack',
       channel: 'test',
       title: 'test',
@@ -105,7 +105,7 @@ describe('Slack | API | POST events webhook', () => {
       .expect(200);
 
     // Get Results
-    const result = await notificationsModel.firestoreFindAllSlack(fs);
+    const result = await notificationsModel.findAllSlack(fs);
     const actual = result.size;
 
     // Assertions

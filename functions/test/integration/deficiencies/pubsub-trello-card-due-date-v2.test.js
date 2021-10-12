@@ -30,8 +30,8 @@ describe('Deficiencies | Pubsub | Trello Card Due Date V2', function() {
       `${propertyId}/${deficiencyId}/status/${status}`
     ).toString('base64');
 
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves('');
-    const query = sinon.stub(propertyModel, 'firestoreFindRecord').resolves();
+    sinon.stub(systemModel, 'findTrelloCardId').resolves('');
+    const query = sinon.stub(propertyModel, 'findRecord').resolves();
 
     await createHandler(
       createFirestore(),
@@ -54,9 +54,9 @@ describe('Deficiencies | Pubsub | Trello Card Due Date V2', function() {
       `${propertyId}/${deficiencyId}/status/${status}`
     ).toString('base64');
 
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves(cardId);
-    sinon.stub(systemModel, 'firestoreFindTrello').resolves(createSnapshot());
-    const query = sinon.stub(propertyModel, 'firestoreFindRecord').resolves();
+    sinon.stub(systemModel, 'findTrelloCardId').resolves(cardId);
+    sinon.stub(systemModel, 'findTrello').resolves(createSnapshot());
+    const query = sinon.stub(propertyModel, 'findRecord').resolves();
 
     await createHandler(
       createFirestore(),
@@ -80,12 +80,12 @@ describe('Deficiencies | Pubsub | Trello Card Due Date V2', function() {
       `${propertyId}/${deficiencyId}/status/${status}`
     ).toString('base64');
 
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves(cardId);
+    sinon.stub(systemModel, 'findTrelloCardId').resolves(cardId);
     sinon
-      .stub(systemModel, 'firestoreFindTrello')
+      .stub(systemModel, 'findTrello')
       .resolves(createSnapshot('trello', credentials));
-    sinon.stub(propertyModel, 'firestoreFindRecord').resolves(createSnapshot());
-    const query = sinon.stub(deficiencyModel, 'firestoreFindRecord').resolves();
+    sinon.stub(propertyModel, 'findRecord').resolves(createSnapshot());
+    const query = sinon.stub(deficiencyModel, 'findRecord').resolves();
 
     await createHandler(
       createFirestore(),
@@ -110,16 +110,14 @@ describe('Deficiencies | Pubsub | Trello Card Due Date V2', function() {
       `${propertyId}/${deficiencyId}/status/${status}`
     ).toString('base64');
 
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves(cardId);
+    sinon.stub(systemModel, 'findTrelloCardId').resolves(cardId);
     sinon
-      .stub(systemModel, 'firestoreFindTrello')
+      .stub(systemModel, 'findTrello')
       .resolves(createSnapshot('trello', credentials));
     sinon
-      .stub(propertyModel, 'firestoreFindRecord')
+      .stub(propertyModel, 'findRecord')
       .resolves(createSnapshot(propertyId, property));
-    sinon
-      .stub(deficiencyModel, 'firestoreFindRecord')
-      .resolves(createSnapshot());
+    sinon.stub(deficiencyModel, 'findRecord').resolves(createSnapshot());
     const query = sinon.stub(trello, 'updateTrelloCard').resolves();
 
     await createHandler(
@@ -168,15 +166,15 @@ describe('Deficiencies | Pubsub | Trello Card Due Date V2', function() {
       `${propertyId}/${deficiencyId}/status/${status}`
     ).toString('base64');
 
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves(cardId);
+    sinon.stub(systemModel, 'findTrelloCardId').resolves(cardId);
     sinon
-      .stub(systemModel, 'firestoreFindTrello')
+      .stub(systemModel, 'findTrello')
       .resolves(createSnapshot('trello', credentials));
     sinon
-      .stub(propertyModel, 'firestoreFindRecord')
+      .stub(propertyModel, 'findRecord')
       .resolves(createSnapshot(propertyId, property));
     sinon
-      .stub(deficiencyModel, 'firestoreFindRecord')
+      .stub(deficiencyModel, 'findRecord')
       .resolves(createSnapshot(deficiencyId, deficiency));
 
     const result = {};
@@ -259,15 +257,15 @@ describe('Deficiencies | Pubsub | Trello Card Due Date V2', function() {
       `${propertyId}/${deficiencyId}/status/${status}`
     ).toString('base64');
 
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves(cardId);
+    sinon.stub(systemModel, 'findTrelloCardId').resolves(cardId);
     sinon
-      .stub(systemModel, 'firestoreFindTrello')
+      .stub(systemModel, 'findTrello')
       .resolves(createSnapshot('trello', credentials));
     sinon
-      .stub(propertyModel, 'firestoreFindRecord')
+      .stub(propertyModel, 'findRecord')
       .resolves(createSnapshot(propertyId, property));
     sinon
-      .stub(deficiencyModel, 'firestoreFindRecord')
+      .stub(deficiencyModel, 'findRecord')
       .resolves(createSnapshot(deficiencyId, deficiency));
 
     let actual = '';
@@ -317,15 +315,15 @@ describe('Deficiencies | Pubsub | Trello Card Due Date V2', function() {
       `${propertyId}/${deficiencyId}/status/${status}`
     ).toString('base64');
 
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves(cardId);
+    sinon.stub(systemModel, 'findTrelloCardId').resolves(cardId);
     sinon
-      .stub(systemModel, 'firestoreFindTrello')
+      .stub(systemModel, 'findTrello')
       .resolves(createSnapshot('trello', credentials));
     sinon
-      .stub(propertyModel, 'firestoreFindRecord')
+      .stub(propertyModel, 'findRecord')
       .resolves(createSnapshot(propertyId, property));
     sinon
-      .stub(deficiencyModel, 'firestoreFindRecord')
+      .stub(deficiencyModel, 'findRecord')
       .resolves(createSnapshot(deficiencyId, deficiency));
 
     let actual = null;

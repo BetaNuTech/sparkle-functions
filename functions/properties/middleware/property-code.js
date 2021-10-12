@@ -22,10 +22,7 @@ module.exports = fs => {
     // Lookup requested property
     try {
       if (!propertyId) throw Error('no property ID provided');
-      const propertyDoc = await propertiesModel.firestoreFindRecord(
-        fs,
-        propertyId
-      );
+      const propertyDoc = await propertiesModel.findRecord(fs, propertyId);
       if (!propertyDoc.exists) throw Error('property does not exist');
       property = propertyDoc.data();
     } catch (err) {

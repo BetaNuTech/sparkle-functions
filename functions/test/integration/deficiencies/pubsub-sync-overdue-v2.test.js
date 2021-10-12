@@ -36,17 +36,13 @@ describe('Deficiencies | Pubsub | Sync Overdue V2', function() {
     const deficienciesCollection = createDeficienciesCollection(deficiency);
 
     // Stub requests
-    sinon
-      .stub(deficiencyModel, 'firestoreQuery')
-      .resolves(deficienciesCollection);
+    sinon.stub(deficiencyModel, 'query').resolves(deficienciesCollection);
     sinon.stub(propertyModel, 'updateMetaData').resolves();
     sinon
-      .stub(propertyModel, 'firestoreFindRecord')
+      .stub(propertyModel, 'findRecord')
       .resolves(createSnapshot(propertyId, property));
-    sinon.stub(notificationsModel, 'firestoreCreateRecord').resolves();
-    const update = sinon
-      .stub(deficiencyModel, 'firestoreUpdateRecord')
-      .resolves();
+    sinon.stub(notificationsModel, 'createRecord').resolves();
+    const update = sinon.stub(deficiencyModel, 'updateRecord').resolves();
 
     // Execute
     await createHandler(createFirestore(), createPubSubHandler(), 'topic');
@@ -75,17 +71,13 @@ describe('Deficiencies | Pubsub | Sync Overdue V2', function() {
     );
 
     // Stub requests
-    sinon
-      .stub(deficiencyModel, 'firestoreQuery')
-      .resolves(deficienciesCollection);
+    sinon.stub(deficiencyModel, 'query').resolves(deficienciesCollection);
     sinon.stub(propertyModel, 'updateMetaData').resolves();
     sinon
-      .stub(propertyModel, 'firestoreFindRecord')
+      .stub(propertyModel, 'findRecord')
       .resolves(createSnapshot(propertyId, property));
-    sinon.stub(notificationsModel, 'firestoreCreateRecord').resolves();
-    const update = sinon
-      .stub(deficiencyModel, 'firestoreUpdateRecord')
-      .resolves();
+    sinon.stub(notificationsModel, 'createRecord').resolves();
+    const update = sinon.stub(deficiencyModel, 'updateRecord').resolves();
 
     // Execute
     await createHandler(createFirestore(), createPubSubHandler(), 'topic');
@@ -120,18 +112,16 @@ describe('Deficiencies | Pubsub | Sync Overdue V2', function() {
     );
 
     // Stub requests
-    sinon
-      .stub(deficiencyModel, 'firestoreQuery')
-      .resolves(deficienciesCollection);
+    sinon.stub(deficiencyModel, 'query').resolves(deficienciesCollection);
     sinon.stub(propertyModel, 'updateMetaData').resolves();
     sinon
-      .stub(propertyModel, 'firestoreFindRecord')
+      .stub(propertyModel, 'findRecord')
       .resolves(createSnapshot(propertyId, property));
-    sinon.stub(notificationsModel, 'firestoreCreateRecord').resolves();
+    sinon.stub(notificationsModel, 'createRecord').resolves();
 
     const actual = [];
     sinon
-      .stub(deficiencyModel, 'firestoreUpdateRecord')
+      .stub(deficiencyModel, 'updateRecord')
       .callsFake((_, id, { state: actualState }) => {
         actual.push(actualState);
         return Promise.resolve({});
@@ -158,17 +148,13 @@ describe('Deficiencies | Pubsub | Sync Overdue V2', function() {
     );
 
     // Stub requests
-    sinon
-      .stub(deficiencyModel, 'firestoreQuery')
-      .resolves(deficienciesCollection);
+    sinon.stub(deficiencyModel, 'query').resolves(deficienciesCollection);
     sinon.stub(propertyModel, 'updateMetaData').resolves();
     sinon
-      .stub(propertyModel, 'firestoreFindRecord')
+      .stub(propertyModel, 'findRecord')
       .resolves(createSnapshot(propertyId, property));
-    sinon.stub(notificationsModel, 'firestoreCreateRecord').resolves();
-    const update = sinon
-      .stub(deficiencyModel, 'firestoreUpdateRecord')
-      .resolves();
+    sinon.stub(notificationsModel, 'createRecord').resolves();
+    const update = sinon.stub(deficiencyModel, 'updateRecord').resolves();
 
     // Execute
     await createHandler(createFirestore(), createPubSubHandler(), 'topic');
@@ -194,17 +180,13 @@ describe('Deficiencies | Pubsub | Sync Overdue V2', function() {
     );
 
     // Stub requests
-    sinon
-      .stub(deficiencyModel, 'firestoreQuery')
-      .resolves(deficienciesCollection);
+    sinon.stub(deficiencyModel, 'query').resolves(deficienciesCollection);
     sinon.stub(propertyModel, 'updateMetaData').resolves();
     sinon
-      .stub(propertyModel, 'firestoreFindRecord')
+      .stub(propertyModel, 'findRecord')
       .resolves(createSnapshot(propertyId, property));
-    sinon.stub(notificationsModel, 'firestoreCreateRecord').resolves();
-    const update = sinon
-      .stub(deficiencyModel, 'firestoreUpdateRecord')
-      .resolves();
+    sinon.stub(notificationsModel, 'createRecord').resolves();
+    const update = sinon.stub(deficiencyModel, 'updateRecord').resolves();
 
     // Execute
     await createHandler(createFirestore(), createPubSubHandler(), 'topic');
@@ -231,17 +213,13 @@ describe('Deficiencies | Pubsub | Sync Overdue V2', function() {
     );
 
     // Stub requests
-    sinon
-      .stub(deficiencyModel, 'firestoreQuery')
-      .resolves(deficienciesCollection);
+    sinon.stub(deficiencyModel, 'query').resolves(deficienciesCollection);
     sinon.stub(propertyModel, 'updateMetaData').resolves();
     sinon
-      .stub(propertyModel, 'firestoreFindRecord')
+      .stub(propertyModel, 'findRecord')
       .resolves(createSnapshot(propertyId, property));
-    sinon.stub(notificationsModel, 'firestoreCreateRecord').resolves();
-    const update = sinon
-      .stub(deficiencyModel, 'firestoreUpdateRecord')
-      .resolves();
+    sinon.stub(notificationsModel, 'createRecord').resolves();
+    const update = sinon.stub(deficiencyModel, 'updateRecord').resolves();
 
     // Execute
     await createHandler(createFirestore(), createPubSubHandler(), 'topic');
@@ -268,18 +246,16 @@ describe('Deficiencies | Pubsub | Sync Overdue V2', function() {
     );
 
     // Stub requests
-    sinon
-      .stub(deficiencyModel, 'firestoreQuery')
-      .resolves(deficienciesCollection);
+    sinon.stub(deficiencyModel, 'query').resolves(deficienciesCollection);
     sinon.stub(propertyModel, 'updateMetaData').resolves();
     sinon
-      .stub(propertyModel, 'firestoreFindRecord')
+      .stub(propertyModel, 'findRecord')
       .resolves(createSnapshot(propertyId, property));
-    sinon.stub(notificationsModel, 'firestoreCreateRecord').resolves();
+    sinon.stub(notificationsModel, 'createRecord').resolves();
 
     let actual = '';
     sinon
-      .stub(deficiencyModel, 'firestoreUpdateRecord')
+      .stub(deficiencyModel, 'updateRecord')
       .callsFake((_, id, { state: actualState }) => {
         actual = actualState;
         return Promise.resolve({});
@@ -320,17 +296,13 @@ describe('Deficiencies | Pubsub | Sync Overdue V2', function() {
     );
 
     // Stub requests
-    sinon
-      .stub(deficiencyModel, 'firestoreQuery')
-      .resolves(deficienciesCollection);
+    sinon.stub(deficiencyModel, 'query').resolves(deficienciesCollection);
     sinon.stub(propertyModel, 'updateMetaData').resolves();
     sinon
-      .stub(propertyModel, 'firestoreFindRecord')
+      .stub(propertyModel, 'findRecord')
       .resolves(createSnapshot(propertyId, property));
-    sinon.stub(deficiencyModel, 'firestoreUpdateRecord').resolves();
-    const update = sinon
-      .stub(notificationsModel, 'firestoreCreateRecord')
-      .resolves();
+    sinon.stub(deficiencyModel, 'updateRecord').resolves();
+    const update = sinon.stub(notificationsModel, 'createRecord').resolves();
 
     // Execute
     await createHandler(createFirestore(), createPubSubHandler(), 'topic');

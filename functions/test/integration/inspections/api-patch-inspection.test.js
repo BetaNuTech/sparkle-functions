@@ -30,7 +30,7 @@ describe('Inspections | API | Patch Property Relationship', () => {
     const expected = 'body contains bad property';
 
     // Stub Requests
-    sinon.stub(propertiesModel, 'firestoreFindRecord').rejects(Error('ignore'));
+    sinon.stub(propertiesModel, 'findRecord').rejects(Error('ignore'));
 
     request(createApp())
       .patch('/t/123')
@@ -49,10 +49,8 @@ describe('Inspections | API | Patch Property Relationship', () => {
     const propertySnap = createSnap({ name: 'test' });
 
     // Stub Requests
-    sinon.stub(propertiesModel, 'firestoreFindRecord').resolves(propertySnap);
-    sinon
-      .stub(inspectionsModel, 'firestoreFindRecord')
-      .rejects(Error('not found'));
+    sinon.stub(propertiesModel, 'findRecord').resolves(propertySnap);
+    sinon.stub(inspectionsModel, 'findRecord').rejects(Error('not found'));
 
     // Execute & Get Result
     const app = createApp();

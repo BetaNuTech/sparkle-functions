@@ -29,12 +29,7 @@ module.exports = function createOnDeleteHandler(fs) {
 
     try {
       // Archives deleted inspection
-      await inspectionsModel.firestoreRemoveRecord(
-        fs,
-        inspectionId,
-        inspection,
-        batch
-      );
+      await inspectionsModel.removeRecord(fs, inspectionId, inspection, batch);
     } catch (err) {
       throw Error(
         `${PREFIX} archiving inspection "${inspectionId}" failed | ${err}`
@@ -56,10 +51,7 @@ module.exports = function createOnDeleteHandler(fs) {
     // Lookup all an inspection's deficiencies
     let deficiencyRefs;
     try {
-      deficiencyRefs = await diModel.firestoreQueryByInspection(
-        fs,
-        inspectionId
-      );
+      deficiencyRefs = await diModel.queryByInspection(fs, inspectionId);
     } catch (err) {
       log.error(`${PREFIX} failed to lookup inspection deficiencies | ${err}`);
     }
@@ -70,7 +62,7 @@ module.exports = function createOnDeleteHandler(fs) {
       const deficiencyId = deficiencyRefs.docs[i].id;
 
       try {
-        await diModel.firestoreDeactivateRecord(fs, deficiencyId);
+        await diModel.deactivateRecord(fs, deficiencyId);
       } catch (err) {
         log.error(
           `${PREFIX} failed to deactivate deficiency: "${deficiencyId}" | ${err}`

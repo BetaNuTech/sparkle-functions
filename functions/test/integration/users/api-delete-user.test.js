@@ -11,9 +11,7 @@ describe('Users | API | DELETE', () => {
   it('rejects when attempting to delete a non-existent user', done => {
     // Stup auth requests
     sinon.stub(usersModel, 'getAuthUser').resolves(null);
-    sinon
-      .stub(usersModel, 'firestoreFindRecord')
-      .resolves(createEmptySnapshot());
+    sinon.stub(usersModel, 'findRecord').resolves(createEmptySnapshot());
 
     request(createApp())
       .delete('/t/123')
@@ -30,9 +28,7 @@ describe('Users | API | DELETE', () => {
   it('deletes the target users firebase auth user', done => {
     // Stup auth requests
     sinon.stub(usersModel, 'getAuthUser').resolves({ email: 't@g.com' });
-    sinon
-      .stub(usersModel, 'firestoreFindRecord')
-      .resolves(createUserSnapshot());
+    sinon.stub(usersModel, 'findRecord').resolves(createUserSnapshot());
     sinon.stub(usersModel, 'deleteRecord').resolves();
     const deleteAuthUser = sinon.stub(usersModel, 'deleteAuthUser').resolves();
 
@@ -51,9 +47,7 @@ describe('Users | API | DELETE', () => {
   it('deletes the target users document', done => {
     // Stup auth requests
     sinon.stub(usersModel, 'getAuthUser').resolves(null);
-    sinon
-      .stub(usersModel, 'firestoreFindRecord')
-      .resolves(createUserSnapshot());
+    sinon.stub(usersModel, 'findRecord').resolves(createUserSnapshot());
     const deleteUser = sinon.stub(usersModel, 'deleteRecord').resolves();
 
     request(createApp())

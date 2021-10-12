@@ -83,7 +83,7 @@ module.exports = function createPostTrelloAuth(fs) {
 
     // Persist Trello credentials to system DB
     try {
-      await systemModel.firestoreUpsertTrello(
+      await systemModel.upsertTrello(
         fs,
         {
           authToken,
@@ -103,7 +103,7 @@ module.exports = function createPostTrelloAuth(fs) {
     // Persist Trello integration details for clients
     let integrationDetails = null;
     try {
-      integrationDetails = await integrationsModel.firestoreUpsertTrello(
+      integrationDetails = await integrationsModel.upsertTrello(
         fs,
         {
           member: memberId,

@@ -52,7 +52,7 @@ describe('Properties | API | POST', () => {
 
     sinon.stub(propertiesModel, 'createId').returns(propertyId);
     sinon
-      .stub(propertiesModel, 'firestoreCreateRecord')
+      .stub(propertiesModel, 'createRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
 
     request(createApp())
@@ -82,12 +82,10 @@ describe('Properties | API | POST', () => {
       .resolves(firebase.createDocSnapshot(propertyId));
 
     sinon
-      .stub(propertiesModel, 'firestoreCreateRecord')
+      .stub(propertiesModel, 'createRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
 
-    const result = sinon
-      .stub(notificationsModel, 'firestoreAddRecord')
-      .resolves();
+    const result = sinon.stub(notificationsModel, 'addRecord').resolves();
 
     await request(createApp())
       .post('/t')
@@ -112,12 +110,10 @@ describe('Properties | API | POST', () => {
       .resolves(firebase.createDocSnapshot(propertyId));
 
     sinon
-      .stub(propertiesModel, 'firestoreCreateRecord')
+      .stub(propertiesModel, 'createRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
 
-    const result = sinon
-      .stub(notificationsModel, 'firestoreAddRecord')
-      .resolves();
+    const result = sinon.stub(notificationsModel, 'addRecord').resolves();
 
     await request(createApp())
       .post(`/t?incognitoMode=true`)

@@ -23,7 +23,7 @@ module.exports = function createSyncOudated(fs, pubsub, topic) {
     const maxTimestamp = now - OUTDATED_OFFSET;
 
     try {
-      await tokensModel.firestoreRemoveOutdated(fs, maxTimestamp);
+      await tokensModel.removeOutdated(fs, maxTimestamp);
     } catch (err) {
       log.error(`${PREFIX} failed to remove outdated failed | ${err}`);
     }

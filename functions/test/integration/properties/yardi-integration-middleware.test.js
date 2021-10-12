@@ -10,7 +10,7 @@ describe('Properties | Middleware | Yardi Integration', () => {
 
   it('rejects request when organization yardi configuration is not set', done => {
     // Stup requests
-    sinon.stub(systemModel, 'firestoreFindYardi').resolves(createEmptyDoc());
+    sinon.stub(systemModel, 'findYardi').resolves(createEmptyDoc());
 
     request(createApp())
       .get('/t/123')
@@ -28,7 +28,7 @@ describe('Properties | Middleware | Yardi Integration', () => {
 
   it('continues pipeline when yardi integration exists', done => {
     // Stup requests
-    sinon.stub(systemModel, 'firestoreFindYardi').resolves(
+    sinon.stub(systemModel, 'findYardi').resolves(
       createDoc({
         code: 'test',
       })

@@ -22,12 +22,7 @@ module.exports = modelSetup({
    * @param  {String} destPropertyId
    * @return {Promise}
    */
-  async firestoreReassignProperty(
-    fs,
-    inspectionId,
-    srcPropertyId,
-    destPropertyId
-  ) {
+  async reassignProperty(fs, inspectionId, srcPropertyId, destPropertyId) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
@@ -68,7 +63,7 @@ module.exports = modelSetup({
     // Add each active deficient item
     // property relationship updates to batch
     try {
-      const deficientItemSnap = await diModel.firestoreQueryByInspection(
+      const deficientItemSnap = await diModel.queryByInspection(
         fs,
         inspectionId
       );
@@ -77,15 +72,13 @@ module.exports = modelSetup({
         batch.update(diDoc.ref, { property: destPropertyId })
       );
     } catch (err) {
-      throw Error(
-        `${PREFIX} firestoreReassignProperty: failed to lookup DIs: ${err}`
-      );
+      throw Error(`${PREFIX} reassignProperty: failed to lookup DIs: ${err}`);
     }
 
     // Add each archived deficient item
     // property relationship updates to batch
     try {
-      const archivedDefItemSnap = await archiveModel.deficientItem.firestoreQueryByInspection(
+      const archivedDefItemSnap = await archiveModel.deficientItem.queryByInspection(
         fs,
         inspectionId
       );
@@ -93,9 +86,7 @@ module.exports = modelSetup({
         batch.update(diDoc.ref, { property: destPropertyId })
       );
     } catch (err) {
-      throw Error(
-        `${PREFIX} firestoreReassignProperty: failed to lookup DIs: ${err}`
-      );
+      throw Error(`${PREFIX} reassignProperty: failed to lookup DIs: ${err}`);
     }
 
     return batch.commit();
@@ -118,7 +109,7 @@ module.exports = modelSetup({
    * @param  {Object} data
    * @return {Promise} - resolves {WriteResult}
    */
-  firestoreCreateRecord(fs, inspectionId, data) {
+  createRecord(fs, inspectionId, data) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
@@ -139,7 +130,7 @@ module.exports = modelSetup({
    * @param  {firestore.batch?} batch
    * @return {Promise}
    */
-  firestoreUpdateRecord(fs, inspectionId, data, batch) {
+  updateRecord(fs, inspectionId, data, batch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
@@ -157,13 +148,39 @@ module.exports = modelSetup({
   },
 
   /**
+   * Set Firestore Inspection
+   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {String} inspectionId
+   * @param  {Object} data
+   * @param  {firestore.batch?} batch
+   * @param  {Boolean} merge - deep merge record
+   * @return {Promise}
+   */
+  setRecord(db, inspectionId, data, batch, merge = false) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(
+      inspectionId && typeof inspectionId === 'string',
+      'has deficient item id'
+    );
+    assert(data && typeof data === 'object', 'has update data');
+    const docRef = db.collection(INSPECTION_COLLECTION).doc(inspectionId);
+
+    if (batch) {
+      assert(typeof batch.set === 'function', 'has batch instance');
+      return Promise.resolve(batch.set(docRef, data, { merge }));
+    }
+
+    return docRef.set(data, { merge });
+  },
+
+  /**
    * Create or update a Firestore inspection
    * @param  {firebaseAdmin.firestore} fs
    * @param  {String}  inspectionId
    * @param  {Object}  data
    * @return {Promise} - resolves {DocumentReference}
    */
-  async firestoreUpsertRecord(fs, inspectionId, data) {
+  async upsertRecord(fs, inspectionId, data) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
@@ -177,9 +194,7 @@ module.exports = modelSetup({
     try {
       docSnap = await docRef.get();
     } catch (err) {
-      throw Error(
-        `${PREFIX} firestoreUpsertRecord: Failed to get document: ${err}`
-      );
+      throw Error(`${PREFIX} upsertRecord: Failed to get document: ${err}`);
     }
 
     const { exists } = docSnap;
@@ -199,7 +214,7 @@ module.exports = modelSetup({
       }
     } catch (err) {
       throw Error(
-        `${PREFIX} firestoreUpsertRecord: ${
+        `${PREFIX} upsertRecord: ${
           exists ? 'updating' : 'creating'
         } document: ${err}`
       );
@@ -214,7 +229,7 @@ module.exports = modelSetup({
    * @param  {String} inspectionId
    * @return {Promise}
    */
-  firestoreFindRecord(fs, inspectionId) {
+  findRecord(fs, inspectionId) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
@@ -235,7 +250,7 @@ module.exports = modelSetup({
    * @param  {firestore.batch?} parentBatch
    * @return {Promise}
    */
-  async firestoreRemoveRecord(fs, inspectionId, data, parentBatch) {
+  async removeRecord(fs, inspectionId, data, parentBatch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
@@ -247,11 +262,11 @@ module.exports = modelSetup({
 
     if (!data) {
       try {
-        const snap = await this.firestoreFindRecord(fs, inspectionId);
+        const snap = await this.findRecord(fs, inspectionId);
         inspectionDocRef = snap.ref;
         inspection = snap.data();
       } catch (err) {
-        throw Error(`${PREFIX}: firestoreRemoveRecord: ${err}`);
+        throw Error(`${PREFIX}: removeRecord: ${err}`);
       }
     } else {
       inspectionDocRef = fs.collection(INSPECTION_COLLECTION).doc(inspectionId);
@@ -264,7 +279,7 @@ module.exports = modelSetup({
     batch.delete(inspectionDocRef);
 
     // Add archive updates to transaction
-    await archiveModel.inspection.firestoreCreateRecord(
+    await archiveModel.inspection.createRecord(
       fs,
       inspectionId,
       inspection,
@@ -285,7 +300,7 @@ module.exports = modelSetup({
    * @param  {String} propertyId
    * @return {Promise}
    */
-  firestoreDestroyRecord(fs, inspectionId) {
+  destroyRecord(fs, inspectionId) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
@@ -304,7 +319,7 @@ module.exports = modelSetup({
    * @param  {String} propertyId
    * @return {Promise} - resolves {QuerySnapshot}
    */
-  firestoreQueryByProperty(fs, propertyId) {
+  queryByProperty(fs, propertyId) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     return fs
@@ -320,7 +335,7 @@ module.exports = modelSetup({
    * @param  {firestore.batch?} batch
    * @return {Promise} - resolves {DataSnapshot}
    */
-  firestoreQuery(fs, query, batch) {
+  query(fs, query, batch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(query && typeof query === 'object', 'has query');
 
@@ -352,7 +367,7 @@ module.exports = modelSetup({
    * @param  {Object?} query
    * @return {Promise} - resolves {DataSnapshot}
    */
-  firestoreLatestCompletedQuery(fs, before, query = {}) {
+  latestCompletedQuery(fs, before, query = {}) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       typeof before === 'number' && before === before,
@@ -390,7 +405,7 @@ module.exports = modelSetup({
    * @param  {firestore.batch} batch
    * @return {Promise} - resolves {QuerySnapshot[]}
    */
-  firestoreRemoveForProperty(fs, propertyId, batch) {
+  removeForProperty(fs, propertyId, batch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
 
@@ -409,7 +424,7 @@ module.exports = modelSetup({
         try {
           [activeInspSnap, archivedInspSnap] = await Promise.all([
             transaction.get(queryActive),
-            archiveModel.inspection.firestoreQueryByProperty(
+            archiveModel.inspection.queryByProperty(
               fs,
               propertyId,
               transaction
@@ -419,7 +434,7 @@ module.exports = modelSetup({
           archivedInspSnap.forEach(({ ref }) => inspectionRefs.push(ref));
         } catch (err) {
           throw Error(
-            `${PREFIX} firestoreRemoveForProperty: inspection lookup failed: ${err}`
+            `${PREFIX} removeForProperty: inspection lookup failed: ${err}`
           );
         }
 
@@ -433,7 +448,7 @@ module.exports = modelSetup({
       })
       .catch(err => {
         throw Error(
-          `${PREFIX} firestoreRemoveForProperty: inspection deletes failed: ${err}`
+          `${PREFIX} removeForProperty: inspection deletes failed: ${err}`
         );
       });
   },

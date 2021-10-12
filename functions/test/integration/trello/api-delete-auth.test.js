@@ -12,7 +12,7 @@ describe('Trello | API | DELETE Authorization', () => {
   it('returns JSON-API formatted error message when system credentials failed to delete', done => {
     const expected = 'System Error';
 
-    sinon.stub(systemModel, 'firestoreRemoveTrello').rejects(Error('failed'));
+    sinon.stub(systemModel, 'removeTrello').rejects(Error('failed'));
 
     request(createApp())
       .delete('/t')
@@ -30,11 +30,11 @@ describe('Trello | API | DELETE Authorization', () => {
   it('returns JSON-API formatted error message when integration details failed to delete', done => {
     const expected = 'Integration Error';
 
-    sinon.stub(systemModel, 'firestoreRemoveTrello').resolves();
-    sinon.stub(systemModel, 'firestoreRemoveAllTrelloProperties').resolves();
-    sinon.stub(integrationsModel, 'firestoreRemoveTrello').resolves();
+    sinon.stub(systemModel, 'removeTrello').resolves();
+    sinon.stub(systemModel, 'removeAllTrelloProperties').resolves();
+    sinon.stub(integrationsModel, 'removeTrello').resolves();
     sinon
-      .stub(integrationsModel, 'firestoreRemoveAllTrelloProperties')
+      .stub(integrationsModel, 'removeAllTrelloProperties')
       .rejects(Error('failed'));
 
     request(createApp())
@@ -51,12 +51,10 @@ describe('Trello | API | DELETE Authorization', () => {
   });
 
   it('returns empty success response when Trello auth successfully deleted', done => {
-    sinon.stub(systemModel, 'firestoreRemoveTrello').resolves();
-    sinon.stub(systemModel, 'firestoreRemoveAllTrelloProperties').resolves();
-    sinon.stub(integrationsModel, 'firestoreRemoveTrello').resolves();
-    sinon
-      .stub(integrationsModel, 'firestoreRemoveAllTrelloProperties')
-      .resolves();
+    sinon.stub(systemModel, 'removeTrello').resolves();
+    sinon.stub(systemModel, 'removeAllTrelloProperties').resolves();
+    sinon.stub(integrationsModel, 'removeTrello').resolves();
+    sinon.stub(integrationsModel, 'removeAllTrelloProperties').resolves();
 
     request(createApp())
       .delete('/t')

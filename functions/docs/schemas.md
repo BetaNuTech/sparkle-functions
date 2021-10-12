@@ -77,9 +77,10 @@ interface inspection {
 interface Template {
   id?: string;
   name: string;
-  description: string;
-  category: string; // template category relationship
+  description?: string;
+  category?: string; // template category relationship
   trackDeficientItems: boolean;
+  requireDeficientItemNoteAndPhoto: boolean;
   properties?: Array<string>;
   sections?: any;
   items?: any;

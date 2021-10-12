@@ -44,7 +44,7 @@ module.exports = function closeDeficiencyCard(fs, pubsub, topic) {
     // Find created Trello Card reference
     let trelloCardId = '';
     try {
-      trelloCardId = await systemModel.firestoreFindTrelloCardId(
+      trelloCardId = await systemModel.findTrelloCardId(
         fs,
         propertyId,
         deficiencyId
@@ -67,7 +67,7 @@ module.exports = function closeDeficiencyCard(fs, pubsub, topic) {
     // Lookup Trello credentials
     let trelloCredentials = null;
     try {
-      const trelloCredentialsSnap = await systemModel.firestoreFindTrello(fs);
+      const trelloCredentialsSnap = await systemModel.findTrello(fs);
       trelloCredentials = trelloCredentialsSnap.data();
       if (!trelloCredentials) {
         throw Error('Organization has not authorized Trello');
@@ -82,7 +82,7 @@ module.exports = function closeDeficiencyCard(fs, pubsub, topic) {
     if (deficiencyState === 'closed') {
       let closedList = '';
       try {
-        const trelloIntegrationSnap = await integrationsModel.firestoreFindTrelloProperty(
+        const trelloIntegrationSnap = await integrationsModel.findTrelloProperty(
           fs,
           propertyId
         );
@@ -103,10 +103,7 @@ module.exports = function closeDeficiencyCard(fs, pubsub, topic) {
     // Lookup Deficient Item
     let deficiency = null;
     try {
-      const deficiencySnap = await deficiencyModel.firestoreFindRecord(
-        fs,
-        deficiencyId
-      );
+      const deficiencySnap = await deficiencyModel.findRecord(fs, deficiencyId);
       deficiency = deficiencySnap.data() || null;
     } catch (err) {
       log.error(`${PREFIX} deficiency lookup failed | ${err}`);
@@ -142,7 +139,7 @@ module.exports = function closeDeficiencyCard(fs, pubsub, topic) {
     } catch (err) {
       if (err.code === 'ERR_TRELLO_CARD_DELETED') {
         try {
-          await systemModel.firestoreCleanupDeletedTrelloCard(
+          await systemModel.cleanupDeletedTrelloCard(
             fs,
             deficiencyId,
             trelloCardId

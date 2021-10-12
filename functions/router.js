@@ -3,7 +3,7 @@ const assert = require('assert');
 const express = require('express');
 const bodyParser = require('body-parser');
 const swaggerUi = require('swagger-ui-express');
-const fileUpload = require('express-fileupload');
+const fileParser = require('express-multipart-file-parser');
 const slack = require('./slack');
 const trello = require('./trello');
 const deficiencies = require('./deficient-items');
@@ -61,6 +61,19 @@ module.exports = (fs, auth, settings, storage) => {
     }),
     inspections.api.post(fs)
   );
+
+  // Update Inspection Items
+  app.patch(
+    '/v0/inspections/:inspectionId/template',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    inspections.api.patchTemplate(fs)
+  );
+
   // Inspection property
   // reassignment endpoint
   app.patch(
@@ -130,7 +143,7 @@ module.exports = (fs, auth, settings, storage) => {
       admin: true,
       corporate: true,
     }),
-    fileUpload(),
+    fileParser,
     properties.api.postImage(fs, storage)
   );
 

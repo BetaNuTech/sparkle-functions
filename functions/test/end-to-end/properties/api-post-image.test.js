@@ -1,7 +1,7 @@
 const { expect } = require('chai');
 const express = require('express');
 const request = require('supertest');
-const fileUpload = require('express-fileupload');
+const fileParser = require('express-multipart-file-parser');
 const uuid = require('../../../test-helpers/uuid');
 const storageHelper = require('../../../test-helpers/storage');
 const mocking = require('../../../test-helpers/mocking');
@@ -26,7 +26,7 @@ describe('Properties | API | POST Image', () => {
     const propertyData = mocking.createProperty();
 
     // Setup
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
+    await propertiesModel.createRecord(fs, propertyId, propertyData);
 
     // Execute
     await request(createApp())
@@ -35,10 +35,7 @@ describe('Properties | API | POST Image', () => {
       .expect(201);
 
     // Test results
-    const propertySnap = await propertiesModel.firestoreFindRecord(
-      fs,
-      propertyId
-    );
+    const propertySnap = await propertiesModel.findRecord(fs, propertyId);
     const property = propertySnap.data() || {};
     expect(property.photoURL).to.be.ok;
     expect(property.photoName).to.be.ok;
@@ -54,7 +51,7 @@ describe('Properties | API | POST Image', () => {
 
 function createApp() {
   const app = express();
-  app.post('/t/:propertyId', stubAuth, fileUpload(), handler(fs, storage));
+  app.post('/t/:propertyId', stubAuth, fileParser, handler(fs, storage));
   return app;
 }
 

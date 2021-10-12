@@ -62,7 +62,7 @@ describe('Jobs | API | PUT', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot()); // empty
 
     // Execute
@@ -85,7 +85,7 @@ describe('Jobs | API | PUT', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon.stub(jobsModel, 'findRecord').resolves(firebase.createDocSnapshot()); // empty
 
@@ -113,7 +113,7 @@ describe('Jobs | API | PUT', () => {
 
     // Stubs
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon
       .stub(jobsModel, 'findRecord')
@@ -136,7 +136,7 @@ describe('Jobs | API | PUT', () => {
 
     // Stubs
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon
       .stub(jobsModel, 'findRecord')
@@ -172,7 +172,7 @@ describe('Jobs | API | PUT', () => {
 
     // Stubs
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon
       .stub(jobsModel, 'findRecord')
@@ -215,7 +215,7 @@ describe('Jobs | API | PUT', () => {
 
     // Stubs
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon
       .stub(jobsModel, 'findRecord')
@@ -258,7 +258,7 @@ describe('Jobs | API | PUT', () => {
 
     // Stubs
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon
       .stub(jobsModel, 'findRecord')
@@ -317,7 +317,7 @@ describe('Jobs | API | PUT', () => {
 
     // Stubs
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon
       .stub(jobsModel, 'findRecord')
@@ -381,7 +381,7 @@ describe('Jobs | API | PUT', () => {
 
     // Stubs
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon
       .stub(jobsModel, 'findRecord')

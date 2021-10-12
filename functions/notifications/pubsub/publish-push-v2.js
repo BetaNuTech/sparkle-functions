@@ -53,7 +53,7 @@ module.exports = function publishPushNotification(
 
     if (srcTarget !== '*') {
       try {
-        const notificationSnap = await notificationsModel.firestoreFindRecord(
+        const notificationSnap = await notificationsModel.findRecord(
           fs,
           srcTarget
         );
@@ -79,7 +79,7 @@ module.exports = function publishPushNotification(
       try {
         // Select all notifications with
         // any unpublished push messages
-        const notificationsSnap = await notificationsModel.firestoreQuery(fs, {
+        const notificationsSnap = await notificationsModel.query(fs, {
           unpublishedPush: ['>', 0],
         });
 
@@ -122,7 +122,7 @@ module.exports = function publishPushNotification(
         let registrationTokens = registrationTokenCache[userId];
         if (!registrationTokens) {
           try {
-            const registrationTokensSnap = await regTokensModel.firestoreFindRecord(
+            const registrationTokensSnap = await regTokensModel.findRecord(
               fs,
               userId
             );
@@ -176,7 +176,7 @@ module.exports = function publishPushNotification(
 
       // Add notification's update to batch
       try {
-        await notificationsModel.firestoreUpdateRecord(
+        await notificationsModel.updateRecord(
           fs,
           notificationId,
           notificationUpdate,

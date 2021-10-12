@@ -75,10 +75,7 @@ module.exports = function createPutProperty(fs) {
     // Lookup Firestore Property
     let property;
     try {
-      const propertySnap = await propertiesModel.firestoreFindRecord(
-        fs,
-        propertyId
-      );
+      const propertySnap = await propertiesModel.findRecord(fs, propertyId);
       property = propertySnap.data() || null;
     } catch (err) {
       return send500Error(err, 'property lookup failed', 'unexpected error');
@@ -99,7 +96,7 @@ module.exports = function createPutProperty(fs) {
 
     // Update property
     try {
-      await propertiesModel.firestoreUpdateRecord(fs, propertyId, update);
+      await propertiesModel.updateRecord(fs, propertyId, update);
     } catch (err) {
       return send500Error(
         err,
@@ -115,7 +112,7 @@ module.exports = function createPutProperty(fs) {
     if (!incognitoMode) {
       try {
         // Notify of new inspection report
-        await notificationsModel.firestoreAddRecord(fs, undefined, {
+        await notificationsModel.addRecord(fs, undefined, {
           name: property.name,
           summary: notifyTemplate('property-update-summary', {
             authorName,

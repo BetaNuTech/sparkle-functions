@@ -13,7 +13,7 @@ module.exports = modelSetup({
    * @param  {String} templateId
    * @return {Promise}
    */
-  firestoreFindRecord(fs, templateId) {
+  findRecord(fs, templateId) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(templateId && typeof templateId === 'string', 'has template id');
     return fs
@@ -28,7 +28,7 @@ module.exports = modelSetup({
    * @param  {String} templateId
    * @return {Promise}
    */
-  firestoreRemoveRecord(fs, templateId) {
+  removeRecord(fs, templateId) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(templateId && typeof templateId === 'string', 'has template id');
     return fs
@@ -44,7 +44,7 @@ module.exports = modelSetup({
    * @param  {Object} data
    * @return {Promise} - resolves {DocumentReference}
    */
-  async firestoreUpsertRecord(fs, templateId, data) {
+  async upsertRecord(fs, templateId, data) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(templateId && typeof templateId === 'string', 'has template id');
     assert(data && typeof data === 'object', 'has upsert data');
@@ -55,9 +55,7 @@ module.exports = modelSetup({
     try {
       docSnap = await docRef.get();
     } catch (err) {
-      throw Error(
-        `${PREFIX} firestoreUpsertRecord: Failed to get document: ${err}`
-      );
+      throw Error(`${PREFIX} upsertRecord: Failed to get document: ${err}`);
     }
 
     const { exists } = docSnap;
@@ -84,7 +82,7 @@ module.exports = modelSetup({
       }
     } catch (err) {
       throw Error(
-        `${PREFIX} firestoreUpsertRecord: ${
+        `${PREFIX} upsertRecord: ${
           exists ? 'updating' : 'creating'
         } document: ${err}`
       );
@@ -100,7 +98,7 @@ module.exports = modelSetup({
    * @param  {Object} data
    * @return {Promise} - resolves {WriteResult}
    */
-  firestoreCreateRecord(fs, templateId, data) {
+  createRecord(fs, templateId, data) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(templateId && typeof templateId === 'string', 'has template id');
     assert(data && typeof data === 'object', 'has data');
@@ -116,7 +114,7 @@ module.exports = modelSetup({
    * @param  {String} categoryId
    * @return {Promise} - resolves {QuerySnapshot}
    */
-  firestoreQueryByCategory(fs, categoryId) {
+  queryByCategory(fs, categoryId) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(categoryId && typeof categoryId === 'string', 'has category id');
     return fs
@@ -131,7 +129,7 @@ module.exports = modelSetup({
    * @param  {Object} updates - { id: { name: "update" } }
    * @return {Promise}
    */
-  firestoreBatchUpdate(fs, updates) {
+  batchUpdate(fs, updates) {
     const batch = fs.batch();
     const templatesRef = fs.collection(TEMPLATE_COLLECTION);
 
@@ -155,7 +153,7 @@ module.exports = modelSetup({
    * @param  {firebaseAdmin.firestore} fs
    * @return {Promise} - resolves {DocumentSnapshot[]}
    */
-  firestoreFindAll(fs) {
+  findAll(fs) {
     return fs
       .collection(TEMPLATE_COLLECTION)
       .get()
@@ -242,7 +240,7 @@ module.exports = modelSetup({
    * @param  {firestore.batch?} batch
    * @return {Promise}
    */
-  firestoreRemoveCategory(fs, categoryId, batch) {
+  removeCategory(fs, categoryId, batch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(categoryId && typeof categoryId === 'string', 'has category id');
     if (batch) {
@@ -261,7 +259,7 @@ module.exports = modelSetup({
           templatesSnap = await transaction.get(templateQuery);
         } catch (err) {
           throw Error(
-            `${PREFIX} firestoreRemoveCategory: template lookup failed: ${err}`
+            `${PREFIX} removeCategory: template lookup failed: ${err}`
           );
         }
 
@@ -275,9 +273,7 @@ module.exports = modelSetup({
         return transOrBatch;
       })
       .catch(err => {
-        throw Error(
-          `${PREFIX} firestoreRemoveCategory: transaction failed: ${err}`
-        );
+        throw Error(`${PREFIX} removeCategory: transaction failed: ${err}`);
       });
   },
 });

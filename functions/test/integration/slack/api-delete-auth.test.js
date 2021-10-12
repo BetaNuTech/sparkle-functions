@@ -15,9 +15,7 @@ describe('Slack | API | DELETE Slack Authorization', () => {
   it('returns a helpful error when slack app is already authorized', done => {
     const expected = 'No Slack App authorized';
 
-    sinon
-      .stub(systemModel, 'firestoreFindSlack')
-      .resolves({ data: () => undefined });
+    sinon.stub(systemModel, 'findSlack').resolves({ data: () => undefined });
 
     request(createApp())
       .delete('/t')
@@ -36,7 +34,7 @@ describe('Slack | API | DELETE Slack Authorization', () => {
     const expected = 'slack-token-test';
 
     sinon
-      .stub(systemModel, 'firestoreFindSlack')
+      .stub(systemModel, 'findSlack')
       .resolves(stubSlackCredentials({ accessToken: expected }));
 
     let actual = '';
@@ -58,13 +56,11 @@ describe('Slack | API | DELETE Slack Authorization', () => {
   });
 
   it('returns an empty success status when Slack authentication successfully deleted', done => {
-    sinon
-      .stub(systemModel, 'firestoreFindSlack')
-      .resolves(stubSlackCredentials());
+    sinon.stub(systemModel, 'findSlack').resolves(stubSlackCredentials());
     sinon.stub(slackService, 'uninstallApp').resolves();
-    sinon.stub(systemModel, 'firestoreRemoveSlack').resolves();
-    sinon.stub(integrationsModel, 'firestoreRemoveSlack').resolves();
-    sinon.stub(notificationsModel, 'firestoreRemoveAllSlack').resolves();
+    sinon.stub(systemModel, 'removeSlack').resolves();
+    sinon.stub(integrationsModel, 'removeSlack').resolves();
+    sinon.stub(notificationsModel, 'removeAllSlack').resolves();
 
     request(createApp())
       .delete('/t')
