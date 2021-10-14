@@ -3,14 +3,13 @@ const bidsModel = require('../../models/bids');
 const jobsModel = require('../../models/jobs');
 const propertiesModel = require('../../models/properties');
 const validate = require('../utils/validate-bid');
-const canUpdateBidState = require('../utils/can-user-update-bid-state');
+const validateBidStateUpdate = require('../utils/validate-bid-state-update');
 const doesContainInvalidAttr = require('../utils/does-contain-invalid-bid-update-attr');
 const log = require('../../utils/logger');
 const stringsUtil = require('../../utils/strings');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
 
 const PREFIX = 'jobs: api: put bid:';
-const REQ_TO_APPROVE = ['costMin', 'costMax', 'startAt', 'completeAt'];
 
 /**
  * Factory for creating a PUT endpoint
@@ -29,6 +28,7 @@ module.exports = function createPutJobsBid(fs) {
    */
   return async (req, res) => {
     const { params, body = {} } = req;
+    const { user } = req;
     const { propertyId, jobId, bidId } = params;
     const update = JSON.parse(JSON.stringify(body));
     const send500Error = create500ErrHandler(PREFIX, res);
@@ -185,9 +185,17 @@ module.exports = function createPutJobsBid(fs) {
 
     // Validate state update
     const isUpdatingState = Boolean(update.state) && update.state !== bid.state;
-    const updatedBid = { ...bid, ...update };
-    updatedBid.state = bid.state;
-    const canBidTransitionToNewState = canUpdateBidState(update, updatedBid);
+    const afterUpdateBid = { ...bid, ...update, state: bid.state }; // keep old `state`
+    const bidStateTransitionErrors = validateBidStateUpdate(
+      user,
+      update,
+      afterUpdateBid,
+      job
+    );
+    const canBidTransitionToNewState = bidStateTransitionErrors.length === 0;
+    const hasPermissionError =
+      bidStateTransitionErrors.filter(({ type }) => type === 'permission')
+        .length > 0;
 
     // Reject bid approval when it's missing
     // required attributes to progress
@@ -196,13 +204,14 @@ module.exports = function createPutJobsBid(fs) {
       isUpdatingToApproved &&
       !canBidTransitionToNewState
     ) {
-      const missingAttrs = REQ_TO_APPROVE.filter(
-        attr => Boolean(updatedBid[attr]) === false
-      );
-      return res.status(409).send({
-        errors: missingAttrs.map(pointer => ({
-          detail: `Requires ${stringsUtil.toHumanize(pointer)} to approve bid`,
-          source: { pointer },
+      return res.status(hasPermissionError ? 403 : 409).send({
+        errors: bidStateTransitionErrors.map(({ path, type, message }) => ({
+          title: message,
+          detail:
+            type === 'conflict'
+              ? `Requires ${stringsUtil.toHumanize(path)} to approve bid`
+              : 'User cannot perform this bid update',
+          source: { pointer: path },
         })),
       });
     }

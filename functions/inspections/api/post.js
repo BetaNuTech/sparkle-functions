@@ -4,7 +4,7 @@ const propertiesModel = require('../../models/properties');
 const templatesModel = require('../../models/templates');
 const inspectionsModel = require('../../models/inspections');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
-const getFullName = require('../../utils/user');
+const { getFullName } = require('../../utils/user');
 
 const PREFIX = 'inspection: api: post:';
 
