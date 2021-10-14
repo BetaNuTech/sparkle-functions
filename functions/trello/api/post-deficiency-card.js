@@ -9,6 +9,7 @@ const integrationsModel = require('../../models/integrations');
 const propertiesModel = require('../../models/properties');
 const trello = require('../../services/trello');
 const config = require('../../config');
+const { getItemPhotoData } = require('../../utils/inspection');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
 
 const PREFIX = 'trello: api: post-card:';
@@ -256,6 +257,30 @@ module.exports = function createOnTrelloDeficientItemCard(
         err,
         `Error retrieved from Trello API | ${err}`,
         'Error from trello API'
+      );
+    }
+
+    // Publish inspection item's
+    const inspItemPhotos = getItemPhotoData(inspectionItem);
+    const inspItemPhotoUrls = inspItemPhotos.map(({ url }) => url);
+
+    // POST attachment(s) to Deficiency's Trello Card
+    let attachmentIds = [];
+    try {
+      attachmentIds = await trello.publishAllCardAttachments(
+        cardId,
+        trelloCredentials.authToken,
+        trelloCredentials.apikey,
+        inspItemPhotoUrls
+      );
+
+      if (attachmentIds.length !== inspItemPhotoUrls.length) {
+        throw Error('did not publish all inspection item  photos');
+      }
+    } catch (err) {
+      // Continue after failure
+      log.error(
+        `${PREFIX} failed to publish all inspection item photos: ${err}`
       );
     }
 

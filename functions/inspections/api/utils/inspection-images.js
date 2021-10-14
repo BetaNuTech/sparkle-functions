@@ -1,5 +1,6 @@
 const Jimp = require('jimp');
 const base64ItemImage = require('./base-64-item-image');
+const { getItemPhotoData } = require('../../../utils/inspection');
 
 const { keys, assign } = Object;
 
@@ -31,18 +32,10 @@ module.exports = {
             ];
           }
 
-          if (item.photosData && keys(item.photosData).length) {
-            // Create list of item's upload(s) configs
-            return keys(item.photosData).map(id => ({
-              id,
-              itemId: item.id,
-              url: item.photosData[id].downloadURL,
-            }));
-          }
-
-          return [{}];
+          return getItemPhotoData(item);
         })
       )
+      .filter(Boolean)
       .filter(({ url }) => Boolean(url)); // remove empty uploads
 
     const imageuris = await Promise.all(
