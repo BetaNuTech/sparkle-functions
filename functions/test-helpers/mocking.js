@@ -408,6 +408,20 @@ module.exports = {
   },
 
   /**
+   * Create create photo data for an inspection item
+   * @param  {Object?} photoConfig
+   * @return {Object}
+   */
+  createInspectionItemPhotoData(photoConfig = {}) {
+    return {
+      caption: '',
+      downloadURL:
+        'https://firebasestorage.googleapis.com/v0/b/s.appspot.com/o/inspectionItemImages6JSuyiAZ6.jpg?alt=media&token=c91f1b66-f83f-4e89-ac04-860c7ed40cf3',
+      ...photoConfig,
+    };
+  },
+
+  /**
    * Create an incomplete inspection signature input item
    * @param  {Object?} itemConfig
    * @return {Object} - inspectionItem
