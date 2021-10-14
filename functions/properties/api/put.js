@@ -4,7 +4,7 @@ const propertiesModel = require('../../models/properties');
 const notificationsModel = require('../../models/notifications');
 const notifyTemplate = require('../../utils/src-notification-templates');
 const validate = require('../utils/validate-update');
-const getFullName = require('../../utils/user');
+const { getFullName } = require('../../utils/user');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
 
 const PREFIX = 'property: api: put';

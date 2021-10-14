@@ -17,7 +17,7 @@ const propertyId = uuid();
 const jobId = uuid();
 const bidId = uuid();
 
-describe('Bids | API | PUT', () => {
+describe('Jobs | API | PUT Bid', () => {
   beforeEach(() => {
     sinon.stub(log, 'info').callsFake(() => true);
     sinon.stub(log, 'error').callsFake(() => true);
@@ -225,14 +225,70 @@ describe('Bids | API | PUT', () => {
     expect(actual).to.equal(expected);
   });
 
-  it("regresses a bid's job from authorized to approved when the bid itself regresses from authorized", async () => {
-    const expected = true;
-    const update = { state: 'incomplete' };
+  it('rejects transition to approved when user lacks permission level for the job type', async () => {
+    const expected = 'job';
+    const update = { state: 'approved' };
     const property = mocking.createProperty();
-    const job = mocking.createJob();
-    const bid = mocking.createBid();
-    bid.state = 'approved';
-    job.state = 'authorized';
+    const job = mocking.createJob({
+      type: 'large:am', // requires admin
+    });
+    const jobDoc = firebase.createDocRef();
+    const readyToApproveBid = mocking.createBid({
+      state: 'open',
+      costMin: 1,
+      costMax: 2,
+      startAt: 1,
+      completeAt: 2,
+      job: jobDoc,
+    });
+    // Corporate users cannot approve large jobs
+    const corporateUser = mocking.createUser({ corporate: true });
+
+    // Stub Requests
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(propertyId, property));
+    sinon
+      .stub(jobsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(jobId, job));
+    sinon
+      .stub(bidsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(bidId, readyToApproveBid));
+    sinon
+      .stub(bidsModel, 'queryJobsApproved')
+      .resolves(firebase.createQuerySnapshot()); // empty
+
+    const res = await request(createApp(corporateUser))
+      .put(`/t/${propertyId}/${jobId}/${bidId}`)
+      .send(update)
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(403);
+
+    // Assertions
+    const errors = res.body.errors || [];
+    const sources = errors.map(err => err.source || null).filter(Boolean);
+    const actual = sources
+      .map(src => src.pointer || '')
+      .filter(Boolean)
+      .sort()
+      .join(',');
+    expect(actual).to.equal(expected);
+  });
+
+  it("regresses a bid's job from authorized to approved when the bid becomes incomplete or rejected", async () => {
+    const expected = true;
+    const update = { state: 'complete' };
+    const property = mocking.createProperty();
+    const propDoc = firebase.createDocRef();
+    const job = mocking.createJob({
+      state: 'authorized',
+      property: propDoc,
+    });
+    const jobDoc = firebase.createDocRef();
+    const bid = mocking.createBid({
+      state: 'approved',
+      job: jobDoc,
+    });
 
     // Stub Requests
     sinon
@@ -262,6 +318,55 @@ describe('Bids | API | PUT', () => {
     const actual = updateJob.called;
     expect(actual).to.equal(expected);
   });
+
+  it("completes the job when its' bid becomes complete", async () => {
+    const expected = 'complete';
+    const update = { state: 'complete' };
+    const property = mocking.createProperty();
+    const propDoc = firebase.createDocRef();
+    const job = mocking.createJob({
+      state: 'authorized',
+      property: propDoc,
+    });
+    const jobDoc = firebase.createDocRef();
+    const bid = mocking.createBid({
+      state: 'approved',
+      costMin: 1,
+      costMax: 2,
+      startAt: 1,
+      completeAt: 2,
+      job: jobDoc,
+    });
+
+    // Stub Requests
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(propertyId, property));
+    sinon
+      .stub(jobsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(jobId, job));
+    sinon
+      .stub(bidsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(bidId, bid));
+    sinon
+      .stub(bidsModel, 'queryJobsApproved')
+      .resolves(firebase.createQuerySnapshot()); // empty
+    sinon
+      .stub(bidsModel, 'updateRecord')
+      .resolves(firebase.createDocSnapshot(bidId, bid));
+    const updateJob = sinon.stub(jobsModel, 'updateRecord').resolves();
+
+    await request(createApp())
+      .put(`/t/${propertyId}/${jobId}/${bidId}`)
+      .send(update)
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(201);
+
+    // Assertions
+    const result = updateJob.firstCall || { args: [] };
+    const actual = (result.args[2] || {}).state || '';
+    expect(actual).to.equal(expected);
+  });
 });
 
 function createApp(user = {}) {
@@ -283,7 +388,7 @@ function createApp(user = {}) {
 
 function stubAuth(user = {}) {
   return (req, res, next) => {
-    req.user = Object.assign({ id: USER_ID }, user);
+    req.user = Object.assign({ id: USER_ID, admin: true }, user);
     next();
   };
 }

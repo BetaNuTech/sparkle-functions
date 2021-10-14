@@ -21,7 +21,7 @@ const requiredAttrs = {
 const propertyId = uuid();
 const jobId = uuid();
 
-describe('Bids | API | POST', () => {
+describe('Jobs | API | POST Bid', () => {
   beforeEach(() => {
     sinon.stub(log, 'info').callsFake(() => true);
     sinon.stub(log, 'error').callsFake(() => true);
