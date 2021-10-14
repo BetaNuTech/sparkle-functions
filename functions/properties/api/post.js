@@ -4,7 +4,7 @@ const validate = require('../utils/validate');
 const notificationsModel = require('../../models/notifications');
 const notifyTemplate = require('../../utils/src-notification-templates');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
-const getFullName = require('../../utils/user');
+const { getFullName } = require('../../utils/user');
 const log = require('../../utils/logger');
 
 const PREFIX = 'property: api: post:';
@@ -26,7 +26,7 @@ module.exports = function createPost(fs) {
    */
   return async (req, res) => {
     const property = req.body;
-    const authorName = getFullName(req.user);
+    const authorName = getFullName(req.user || {});
     const authorEmail = req.user ? req.user.email : '';
     const send500Error = create500ErrHandler(PREFIX, res);
 
