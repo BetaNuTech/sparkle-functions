@@ -54,6 +54,21 @@ describe('Jobs | Utils | Validate Bid Create', () => {
         expected: 'scope',
         msg: 'rejects non-enum scope value',
       },
+      {
+        bid: { ...requiredAttrs, vendorW9: 'true' },
+        expected: 'vendorW9',
+        msg: 'rejects non-boolean vendor w9',
+      },
+      {
+        bid: { ...requiredAttrs, vendorInsurance: 'true' },
+        expected: 'vendorInsurance',
+        msg: 'rejects non-boolean vendor insurance',
+      },
+      {
+        bid: { ...requiredAttrs, vendorLicense: 'true' },
+        expected: 'vendorLicense',
+        msg: 'rejects non-boolean vendor license',
+      },
     ];
 
     for (let i = 0; i < data.length; i++) {
@@ -237,6 +252,9 @@ describe('Jobs | Utils | Validate Bid Create', () => {
       startAt: 1,
       completeAt: 2,
       scope: config.bids.scopeTypes[0],
+      vendorW9: true,
+      vendorInsurance: false,
+      vendorLicense: false,
     });
 
     const actual = getResults(result);

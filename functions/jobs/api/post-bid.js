@@ -73,7 +73,7 @@ module.exports = function createPostJobsBid(fs) {
     }
 
     // Lookup Job
-    let job;
+    let job = null;
     try {
       const jobSnap = await jobsModel.findRecord(fs, jobId);
       job = jobSnap.data() || null;
@@ -105,6 +105,9 @@ module.exports = function createPostJobsBid(fs) {
 
     // Creare bid object
     const newBid = {
+      vendorW9: false,
+      vendorInsurance: false,
+      vendorLicense: false,
       ...bid,
       state: config.bids.stateTypes[0],
       job: jobsModel.createDocRef(fs, jobId),

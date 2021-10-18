@@ -108,6 +108,18 @@ const bidSchema = new Schema({
     enum: config.bids.scopeTypes,
     required: true,
   },
+  vendorW9: {
+    type: Boolean,
+    required: false,
+  },
+  vendorInsurance: {
+    type: Boolean,
+    required: false,
+  },
+  vendorLicense: {
+    type: Boolean,
+    required: false,
+  },
 });
 
 /**
