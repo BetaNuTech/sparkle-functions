@@ -226,6 +226,9 @@ interface bid {
   vendor: string;
   vendorDetails?: string;
   scope: 'local' | 'national';
+  vendorW9?: boolean;
+  vendorInsurance?: boolean;
+  vendorLicense?: boolean;
 }
 ```
 

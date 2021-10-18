@@ -250,7 +250,10 @@
               "costMin",
               "startAt",
               "completeAt",
-              "state"
+              "state",
+              "vendorW9",
+              "vendorInsurance",
+              "vendorLicense"
             ],
             "properties": {
               "vendor": {
@@ -273,6 +276,15 @@
               },
               "state": {
                 "type": "string"
+              },
+              "vendorW9": {
+                "type": "boolean"
+              },
+              "vendorInsurance": {
+                "type": "boolean"
+              },
+              "vendorLicense": {
+                "type": "boolean"
               }
             }
           }
@@ -281,7 +293,7 @@
           "201": {
             "description": "Success for updating bid api",
             "schema": {
-              "$ref": "#/definitions/JOBS"
+              "$ref": "#/definitions/BID"
             }
           },
           "400": {
@@ -345,7 +357,10 @@
               "costMin",
               "startAt",
               "completeAt",
-              "state"
+              "state",
+              "vendorW9",
+              "vendorInsurance",
+              "vendorLicense"
             ],
             "properties": {
               "vendor": {
@@ -368,6 +383,15 @@
               },
               "state": {
                 "type": "string"
+              },
+              "vendorW9": {
+                "type": "boolean"
+              },
+              "vendorInsurance": {
+                "type": "boolean"
+              },
+              "vendorLicense": {
+                "type": "boolean"
               }
             }
           }
@@ -376,7 +400,7 @@
           "201": {
             "description": "Success for adding a new bid",
             "schema": {
-              "$ref": "#/definitions/JOBS"
+              "$ref": "#/definitions/BID"
             }
           },
           "400": {
@@ -1642,6 +1666,82 @@
     }
   },
   "definitions": {
+    "BID": {
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "createdAt": {
+                  "type": "number"
+                },
+                "updatedAt": {
+                  "type": "number"
+                },
+                "completeAt": {
+                  "type": "number"
+                },
+                "startAt": {
+                  "type": "number"
+                },
+                "costMax": {
+                  "type": "number"
+                },
+                "costMin": {
+                  "type": "number"
+                },
+                "state": {
+                  "type": "string"
+                },
+                "vendor": {
+                  "type": "string"
+                },
+                "vendorDetails": {
+                  "type": "string"
+                },
+                "scope": {
+                  "type": "string"
+                },
+                "vendorW9": {
+                  "type": "boolean"
+                },
+                "vendorInsurance": {
+                  "type": "boolean"
+                },
+                "vendorLicense": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "relationships": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
     "JOBS": {
       "type": "object",
       "properties": {
