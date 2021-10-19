@@ -4,50 +4,111 @@ const uuid = require('../../test-helpers/uuid');
 const mocking = require('../../test-helpers/mocking');
 const config = require('../../config/jobs');
 
+const PROPERTY_ID = uuid();
+const ADMIN_USER = mocking.createUser({ admin: true });
+const CORPORATE_USER = mocking.createUser({ corporate: true });
+const PROPERTY_MANAGER = mocking.createUser({
+  admin: false,
+  corporate: false,
+  properties: {
+    [PROPERTY_ID]: true,
+  },
+});
+const NO_ACCESS_USER = mocking.createUser({
+  admin: false,
+  corporate: false,
+  teams: {},
+  properties: {},
+});
+const JOB = mocking.createJob();
+
 describe('Jobs | Utils | Can User Update State', () => {
-  it('only allows applicable jobs to transition to approved', () => {
-    const user = mocking.createUser();
-    const attachment = mocking.createAttachment();
-    const tests = [].concat(
-      ...config.stateTypes.map(state => [
-        {
-          expected: false,
-          job: mocking.createJob({
-            state,
-            scopeOfWork: '',
-            scopeOfWorkAttachments: [],
-          }),
-          msg: `rejected transition from ${state} missing any SOW`,
-        },
-        {
-          expected: state === 'open',
-          job: mocking.createJob({
-            state,
-            scopeOfWork: 'scope',
-            scopeOfWorkAttachments: [],
-          }),
-          msg: `${
-            state === 'open' ? 'allowed' : 'rejected'
-          } transition from ${state} with SOW text`,
-        },
-        {
-          expected: state === 'open',
-          job: mocking.createJob({
-            state,
-            scopeOfWork: '',
-            scopeOfWorkAttachments: [attachment],
-          }),
-          msg: `${
-            state === 'open' ? 'allowed' : 'rejected'
-          } transition from ${state} with SOW attachment file`,
-        },
-      ])
-    );
+  it('only allows open jobs to transition to approved', () => {
+    const tests = config.stateTypes.map(state => ({
+      expected: state === 'open' ? 0 : 1,
+      data: mocking.createJob({ state, scopeOfWork: 'set' }),
+      msg: `${
+        state === 'open' ? 'allowed' : 'rejected'
+      } transition from ${state}`,
+    }));
 
     for (let i = 0; i < tests.length; i++) {
-      const { expected, job, msg } = tests[i];
-      const actual =
-        validateStateTransition('approved', job, [], user).length === 0; // is valid
+      const { expected, data, msg } = tests[i];
+      const result = validateStateTransition('approved', data, [], ADMIN_USER);
+      const actual = result.length;
+      expect(actual).to.equal(expected, msg);
+    }
+  });
+
+  it('does not allow no access users to approve a job', () => {
+    const expected = 'permission';
+    const result = validateStateTransition('approved', JOB, [], NO_ACCESS_USER);
+
+    const actual = result
+      .map(({ type }) => type)
+      .sort()
+      .join(',');
+    expect(actual).to.equal(expected);
+  });
+
+  it('only allows property managers to approve small PM jobs', () => {
+    const tests = config.typeValues.map(type => ({
+      expected: type === 'small:pm',
+      data: type,
+      msg: `${
+        type === 'small:pm' ? 'allows' : 'rejects'
+      } property manager approval of ${type} job's bid`,
+    }));
+
+    for (let i = 0; i < tests.length; i++) {
+      const { expected, data, msg } = tests[i];
+      const job = { ...JSON.parse(JSON.stringify(JOB)), type: data };
+      const result = validateStateTransition(
+        'approved',
+        job,
+        [],
+        PROPERTY_MANAGER
+      );
+      const actual = result.map(({ type }) => type).join('') !== 'permission';
+      expect(actual).to.equal(expected, msg);
+    }
+  });
+
+  it('only allows corporate users to approve small jobs', () => {
+    const tests = config.typeValues.map(type => ({
+      expected: type.search('small') === 0,
+      data: type,
+      msg: `${
+        type.search('small') === 0 ? 'allows' : 'rejects'
+      } corporate approval of ${type} job's bid`,
+    }));
+
+    for (let i = 0; i < tests.length; i++) {
+      const { expected, data, msg } = tests[i];
+      const job = { ...JSON.parse(JSON.stringify(JOB)), type: data };
+      const result = validateStateTransition(
+        'approved',
+        job,
+        [],
+        CORPORATE_USER
+      );
+      const actual = result.map(({ type }) => type).join('') !== 'permission';
+      expect(actual).to.equal(expected, msg);
+    }
+  });
+
+  it('allows admins to approve all job types', () => {
+    const tests = config.typeValues.map(type => ({
+      expected: true,
+      data: type,
+      msg: `allows admins to approve of ${type} job's bid`,
+    }));
+
+    for (let i = 0; i < tests.length; i++) {
+      const { expected, data, msg } = tests[i];
+      const job = { ...JSON.parse(JSON.stringify(JOB)), type: data };
+      const result = validateStateTransition('approved', job, [], ADMIN_USER);
+      const actual = result.map(({ type }) => type).join('') !== 'permission';
       expect(actual).to.equal(expected, msg);
     }
   });

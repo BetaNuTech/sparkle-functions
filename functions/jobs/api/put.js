@@ -178,16 +178,14 @@ module.exports = function createPutJob(fs) {
       ? validateStateTransition(update.state, job, bids, user)
       : [];
     const hasStateValidationErrors = stateValidationErrors.length > 0;
+    const hasPermissionError =
+      stateValidationErrors.filter(({ type }) => type === 'permission').length >
+      0;
 
     // Reject invalid state transition request
     if (hasStateValidationErrors) {
-      const hasPermissionsError =
-        stateValidationErrors
-          .map(({ path }) => path)
-          .join('')
-          .search('admin') > -1;
-      const statusCode = hasPermissionsError ? 403 : 400;
-      const logErrMsg = hasPermissionsError
+      const statusCode = hasPermissionError ? 403 : 400;
+      const logErrMsg = hasPermissionError
         ? `${PREFIX} user lacks permission to transition to state: "${update.state}"`
         : `${PREFIX} failed to transition to state: "${update.state}"`;
       log.error(logErrMsg);

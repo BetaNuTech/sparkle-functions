@@ -171,6 +171,9 @@
               },
               "state": {
                 "type": "string"
+              },
+              "expediteReason": {
+                "type": "string"
               }
             }
           }
@@ -1783,6 +1786,9 @@
                 },
                 "minBids": {
                   "type": "number"
+                },
+                "expediteReason": {
+                  "type": "string"
                 }
               }
             },
