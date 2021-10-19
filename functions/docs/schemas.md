@@ -204,6 +204,7 @@ interface Job {
   property: string;
   createdAt?: number;
   updatedAt?: number;
+  expediteReason? string;
   state?: 'open' | 'approved' | 'authorized' | 'complete';
   type: string;
 }
