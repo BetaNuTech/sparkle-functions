@@ -12,6 +12,7 @@ const inspections = require('./inspections');
 const jobs = require('./jobs');
 const users = require('./users');
 const clients = require('./clients');
+const teams = require('./teams');
 const authUser = require('./utils/auth-firebase-user');
 const authUserCrud = require('./middleware/auth-user-crud');
 const authTrelloReq = require('./utils/auth-trello-request');
@@ -304,6 +305,9 @@ module.exports = (fs, auth, settings, storage) => {
     }),
     jobs.api.postBid(fs)
   );
+
+  // Create Team
+  app.post('/v0/teams', authUser(fs, auth, true), teams.api.post(fs));
 
   return app;
 };

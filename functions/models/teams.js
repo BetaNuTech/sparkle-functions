@@ -31,6 +31,16 @@ module.exports = modelSetup({
   },
 
   /**
+   * Create a firestore document id
+   * @param  {admin.firestore} db
+   * @return {String}
+   */
+  createId(db) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    return db.collection(TEAMS_COLLECTION).doc().id;
+  },
+
+  /**
    * Create a Firestore team
    * @param  {admin.firestore} fs
    * @param  {String} teamId
@@ -110,5 +120,39 @@ module.exports = modelSetup({
       .collection(TEAMS_COLLECTION)
       .doc(teamId)
       .delete();
+  },
+
+  /**
+   * Query all teams
+   * @param  {admin.firestore} db
+   * @param  {Object} query
+   * @param  {firestore.transaction?} transaction
+   * @return {Promise} - resolves {DataSnapshot}
+   */
+  query(db, query, transaction) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(query && typeof query === 'object', 'has query');
+
+    let dbQuery = db.collection(TEAMS_COLLECTION);
+
+    // Append each query as where clause
+    Object.keys(query).forEach(attr => {
+      const queryArgs = query[attr];
+      assert(
+        queryArgs && Array.isArray(queryArgs),
+        'has query arguments array'
+      );
+      dbQuery = dbQuery.where(attr, ...queryArgs);
+    });
+
+    if (transaction) {
+      assert(
+        typeof transaction.get === 'function',
+        'has firestore transaction'
+      );
+      return Promise.resolve(transaction.get(dbQuery));
+    }
+
+    return dbQuery.get(query);
   },
 });
