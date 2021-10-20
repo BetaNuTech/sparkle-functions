@@ -136,6 +136,18 @@ New Data:
 {{#if currentPhotoURL}}photoURL: {{{currentPhotoURL}}}{{/if}}
 \`\`\`
 *Edited by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // ////////////////
+  // Team Creation
+  // ////////////////
+
+  'team-created-summary':
+    '{{{name}}} created{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'team-created-markdown-body': `\`\`\`
+Name: {{{name}}}
+\`\`\`
+*Created by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
 };
 
 /**

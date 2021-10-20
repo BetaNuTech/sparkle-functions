@@ -116,7 +116,7 @@ describe('Properties | API | POST', () => {
     const result = sinon.stub(notificationsModel, 'addRecord').resolves();
 
     await request(createApp())
-      .post(`/t?incognitoMode=true`)
+      .post('/t?incognitoMode=true')
       .send(property)
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(201);

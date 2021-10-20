@@ -45,6 +45,62 @@
   "consumes": ["application/json"],
   "produces": ["application/vnd.api+json"],
   "paths": {
+    "/v0/teams": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": ["Teams"],
+        "summary": "Creating a new team. Only for admin users",
+        "parameters": [
+          {
+            "name": "team",
+            "in": "body",
+            "description": "team details",
+            "required": ["title", "type"],
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success for creating team api",
+            "schema": {
+              "$ref": "#/definitions/CREATETEAM"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "409": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS409"
+            }
+          }
+        }
+      }
+    },
     "/v0/properties/{propertyId}/jobs": {
       "parameters": [
         {
@@ -2004,7 +2060,7 @@
         }
       }
     },
-    "CREATEINSPECTION": {
+    "CREATETEAM": {
       "type": "object",
       "properties": {
         "data": {
@@ -2016,7 +2072,28 @@
             "type": {
               "type": "string"
             },
-            "property": {
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "team": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "CREATEINSPECTION": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
               "type": "string"
             },
             "attributes": {
