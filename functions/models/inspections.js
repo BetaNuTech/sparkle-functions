@@ -134,7 +134,7 @@ module.exports = modelSetup({
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
-      'has deficient item id'
+      'has inspection id'
     );
     assert(data && typeof data === 'object', 'has update data');
     const docRef = fs.collection(INSPECTION_COLLECTION).doc(inspectionId);
