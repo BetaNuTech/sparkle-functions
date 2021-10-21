@@ -148,6 +148,23 @@ New Data:
 Name: {{{name}}}
 \`\`\`
 *Created by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // //////////////
+  // Team Update
+  // //////////////
+
+  'team-update-summary':
+    '{{{previousName}}} updated to {{{name}}}{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'team-update-markdown-body': `Previous Data:
+\`\`\`
+Name: {{{previousName}}}
+\`\`\`
+New Data:
+\`\`\`
+Name: {{{name}}}
+\`\`\`
+*Edited by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
 };
 
 /**

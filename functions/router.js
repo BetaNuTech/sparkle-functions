@@ -309,5 +309,8 @@ module.exports = (fs, auth, settings, storage) => {
   // Create Team
   app.post('/v0/teams', authUser(fs, auth, true), teams.api.post(fs));
 
+  // Update Team
+  app.patch('/v0/teams/:teamId', authUser(fs, auth, true), teams.api.patch(fs));
+
   return app;
 };

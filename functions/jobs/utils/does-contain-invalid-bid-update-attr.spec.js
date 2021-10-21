@@ -18,6 +18,7 @@ describe('Jobs | Utils | Does Bid Update Contain Invalid Attr', () => {
       scope: config.bids.scopeTypes[0],
       completeAt: 123,
       startAt: 1,
+      vendorLicense: true,
     });
     expect(actual).to.equal(expected);
   });
