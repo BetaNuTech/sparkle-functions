@@ -165,6 +165,16 @@ New Data:
 Name: {{{name}}}
 \`\`\`
 *Edited by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // ////////////////
+  // Team Deletion
+  // ////////////////
+
+  'team-delete-summary':
+    'The team {{{name}}} deleted{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'team-delete-markdown-body': `\`{{{name}}} deleted\`
+*Deleted by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
 };
 
 /**

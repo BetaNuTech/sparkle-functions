@@ -123,7 +123,7 @@ module.exports = function createPatchTeam(db) {
       });
     }
 
-    // Generate unique team ID
+    // Update team
     try {
       await teamsModel.updateRecord(db, teamId, { name: updatedTeamName });
     } catch (err) {
