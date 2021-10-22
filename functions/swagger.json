@@ -73,7 +73,7 @@
         ],
         "responses": {
           "201": {
-            "description": "Success for creating team api",
+            "description": "Successful team creation",
             "schema": {
               "$ref": "#/definitions/UPSERTTEAM"
             }
@@ -136,14 +136,9 @@
         ],
         "responses": {
           "201": {
-            "description": "Success for updating team api",
+            "description": "Successful team update",
             "schema": {
               "$ref": "#/definitions/UPSERTTEAM"
-            }
-          },
-          "500": {
-            "schema": {
-              "$ref": "#/definitions/ERROR"
             }
           },
           "400": {
@@ -154,6 +149,46 @@
           "401": {
             "schema": {
               "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "409": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS409"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Teams"],
+        "summary": "Deleting a team. Only for admin users",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful team delete, contains no payload or body"
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
             }
           },
           "409": {
@@ -210,7 +245,7 @@
         ],
         "responses": {
           "201": {
-            "description": "Success for creating job api",
+            "description": "Successful for creating job api",
             "schema": {
               "$ref": "#/definitions/JOBS"
             }

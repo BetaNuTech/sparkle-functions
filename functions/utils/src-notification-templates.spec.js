@@ -137,6 +137,14 @@ describe('Utils | Source Notifications Templates', () => {
         template: 'team-update-markdown-body',
         values: ['name', 'previousName', 'authorName', 'authorEmail'],
       },
+      {
+        template: 'team-delete-summary',
+        values: ['name', 'authorName'],
+      },
+      {
+        template: 'team-delete-markdown-body',
+        values: ['name', 'authorName', 'authorEmail'],
+      },
     ];
 
     // Sanity check

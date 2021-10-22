@@ -312,5 +312,12 @@ module.exports = (fs, auth, settings, storage) => {
   // Update Team
   app.patch('/v0/teams/:teamId', authUser(fs, auth, true), teams.api.patch(fs));
 
+  // Delete Team
+  app.delete(
+    '/v0/teams/:teamId',
+    authUser(fs, auth, true),
+    teams.api.delete(fs)
+  );
+
   return app;
 };
