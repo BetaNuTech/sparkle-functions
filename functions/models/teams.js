@@ -133,15 +133,22 @@ module.exports = modelSetup({
    * Remove Firestore Team
    * @param  {firebaseAdmin.firestore} db - Firestore DB instance
    * @param  {String} teamId
-   * @return {Promise}
+   * @param  {firestore.batch?} batch
+   * @return {Promise<void>}
    */
-  removeRecord(db, teamId) {
+  removeRecord(db, teamId, batch) {
     assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(teamId && typeof teamId === 'string', 'has team id');
-    return db
-      .collection(TEAMS_COLLECTION)
-      .doc(teamId)
-      .delete();
+
+    const doc = db.collection(TEAMS_COLLECTION).doc(teamId);
+
+    if (batch) {
+      assert(typeof batch.delete === 'function', 'has batch instance');
+      batch.delete(doc);
+      return Promise.resolve();
+    }
+
+    return doc.delete();
   },
 
   /**
