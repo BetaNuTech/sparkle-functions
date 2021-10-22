@@ -67,8 +67,8 @@ module.exports = function createPost(fs) {
     if (!incognitoMode) {
       try {
         // Notify of new inspection report
-        await notificationsModel.addRecord(fs, undefined, {
-          name: property.name,
+        await notificationsModel.addRecord(fs, {
+          title: 'Property Creation',
           summary: notifyTemplate('property-creation-summary', {
             authorName,
             authorEmail,

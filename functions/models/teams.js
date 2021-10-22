@@ -13,11 +13,11 @@ module.exports = modelSetup({
    * @param  {firestore.transaction?} transaction
    * @return {Promise}
    */
-  findRecord(fs, teamId, transaction) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  findRecord(db, teamId, transaction) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(teamId && typeof teamId === 'string', 'has team id');
 
-    const query = fs.collection(TEAMS_COLLECTION).doc(teamId);
+    const query = db.collection(TEAMS_COLLECTION).doc(teamId);
 
     if (transaction) {
       assert(
@@ -31,17 +31,27 @@ module.exports = modelSetup({
   },
 
   /**
+   * Create a firestore document id
+   * @param  {admin.firestore} db
+   * @return {String}
+   */
+  createId(db) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    return db.collection(TEAMS_COLLECTION).doc().id;
+  },
+
+  /**
    * Create a Firestore team
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String} teamId
    * @param  {Object} data
    * @return {Promise} - resolves {WriteResult}
    */
-  createRecord(fs, teamId, data) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  createRecord(db, teamId, data) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(teamId && typeof teamId === 'string', 'has team id');
     assert(data && typeof data === 'object', 'has data');
-    return fs
+    return db
       .collection(TEAMS_COLLECTION)
       .doc(teamId)
       .create(data);
@@ -49,17 +59,17 @@ module.exports = modelSetup({
 
   /**
    * Create or update a Firestore team
-   * @param  {firebaseAdmin.firestore} fs
+   * @param  {firebaseAdmin.firestore} db
    * @param  {String}  teamId
    * @param  {Object}  data
    * @return {Promise} - resolves {DocumentReference}
    */
-  async upsertRecord(fs, teamId, data) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  async upsertRecord(db, teamId, data) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(teamId && typeof teamId === 'string', 'has team id');
     assert(data && typeof data === 'object', 'has upsert data');
 
-    const docRef = fs.collection(TEAMS_COLLECTION).doc(teamId);
+    const docRef = db.collection(TEAMS_COLLECTION).doc(teamId);
     let docSnap = null;
 
     try {
@@ -98,17 +108,73 @@ module.exports = modelSetup({
   },
 
   /**
+   * Update Firestore Team
+   * @param  {admin.firestore} db - Firestore DB instance
+   * @param  {String} teamId
+   * @param  {Object} data
+   * @param  {firestore.batch?} batch
+   * @return {Promise<void>}
+   */
+  updateRecord(db, teamId, data, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(teamId && typeof teamId === 'string', 'has team id');
+    assert(data && typeof data === 'object', 'has update data');
+    const docRef = db.collection(TEAMS_COLLECTION).doc(teamId);
+
+    if (batch) {
+      assert(typeof batch.update === 'function', 'has batch instance');
+      return Promise.resolve(batch.update(docRef, data));
+    }
+
+    return docRef.update(data);
+  },
+
+  /**
    * Remove Firestore Team
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {firebaseAdmin.firestore} db - Firestore DB instance
    * @param  {String} teamId
    * @return {Promise}
    */
-  removeRecord(fs, teamId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  removeRecord(db, teamId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(teamId && typeof teamId === 'string', 'has team id');
-    return fs
+    return db
       .collection(TEAMS_COLLECTION)
       .doc(teamId)
       .delete();
+  },
+
+  /**
+   * Query all teams
+   * @param  {admin.firestore} db
+   * @param  {Object} query
+   * @param  {firestore.transaction?} transaction
+   * @return {Promise} - resolves {DataSnapshot}
+   */
+  query(db, query, transaction) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(query && typeof query === 'object', 'has query');
+
+    let dbQuery = db.collection(TEAMS_COLLECTION);
+
+    // Append each query as where clause
+    Object.keys(query).forEach(attr => {
+      const queryArgs = query[attr];
+      assert(
+        queryArgs && Array.isArray(queryArgs),
+        'has query arguments array'
+      );
+      dbQuery = dbQuery.where(attr, ...queryArgs);
+    });
+
+    if (transaction) {
+      assert(
+        typeof transaction.get === 'function',
+        'has firestore transaction'
+      );
+      return Promise.resolve(transaction.get(dbQuery));
+    }
+
+    return dbQuery.get(query);
   },
 });

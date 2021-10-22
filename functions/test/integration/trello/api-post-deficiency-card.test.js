@@ -239,6 +239,7 @@ describe('Trello | API | POST Deficiency Card', () => {
     sinon
       .stub(inspectionsModel, 'findRecord')
       .resolves(createSnapshot(inspectionId, inspection));
+    sinon.stub(trelloService, 'publishAllCardAttachments').resolves([]);
 
     const actual = {};
     sinon
@@ -261,6 +262,84 @@ describe('Trello | API | POST Deficiency Card', () => {
         done();
       })
       .catch(done);
+  });
+
+  it('publishes any inspection item photos to new Trello card as attachments', async () => {
+    const expected = ['google.com/ok.jpg', 'google.com/okb.jpg'];
+    const deficiencyId = uuid();
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const itemId = uuid();
+    const integrationId = `trello-${propertyId}`;
+    const inspection = mocking.createInspection({
+      property: propertyId,
+      inspectionCompleted: true,
+    });
+    const photoDataOneId = `${Math.round(Date.now() / 1000)}`;
+    const photoDataTwoId = `${Math.round((Date.now() - 1000) / 1000)}`;
+    const item = mocking.createCompletedMainInputItem(
+      'twoactions_checkmarkx',
+      true,
+      {
+        photosData: {
+          [photoDataOneId]: mocking.createInspectionItemPhotoData({
+            downloadURL: expected[0],
+          }),
+          [photoDataTwoId]: mocking.createInspectionItemPhotoData({
+            downloadURL: expected[1],
+          }),
+        },
+      }
+    );
+    inspection.template.trackDeficientItems = true;
+    inspection.template.items[itemId] = item;
+    const deficiency = mocking.createDeficiency(
+      {
+        property: propertyId,
+        inspection: inspectionId,
+        item: itemId,
+        itemTitle: expected.name,
+      },
+      inspection,
+      item
+    );
+    const property = mocking.createProperty();
+    const trelloIntegration = mocking.createPropertyTrelloIntegration();
+
+    sinon
+      .stub(deficiencyModel, 'findRecord')
+      .resolves(createSnapshot(deficiencyId, deficiency));
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(createSnapshot(propertyId, property));
+    sinon.stub(systemModel, 'findTrelloCardId').resolves('');
+    sinon
+      .stub(integrationsModel, 'findTrello')
+      .resolves(createSnapshot('trello'));
+    sinon
+      .stub(integrationsModel, 'findTrelloProperty')
+      .resolves(createSnapshot(integrationId, trelloIntegration));
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(createSnapshot(inspectionId, inspection));
+    sinon
+      .stub(trelloService, 'publishListCard')
+      .resolves({ id: uuid(), shortUrl: 'trello.com/short' });
+    sinon.stub(systemModel, 'upsertPropertyTrello').rejects(Error('stop here'));
+
+    let actual = [];
+    sinon
+      .stub(trelloService, 'publishAllCardAttachments')
+      .callsFake((openList, authToken, apikey, urls) => {
+        actual = urls.sort();
+        return Promise.resolve(urls.map(() => uuid()));
+      });
+
+    await request(createApp())
+      .post(`/t/${deficiencyId}`)
+      .send();
+
+    expect(actual).to.deep.equal(expected);
   });
 
   it('returns JSON-API formatted trello card record to a successful request', done => {
@@ -327,6 +406,7 @@ describe('Trello | API | POST Deficiency Card', () => {
       .stub(inspectionsModel, 'findRecord')
       .resolves(createSnapshot(inspectionId, inspection));
     sinon.stub(trelloService, 'publishListCard').resolves(trelloResponse);
+    sinon.stub(trelloService, 'publishAllCardAttachments').resolves([]);
     sinon.stub(systemModel, 'upsertPropertyTrello').resolves();
     sinon.stub(deficiencyModel, 'updateRecord').resolves();
 
@@ -398,6 +478,7 @@ describe('Trello | API | POST Deficiency Card', () => {
       .stub(inspectionsModel, 'findRecord')
       .resolves(createSnapshot(inspectionId, inspection));
     sinon.stub(systemModel, 'upsertPropertyTrello').resolves();
+    sinon.stub(trelloService, 'publishAllCardAttachments').resolves([]);
     sinon.stub(deficiencyModel, 'updateRecord').resolves();
     let actual = '';
     sinon
@@ -468,6 +549,7 @@ describe('Trello | API | POST Deficiency Card', () => {
       .stub(inspectionsModel, 'findRecord')
       .resolves(createSnapshot(inspectionId, inspection));
     sinon.stub(systemModel, 'upsertPropertyTrello').resolves();
+    sinon.stub(trelloService, 'publishAllCardAttachments').resolves([]);
     sinon.stub(deficiencyModel, 'updateRecord').resolves();
     let actual = '';
     sinon
@@ -557,6 +639,7 @@ ${CLIENT_API_DOMAIN.replace('{{propertyId}}', propertyId).replace(
       .stub(inspectionsModel, 'findRecord')
       .resolves(createSnapshot(inspectionId, inspection));
     sinon.stub(systemModel, 'upsertPropertyTrello').resolves();
+    sinon.stub(trelloService, 'publishAllCardAttachments').resolves([]);
     sinon.stub(deficiencyModel, 'updateRecord').resolves();
     let actual = '';
     sinon

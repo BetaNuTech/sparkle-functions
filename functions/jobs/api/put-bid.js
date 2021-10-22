@@ -176,7 +176,7 @@ module.exports = function createPutJobsBid(fs) {
         errors: [
           {
             source: { pointer: 'body' },
-            title: 'Job already has approved bids',
+            title: 'Job already has an approved bid',
             detail: 'Unapprove another bid first',
           },
         ],

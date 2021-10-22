@@ -145,7 +145,7 @@ describe('Jobs | API | PUT Bid', () => {
   });
 
   it("rejects request to update bid to approved if bid's job already has an approved bid", async () => {
-    const expected = 'Job already has approved bids';
+    const expected = 'Job already has an approved bid';
     const update = { state: 'approved' };
     const property = mocking.createProperty();
     const job = mocking.createJob();

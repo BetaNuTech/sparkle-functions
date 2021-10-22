@@ -58,6 +58,22 @@ module.exports = (user, update, bid, job) => {
         });
       }
 
+      if (!bid.vendorW9) {
+        errors.push({
+          path: 'vendorW9',
+          message: 'bid requires approval of vendor W9',
+          type: 'conflict',
+        });
+      }
+
+      if (!bid.vendorInsurance) {
+        errors.push({
+          path: 'vendorInsurance',
+          message: 'bid requires approval of vendor insurance',
+          type: 'conflict',
+        });
+      }
+
       const jobType = `${job.type || ''}`;
       const permissionLevel = userUtil.getLevelName(user);
       const canApproveBid = canUserApproveBidForJobType(

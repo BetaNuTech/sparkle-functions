@@ -28,6 +28,8 @@ const READY_TO_APPROVE_BID = mocking.createBid({
   costMin: 1,
   startAt: 1,
   completeAt: 2,
+  vendorW9: true,
+  vendorInsurance: true,
 });
 
 describe('Jobs | Utils | Validate Bid State Update', () => {
@@ -142,7 +144,8 @@ describe('Jobs | Utils | Validate Bid State Update', () => {
   });
 
   it('rejects transition to approved if required bid attributes are not set', () => {
-    const expected = 'completeAt,costMax,costMin,startAt';
+    const expected =
+      'completeAt,costMax,costMin,startAt,vendorInsurance,vendorW9';
     const result = validateBidStateUpdate(
       ADMIN_USER,
       {
@@ -168,7 +171,10 @@ describe('Jobs | Utils | Validate Bid State Update', () => {
       JOB
     );
 
-    const actual = result.map(({ type }) => type).join(',');
+    const actual = result
+      .map(({ type }) => type)
+      .sort()
+      .join(',');
     expect(actual).to.equal(expected);
   });
 

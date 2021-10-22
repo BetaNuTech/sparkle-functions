@@ -204,6 +204,7 @@ interface Job {
   property: string;
   createdAt?: number;
   updatedAt?: number;
+  expediteReason? string;
   state?: 'open' | 'approved' | 'authorized' | 'complete';
   type: string;
 }
@@ -226,6 +227,9 @@ interface bid {
   vendor: string;
   vendorDetails?: string;
   scope: 'local' | 'national';
+  vendorW9?: boolean;
+  vendorInsurance?: boolean;
+  vendorLicense?: boolean;
 }
 ```
 

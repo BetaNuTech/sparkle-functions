@@ -105,15 +105,11 @@ module.exports = function createPutProperty(fs) {
       );
     }
 
-    // TODO handle `logo` images
-    // TODO handle `banner` images
-    // TODO handle `photo` images
-
     if (!incognitoMode) {
       try {
         // Notify of new inspection report
-        await notificationsModel.addRecord(fs, undefined, {
-          name: property.name,
+        await notificationsModel.addRecord(fs, {
+          title: 'Property Update',
           summary: notifyTemplate('property-update-summary', {
             authorName,
             authorEmail,

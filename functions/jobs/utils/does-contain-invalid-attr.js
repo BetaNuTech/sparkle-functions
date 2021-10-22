@@ -16,6 +16,7 @@ module.exports = update => {
     'scopeOfWork',
     'type',
     'authorizedRules',
+    'expediteReason',
     'state',
     'trelloCardURL',
   ];
