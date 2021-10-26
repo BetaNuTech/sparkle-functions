@@ -62,7 +62,7 @@ describe('Jobs | API | PUT', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot()); // empty
 
     // Execute
@@ -85,7 +85,7 @@ describe('Jobs | API | PUT', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon.stub(jobsModel, 'findRecord').resolves(firebase.createDocSnapshot()); // empty
 
@@ -113,7 +113,7 @@ describe('Jobs | API | PUT', () => {
 
     // Stubs
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon
       .stub(jobsModel, 'findRecord')
@@ -136,7 +136,7 @@ describe('Jobs | API | PUT', () => {
 
     // Stubs
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon
       .stub(jobsModel, 'findRecord')
@@ -172,7 +172,7 @@ describe('Jobs | API | PUT', () => {
 
     // Stubs
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon
       .stub(jobsModel, 'findRecord')
@@ -196,6 +196,50 @@ describe('Jobs | API | PUT', () => {
     expect(actual).to.contain(expected);
   });
 
+  it('rejects transition to approved when user lacks permission level for the job type', async () => {
+    const expected = 'type';
+    const update = { state: 'approved' };
+    const propertyId = uuid();
+    const jobId = uuid();
+    const property = mocking.createProperty();
+    const job = mocking.createJob({
+      type: 'large:am', // requires admin
+    });
+    const jobRef = firebase.createDocRef({ id: jobId });
+
+    // Corporate users cannot approve large jobs
+    const corporateUser = mocking.createUser({ corporate: true });
+
+    // Stub Requests
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(propertyId, property));
+    sinon
+      .stub(jobsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(JOB_ID, job));
+    sinon.stub(jobsModel, 'createDocRef').returns(jobRef);
+    sinon
+      .stub(jobsModel, 'findAssociatedBids')
+      .resolves(firebase.createQuerySnapshot()); // empty
+
+    // Execute
+    const res = await request(createApp(corporateUser))
+      .put(`/t/${PROPERTY_ID}/${JOB_ID}`)
+      .send(update)
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(403); // Assertion
+
+    // Assertions
+    const errors = res.body.errors || [];
+    const sources = errors.map(err => err.source || null).filter(Boolean);
+    const actual = sources
+      .map(src => src.pointer || '')
+      .filter(Boolean)
+      .sort()
+      .join(',');
+    expect(actual).to.equal(expected);
+  });
+
   it('rejects transitioning a job to authorized when it lacks approved bid requirement', async () => {
     const expected = 'bids';
     const update = { state: 'authorized' };
@@ -215,7 +259,7 @@ describe('Jobs | API | PUT', () => {
 
     // Stubs
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon
       .stub(jobsModel, 'findRecord')
@@ -258,7 +302,7 @@ describe('Jobs | API | PUT', () => {
 
     // Stubs
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon
       .stub(jobsModel, 'findRecord')
@@ -317,7 +361,7 @@ describe('Jobs | API | PUT', () => {
 
     // Stubs
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon
       .stub(jobsModel, 'findRecord')
@@ -381,7 +425,7 @@ describe('Jobs | API | PUT', () => {
 
     // Stubs
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon
       .stub(jobsModel, 'findRecord')

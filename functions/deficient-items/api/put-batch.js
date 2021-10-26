@@ -150,7 +150,7 @@ module.exports = function createPutDeficiencyBatch(fs) {
 
       if (hasDeficiencyUpdates) {
         try {
-          await deficiencyModel.firestoreUpdateRecord(
+          await deficiencyModel.updateRecord(
             fs,
             deficiencyId,
             deficiencyUpdates,

@@ -25,7 +25,7 @@ describe('Jobs | API | POST', () => {
     const property = mocking.createProperty();
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, property);
+    await propertiesModel.createRecord(fs, propertyId, property);
 
     // Execute
     const app = createApp();

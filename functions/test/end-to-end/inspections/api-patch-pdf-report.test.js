@@ -33,7 +33,7 @@ const PROPERTY_DATA = {
 
 describe('Inspections | API | PATCH PDF Report', () => {
   afterEach(async () => {
-    const inspDoc = await inspectionsModel.firestoreFindRecord(fs, INSP_ID);
+    const inspDoc = await inspectionsModel.findRecord(fs, INSP_ID);
     const reportURL = (inspDoc.data() || {}).inspectionReportURL || '';
 
     // Delete any generated PDF
@@ -48,8 +48,8 @@ describe('Inspections | API | PATCH PDF Report', () => {
 
   it("should update inspection's report attributes on success", async function() {
     // Setup database
-    await inspectionsModel.firestoreCreateRecord(fs, INSP_ID, INSPECTION_DATA);
-    await propertiesModel.firestoreCreateRecord(fs, PROPERTY_ID, PROPERTY_DATA);
+    await inspectionsModel.createRecord(fs, INSP_ID, INSPECTION_DATA);
+    await propertiesModel.createRecord(fs, PROPERTY_ID, PROPERTY_DATA);
 
     // Execute
     const app = createApp();

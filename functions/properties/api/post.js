@@ -4,7 +4,7 @@ const validate = require('../utils/validate');
 const notificationsModel = require('../../models/notifications');
 const notifyTemplate = require('../../utils/src-notification-templates');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
-const getFullName = require('../../utils/user');
+const { getFullName } = require('../../utils/user');
 const log = require('../../utils/logger');
 
 const PREFIX = 'property: api: post:';
@@ -26,7 +26,7 @@ module.exports = function createPost(fs) {
    */
   return async (req, res) => {
     const property = req.body;
-    const authorName = getFullName(req.user);
+    const authorName = getFullName(req.user || {});
     const authorEmail = req.user ? req.user.email : '';
     const send500Error = create500ErrHandler(PREFIX, res);
 
@@ -59,7 +59,7 @@ module.exports = function createPost(fs) {
 
     // Create new property record
     try {
-      await propertiesModel.firestoreCreateRecord(fs, propertyId, property);
+      await propertiesModel.createRecord(fs, propertyId, property);
     } catch (err) {
       return send500Error(err, 'property creation failed', 'unexpected error');
     }
@@ -67,8 +67,8 @@ module.exports = function createPost(fs) {
     if (!incognitoMode) {
       try {
         // Notify of new inspection report
-        await notificationsModel.firestoreAddRecord(fs, undefined, {
-          name: property.name,
+        await notificationsModel.addRecord(fs, {
+          title: 'Property Creation',
           summary: notifyTemplate('property-creation-summary', {
             authorName,
             authorEmail,

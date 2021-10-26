@@ -20,13 +20,13 @@ describe('Properties | Write | V2', () => {
     const userData = createUser({}, [teamId, [propertyId]]);
 
     // Setup Database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propData);
-    await teamsModel.firestoreCreateRecord(fs, teamId, teamData);
-    await usersModel.firestoreCreateRecord(fs, user1Id, userData);
-    await usersModel.firestoreCreateRecord(fs, user2Id, userData);
-    const before = await propertiesModel.firestoreFindRecord(fs, propertyId);
-    await propertiesModel.firestoreUpsertRecord(fs, propertyId, { team: '' }); // remove team
-    const after = await propertiesModel.firestoreFindRecord(fs, propertyId);
+    await propertiesModel.createRecord(fs, propertyId, propData);
+    await teamsModel.createRecord(fs, teamId, teamData);
+    await usersModel.createRecord(fs, user1Id, userData);
+    await usersModel.createRecord(fs, user2Id, userData);
+    const before = await propertiesModel.findRecord(fs, propertyId);
+    await propertiesModel.upsertRecord(fs, propertyId, { team: '' }); // remove team
+    const after = await propertiesModel.findRecord(fs, propertyId);
 
     // Execute
     const changeSnap = test.makeChange(before, after);
@@ -34,9 +34,9 @@ describe('Properties | Write | V2', () => {
     await wrapped(changeSnap, { params: { propertyId } });
 
     // Test results
-    const teamResult = await teamsModel.firestoreFindRecord(fs, teamId);
-    const user1Result = await usersModel.firestoreFindRecord(fs, user1Id);
-    const user2Result = await usersModel.firestoreFindRecord(fs, user2Id);
+    const teamResult = await teamsModel.findRecord(fs, teamId);
+    const user1Result = await usersModel.findRecord(fs, user1Id);
+    const user2Result = await usersModel.findRecord(fs, user2Id);
 
     // Assertions
     [
@@ -71,13 +71,13 @@ describe('Properties | Write | V2', () => {
     const userData = createUser({}, [teamId]);
 
     // Setup Database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propData);
-    await teamsModel.firestoreCreateRecord(fs, teamId, teamData);
-    await usersModel.firestoreCreateRecord(fs, user1Id, userData);
-    await usersModel.firestoreCreateRecord(fs, user2Id, userData);
-    const before = await propertiesModel.firestoreFindRecord(fs, propertyId);
-    await propertiesModel.firestoreUpsertRecord(fs, propertyId, propUpdate); // remove team
-    const after = await propertiesModel.firestoreFindRecord(fs, propertyId);
+    await propertiesModel.createRecord(fs, propertyId, propData);
+    await teamsModel.createRecord(fs, teamId, teamData);
+    await usersModel.createRecord(fs, user1Id, userData);
+    await usersModel.createRecord(fs, user2Id, userData);
+    const before = await propertiesModel.findRecord(fs, propertyId);
+    await propertiesModel.upsertRecord(fs, propertyId, propUpdate); // remove team
+    const after = await propertiesModel.findRecord(fs, propertyId);
 
     // Execute
     const changeSnap = test.makeChange(before, after);
@@ -85,9 +85,9 @@ describe('Properties | Write | V2', () => {
     await wrapped(changeSnap, { params: { propertyId } });
 
     // Test results
-    const teamResult = await teamsModel.firestoreFindRecord(fs, teamId);
-    const user1Result = await usersModel.firestoreFindRecord(fs, user1Id);
-    const user2Result = await usersModel.firestoreFindRecord(fs, user2Id);
+    const teamResult = await teamsModel.findRecord(fs, teamId);
+    const user1Result = await usersModel.findRecord(fs, user1Id);
+    const user2Result = await usersModel.findRecord(fs, user2Id);
 
     // Assertions
     [
@@ -125,14 +125,14 @@ describe('Properties | Write | V2', () => {
     const user2Data = createUser({}, [prevTeamId, [propertyId]], [currTeamId]);
 
     // Setup Database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propData);
-    await teamsModel.firestoreCreateRecord(fs, prevTeamId, prevTeamData);
-    await teamsModel.firestoreCreateRecord(fs, currTeamId, currTeamData);
-    await usersModel.firestoreCreateRecord(fs, user1Id, user1Data);
-    await usersModel.firestoreCreateRecord(fs, user2Id, user2Data);
-    const before = await propertiesModel.firestoreFindRecord(fs, propertyId);
-    await propertiesModel.firestoreUpsertRecord(fs, propertyId, propUpdate); // remove team
-    const after = await propertiesModel.firestoreFindRecord(fs, propertyId);
+    await propertiesModel.createRecord(fs, propertyId, propData);
+    await teamsModel.createRecord(fs, prevTeamId, prevTeamData);
+    await teamsModel.createRecord(fs, currTeamId, currTeamData);
+    await usersModel.createRecord(fs, user1Id, user1Data);
+    await usersModel.createRecord(fs, user2Id, user2Data);
+    const before = await propertiesModel.findRecord(fs, propertyId);
+    await propertiesModel.upsertRecord(fs, propertyId, propUpdate); // remove team
+    const after = await propertiesModel.findRecord(fs, propertyId);
 
     // Execute
     const changeSnap = test.makeChange(before, after);
@@ -140,10 +140,10 @@ describe('Properties | Write | V2', () => {
     await wrapped(changeSnap, { params: { propertyId } });
 
     // Test results
-    const prevTeamResult = await teamsModel.firestoreFindRecord(fs, prevTeamId);
-    const currTeamResult = await teamsModel.firestoreFindRecord(fs, currTeamId);
-    const user1Result = await usersModel.firestoreFindRecord(fs, user1Id);
-    const user2Result = await usersModel.firestoreFindRecord(fs, user2Id);
+    const prevTeamResult = await teamsModel.findRecord(fs, prevTeamId);
+    const currTeamResult = await teamsModel.findRecord(fs, currTeamId);
+    const user1Result = await usersModel.findRecord(fs, user1Id);
+    const user2Result = await usersModel.findRecord(fs, user2Id);
 
     // Assertions
     [
@@ -185,12 +185,12 @@ describe('Properties | Write | V2', () => {
     const expected = { ...tmplBefore, properties: [propertyId] };
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propData);
-    await templatesModel.firestoreUpsertRecord(fs, tmplOneId, tmplBefore);
-    await templatesModel.firestoreUpsertRecord(fs, tmplTwoId, tmplBefore);
-    const before = await propertiesModel.firestoreFindRecord(fs, propertyId);
-    await propertiesModel.firestoreUpsertRecord(fs, propertyId, propUpdate);
-    const after = await propertiesModel.firestoreFindRecord(fs, propertyId);
+    await propertiesModel.createRecord(fs, propertyId, propData);
+    await templatesModel.upsertRecord(fs, tmplOneId, tmplBefore);
+    await templatesModel.upsertRecord(fs, tmplTwoId, tmplBefore);
+    const before = await propertiesModel.findRecord(fs, propertyId);
+    await propertiesModel.upsertRecord(fs, propertyId, propUpdate);
+    const after = await propertiesModel.findRecord(fs, propertyId);
 
     // Execute
     const changeSnap = test.makeChange(before, after);
@@ -199,8 +199,8 @@ describe('Properties | Write | V2', () => {
 
     // Test results
     const results = await Promise.all([
-      templatesModel.firestoreFindRecord(fs, tmplOneId),
-      templatesModel.firestoreFindRecord(fs, tmplTwoId),
+      templatesModel.findRecord(fs, tmplOneId),
+      templatesModel.findRecord(fs, tmplTwoId),
     ]);
 
     // Assertions
@@ -226,12 +226,12 @@ describe('Properties | Write | V2', () => {
     const propUpdate = { templates: { [tmplTwoId]: true } }; // replace with #2
     const tmplBefore = { name: 'test' };
 
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propData);
-    await templatesModel.firestoreUpsertRecord(fs, tmplOneId, tmplBefore);
-    await templatesModel.firestoreUpsertRecord(fs, tmplTwoId, tmplBefore);
-    const before = await propertiesModel.firestoreFindRecord(fs, propertyId);
-    await propertiesModel.firestoreUpsertRecord(fs, propertyId, propUpdate); // Update
-    const after = await propertiesModel.firestoreFindRecord(fs, propertyId);
+    await propertiesModel.createRecord(fs, propertyId, propData);
+    await templatesModel.upsertRecord(fs, tmplOneId, tmplBefore);
+    await templatesModel.upsertRecord(fs, tmplTwoId, tmplBefore);
+    const before = await propertiesModel.findRecord(fs, propertyId);
+    await propertiesModel.upsertRecord(fs, propertyId, propUpdate); // Update
+    const after = await propertiesModel.findRecord(fs, propertyId);
 
     // Execute
     const changeSnap = test.makeChange(before, after);
@@ -240,8 +240,8 @@ describe('Properties | Write | V2', () => {
 
     // Test results
     const results = await Promise.all([
-      templatesModel.firestoreFindRecord(fs, tmplOneId),
-      templatesModel.firestoreFindRecord(fs, tmplTwoId),
+      templatesModel.findRecord(fs, tmplOneId),
+      templatesModel.findRecord(fs, tmplTwoId),
     ]);
 
     // Assertions

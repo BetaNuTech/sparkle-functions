@@ -18,24 +18,21 @@ describe('Inspections | On Delete | V2', () => {
     const inspData = mocking.createInspection({ property: propertyId });
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propData);
-    await inspectionsModel.firestoreCreateRecord(fs, inspectionId, inspData);
-    const snap = await inspectionsModel.firestoreFindRecord(fs, inspectionId);
-    await inspectionsModel.firestoreDestroyRecord(fs, inspectionId);
+    await propertiesModel.createRecord(fs, propertyId, propData);
+    await inspectionsModel.createRecord(fs, inspectionId, inspData);
+    const snap = await inspectionsModel.findRecord(fs, inspectionId);
+    await inspectionsModel.destroyRecord(fs, inspectionId);
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.inspectionDeleteV2);
     await wrapped(snap, { params: { inspectionId } });
 
     // Test result
-    const resultArchive = await archiveModel.inspection.firestoreFindRecord(
+    const resultArchive = await archiveModel.inspection.findRecord(
       fs,
       inspectionId
     );
-    const resultActive = await inspectionsModel.firestoreFindRecord(
-      fs,
-      inspectionId
-    );
+    const resultActive = await inspectionsModel.findRecord(fs, inspectionId);
 
     // Assertions
     [
@@ -88,21 +85,18 @@ describe('Inspections | On Delete | V2', () => {
     });
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propData);
-    await inspectionsModel.firestoreCreateRecord(fs, insp1Id, inspectionOne);
-    await inspectionsModel.firestoreCreateRecord(fs, insp2Id, inspectionTwo);
-    const snap = await inspectionsModel.firestoreFindRecord(fs, insp1Id);
-    await inspectionsModel.firestoreDestroyRecord(fs, insp1Id);
+    await propertiesModel.createRecord(fs, propertyId, propData);
+    await inspectionsModel.createRecord(fs, insp1Id, inspectionOne);
+    await inspectionsModel.createRecord(fs, insp2Id, inspectionTwo);
+    const snap = await inspectionsModel.findRecord(fs, insp1Id);
+    await inspectionsModel.destroyRecord(fs, insp1Id);
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.inspectionDeleteV2);
     await wrapped(snap, { params: { inspectionId: insp1Id } });
 
     // Test result
-    const propertyDoc = await propertiesModel.firestoreFindRecord(
-      fs,
-      propertyId
-    );
+    const propertyDoc = await propertiesModel.findRecord(fs, propertyId);
     const result = propertyDoc.data();
 
     // Assertions
@@ -173,22 +167,19 @@ describe('Inspections | On Delete | V2', () => {
     };
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propData);
-    await inspectionsModel.firestoreCreateRecord(fs, inspectionId, inspData);
-    await diModel.firestoreCreateRecord(fs, deficiencyId, deficiencyData);
-    const snap = await inspectionsModel.firestoreFindRecord(fs, inspectionId);
-    await inspectionsModel.firestoreRemoveRecord(fs, inspectionId);
+    await propertiesModel.createRecord(fs, propertyId, propData);
+    await inspectionsModel.createRecord(fs, inspectionId, inspData);
+    await diModel.createRecord(fs, deficiencyId, deficiencyData);
+    const snap = await inspectionsModel.findRecord(fs, inspectionId);
+    await inspectionsModel.removeRecord(fs, inspectionId);
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.inspectionDeleteV2);
     await wrapped(snap, { params: { inspectionId } });
 
     // Test result
-    const activeDeficiencySnap = await diModel.firestoreFindRecord(
-      fs,
-      deficiencyId
-    );
-    const archiveDeficiencySnap = await archiveModel.deficientItem.firestoreFindRecord(
+    const activeDeficiencySnap = await diModel.findRecord(fs, deficiencyId);
+    const archiveDeficiencySnap = await archiveModel.deficientItem.findRecord(
       fs,
       deficiencyId
     );

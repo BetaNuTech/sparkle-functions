@@ -15,7 +15,7 @@ module.exports = modelSetup({
    * @param  {String}  itemId
    * @return {Promise} - resolve {Document|Object}
    */
-  async firestoreFindRecord(fs, query) {
+  async findRecord(fs, query) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(Boolean(query), 'has string/object query');
     let propertyId = '';
@@ -57,7 +57,7 @@ module.exports = modelSetup({
         if (deficienciesSnap.size) deficiency = deficienciesSnap.docs[0];
       }
     } catch (err) {
-      throw Error(`${PREFIX}: firestoreFindRecord: Lookup failed: ${err}`);
+      throw Error(`${PREFIX}: findRecord: Lookup failed: ${err}`);
     }
 
     return deficiency;
@@ -70,7 +70,7 @@ module.exports = modelSetup({
    * @param  {firestore.batch?} batch
    * @return {Promise}
    */
-  firestoreRemoveRecord(fs, deficientItemId, batch) {
+  removeRecord(fs, deficientItemId, batch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
@@ -95,7 +95,7 @@ module.exports = modelSetup({
    * @param  {firestore.batch?} batch
    * @return {Promise}
    */
-  firestoreCreateRecord(fs, deficientItemId, data, batch) {
+  createRecord(fs, deficientItemId, data, batch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
@@ -137,7 +137,7 @@ module.exports = modelSetup({
    * @param  {firestore.batch?} batch
    * @return {Promise}
    */
-  firestoreUpdateRecord(fs, deficientItemId, data, batch) {
+  updateRecord(fs, deficientItemId, data, batch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
@@ -165,7 +165,7 @@ module.exports = modelSetup({
    * @param  {String} inspectionId
    * @return {Promise} - resolve {Document|Object}
    */
-  firestoreQueryByInspection(fs, inspectionId) {
+  queryByInspection(fs, inspectionId) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
@@ -186,7 +186,7 @@ module.exports = modelSetup({
    * @param  {firestore.transaction?} transaction
    * @return {Promise} - resolves {QuerySnapshot}
    */
-  firestoreQueryByProperty(fs, propertyId, transaction) {
+  queryByProperty(fs, propertyId, transaction) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     const query = fs

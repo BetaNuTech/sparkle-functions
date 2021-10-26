@@ -32,7 +32,7 @@ module.exports = function createOnDeleteHandler(fs) {
 
     // Remove Firestore template category
     try {
-      await templatesModel.firestoreRemoveCategory(fs, categoryId);
+      await templatesModel.removeCategory(fs, categoryId);
     } catch (err) {
       log.error(`${PREFIX} Failed to remove category from templates: ${err}`);
     }

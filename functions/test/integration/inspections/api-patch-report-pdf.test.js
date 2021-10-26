@@ -20,7 +20,7 @@ describe('Inspections | API | PATCH Report PDF', () => {
     const inspectionId = uuid();
 
     // Stubs
-    sinon.stub(inspectionsModel, 'firestoreFindRecord').resolves(createSnap());
+    sinon.stub(inspectionsModel, 'findRecord').resolves(createSnap());
 
     await request(createApp())
       .patch(`/${inspectionId}`)
@@ -42,9 +42,7 @@ describe('Inspections | API | PATCH Report PDF', () => {
     const inspection = createInspection({ property: '' });
 
     // Stubs
-    sinon
-      .stub(inspectionsModel, 'firestoreFindRecord')
-      .resolves(createSnap(inspection));
+    sinon.stub(inspectionsModel, 'findRecord').resolves(createSnap(inspection));
 
     await request(createApp())
       .patch(`/${inspectionId}`)
@@ -70,9 +68,7 @@ describe('Inspections | API | PATCH Report PDF', () => {
     });
 
     // Stubs
-    sinon
-      .stub(inspectionsModel, 'firestoreFindRecord')
-      .resolves(createSnap(inspection));
+    sinon.stub(inspectionsModel, 'findRecord').resolves(createSnap(inspection));
 
     await request(createApp())
       .patch(`/${inspectionId}`)
@@ -98,9 +94,7 @@ describe('Inspections | API | PATCH Report PDF', () => {
     });
 
     // Stubs
-    sinon
-      .stub(inspectionsModel, 'firestoreFindRecord')
-      .resolves(createSnap(inspection));
+    sinon.stub(inspectionsModel, 'findRecord').resolves(createSnap(inspection));
 
     await request(createApp())
       .patch(`/${inspectionId}`)
@@ -131,9 +125,7 @@ describe('Inspections | API | PATCH Report PDF', () => {
     });
 
     // Stubs
-    sinon
-      .stub(inspectionsModel, 'firestoreFindRecord')
-      .resolves(createSnap(inspection));
+    sinon.stub(inspectionsModel, 'findRecord').resolves(createSnap(inspection));
 
     await request(createApp())
       .patch(`/${inspectionId}`)
@@ -154,10 +146,8 @@ describe('Inspections | API | PATCH Report PDF', () => {
     const inspection = createInspection({ property: propertyId });
 
     // Stubs
-    sinon
-      .stub(inspectionsModel, 'firestoreFindRecord')
-      .resolves(createSnap(inspection));
-    sinon.stub(propertiesModel, 'firestoreFindRecord').resolves(createSnap());
+    sinon.stub(inspectionsModel, 'findRecord').resolves(createSnap(inspection));
+    sinon.stub(propertiesModel, 'findRecord').resolves(createSnap());
 
     await request(createApp())
       .patch(`/${inspectionId}`)
@@ -182,18 +172,12 @@ describe('Inspections | API | PATCH Report PDF', () => {
 
     // Stubs
     let actual = '';
-    sinon
-      .stub(inspectionsModel, 'firestoreFindRecord')
-      .resolves(createSnap(inspection));
-    sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
-      .resolves(createSnap(property));
-    sinon
-      .stub(inspectionsModel, 'firestoreUpsertRecord')
-      .callsFake((db, id, update) => {
-        actual = update.inspectionReportStatus;
-        return Promise.reject(Error('err'));
-      });
+    sinon.stub(inspectionsModel, 'findRecord').resolves(createSnap(inspection));
+    sinon.stub(propertiesModel, 'findRecord').resolves(createSnap(property));
+    sinon.stub(inspectionsModel, 'upsertRecord').callsFake((db, id, update) => {
+      actual = update.inspectionReportStatus;
+      return Promise.reject(Error('err'));
+    });
 
     await request(createApp())
       .patch(`/${inspectionId}`)
@@ -213,14 +197,10 @@ describe('Inspections | API | PATCH Report PDF', () => {
 
     // Stubs
     let actual = '';
+    sinon.stub(inspectionsModel, 'findRecord').resolves(createSnap(inspection));
+    sinon.stub(propertiesModel, 'findRecord').resolves(createSnap(property));
     sinon
-      .stub(inspectionsModel, 'firestoreFindRecord')
-      .resolves(createSnap(inspection));
-    sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
-      .resolves(createSnap(property));
-    sinon
-      .stub(inspectionsModel, 'firestoreUpsertRecord')
+      .stub(inspectionsModel, 'upsertRecord')
       .onFirstCall()
       .resolves()
       .onSecondCall()
@@ -253,14 +233,10 @@ describe('Inspections | API | PATCH Report PDF', () => {
 
     // Stubs
     let actual = '';
+    sinon.stub(inspectionsModel, 'findRecord').resolves(createSnap(inspection));
+    sinon.stub(propertiesModel, 'findRecord').resolves(createSnap(property));
     sinon
-      .stub(inspectionsModel, 'firestoreFindRecord')
-      .resolves(createSnap(inspection));
-    sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
-      .resolves(createSnap(property));
-    sinon
-      .stub(inspectionsModel, 'firestoreUpsertRecord')
+      .stub(inspectionsModel, 'upsertRecord')
       .onFirstCall()
       .resolves()
       .onSecondCall()
@@ -294,14 +270,10 @@ describe('Inspections | API | PATCH Report PDF', () => {
 
     // Stubs
     let actual = '';
+    sinon.stub(inspectionsModel, 'findRecord').resolves(createSnap(inspection));
+    sinon.stub(propertiesModel, 'findRecord').resolves(createSnap(property));
     sinon
-      .stub(inspectionsModel, 'firestoreFindRecord')
-      .resolves(createSnap(inspection));
-    sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
-      .resolves(createSnap(property));
-    sinon
-      .stub(inspectionsModel, 'firestoreUpsertRecord')
+      .stub(inspectionsModel, 'upsertRecord')
       .onFirstCall()
       .resolves()
       .onSecondCall()
@@ -338,14 +310,10 @@ describe('Inspections | API | PATCH Report PDF', () => {
 
     // Stubs
     let actual = '';
+    sinon.stub(inspectionsModel, 'findRecord').resolves(createSnap(inspection));
+    sinon.stub(propertiesModel, 'findRecord').resolves(createSnap(property));
     sinon
-      .stub(inspectionsModel, 'firestoreFindRecord')
-      .resolves(createSnap(inspection));
-    sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
-      .resolves(createSnap(property));
-    sinon
-      .stub(inspectionsModel, 'firestoreUpsertRecord')
+      .stub(inspectionsModel, 'upsertRecord')
       .onFirstCall()
       .resolves()
       .onSecondCall()
@@ -381,14 +349,10 @@ describe('Inspections | API | PATCH Report PDF', () => {
     const property = mocking.createProperty();
 
     // Stubs
+    sinon.stub(inspectionsModel, 'findRecord').resolves(createSnap(inspection));
+    sinon.stub(propertiesModel, 'findRecord').resolves(createSnap(property));
     sinon
-      .stub(inspectionsModel, 'firestoreFindRecord')
-      .resolves(createSnap(inspection));
-    sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
-      .resolves(createSnap(property));
-    sinon
-      .stub(inspectionsModel, 'firestoreUpsertRecord')
+      .stub(inspectionsModel, 'upsertRecord')
       .onFirstCall()
       .resolves()
       .onSecondCall()
@@ -398,9 +362,7 @@ describe('Inspections | API | PATCH Report PDF', () => {
       .stub(createReportPdf._proto, 'generatePdf')
       .resolves(Buffer.from([0]));
     sinon.stub(uploader, 's3').resolves('/url/test');
-    const result = sinon
-      .stub(notificationsModel, 'firestoreAddRecord')
-      .resolves();
+    const result = sinon.stub(notificationsModel, 'addRecord').resolves();
 
     await request(createApp())
       .patch(`/${inspectionId}`)
@@ -420,14 +382,10 @@ describe('Inspections | API | PATCH Report PDF', () => {
     const property = mocking.createProperty();
 
     // Stubs
+    sinon.stub(inspectionsModel, 'findRecord').resolves(createSnap(inspection));
+    sinon.stub(propertiesModel, 'findRecord').resolves(createSnap(property));
     sinon
-      .stub(inspectionsModel, 'firestoreFindRecord')
-      .resolves(createSnap(inspection));
-    sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
-      .resolves(createSnap(property));
-    sinon
-      .stub(inspectionsModel, 'firestoreUpsertRecord')
+      .stub(inspectionsModel, 'upsertRecord')
       .onFirstCall()
       .resolves()
       .onSecondCall()
@@ -437,9 +395,7 @@ describe('Inspections | API | PATCH Report PDF', () => {
       .stub(createReportPdf._proto, 'generatePdf')
       .resolves(Buffer.from([0]));
     sinon.stub(uploader, 's3').resolves('/url/test');
-    const result = sinon
-      .stub(notificationsModel, 'firestoreAddRecord')
-      .resolves();
+    const result = sinon.stub(notificationsModel, 'addRecord').resolves();
 
     await request(createApp())
       .patch(`/${inspectionId}?incognitoMode=true`)

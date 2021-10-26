@@ -29,8 +29,8 @@ describe('Deficiencies | Pubsub | Trello Card Status Comment V2', function() {
       `${propertyId}/${deficiencyId}/status/${status}`
     ).toString('base64');
 
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves('');
-    const query = sinon.stub(deficiencyModel, 'firestoreFindRecord').resolves();
+    sinon.stub(systemModel, 'findTrelloCardId').resolves('');
+    const query = sinon.stub(deficiencyModel, 'findRecord').resolves();
 
     await createHandler(
       createFirestore(),
@@ -53,9 +53,9 @@ describe('Deficiencies | Pubsub | Trello Card Status Comment V2', function() {
       `${propertyId}/${deficiencyId}/status/${status}`
     ).toString('base64');
 
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves(cardId);
-    sinon.stub(systemModel, 'firestoreFindTrello').resolves(createSnapshot());
-    const query = sinon.stub(deficiencyModel, 'firestoreFindRecord').resolves();
+    sinon.stub(systemModel, 'findTrelloCardId').resolves(cardId);
+    sinon.stub(systemModel, 'findTrello').resolves(createSnapshot());
+    const query = sinon.stub(deficiencyModel, 'findRecord').resolves();
 
     await createHandler(
       createFirestore(),
@@ -92,16 +92,14 @@ describe('Deficiencies | Pubsub | Trello Card Status Comment V2', function() {
       `${propertyId}/${deficiencyId}/status/${status}`
     ).toString('base64');
 
-    sinon.stub(systemModel, 'firestoreFindTrelloCardId').resolves(cardId);
+    sinon.stub(systemModel, 'findTrelloCardId').resolves(cardId);
     sinon
-      .stub(systemModel, 'firestoreFindTrello')
+      .stub(systemModel, 'findTrello')
       .resolves(createSnapshot('trello', credentials));
     sinon
-      .stub(deficiencyModel, 'firestoreFindRecord')
+      .stub(deficiencyModel, 'findRecord')
       .resolves(createSnapshot(deficiencyId, deficiency));
-    sinon
-      .stub(usersModel, 'firestoreFindRecord')
-      .resolves(createSnapshot(userId, user));
+    sinon.stub(usersModel, 'findRecord').resolves(createSnapshot(userId, user));
     const result = {};
     sinon
       .stub(trello, 'publishTrelloCardComment')

@@ -69,6 +69,9 @@ const jobSchema = new Schema({
   minBids: {
     type: Number,
   },
+  expediteReason: {
+    type: String,
+  },
 });
 
 /**

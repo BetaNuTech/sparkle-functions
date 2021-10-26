@@ -45,6 +45,160 @@
   "consumes": ["application/json"],
   "produces": ["application/vnd.api+json"],
   "paths": {
+    "/v0/teams/": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": ["Teams"],
+        "summary": "Creating a new team. Only for admin users",
+        "parameters": [
+          {
+            "name": "team",
+            "in": "body",
+            "description": "team details",
+            "required": ["name"],
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful team creation",
+            "schema": {
+              "$ref": "#/definitions/UPSERTTEAM"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "409": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS409"
+            }
+          }
+        }
+      }
+    },
+    "/v0/teams/{teamId}/": {
+      "parameters": [
+        {
+          "name": "teamId",
+          "in": "path",
+          "required": true,
+          "description": "team id being updated.",
+          "type": "string"
+        },
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "patch": {
+        "tags": ["Teams"],
+        "summary": "Updating a team. Only for admin users",
+        "parameters": [
+          {
+            "name": "team",
+            "in": "body",
+            "description": "team details",
+            "required": ["name"],
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful team update",
+            "schema": {
+              "$ref": "#/definitions/UPSERTTEAM"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "409": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS409"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Teams"],
+        "summary": "Deleting a team. Only for admin users",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful team delete, contains no payload or body"
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "409": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS409"
+            }
+          }
+        }
+      }
+    },
     "/v0/properties/{propertyId}/jobs": {
       "parameters": [
         {
@@ -91,7 +245,7 @@
         ],
         "responses": {
           "201": {
-            "description": "Success for creating job api",
+            "description": "Successful for creating job api",
             "schema": {
               "$ref": "#/definitions/JOBS"
             }
@@ -170,6 +324,9 @@
                 "type": "string"
               },
               "state": {
+                "type": "string"
+              },
+              "expediteReason": {
                 "type": "string"
               }
             }
@@ -250,7 +407,10 @@
               "costMin",
               "startAt",
               "completeAt",
-              "state"
+              "state",
+              "vendorW9",
+              "vendorInsurance",
+              "vendorLicense"
             ],
             "properties": {
               "vendor": {
@@ -273,6 +433,15 @@
               },
               "state": {
                 "type": "string"
+              },
+              "vendorW9": {
+                "type": "boolean"
+              },
+              "vendorInsurance": {
+                "type": "boolean"
+              },
+              "vendorLicense": {
+                "type": "boolean"
               }
             }
           }
@@ -281,7 +450,7 @@
           "201": {
             "description": "Success for updating bid api",
             "schema": {
-              "$ref": "#/definitions/JOBS"
+              "$ref": "#/definitions/BID"
             }
           },
           "400": {
@@ -345,7 +514,10 @@
               "costMin",
               "startAt",
               "completeAt",
-              "state"
+              "state",
+              "vendorW9",
+              "vendorInsurance",
+              "vendorLicense"
             ],
             "properties": {
               "vendor": {
@@ -368,6 +540,15 @@
               },
               "state": {
                 "type": "string"
+              },
+              "vendorW9": {
+                "type": "boolean"
+              },
+              "vendorInsurance": {
+                "type": "boolean"
+              },
+              "vendorLicense": {
+                "type": "boolean"
               }
             }
           }
@@ -376,7 +557,7 @@
           "201": {
             "description": "Success for adding a new bid",
             "schema": {
-              "$ref": "#/definitions/JOBS"
+              "$ref": "#/definitions/BID"
             }
           },
           "400": {
@@ -1642,6 +1823,82 @@
     }
   },
   "definitions": {
+    "BID": {
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "createdAt": {
+                  "type": "number"
+                },
+                "updatedAt": {
+                  "type": "number"
+                },
+                "completeAt": {
+                  "type": "number"
+                },
+                "startAt": {
+                  "type": "number"
+                },
+                "costMax": {
+                  "type": "number"
+                },
+                "costMin": {
+                  "type": "number"
+                },
+                "state": {
+                  "type": "string"
+                },
+                "vendor": {
+                  "type": "string"
+                },
+                "vendorDetails": {
+                  "type": "string"
+                },
+                "scope": {
+                  "type": "string"
+                },
+                "vendorW9": {
+                  "type": "boolean"
+                },
+                "vendorInsurance": {
+                  "type": "boolean"
+                },
+                "vendorLicense": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "relationships": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
     "JOBS": {
       "type": "object",
       "properties": {
@@ -1683,6 +1940,9 @@
                 },
                 "minBids": {
                   "type": "number"
+                },
+                "expediteReason": {
+                  "type": "string"
                 }
               }
             },
@@ -1898,7 +2158,7 @@
         }
       }
     },
-    "CREATEINSPECTION": {
+    "UPSERTTEAM": {
       "type": "object",
       "properties": {
         "data": {
@@ -1910,7 +2170,28 @@
             "type": {
               "type": "string"
             },
-            "property": {
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "team": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "CREATEINSPECTION": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
               "type": "string"
             },
             "attributes": {

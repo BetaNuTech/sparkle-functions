@@ -2,7 +2,7 @@ const request = require('supertest');
 const { expect } = require('chai');
 const path = require('path');
 const express = require('express');
-const fileUpload = require('express-fileupload');
+const fileParser = require('express-multipart-file-parser');
 const sinon = require('sinon');
 const imageUtil = require('../../../properties/utils/images');
 const storage = require('../../../services/storage');
@@ -89,7 +89,7 @@ describe('Properties | API | POST Image', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot()); // empty
 
     const res = await request(createApp())
@@ -135,12 +135,12 @@ describe('Properties | API | POST Image', () => {
 
     // Stubs
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon.stub(imageUtil, 'createImage').resolves(Buffer.from([]));
     sinon.stub(imageUtil, 'optimizeImage').resolves(Buffer.from([]));
     sinon.stub(storage, 'propertyUpload').resolves(expected.photoURL);
-    sinon.stub(propertiesModel, 'firestoreUpdateRecord').resolves();
+    sinon.stub(propertiesModel, 'updateRecord').resolves();
 
     // Execute
     const res = await request(createApp())
@@ -166,12 +166,12 @@ describe('Properties | API | POST Image', () => {
 
     // Stubs
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
     sinon.stub(imageUtil, 'createImage').resolves(Buffer.from([]));
     sinon.stub(imageUtil, 'optimizeImage').resolves(Buffer.from([]));
     sinon.stub(storage, 'propertyUpload').resolves(expected.logoURL);
-    sinon.stub(propertiesModel, 'firestoreUpdateRecord').resolves();
+    sinon.stub(propertiesModel, 'updateRecord').resolves();
 
     // Execute
     const res = await request(createApp())
@@ -192,7 +192,7 @@ function createApp() {
   app.post(
     '/t/:propertyId',
     stubAuth,
-    fileUpload(),
+    fileParser,
     handler({ collection: () => {} }, { bucket: () => {} })
   );
   return app;

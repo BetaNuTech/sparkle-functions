@@ -26,7 +26,7 @@ describe('Jobs | API | PUT Bid', () => {
     const bid = mocking.createBid({ state: 'open', job: jobDoc });
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, property);
+    await propertiesModel.createRecord(fs, propertyId, property);
     await jobsModel.createRecord(fs, jobId, job);
     await bidsModel.createRecord(fs, bidId, bid);
 
@@ -59,8 +59,20 @@ describe('Jobs | API | PUT Bid', () => {
   });
 });
 
-function createApp() {
+function createApp(user = { admin: true }) {
   const app = express();
-  app.put('/t/:propertyId/:jobId/:bidId', bodyParser.json(), handler(fs));
+  app.put(
+    '/t/:propertyId/:jobId/:bidId',
+    bodyParser.json(),
+    stubAuth(user),
+    handler(fs)
+  );
   return app;
+}
+
+function stubAuth(user = {}) {
+  return (req, res, next) => {
+    req.user = Object.assign({ id: uuid() }, user);
+    next();
+  };
 }

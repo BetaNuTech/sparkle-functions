@@ -24,7 +24,7 @@ module.exports = function publishSlackNotification(fs, pubsub, topic) {
   return pubsub.topic(topic).onPublish(async message => {
     let accessToken = '';
     try {
-      const credentialsSnap = await systemModel.firestoreFindSlack(fs);
+      const credentialsSnap = await systemModel.findSlack(fs);
       const slackCredentials = credentialsSnap.data() || null;
       accessToken = slackCredentials ? slackCredentials.accessToken : '';
 
@@ -62,7 +62,7 @@ module.exports = function publishSlackNotification(fs, pubsub, topic) {
           `${PREFIX} publishing slack notifications for channel: "${channelTarget}"`
         );
 
-        notificationsSnap = await notificationsModel.firestoreQuery(fs, {
+        notificationsSnap = await notificationsModel.query(fs, {
           'slack.channel': ['==', channelTarget],
         });
 
@@ -77,7 +77,7 @@ module.exports = function publishSlackNotification(fs, pubsub, topic) {
         });
       } else {
         // Select all slack notifications
-        notificationsSnap = await notificationsModel.firestoreQuery(fs, {
+        notificationsSnap = await notificationsModel.query(fs, {
           'slack.createdAt': ['>', 0],
         });
 
@@ -131,11 +131,7 @@ module.exports = function publishSlackNotification(fs, pubsub, topic) {
       );
 
       try {
-        await integrationsModel.firestoreUpdateSlack(
-          fs,
-          slackIntegrationUpdate,
-          batch
-        );
+        await integrationsModel.updateSlack(fs, slackIntegrationUpdate, batch);
       } catch (err) {
         // Allow failure
         log.error(
@@ -171,7 +167,7 @@ module.exports = function publishSlackNotification(fs, pubsub, topic) {
 
         // Mark notification as published to Slack
         try {
-          await notificationsModel.firestoreUpdateRecord(
+          await notificationsModel.updateRecord(
             fs,
             notificationId,
             {

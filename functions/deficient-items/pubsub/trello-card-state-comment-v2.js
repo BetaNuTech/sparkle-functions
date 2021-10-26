@@ -53,7 +53,7 @@ module.exports = function createTrelloCardStateCommentV2(fs, pubsub, topic) {
     // Find created Trello Card reference
     let trelloCardId = '';
     try {
-      trelloCardId = await systemModel.firestoreFindTrelloCardId(
+      trelloCardId = await systemModel.findTrelloCardId(
         fs,
         propertyId,
         deficiencyId
@@ -73,7 +73,7 @@ module.exports = function createTrelloCardStateCommentV2(fs, pubsub, topic) {
     // Lookup Trello credentials
     let trelloCredentials = null;
     try {
-      const trelloCredentialsSnap = await systemModel.firestoreFindTrello(fs);
+      const trelloCredentialsSnap = await systemModel.findTrello(fs);
       trelloCredentials = trelloCredentialsSnap.data();
       if (!trelloCredentials) {
         throw Error('Organization has not authorized Trello');
@@ -86,10 +86,7 @@ module.exports = function createTrelloCardStateCommentV2(fs, pubsub, topic) {
     // Lookup Deficiency
     let deficiency = null;
     try {
-      const deficiencySnap = await deficiencyModel.firestoreFindRecord(
-        fs,
-        deficiencyId
-      );
+      const deficiencySnap = await deficiencyModel.findRecord(fs, deficiencyId);
       deficiency = deficiencySnap.data() || null;
     } catch (err) {
       log.error(`${PREFIX} deficiency lookup failed | ${err}`);
@@ -148,10 +145,7 @@ module.exports = function createTrelloCardStateCommentV2(fs, pubsub, topic) {
     let stateAuthorsUser = null;
     const stateAuthorsUserId = currentDefStateHistory.user;
     try {
-      const userSnap = await usersModel.firestoreFindRecord(
-        fs,
-        stateAuthorsUserId
-      );
+      const userSnap = await usersModel.findRecord(fs, stateAuthorsUserId);
       stateAuthorsUser = userSnap.data();
       if (!stateAuthorsUser) throw Error('user does not exist');
     } catch (err) {
@@ -193,7 +187,7 @@ module.exports = function createTrelloCardStateCommentV2(fs, pubsub, topic) {
     } catch (err) {
       if (err.code === 'ERR_TRELLO_CARD_DELETED') {
         try {
-          await systemModel.firestoreCleanupDeletedTrelloCard(
+          await systemModel.cleanupDeletedTrelloCard(
             fs,
             deficiencyId,
             trelloCardId

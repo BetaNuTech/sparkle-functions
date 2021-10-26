@@ -15,10 +15,7 @@ if (!inspectionId) {
   let inspection = null;
 
   try {
-    const inspectionSnap = await inspectionsModel.firestoreFindRecord(
-      db,
-      inspectionId
-    );
+    const inspectionSnap = await inspectionsModel.findRecord(db, inspectionId);
     inspection = inspectionSnap.data() || null;
     if (!inspection || !inspection.property) throw Error('bad inspection');
   } catch (err) {
@@ -29,7 +26,7 @@ if (!inspectionId) {
   // Lookup property
   let property = null;
   try {
-    const propertySnap = await propertiesModel.firestoreFindRecord(
+    const propertySnap = await propertiesModel.findRecord(
       db,
       inspection.property
     );

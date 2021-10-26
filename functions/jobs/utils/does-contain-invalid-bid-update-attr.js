@@ -19,6 +19,9 @@ module.exports = update => {
     'completeAt',
     'state',
     'scope',
+    'vendorW9',
+    'vendorInsurance',
+    'vendorLicense',
   ];
 
   return keys.some(key => !attrs.includes(key));

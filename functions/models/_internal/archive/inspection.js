@@ -12,7 +12,7 @@ module.exports = modelSetup({
    * @param  {String} inspectionId
    * @return {Promise} - resolve {Document}
    */
-  firestoreFindRecord(fs, inspectionId) {
+  findRecord(fs, inspectionId) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
@@ -33,7 +33,7 @@ module.exports = modelSetup({
    * @param  {firestore.batch?} batch
    * @return {Promise} - resolve {CollectionReference}
    */
-  firestoreCreateRecord(fs, inspectionId, data, batch) {
+  createRecord(fs, inspectionId, data, batch) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
@@ -63,7 +63,7 @@ module.exports = modelSetup({
    * @param  {firestore.transaction?} transaction
    * @return {Promise} - resolves {QuerySnapshot}
    */
-  firestoreQueryByProperty(fs, propertyId, transaction) {
+  queryByProperty(fs, propertyId, transaction) {
     assert(fs && typeof fs.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     const query = fs

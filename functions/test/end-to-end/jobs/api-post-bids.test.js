@@ -24,7 +24,7 @@ describe('Jobs | API | POST Bid', () => {
     const bid = mocking.createBid({ job: jobDoc });
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, property);
+    await propertiesModel.createRecord(fs, propertyId, property);
     await jobsModel.createRecord(fs, jobId, job);
 
     // Execute

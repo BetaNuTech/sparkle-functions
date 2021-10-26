@@ -70,7 +70,7 @@ module.exports = function createOnUpdateCompletedPhoto(fs) {
     // Card identifier
     let trelloCardId = '';
     try {
-      trelloCardId = await systemModel.firestoreFindTrelloCardId(
+      trelloCardId = await systemModel.findTrelloCardId(
         fs,
         propertyId,
         deficiencyId
@@ -87,7 +87,7 @@ module.exports = function createOnUpdateCompletedPhoto(fs) {
     // Lookup Trello credentials
     let trelloCredentials = null;
     try {
-      const trelloCredentialsSnap = await systemModel.firestoreFindTrello(fs);
+      const trelloCredentialsSnap = await systemModel.findTrello(fs);
       trelloCredentials = trelloCredentialsSnap.data() || null;
     } catch (err) {
       throw Error(`${PREFIX} failed lookup trello credentials | ${err}`); // wrap error
@@ -129,7 +129,7 @@ module.exports = function createOnUpdateCompletedPhoto(fs) {
       // Cleanup deleted Trello card from database
       if (err.code === 'ERR_TRELLO_CARD_DELETED') {
         try {
-          await systemModel.firestoreCleanupDeletedTrelloCard(
+          await systemModel.cleanupDeletedTrelloCard(
             fs,
             deficiencyId,
             trelloCardId
@@ -150,7 +150,7 @@ module.exports = function createOnUpdateCompletedPhoto(fs) {
     // Persist completed photo's
     // Trello attachement reference
     try {
-      await deficiencyModel.firestoreUpdateCompletedPhotoTrelloCardAttachment(
+      await deficiencyModel.updateCompletedPhotoTrelloCardAttachment(
         fs,
         deficiencyId,
         completedPhotoId,

@@ -33,7 +33,7 @@ module.exports = function createDeleteTrelloAuthHandler(fs) {
 
     // Destroy system's private auth token
     try {
-      await systemModel.firestoreRemoveTrello(fs, batch);
+      await systemModel.removeTrello(fs, batch);
     } catch (err) {
       return send500Error(
         err,
@@ -43,7 +43,7 @@ module.exports = function createDeleteTrelloAuthHandler(fs) {
     }
 
     try {
-      await systemModel.firestoreRemoveAllTrelloProperties(fs, batch);
+      await systemModel.removeAllTrelloProperties(fs, batch);
     } catch (err) {
       return send500Error(
         err,
@@ -54,7 +54,7 @@ module.exports = function createDeleteTrelloAuthHandler(fs) {
 
     // Delete public facing Trello orgnaization
     try {
-      await integrationsModel.firestoreRemoveTrello(fs, batch);
+      await integrationsModel.removeTrello(fs, batch);
     } catch (err) {
       return send500Error(
         err,
@@ -65,7 +65,7 @@ module.exports = function createDeleteTrelloAuthHandler(fs) {
 
     // Delete public facing Trello properties
     try {
-      await integrationsModel.firestoreRemoveAllTrelloProperties(fs, batch);
+      await integrationsModel.removeAllTrelloProperties(fs, batch);
     } catch (err) {
       return send500Error(
         err,

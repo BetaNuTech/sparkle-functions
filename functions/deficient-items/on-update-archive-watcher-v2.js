@@ -42,12 +42,9 @@ module.exports = function createOnDiToggleArchiveUpdateHandler(fs) {
 
     try {
       if (isArchived) {
-        archiveUpdates = await model.firestoreActivateRecord(fs, deficiencyId);
+        archiveUpdates = await model.activateRecord(fs, deficiencyId);
       } else {
-        archiveUpdates = await model.firestoreDeactivateRecord(
-          fs,
-          deficiencyId
-        );
+        archiveUpdates = await model.deactivateRecord(fs, deficiencyId);
       }
     } catch (err) {
       if (err.code === 'ERR_TRELLO_CARD_DELETED') {

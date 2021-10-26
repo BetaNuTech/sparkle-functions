@@ -42,7 +42,7 @@ module.exports = function putBatchSetup(db) {
     // Lookup first deficincy
     let deficiency = null;
     try {
-      const deficiencySnap = await deficiencyModel.firestoreFindRecord(
+      const deficiencySnap = await deficiencyModel.findRecord(
         db,
         deficiencyIds[0]
       );

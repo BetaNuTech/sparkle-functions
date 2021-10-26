@@ -3,13 +3,13 @@ const bidsModel = require('../../models/bids');
 const jobsModel = require('../../models/jobs');
 const propertiesModel = require('../../models/properties');
 const validate = require('../utils/validate-bid');
-const canUpdateState = require('../utils/can-user-update-bid-state');
+const validateBidStateUpdate = require('../utils/validate-bid-state-update');
 const doesContainInvalidAttr = require('../utils/does-contain-invalid-bid-update-attr');
 const log = require('../../utils/logger');
+const stringsUtil = require('../../utils/strings');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
 
 const PREFIX = 'jobs: api: put bid:';
-const REQ_TO_APPROVE = ['costMin', 'costMax', 'startAt', 'completeAt'];
 
 /**
  * Factory for creating a PUT endpoint
@@ -28,15 +28,15 @@ module.exports = function createPutJobsBid(fs) {
    */
   return async (req, res) => {
     const { params, body = {} } = req;
+    const { user } = req;
     const { propertyId, jobId, bidId } = params;
-    const update = body;
+    const update = JSON.parse(JSON.stringify(body));
     const send500Error = create500ErrHandler(PREFIX, res);
     const hasUpdates = Boolean(Object.keys(update || {}).length);
     const isUpdatingToApproved = update ? update.state === 'approved' : false;
 
     // Set content type
     res.set('Content-Type', 'application/vnd.api+json');
-
     log.info("Update job's bid requested");
 
     // Reject missing update request JSON
@@ -86,13 +86,10 @@ module.exports = function createPutJobsBid(fs) {
       });
     }
 
-    // Lookup Firestore Property
-    let property;
+    // Lookup Property
+    let property = null;
     try {
-      const propertySnap = await propertiesModel.firestoreFindRecord(
-        fs,
-        propertyId
-      );
+      const propertySnap = await propertiesModel.findRecord(fs, propertyId);
       property = propertySnap.data() || null;
     } catch (err) {
       return send500Error(err, 'property lookup failed', 'unexpected error');
@@ -111,8 +108,8 @@ module.exports = function createPutJobsBid(fs) {
       });
     }
 
-    // Lookup Firestore Job
-    let job;
+    // Lookup Job
+    let job = null;
     try {
       const jobSnap = await jobsModel.findRecord(fs, jobId);
       job = jobSnap.data() || null;
@@ -179,7 +176,7 @@ module.exports = function createPutJobsBid(fs) {
         errors: [
           {
             source: { pointer: 'body' },
-            title: 'Job already has approved bids',
+            title: 'Job already has an approved bid',
             detail: 'Unapprove another bid first',
           },
         ],
@@ -187,41 +184,79 @@ module.exports = function createPutJobsBid(fs) {
     }
 
     // Validate state update
-    const isBidOpen = bid.state === 'open';
-    const updatedBid = { ...bid, ...update };
-    updatedBid.state = bid.state;
-    const canBidTransitionToUpdate = canUpdateState(update, updatedBid);
+    const isUpdatingState = Boolean(update.state) && update.state !== bid.state;
+    const afterUpdateBid = { ...bid, ...update, state: bid.state }; // keep old `state`
+    const bidStateTransitionErrors = validateBidStateUpdate(
+      user,
+      update,
+      afterUpdateBid,
+      job
+    );
+    const canBidTransitionToNewState = bidStateTransitionErrors.length === 0;
+    const hasPermissionError =
+      bidStateTransitionErrors.filter(({ type }) => type === 'permission')
+        .length > 0;
 
-    // Reject open bid that doesn't have required
-    // attributes to progress to approved status
-    if (isBidOpen && isUpdatingToApproved && !canBidTransitionToUpdate) {
-      const missingAttrs = REQ_TO_APPROVE.filter(
-        attr => Boolean(updatedBid[attr]) === false
-      );
-      return res.status(409).send({
-        errors: missingAttrs.map(pointer => ({
-          detail: 'Required to approve bid',
-          source: { pointer },
+    // Reject bid approval when it's missing
+    // required attributes to progress
+    if (
+      isUpdatingState &&
+      isUpdatingToApproved &&
+      !canBidTransitionToNewState
+    ) {
+      return res.status(hasPermissionError ? 403 : 409).send({
+        errors: bidStateTransitionErrors.map(({ path, type, message }) => ({
+          title: message,
+          detail:
+            type === 'conflict'
+              ? `Requires ${stringsUtil.toHumanize(path)} to approve bid`
+              : 'User cannot perform this bid update',
+          source: { pointer: path },
         })),
+      });
+    }
+
+    // Reject other invalid, non-approval, state transitions
+    if (isUpdatingState && !canBidTransitionToNewState) {
+      return res.status(409).send({
+        errors: [
+          {
+            source: { pointer: 'state' },
+            detail: `Cannont transition ${bid.state} bid to ${update.state}`,
+          },
+        ],
       });
     }
 
     // Update batch
     const batch = fs.batch();
+    const jobUpdates = {};
     const isJobAuthorized = job.state === 'authorized';
     const isUpdatingToIncomplete = update.state === 'incomplete';
     const isUpdatingToRejected = update.state === 'rejected';
+    const isUpdatingToComplete = update.state === 'complete';
 
-    // Regess authorized job when it's only
-    // authorized bid becomes "incomplete" or
-    // gets "rejected"
     if (
       isJobAuthorized &&
       (isUpdatingToIncomplete || isUpdatingToRejected) &&
       !areOtherApprovedBids // no other approved bids
     ) {
+      // Regess authorized job when it's only
+      // authorized bid becomes "incomplete" or
+      // gets "rejected"
+      jobUpdates.state = 'approved';
+    } else if (isJobAuthorized && isUpdatingToComplete) {
+      // Progress to complete when its' a job is completed
+      // for the first time
+      jobUpdates.state = 'complete';
+    }
+
+    const hasJobUpdates = Boolean(Object.keys(jobUpdates).length);
+
+    // Add job updatest to batch
+    if (hasJobUpdates) {
       try {
-        await jobsModel.updateRecord(fs, jobId, { state: 'approved' }, batch);
+        await jobsModel.updateRecord(fs, jobId, jobUpdates, batch);
       } catch (err) {
         return send500Error(
           err,

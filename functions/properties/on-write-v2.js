@@ -37,12 +37,7 @@ module.exports = function createOnWriteV2Handler(fs) {
 
     if (isTeamRemoved) {
       try {
-        await teamUsersModel.firestoreRemoveProperty(
-          fs,
-          beforeTeam,
-          propertyId,
-          batch
-        );
+        await teamUsersModel.removeProperty(fs, beforeTeam, propertyId, batch);
         log.info(
           `${PREFIX} property: "${propertyId}" removed team: "${beforeTeam}"`
         );
@@ -53,12 +48,7 @@ module.exports = function createOnWriteV2Handler(fs) {
 
     if (isTeamAdded) {
       try {
-        await teamUsersModel.firestoreAddProperty(
-          fs,
-          afterTeam,
-          propertyId,
-          batch
-        );
+        await teamUsersModel.addProperty(fs, afterTeam, propertyId, batch);
         log.info(
           `${PREFIX} property: "${propertyId}" added team: "${beforeTeam}"`
         );
@@ -69,7 +59,7 @@ module.exports = function createOnWriteV2Handler(fs) {
 
     if (isTeamUpdated) {
       try {
-        await teamUsersModel.firestoreUpdateProperty(
+        await teamUsersModel.updateProperty(
           fs,
           beforeTeam,
           afterTeam,

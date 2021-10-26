@@ -25,17 +25,17 @@ describe('Properties | Delete | V2', () => {
     const inspData = createInspection(propertyId);
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
-    await inspectionsModel.firestoreCreateRecord(fs, inspId, inspData);
-    const snap = await propertiesModel.firestoreFindRecord(fs, propertyId);
-    await propertiesModel.firestoreRemoveRecord(fs, propertyId); // Remove property
+    await propertiesModel.createRecord(fs, propertyId, propertyData);
+    await inspectionsModel.createRecord(fs, inspId, inspData);
+    const snap = await propertiesModel.findRecord(fs, propertyId);
+    await propertiesModel.removeRecord(fs, propertyId); // Remove property
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.propertyDeleteV2);
     await wrapped(snap, { params: { propertyId } });
 
     // Results
-    const result = await inspectionsModel.firestoreFindRecord(fs, inspId);
+    const result = await inspectionsModel.findRecord(fs, inspId);
     const actual = result.exists;
 
     // Assertions
@@ -50,20 +50,17 @@ describe('Properties | Delete | V2', () => {
     const inspData = createInspection(propertyId);
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
-    await archiveModel.inspection.firestoreCreateRecord(fs, inspId, inspData);
-    const snap = await propertiesModel.firestoreFindRecord(fs, propertyId);
-    await propertiesModel.firestoreRemoveRecord(fs, propertyId); // Remove property
+    await propertiesModel.createRecord(fs, propertyId, propertyData);
+    await archiveModel.inspection.createRecord(fs, inspId, inspData);
+    const snap = await propertiesModel.findRecord(fs, propertyId);
+    await propertiesModel.removeRecord(fs, propertyId); // Remove property
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.propertyDeleteV2);
     await wrapped(snap, { params: { propertyId } });
 
     // Results
-    const result = await archiveModel.inspection.firestoreFindRecord(
-      fs,
-      inspId
-    );
+    const result = await archiveModel.inspection.findRecord(fs, inspId);
     const actual = result.exists;
 
     // Assertions
@@ -81,18 +78,18 @@ describe('Properties | Delete | V2', () => {
     const deficiencyData = createDeficientItem(propertyId, inspId, itemId);
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
-    await inspectionsModel.firestoreCreateRecord(fs, inspId, inspData);
-    await diModel.firestoreCreateRecord(fs, deficiencyId, deficiencyData);
-    const snap = await propertiesModel.firestoreFindRecord(fs, propertyId);
-    await propertiesModel.firestoreRemoveRecord(fs, propertyId); // Remove property
+    await propertiesModel.createRecord(fs, propertyId, propertyData);
+    await inspectionsModel.createRecord(fs, inspId, inspData);
+    await diModel.createRecord(fs, deficiencyId, deficiencyData);
+    const snap = await propertiesModel.findRecord(fs, propertyId);
+    await propertiesModel.removeRecord(fs, propertyId); // Remove property
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.propertyDeleteV2);
     await wrapped(snap, { params: { propertyId } });
 
     // Results
-    const result = await diModel.firestoreFindRecord(fs, deficiencyId);
+    const result = await diModel.findRecord(fs, deficiencyId);
     const actual = result.exists;
 
     // Assertions
@@ -110,22 +107,22 @@ describe('Properties | Delete | V2', () => {
     const deficiencyData = createDeficientItem(propertyId, inspId, itemId);
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
-    await inspectionsModel.firestoreCreateRecord(fs, inspId, inspData);
-    await archiveModel.deficientItem.firestoreCreateRecord(
+    await propertiesModel.createRecord(fs, propertyId, propertyData);
+    await inspectionsModel.createRecord(fs, inspId, inspData);
+    await archiveModel.deficientItem.createRecord(
       fs,
       deficiencyId,
       deficiencyData
     );
-    const snap = await propertiesModel.firestoreFindRecord(fs, propertyId);
-    await propertiesModel.firestoreRemoveRecord(fs, propertyId); // Remove property
+    const snap = await propertiesModel.findRecord(fs, propertyId);
+    await propertiesModel.removeRecord(fs, propertyId); // Remove property
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.propertyDeleteV2);
     await wrapped(snap, { params: { propertyId } });
 
     // Results
-    const result = await archiveModel.deficientItem.firestoreFindRecord(
+    const result = await archiveModel.deficientItem.findRecord(
       fs,
       deficiencyId
     );
@@ -143,11 +140,11 @@ describe('Properties | Delete | V2', () => {
     const tmplBefore = createTemplate(propertyId);
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
-    await templatesModel.firestoreUpsertRecord(fs, tmplOneId, tmplBefore);
-    await templatesModel.firestoreUpsertRecord(fs, tmplTwoId, tmplBefore);
-    const snap = await propertiesModel.firestoreFindRecord(fs, propertyId);
-    await propertiesModel.firestoreRemoveRecord(fs, propertyId); // Remove
+    await propertiesModel.createRecord(fs, propertyId, propertyData);
+    await templatesModel.upsertRecord(fs, tmplOneId, tmplBefore);
+    await templatesModel.upsertRecord(fs, tmplTwoId, tmplBefore);
+    const snap = await propertiesModel.findRecord(fs, propertyId);
+    await propertiesModel.removeRecord(fs, propertyId); // Remove
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.propertyDeleteV2);
@@ -155,8 +152,8 @@ describe('Properties | Delete | V2', () => {
 
     // Test results
     const results = await Promise.all([
-      templatesModel.firestoreFindRecord(fs, tmplOneId),
-      templatesModel.firestoreFindRecord(fs, tmplTwoId),
+      templatesModel.findRecord(fs, tmplOneId),
+      templatesModel.findRecord(fs, tmplTwoId),
     ]);
 
     // Assertions
@@ -184,17 +181,17 @@ describe('Properties | Delete | V2', () => {
     const teamData = createTeam(propertyId);
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
-    await teamsModel.firestoreCreateRecord(fs, teamId, teamData);
-    const snap = await propertiesModel.firestoreFindRecord(fs, propertyId);
-    await propertiesModel.firestoreRemoveRecord(fs, propertyId); // Remove property
+    await propertiesModel.createRecord(fs, propertyId, propertyData);
+    await teamsModel.createRecord(fs, teamId, teamData);
+    const snap = await propertiesModel.findRecord(fs, propertyId);
+    await propertiesModel.removeRecord(fs, propertyId); // Remove property
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.propertyDeleteV2);
     await wrapped(snap, { params: { propertyId } });
 
     // Results
-    const result = await teamsModel.firestoreFindRecord(fs, teamId);
+    const result = await teamsModel.findRecord(fs, teamId);
     const actual = Boolean(
       ((result.data() || {}).properties || {})[propertyId]
     );
@@ -213,18 +210,18 @@ describe('Properties | Delete | V2', () => {
     const userData = createUser(teamId, propertyId);
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
-    await teamsModel.firestoreCreateRecord(fs, teamId, teamData);
-    await usersModel.firestoreCreateRecord(fs, userId, userData);
-    const snap = await propertiesModel.firestoreFindRecord(fs, propertyId);
-    await propertiesModel.firestoreRemoveRecord(fs, propertyId); // Remove property
+    await propertiesModel.createRecord(fs, propertyId, propertyData);
+    await teamsModel.createRecord(fs, teamId, teamData);
+    await usersModel.createRecord(fs, userId, userData);
+    const snap = await propertiesModel.findRecord(fs, propertyId);
+    await propertiesModel.removeRecord(fs, propertyId); // Remove property
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.propertyDeleteV2);
     await wrapped(snap, { params: { propertyId } });
 
     // Results
-    const result = await usersModel.firestoreFindRecord(fs, userId);
+    const result = await usersModel.findRecord(fs, userId);
     const actual = ((result.data() || {}).teams || {})[teamId];
 
     // Assertions
@@ -243,12 +240,12 @@ describe('Properties | Delete | V2', () => {
     const bid = mocking.createBid({ job: jobDoc });
 
     // Setup database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, property);
+    await propertiesModel.createRecord(fs, propertyId, property);
     await jobsModel.createRecord(fs, jobId, job);
     await bidsModel.createRecord(fs, bidId, bid);
 
     // Execute
-    const snap = await propertiesModel.firestoreFindRecord(fs, propertyId);
+    const snap = await propertiesModel.findRecord(fs, propertyId);
     const wrapped = test.wrap(cloudFunctions.propertyDeleteV2);
     await wrapped(snap, { params: { propertyId } });
 
@@ -272,9 +269,9 @@ describe('Properties | Delete | V2', () => {
       directory,
     } = await storageHelper.uploadPropertyImage(bucket, propertyId);
     propertyData.photoURL = url;
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
-    const snap = await propertiesModel.firestoreFindRecord(fs, propertyId);
-    await propertiesModel.firestoreRemoveRecord(fs, propertyId); // Remove property
+    await propertiesModel.createRecord(fs, propertyId, propertyData);
+    const snap = await propertiesModel.findRecord(fs, propertyId);
+    await propertiesModel.removeRecord(fs, propertyId); // Remove property
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.propertyDeleteV2);
@@ -298,9 +295,9 @@ describe('Properties | Delete | V2', () => {
       directory,
     } = await storageHelper.uploadPropertyImage(bucket, propertyId);
     propertyData.bannerPhotoURL = url;
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
-    const snap = await propertiesModel.firestoreFindRecord(fs, propertyId);
-    await propertiesModel.firestoreRemoveRecord(fs, propertyId); // Remove property
+    await propertiesModel.createRecord(fs, propertyId, propertyData);
+    const snap = await propertiesModel.findRecord(fs, propertyId);
+    await propertiesModel.removeRecord(fs, propertyId); // Remove property
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.propertyDeleteV2);
@@ -330,10 +327,10 @@ describe('Properties | Delete | V2', () => {
       inspData.template.items[itemId],
       { photosData: { [Date.now()]: { downloadURL: url } } } // merge in photo data
     );
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
-    await inspectionsModel.firestoreCreateRecord(fs, inspectionId, inspData);
-    const snap = await propertiesModel.firestoreFindRecord(fs, propertyId);
-    await propertiesModel.firestoreRemoveRecord(fs, propertyId); // Remove property
+    await propertiesModel.createRecord(fs, propertyId, propertyData);
+    await inspectionsModel.createRecord(fs, inspectionId, inspData);
+    const snap = await propertiesModel.findRecord(fs, propertyId);
+    await propertiesModel.removeRecord(fs, propertyId); // Remove property
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.propertyDeleteV2);
@@ -363,14 +360,10 @@ describe('Properties | Delete | V2', () => {
       inspData.template.items[itemId],
       { photosData: { [Date.now()]: { downloadURL: url } } } // merge in photo data
     );
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
-    await archiveModel.inspection.firestoreCreateRecord(
-      fs,
-      inspectionId,
-      inspData
-    );
-    const snap = await propertiesModel.firestoreFindRecord(fs, propertyId);
-    await propertiesModel.firestoreRemoveRecord(fs, propertyId); // Remove property
+    await propertiesModel.createRecord(fs, propertyId, propertyData);
+    await archiveModel.inspection.createRecord(fs, inspectionId, inspData);
+    const snap = await propertiesModel.findRecord(fs, propertyId);
+    await propertiesModel.removeRecord(fs, propertyId); // Remove property
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.propertyDeleteV2);
@@ -405,10 +398,10 @@ describe('Properties | Delete | V2', () => {
       deficiencyData,
       { completedPhotos: { [Date.now()]: { downloadURL: url } } } // merge in photo data
     );
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
-    await diModel.firestoreCreateRecord(fs, deficiencyId, deficiencyData);
-    const snap = await propertiesModel.firestoreFindRecord(fs, propertyId);
-    await propertiesModel.firestoreRemoveRecord(fs, propertyId); // Remove property
+    await propertiesModel.createRecord(fs, propertyId, propertyData);
+    await diModel.createRecord(fs, deficiencyId, deficiencyData);
+    const snap = await propertiesModel.findRecord(fs, propertyId);
+    await propertiesModel.removeRecord(fs, propertyId); // Remove property
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.propertyDeleteV2);
@@ -443,14 +436,14 @@ describe('Properties | Delete | V2', () => {
       deficiencyData,
       { completedPhotos: { [Date.now()]: { downloadURL: url } } } // merge in photo data
     );
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, propertyData);
-    await archiveModel.deficientItem.firestoreCreateRecord(
+    await propertiesModel.createRecord(fs, propertyId, propertyData);
+    await archiveModel.deficientItem.createRecord(
       fs,
       deficiencyId,
       deficiencyData
     );
-    const snap = await propertiesModel.firestoreFindRecord(fs, propertyId);
-    await propertiesModel.firestoreRemoveRecord(fs, propertyId); // Remove property
+    const snap = await propertiesModel.findRecord(fs, propertyId);
+    await propertiesModel.removeRecord(fs, propertyId); // Remove property
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.propertyDeleteV2);

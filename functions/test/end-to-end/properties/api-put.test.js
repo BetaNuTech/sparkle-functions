@@ -27,8 +27,8 @@ describe('Properties | API | PUT', () => {
     const template = mocking.createTemplate();
 
     // Setup Database
-    await propertiesModel.firestoreCreateRecord(fs, propertyId, property);
-    await templatesModel.firestoreCreateRecord(fs, templateId, template);
+    await propertiesModel.createRecord(fs, propertyId, property);
+    await templatesModel.createRecord(fs, templateId, template);
 
     // Execute
     const app = createApp();
@@ -39,10 +39,7 @@ describe('Properties | API | PUT', () => {
       .expect(201);
 
     // Get Results
-    const propertyDoc = await propertiesModel.firestoreFindRecord(
-      fs,
-      propertyId
-    );
+    const propertyDoc = await propertiesModel.findRecord(fs, propertyId);
     const actual = propertyDoc.data() || {};
 
     // Assertions

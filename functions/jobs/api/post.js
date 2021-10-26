@@ -10,13 +10,12 @@ const {
   getAuthorizedRules,
 } = require('../utils/job-authorization');
 
-const PREFIX = 'jobs: api: post job:';
+const PREFIX = 'jobs: api: post:';
 const INITIAL_STATE = config.jobs.stateTypes[0];
 const DEFAULT_AUTH_RULES = config.jobs.authorizedRuleTypes[0];
 
 /**
- * Factory for creating a POST endpoint
- * that creates Firestore inspection
+ * Factory for creating a POST job endpoint
  * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
  * @return {Function} - onRequest handler
  */
@@ -61,10 +60,7 @@ module.exports = function createPostJob(fs) {
     // Lookup Property
     let property = null;
     try {
-      const propertySnap = await propertiesModel.firestoreFindRecord(
-        fs,
-        propertyId
-      );
+      const propertySnap = await propertiesModel.findRecord(fs, propertyId);
       property = propertySnap.data() || null;
     } catch (err) {
       return send500Error(err, 'property lookup failed', 'unexpected error');

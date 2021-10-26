@@ -4,7 +4,7 @@ const propertiesModel = require('../../models/properties');
 const notificationsModel = require('../../models/notifications');
 const notifyTemplate = require('../../utils/src-notification-templates');
 const validate = require('../utils/validate-update');
-const getFullName = require('../../utils/user');
+const { getFullName } = require('../../utils/user');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
 
 const PREFIX = 'property: api: put';
@@ -75,10 +75,7 @@ module.exports = function createPutProperty(fs) {
     // Lookup Firestore Property
     let property;
     try {
-      const propertySnap = await propertiesModel.firestoreFindRecord(
-        fs,
-        propertyId
-      );
+      const propertySnap = await propertiesModel.findRecord(fs, propertyId);
       property = propertySnap.data() || null;
     } catch (err) {
       return send500Error(err, 'property lookup failed', 'unexpected error');
@@ -99,7 +96,7 @@ module.exports = function createPutProperty(fs) {
 
     // Update property
     try {
-      await propertiesModel.firestoreUpdateRecord(fs, propertyId, update);
+      await propertiesModel.updateRecord(fs, propertyId, update);
     } catch (err) {
       return send500Error(
         err,
@@ -108,15 +105,11 @@ module.exports = function createPutProperty(fs) {
       );
     }
 
-    // TODO handle `logo` images
-    // TODO handle `banner` images
-    // TODO handle `photo` images
-
     if (!incognitoMode) {
       try {
         // Notify of new inspection report
-        await notificationsModel.firestoreAddRecord(fs, undefined, {
-          name: property.name,
+        await notificationsModel.addRecord(fs, {
+          title: 'Property Update',
           summary: notifyTemplate('property-update-summary', {
             authorName,
             authorEmail,

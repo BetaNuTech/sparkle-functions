@@ -41,7 +41,7 @@ describe('Jobs | API | POST', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot()); // empty
 
     const res = await request(createApp())
@@ -64,7 +64,7 @@ describe('Jobs | API | POST', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(
         firebase.createDocSnapshot(propertyId, mocking.createProperty())
       );
@@ -110,7 +110,7 @@ describe('Jobs | API | POST', () => {
     };
 
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
     sinon
       .stub(propertiesModel, 'createDocRef')
@@ -160,7 +160,7 @@ describe('Jobs | API | POST', () => {
 
     // Stubs
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
     sinon
       .stub(propertiesModel, 'createDocRef')

@@ -136,6 +136,45 @@ New Data:
 {{#if currentPhotoURL}}photoURL: {{{currentPhotoURL}}}{{/if}}
 \`\`\`
 *Edited by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // ////////////////
+  // Team Creation
+  // ////////////////
+
+  'team-created-summary':
+    '{{{name}}} created{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'team-created-markdown-body': `\`\`\`
+Name: {{{name}}}
+\`\`\`
+*Created by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // //////////////
+  // Team Update
+  // //////////////
+
+  'team-update-summary':
+    '{{{previousName}}} updated to {{{name}}}{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'team-update-markdown-body': `Previous Data:
+\`\`\`
+Name: {{{previousName}}}
+\`\`\`
+New Data:
+\`\`\`
+Name: {{{name}}}
+\`\`\`
+*Edited by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // ////////////////
+  // Team Deletion
+  // ////////////////
+
+  'team-delete-summary':
+    'The team {{{name}}} deleted{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'team-delete-markdown-body': `\`{{{name}}} deleted\`
+*Deleted by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
 };
 
 /**

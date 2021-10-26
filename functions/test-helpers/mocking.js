@@ -88,7 +88,7 @@ module.exports = {
         inspectionCompleted: completed,
         inspector: `user-${offset * 2}`,
         inspectorName: 'test-user',
-        itemsCompleted: completed ? items : items / 2,
+        itemsCompleted: completed ? items : Math.round(items / 2),
         score: Math.random() > 0.5 ? 100 : Math.random(),
         templateName,
         template: {
@@ -104,8 +104,20 @@ module.exports = {
     );
   },
 
+  /**
+   * Create an answered text input inspection item
+   * @param  {Object} itemConfig
+   * @return {Object}
+   */
   createItem(itemConfig = {}) {
-    assert(Boolean(itemConfig.sectionId), 'has config with sectionId');
+    assert(
+      itemConfig && typeof itemConfig === 'object',
+      'has item configuration'
+    );
+    assert(
+      itemConfig.sectionId && typeof itemConfig.sectionId === 'string',
+      'has config with "sectionId"'
+    );
 
     return Object.assign(
       {
@@ -139,6 +151,7 @@ module.exports = {
     deficient = false,
     item = {}
   ) {
+    assert(type && typeof type === 'string', 'has inspection type string');
     assert(Boolean(INSPECTION_SCORES[type]), 'has valid main input type');
     assert(typeof deficient === 'boolean', 'has boolean deficient');
     assert(item && typeof item === 'object', 'has object item');
@@ -196,6 +209,253 @@ module.exports = {
     );
   },
 
+  /**
+   * Create an unanswered thumb up/down inspection item
+   * @param  {Object} itemConfig
+   * @return {Object}
+   */
+  createIncompleteMainInputItem(type = 'twoactions_checkmarkx', itemConfig) {
+    assert(type && typeof type === 'string', 'has inspection type string');
+    assert(Boolean(INSPECTION_SCORES[type]), 'has valid main input type');
+    assert(
+      itemConfig && typeof itemConfig === 'object',
+      'has item config object'
+    );
+    assert(
+      itemConfig.sectionId && typeof itemConfig.sectionId === 'string',
+      'has item config with "sectionId"'
+    );
+
+    const itemValues = {
+      mainInputZeroValue: 0,
+      mainInputOneValue: 0,
+      mainInputTwoValue: 0,
+      mainInputThreeValue: 0,
+      mainInputFourValue: 0,
+    };
+
+    // Provide default item scores
+    INSPECTION_SCORES[type].forEach((score, i) => {
+      itemValues[ITEM_VALUE_NAMES[i]] = score;
+    });
+
+    return Object.assign(
+      {
+        deficient: false,
+        index: 0,
+        isItemNA: false,
+        isTextInputItem: false,
+        itemType: 'main',
+        mainInputType: type,
+        mainInputSelected: false,
+        notes: true,
+        photos: true,
+        title: 'G',
+        signatureDownloadURL: '',
+        signatureTimestampKey: '',
+      },
+      itemValues,
+      itemConfig
+    );
+  },
+
+  /**
+   * Create a complete inspection text input item
+   * @param  {Object?} itemConfig
+   * @return {Object} - inspectionItem
+   */
+  completedTextInputItem(itemConfig = {}) {
+    return Object.assign(
+      {
+        index: 1,
+        itemType: 'text_input',
+        isItemNA: false,
+        isTextInputItem: true,
+        mainInputFourValue: 0,
+        mainInputOneValue: 0,
+        mainInputSelected: true,
+        mainInputThreeValue: 0,
+        mainInputTwoValue: 0,
+        mainInputZeroValue: 3,
+        notes: false,
+        photos: false,
+        sectionId: 'id',
+        textInputValue: 'test',
+        title: 'title',
+      },
+      itemConfig
+    );
+  },
+
+  /**
+   * Create an incomplete inspection text input item
+   * @param  {Object?} itemConfig
+   * @return {Object} - inspectionItem
+   */
+  incompletedTextInputItem(itemConfig = {}) {
+    return Object.assign(
+      {
+        index: 1,
+        itemType: 'text_input',
+        isItemNA: false,
+        isTextInputItem: true,
+        mainInputFourValue: 0,
+        mainInputOneValue: 0,
+        mainInputSelected: false,
+        mainInputThreeValue: 0,
+        mainInputTwoValue: 0,
+        mainInputZeroValue: 3,
+        notes: false,
+        photos: false,
+        sectionId: 'id',
+        textInputValue: '',
+        title: 'title',
+      },
+      itemConfig
+    );
+  },
+
+  /**
+   * Create a complete inspection main note input item
+   * @param  {Object?} itemConfig
+   * @return {Object} - inspectionItem
+   */
+  completedMainNoteInputItem(itemConfig = {}) {
+    return Object.assign(
+      {
+        index: 0,
+        itemType: 'main',
+        inspectorNotes: '',
+        isItemNA: false,
+        isTextInputItem: false,
+        mainInputFourValue: 0,
+        mainInputNotes: 'note',
+        mainInputOneValue: 0,
+        mainInputSelected: true,
+        mainInputSelection: 0,
+        mainInputThreeValue: 0,
+        mainInputTwoValue: 0,
+        mainInputType: 'oneaction_notes',
+        mainInputZeroValue: 0,
+        notes: true,
+        photos: true,
+        sectionId: 'id',
+        textInputValue: '',
+        title: 'title',
+      },
+      itemConfig
+    );
+  },
+
+  /**
+   * Create an incomplete inspection main note input item
+   * @param  {Object?} itemConfig
+   * @return {Object} - inspectionItem
+   */
+  incompletedMainNoteInputItem(itemConfig = {}) {
+    return Object.assign(
+      {
+        index: 0,
+        itemType: 'main',
+        inspectorNotes: '',
+        isItemNA: false,
+        isTextInputItem: false,
+        mainInputFourValue: 0,
+        mainInputNotes: '',
+        mainInputOneValue: 0,
+        mainInputSelected: false,
+        mainInputSelection: 0,
+        mainInputThreeValue: 0,
+        mainInputTwoValue: 0,
+        mainInputType: 'oneaction_notes',
+        mainInputZeroValue: 0,
+        notes: true,
+        photos: true,
+        sectionId: 'id',
+        textInputValue: '',
+        title: 'title',
+      },
+      itemConfig
+    );
+  },
+
+  /**
+   * Create a complete inspection signature input item
+   * @param  {Object?} itemConfig
+   * @return {Object} - inspectionItem
+   */
+  completedSignatureInputItem(itemConfig = {}) {
+    return Object.assign(
+      {
+        index: 1,
+        isItemNA: false,
+        itemType: 'signature',
+        isTextInputItem: false,
+        mainInputFourValue: 0,
+        mainInputOneValue: 0,
+        mainInputSelected: false,
+        mainInputThreeValue: 0,
+        mainInputTwoValue: 0,
+        mainInputZeroValue: 3,
+        signatureDownloadURL: '/url',
+        signatureTimestampKey: '1536244137184',
+        sectionId: 'id',
+        notes: false,
+        photos: false,
+      },
+      itemConfig
+    );
+  },
+
+  /**
+   * Create create photo data for an inspection item
+   * @param  {Object?} photoConfig
+   * @return {Object}
+   */
+  createInspectionItemPhotoData(photoConfig = {}) {
+    return {
+      caption: '',
+      downloadURL:
+        'https://firebasestorage.googleapis.com/v0/b/s.appspot.com/o/inspectionItemImages6JSuyiAZ6.jpg?alt=media&token=c91f1b66-f83f-4e89-ac04-860c7ed40cf3',
+      ...photoConfig,
+    };
+  },
+
+  /**
+   * Create an incomplete inspection signature input item
+   * @param  {Object?} itemConfig
+   * @return {Object} - inspectionItem
+   */
+  incompletedSignatureInputItem(itemConfig = {}) {
+    return Object.assign(
+      {
+        index: 1,
+        isItemNA: false,
+        itemType: 'signature',
+        isTextInputItem: false,
+        mainInputFourValue: 0,
+        mainInputOneValue: 0,
+        mainInputSelected: false,
+        mainInputThreeValue: 0,
+        mainInputTwoValue: 0,
+        mainInputZeroValue: 3,
+        sectionId: 'id',
+        signatureDownloadURL: '',
+        signatureTimestampKey: '',
+        notes: false,
+        photos: false,
+      },
+      itemConfig
+    );
+  },
+
+  /**
+   * Create a deficiency document for an inspection item
+   * @param  {String} inspectionId
+   * @param  {String} itemId
+   * @param  {Object?} item
+   * @return {Object}
+   */
   createDeficientItem(inspectionId, itemId, item = {}) {
     assert(
       inspectionId && typeof inspectionId === 'string',
@@ -291,6 +551,11 @@ module.exports = {
     };
   },
 
+  /**
+   * Create an inspection section
+   * @param  {Object?} sectionConfig
+   * @return {Object}
+   */
   createSection(sectionConfig = {}) {
     return Object.assign(
       {
@@ -505,6 +770,9 @@ module.exports = {
       startAt: 1,
       completeAt: 2,
       scope: config.bids.scopeTypes[0],
+      vendorW9: true,
+      vendorInsurance: true,
+      vendorLicense: true,
       createdAt: nowUnix(),
       updatedAt: nowUnix(),
       ...bidConfig,

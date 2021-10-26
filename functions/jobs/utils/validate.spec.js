@@ -87,6 +87,11 @@ describe('Jobs | Utils | Validate Job Create', () => {
         expected: 'type',
         msg: 'rejects non-string for type',
       },
+      {
+        job: { expediteReason: 1 },
+        expected: 'expediteReason',
+        msg: 'rejects non-string expedite reason',
+      },
     ];
 
     for (let i = 0; i < data.length; i++) {
@@ -125,6 +130,7 @@ describe('Jobs | Utils | Validate Job Create', () => {
     const actual = validate({
       id: '1',
       trelloCardURL: 'test',
+      expediteReason: 'because',
       ...requiredAttrs,
     });
 

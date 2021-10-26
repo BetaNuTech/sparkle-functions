@@ -21,7 +21,7 @@ const requiredAttrs = {
 const propertyId = uuid();
 const jobId = uuid();
 
-describe('Bids | API | POST', () => {
+describe('Jobs | API | POST Bid', () => {
   beforeEach(() => {
     sinon.stub(log, 'info').callsFake(() => true);
     sinon.stub(log, 'error').callsFake(() => true);
@@ -47,7 +47,7 @@ describe('Bids | API | POST', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot()); // empty
 
     const res = await request(createApp())
@@ -68,7 +68,7 @@ describe('Bids | API | POST', () => {
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
 
     sinon.stub(jobsModel, 'findRecord').resolves(firebase.createDocSnapshot()); // empty
@@ -110,7 +110,7 @@ describe('Bids | API | POST', () => {
 
     // Stup Requests
     sinon
-      .stub(propertiesModel, 'firestoreFindRecord')
+      .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
     sinon
       .stub(jobsModel, 'findRecord')

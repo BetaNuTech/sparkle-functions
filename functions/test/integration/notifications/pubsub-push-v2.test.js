@@ -22,12 +22,10 @@ describe('Notifications | Pubsub | Publish Push V2', function() {
     const notification = mocking.createNotification(); // has no push messages
 
     let actual = '';
-    sinon
-      .stub(notificationsModel, 'firestoreFindRecord')
-      .callsFake((_, result) => {
-        actual = result;
-        return Promise.resolve(createSnapshot(expected, notification));
-      });
+    sinon.stub(notificationsModel, 'findRecord').callsFake((_, result) => {
+      actual = result;
+      return Promise.resolve(createSnapshot(expected, notification));
+    });
 
     await createHandler(
       createFirestore(),
@@ -45,7 +43,7 @@ describe('Notifications | Pubsub | Publish Push V2', function() {
     const notification = mocking.createNotification(); // has no push targets
 
     let actual = '';
-    sinon.stub(notificationsModel, 'firestoreQuery').callsFake((_, query) => {
+    sinon.stub(notificationsModel, 'query').callsFake((_, query) => {
       actual = query;
       return Promise.resolve(
         createCollection(createSnapshot(notificationId, notification))
@@ -80,11 +78,11 @@ describe('Notifications | Pubsub | Publish Push V2', function() {
     };
 
     sinon
-      .stub(notificationsModel, 'firestoreQuery')
+      .stub(notificationsModel, 'query')
       .resolves(createCollection(createSnapshot(notificationId, notification)));
-    sinon.stub(notificationsModel, 'firestoreUpdateRecord').resolves();
+    sinon.stub(notificationsModel, 'updateRecord').resolves();
     sinon
-      .stub(regTokensModel, 'firestoreFindRecord')
+      .stub(regTokensModel, 'findRecord')
       .resolves(createSnapshot(userId, regTokens));
 
     let actual = null;
@@ -117,11 +115,11 @@ describe('Notifications | Pubsub | Publish Push V2', function() {
     const regTokens = { [uuid()]: mocking.nowUnix() };
 
     sinon
-      .stub(notificationsModel, 'firestoreQuery')
+      .stub(notificationsModel, 'query')
       .resolves(createCollection(createSnapshot(notificationId, notification)));
-    sinon.stub(notificationsModel, 'firestoreUpdateRecord').resolves();
+    sinon.stub(notificationsModel, 'updateRecord').resolves();
     sinon
-      .stub(regTokensModel, 'firestoreFindRecord')
+      .stub(regTokensModel, 'findRecord')
       .resolves(createSnapshot(userId, regTokens));
 
     let actual = null;
@@ -159,15 +157,15 @@ describe('Notifications | Pubsub | Publish Push V2', function() {
     const regTokens = { [uuid()]: mocking.nowUnix() };
 
     sinon
-      .stub(notificationsModel, 'firestoreQuery')
+      .stub(notificationsModel, 'query')
       .resolves(createCollection(createSnapshot(notificationId, notification)));
     sinon
-      .stub(regTokensModel, 'firestoreFindRecord')
+      .stub(regTokensModel, 'findRecord')
       .resolves(createSnapshot(userId, regTokens));
 
     let actual = null;
     sinon
-      .stub(notificationsModel, 'firestoreUpdateRecord')
+      .stub(notificationsModel, 'updateRecord')
       .callsFake((_, id, update) => {
         actual = { ...update };
         if (typeof actual[`push.${userId}`] === 'object') {

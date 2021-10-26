@@ -266,6 +266,56 @@ module.exports = {
   },
 
   /**
+   * POST a list of urls to a trello card
+   * and return only the successfully published
+   * attahcment ID's
+   * @param  {String} cardId
+   * @param  {String} authToken
+   * @param  {String} apiKey
+   * @param  {String[]} urls
+   * @return {Promise} - resolves {String[]} response
+   */
+  publishAllCardAttachments(cardId, authToken, apiKey, urls) {
+    assert(cardId && typeof cardId === 'string', 'has trello card id');
+    assert(authToken && typeof authToken === 'string', 'has auth token');
+    assert(apiKey && typeof apiKey === 'string', 'has api key');
+    assert(
+      Array.isArray(urls) && urls.every(url => url && typeof url === 'string'),
+      'has attachment image urls'
+    );
+
+    if (!urls.length) {
+      return Promise.resolve([]);
+    }
+
+    // Successful attachments
+    const attachmentIds = [];
+
+    // Publish all attachments
+    // ignoring failures, pushing successfully
+    // uploaded attachment ids to list
+    const requests = urls.map(url =>
+      this.publishCardAttachment(cardId, authToken, apiKey, url)
+        .catch(() => {}) // fail silently
+        .then(response => {
+          const responseBody = response.body;
+
+          // Set attachment identifier
+          if (
+            responseBody &&
+            responseBody.id &&
+            typeof responseBody.id === 'string'
+          ) {
+            attachmentIds.push(responseBody.id);
+          }
+        })
+    );
+
+    // Resolve successfully uploaded attachments
+    return Promise.all(requests).then(() => attachmentIds);
+  },
+
+  /**
    * Publish a Trello card to a Trello boards' list
    * @param  {String} listId
    * @param  {String} authToken

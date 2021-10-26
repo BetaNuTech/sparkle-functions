@@ -3,7 +3,7 @@ const assert = require('assert');
 const express = require('express');
 const bodyParser = require('body-parser');
 const swaggerUi = require('swagger-ui-express');
-const fileUpload = require('express-fileupload');
+const fileParser = require('express-multipart-file-parser');
 const slack = require('./slack');
 const trello = require('./trello');
 const deficiencies = require('./deficient-items');
@@ -12,6 +12,7 @@ const inspections = require('./inspections');
 const jobs = require('./jobs');
 const users = require('./users');
 const clients = require('./clients');
+const teams = require('./teams');
 const authUser = require('./utils/auth-firebase-user');
 const authUserCrud = require('./middleware/auth-user-crud');
 const authTrelloReq = require('./utils/auth-trello-request');
@@ -61,6 +62,19 @@ module.exports = (fs, auth, settings, storage) => {
     }),
     inspections.api.post(fs)
   );
+
+  // Update Inspection Items
+  app.patch(
+    '/v0/inspections/:inspectionId/template',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    inspections.api.patchTemplate(fs)
+  );
+
   // Inspection property
   // reassignment endpoint
   app.patch(
@@ -130,7 +144,7 @@ module.exports = (fs, auth, settings, storage) => {
       admin: true,
       corporate: true,
     }),
-    fileUpload(),
+    fileParser,
     properties.api.postImage(fs, storage)
   );
 
@@ -290,6 +304,19 @@ module.exports = (fs, auth, settings, storage) => {
       property: true,
     }),
     jobs.api.postBid(fs)
+  );
+
+  // Create Team
+  app.post('/v0/teams', authUser(fs, auth, true), teams.api.post(fs));
+
+  // Update Team
+  app.patch('/v0/teams/:teamId', authUser(fs, auth, true), teams.api.patch(fs));
+
+  // Delete Team
+  app.delete(
+    '/v0/teams/:teamId',
+    authUser(fs, auth, true),
+    teams.api.delete(fs)
   );
 
   return app;
