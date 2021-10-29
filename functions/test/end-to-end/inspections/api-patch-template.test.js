@@ -4,11 +4,12 @@ const request = require('supertest');
 const bodyParser = require('body-parser');
 const uuid = require('../../../test-helpers/uuid');
 const mocking = require('../../../test-helpers/mocking');
+const storageHelper = require('../../../test-helpers/storage');
 const inspectionsModel = require('../../../models/inspections');
 const propertiesModel = require('../../../models/properties');
 const handler = require('../../../inspections/api/patch-template');
-const { cleanDb } = require('../../../test-helpers/firebase');
-const { fs: db } = require('../../setup');
+const { cleanDb, findStorageFile } = require('../../../test-helpers/firebase');
+const { fs: db, storage } = require('../../setup');
 
 describe('Inspections | API | PATCH Template', () => {
   afterEach(() => cleanDb(null, db));
@@ -65,6 +66,76 @@ describe('Inspections | API | PATCH Template', () => {
     const actual = updatedInspection.data() || null;
     delete actual.updatedAt;
     expect(actual).to.deep.equal(expected);
+  });
+
+  it('should cleanup an inspection items photos when it gets deleted', async () => {
+    const expected = undefined;
+    const propertyId = uuid();
+    const inspectionId = `${uuid()}-${parseInt(Date.now() / 1000, 10)}`;
+    const sectionId = uuid();
+    const deletedSectionId = uuid();
+    const itemId = uuid();
+    const deletedItemId = uuid();
+    const bucket = storage.bucket();
+    const sectionConfig = { title: 'Multi', section_type: 'multi' };
+    const {
+      url,
+      directory,
+      destination,
+    } = await storageHelper.uploadInspectionItemImage(bucket, inspectionId);
+    const inspection = mocking.createInspection({
+      property: propertyId,
+      score: 100,
+      totalItems: 1,
+      itemsCompleted: 1,
+      deficienciesExist: false,
+      inspectionReportURL: 'old-url.com',
+      inspectionReportUpdateLastDate: 1601494027,
+      inspectionCompleted: true,
+      templateName: 'template',
+      template: mocking.createTemplate({
+        name: 'template',
+        items: {
+          [itemId]: mocking.createItem({ sectionId }),
+          [deletedItemId]: mocking.createItem({
+            sectionId: deletedSectionId,
+            photosData: {
+              [uuid()]: mocking.createInspectionItemPhotoData({
+                downloadURL: url,
+              }),
+            },
+          }),
+        },
+        sections: {
+          [sectionId]: mocking.createSection(sectionConfig), // original section
+          [deletedSectionId]: mocking.createSection({
+            // cloned multi-section
+            ...sectionConfig,
+            index: 1,
+            added_multi_section: true,
+          }),
+        },
+      }),
+    });
+    const update = {
+      sections: {
+        [deletedSectionId]: null,
+      },
+    };
+
+    // Setup database
+    await inspectionsModel.createRecord(db, inspectionId, inspection);
+
+    // Execute
+    await request(createApp())
+      .patch(`/t/${inspectionId}/template`)
+      .send(update)
+      .expect('Content-Type', /json/)
+      .expect(201);
+
+    // Test results
+    const actual = await findStorageFile(bucket, directory, destination); // find the upload
+    expect(actual).to.equal(expected);
   });
 
   it('should update property meta data when the inspection becomes complete', async () => {
@@ -136,7 +207,7 @@ function createApp(user = {}) {
     '/t/:inspectionId/template',
     bodyParser.json(),
     stubAuth(user),
-    handler(db)
+    handler(db, storage)
   );
   return app;
 }

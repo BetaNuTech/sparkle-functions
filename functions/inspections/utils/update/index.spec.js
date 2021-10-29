@@ -2,14 +2,95 @@ const { expect } = require('chai');
 const config = require('../../../config');
 const mocking = require('../../../test-helpers/mocking');
 const uuid = require('../../../test-helpers/uuid');
+const inspUtil = require('../../../utils/inspection');
 const update = require('./index');
 
 const DEFICIENT_ITEM_ELIGIBLE = config.inspectionItems.deficientListEligible;
 
 describe('Unit | Inspections | Utils | Update', () => {
-  // TODO
-  // it('appends new multi sections', () => {});
-  // it('appends new multi section associated items', () => {});
+  it('appends a new multi section', () => {
+    const expected = 1;
+    const propertyId = uuid();
+    const origSectionId = uuid();
+    const addedSectionId = uuid();
+    const sectionConfig = { title: 'Multi', section_type: 'multi' };
+    const inspection = mocking.createInspection({
+      property: propertyId,
+      totalItems: 0,
+      template: {
+        sections: {
+          [origSectionId]: mocking.createSection(sectionConfig), // original section
+        },
+        items: {
+          one: mocking.createIncompleteMainInputItem('twoactions_checkmarkx', {
+            sectionId: origSectionId,
+          }),
+        },
+      },
+    });
+    const changes = {
+      sections: {
+        [addedSectionId]: mocking.createSection({
+          ...sectionConfig,
+          index: 1,
+          added_multi_section: true,
+        }),
+      },
+      items: {
+        two: mocking.createIncompleteMainInputItem('twoactions_checkmarkx', {
+          sectionId: addedSectionId,
+        }),
+      },
+    };
+
+    // Assertions
+    const result = update(inspection, changes);
+    const resultSections = (result.template || {}).sections || {};
+    const actual = Object.keys(resultSections).length;
+    expect(actual).to.equal(expected);
+  });
+
+  it('appends new multi section associated items', () => {
+    const expected = 1;
+    const propertyId = uuid();
+    const origSectionId = uuid();
+    const addedSectionId = uuid();
+    const sectionConfig = { title: 'Multi', section_type: 'multi' };
+    const inspection = mocking.createInspection({
+      property: propertyId,
+      totalItems: 0,
+      template: {
+        sections: {
+          [origSectionId]: mocking.createSection(sectionConfig), // original section
+        },
+        items: {
+          one: mocking.createIncompleteMainInputItem('twoactions_checkmarkx', {
+            sectionId: origSectionId,
+          }),
+        },
+      },
+    });
+    const changes = {
+      sections: {
+        [addedSectionId]: mocking.createSection({
+          ...sectionConfig,
+          index: 1,
+          added_multi_section: true,
+        }),
+      },
+      items: {
+        two: mocking.createIncompleteMainInputItem('twoactions_checkmarkx', {
+          sectionId: addedSectionId,
+        }),
+      },
+    };
+
+    // Assertions
+    const result = update(inspection, changes);
+    const resultItems = (result.template || {}).items || {};
+    const actual = Object.keys(resultItems).length;
+    expect(actual).to.equal(expected);
+  });
 
   it('sets total items in the inspections', () => {
     const expected = 2;
@@ -588,5 +669,98 @@ describe('Unit | Inspections | Utils | Update', () => {
     );
     const actual = result.updatedLastDate;
     expect(actual).to.equal(expected);
+  });
+
+  it('removes a deleted multi section', () => {
+    const expected = true;
+    const propertyId = uuid();
+    const origSectionId = uuid();
+    const addedSectionId = uuid();
+    const sectionConfig = { title: 'Multi', section_type: 'multi' };
+    const inspection = mocking.createInspection({
+      property: propertyId,
+      totalItems: 0,
+      template: {
+        sections: {
+          [origSectionId]: mocking.createSection(sectionConfig), // original section
+          [addedSectionId]: mocking.createSection({
+            // cloned multi-section
+            ...sectionConfig,
+            index: 1,
+            added_multi_section: true,
+          }),
+        },
+        items: {
+          one: mocking.createIncompleteMainInputItem('twoactions_checkmarkx', {
+            sectionId: origSectionId,
+          }),
+          two: mocking.createIncompleteMainInputItem('twoactions_checkmarkx', {
+            sectionId: addedSectionId,
+          }),
+        },
+      },
+    });
+    const changes = {
+      sections: {
+        [addedSectionId]: null,
+      },
+    };
+
+    // Assertions
+    const result = update(inspection, changes);
+    const resultSections = (result.template || {}).sections || {};
+    const actual = inspUtil.isFieldValueDelete(resultSections[addedSectionId]);
+    expect(actual).to.equal(expected);
+  });
+
+  it("removes a deleted multi section's items", () => {
+    const expected = [true, true];
+    const propertyId = uuid();
+    const origSectionId = uuid();
+    const addedSectionId = uuid();
+    const sectionConfig = { title: 'Multi', section_type: 'multi' };
+    const inspection = mocking.createInspection({
+      property: propertyId,
+      totalItems: 0,
+      template: {
+        sections: {
+          [origSectionId]: mocking.createSection(sectionConfig), // original section
+          [addedSectionId]: mocking.createSection({
+            // cloned multi-section
+            ...sectionConfig,
+            index: 1,
+            added_multi_section: true,
+          }),
+        },
+        items: {
+          one: mocking.createIncompleteMainInputItem('twoactions_checkmarkx', {
+            sectionId: origSectionId,
+          }),
+          two: mocking.createIncompleteMainInputItem('twoactions_checkmarkx', {
+            sectionId: addedSectionId,
+          }),
+          three: mocking.createIncompleteMainInputItem(
+            'twoactions_checkmarkx',
+            {
+              sectionId: addedSectionId,
+            }
+          ),
+        },
+      },
+    });
+    const changes = {
+      sections: {
+        [addedSectionId]: null,
+      },
+    };
+
+    // Assertions
+    const result = update(inspection, changes);
+    const resultSections = (result.template || {}).items || {};
+    const actual = [
+      inspUtil.isFieldValueDelete(resultSections.two),
+      inspUtil.isFieldValueDelete(resultSections.three),
+    ];
+    expect(actual).to.deep.equal(expected);
   });
 });

@@ -72,7 +72,7 @@ module.exports = (fs, auth, settings, storage) => {
       team: true,
       property: true,
     }),
-    inspections.api.patchTemplate(fs)
+    inspections.api.patchTemplate(fs, storage)
   );
 
   // Inspection property
