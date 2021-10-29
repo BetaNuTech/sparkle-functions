@@ -76,6 +76,23 @@ Inspection Report: {{{reportUrl}}}{{/if}}
 
 *Updated by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
 
+  // /////////////////////////////////
+  // Property Inspection Completion
+  // /////////////////////////////////
+
+  'inspection-completion-summary':
+    '{{{completionDate}}} inspection completed by{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}}), using {{{templateName}}} template',
+
+  'inspection-completion-markdown-body': `*Inspection Completed*
+\`\`\`
+{{#if templateName}}Template: {{{templateName}}}{{/if}}
+{{#if startDate}}Inspection Start Date: {{{startDate}}}{{/if}}
+{{#if score}}Score: {{{score}}}{{/if}}
+{{#if deficientItemCount}}# of deficient items: {{{deficientItemCount}}}{{/if}}
+\`\`\`{{#if url}}
+Inspection: {{{url}}}{{/if}}
+*Completed by*: {{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
   // /////////////////////////////////////
   // Property Creation
   // /////////////////////////////////////

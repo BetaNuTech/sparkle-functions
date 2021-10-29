@@ -1315,7 +1315,7 @@
           {
             "name": "integration",
             "in": "body",
-            "description": "Inspection patch property payload.",
+            "description": "Change inspection property relationship to reassign inspection to a new property",
             "required": ["property"],
             "properties": {
               "property": {
@@ -1438,6 +1438,54 @@
           "304": {
             "type": "object",
             "properties": {}
+          }
+        }
+      }
+    },
+    "/v0/inspections/{inspectionId}/template": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "inspectionId",
+          "in": "path",
+          "required": true,
+          "description": "inspection id.",
+          "type": "string"
+        }
+      ],
+      "patch": {
+        "tags": ["Inspection"],
+        "parameters": [
+          {
+            "name": "integration",
+            "in": "body",
+            "description": "Inspection updating",
+            "required": [],
+            "properties": {}
+          }
+        ],
+        "responses": {
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "204": {},
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/CREATEINSPECTION"
+            }
           }
         }
       }

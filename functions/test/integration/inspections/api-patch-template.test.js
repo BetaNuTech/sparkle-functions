@@ -6,10 +6,12 @@ const bodyParser = require('body-parser');
 const log = require('../../../utils/logger');
 const mocking = require('../../../test-helpers/mocking');
 const uuid = require('../../../test-helpers/uuid');
-const { getDiffs } = require('../../../utils/object-differ');
 const inspectionsModel = require('../../../models/inspections');
+const propertiesModel = require('../../../models/properties');
+const notificationsModel = require('../../../models/notifications');
 const patchInspection = require('../../../inspections/api/patch-template');
 const firebase = require('../../../test-helpers/firebase');
+const { storage } = require('../../setup');
 
 const USER_ID = '123';
 
@@ -117,15 +119,16 @@ describe('Inspections PATCH TEMPLATE | API | PATCH Template', () => {
       'twoactions_checkmarkx',
       { sectionId }
     );
-    const completedItem = mocking.createCompletedMainInputItem(
+    const secondItem = mocking.createIncompleteMainInputItem(
       'twoactions_checkmarkx',
-      false,
       { sectionId }
     );
-    const userUpdates = getDiffs(currentItem, completedItem);
     const updates = {
       items: {
-        [itemId]: userUpdates,
+        [itemId]: {
+          mainInputSelected: true,
+          mainInputSelection: 0,
+        },
       },
     };
     const template = mocking.createTemplate({
@@ -135,10 +138,13 @@ describe('Inspections PATCH TEMPLATE | API | PATCH Template', () => {
       },
       items: {
         [itemId]: currentItem,
+        [uuid()]: secondItem, // stays incomplete
       },
     });
     const inspection = mocking.createInspection({
       template,
+      inspectionCompleted: false,
+      totalItems: 2,
       property: propertyId,
     });
     const updatedInspection = JSON.parse(JSON.stringify(inspection)); // clone
@@ -175,6 +181,152 @@ describe('Inspections PATCH TEMPLATE | API | PATCH Template', () => {
     const actual = res.body.data;
     expect(actual).to.deep.equal(expected);
   });
+
+  it('sends notification upon successful inspection completion', async () => {
+    const expected = true;
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const sectionId = uuid();
+    const itemId = uuid();
+    const property = mocking.createProperty();
+    const currentItem = mocking.createIncompleteMainInputItem(
+      'twoactions_checkmarkx',
+      { sectionId }
+    );
+    const completeInspUpdate = {
+      items: {
+        [itemId]: {
+          mainInputSelected: true,
+          mainInputSelection: 0,
+        },
+      },
+    };
+    const template = mocking.createTemplate({
+      name: 'test',
+      requireDeficientItemNoteAndPhoto: false,
+      sections: {
+        [sectionId]: mocking.createSection(),
+      },
+      items: {
+        [itemId]: currentItem,
+      },
+    });
+    const inspection = mocking.createInspection({
+      template,
+      inspectionCompleted: false,
+      totalItems: 1,
+      itemsCompleted: 0,
+      property: propertyId,
+    });
+    const updatedInspection = JSON.parse(JSON.stringify(inspection)); // clone
+    Object.assign(
+      updatedInspection.template.items[itemId],
+      completeInspUpdate.items[itemId] // Merge in user updates
+    );
+
+    // Stub Requests
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+    sinon
+      .stub(inspectionsModel, 'setRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, updatedInspection));
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(
+        firebase.createDocSnapshot(
+          propertyId,
+          firebase.createDocSnapshot(property)
+        )
+      );
+    const sendNotification = sinon
+      .stub(notificationsModel, 'addRecord')
+      .resolves();
+
+    // Execute
+    await request(createApp())
+      .patch(`/t/${inspectionId}`)
+      .send(completeInspUpdate)
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(201);
+
+    // Assertions
+    const actual = sendNotification.called;
+    expect(actual).to.equal(expected);
+  });
+
+  it('does not send notification in incognito mode', async () => {
+    const expected = false;
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const sectionId = uuid();
+    const itemId = uuid();
+    const property = mocking.createProperty();
+    const currentItem = mocking.createIncompleteMainInputItem(
+      'twoactions_checkmarkx',
+      { sectionId }
+    );
+    const completeInspUpdate = {
+      items: {
+        [itemId]: {
+          mainInputSelected: true,
+          mainInputSelection: 0,
+        },
+      },
+    };
+    const template = mocking.createTemplate({
+      name: 'test',
+      requireDeficientItemNoteAndPhoto: false,
+      sections: {
+        [sectionId]: mocking.createSection(),
+      },
+      items: {
+        [itemId]: currentItem,
+      },
+    });
+    const inspection = mocking.createInspection({
+      template,
+      inspectionCompleted: false,
+      totalItems: 1,
+      itemsCompleted: 0,
+      property: propertyId,
+    });
+    const updatedInspection = JSON.parse(JSON.stringify(inspection)); // clone
+    Object.assign(
+      updatedInspection.template.items[itemId],
+      completeInspUpdate.items[itemId] // Merge in user updates
+    );
+
+    // Stub Requests
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+    sinon
+      .stub(inspectionsModel, 'setRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, updatedInspection));
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(
+        firebase.createDocSnapshot(
+          propertyId,
+          firebase.createDocSnapshot(property)
+        )
+      );
+    const sendNotification = sinon
+      .stub(notificationsModel, 'addRecord')
+      .resolves();
+
+    // Execute
+    await request(createApp())
+      .patch(`/t/${inspectionId}?incognitoMode=true`)
+      .send(completeInspUpdate)
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(201);
+
+    // Assertions
+    const actual = sendNotification.called;
+    expect(actual).to.equal(expected);
+  });
 });
 
 function createApp() {
@@ -183,10 +335,13 @@ function createApp() {
     '/t/:inspectionId',
     bodyParser.json(),
     stubAuth,
-    patchInspection({
-      collection: () => {},
-      batch: () => ({ commit: () => Promise.resolve() }),
-    })
+    patchInspection(
+      {
+        collection: () => {},
+        batch: () => ({ commit: () => Promise.resolve() }),
+      },
+      storage
+    )
   );
   return app;
 }

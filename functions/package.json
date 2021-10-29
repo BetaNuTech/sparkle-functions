@@ -7,6 +7,7 @@
     "unit-test": "npm run test-unit",
     "test-e2e": "NODE_ENV=test LOG_LEVEL=crit npx mocha './{,!(node_modules)/**}/test/end-to-end/**/*.test.js'",
     "end-to-end-test": "npm run test-e2e",
+    "e2e-test": "npm run test-e2e",
     "test-int": "NODE_ENV=test LOG_LEVEL=crit npx mocha './{,!(node_modules)/**}/test/integration/**/*.test.js'",
     "integration-test": "npm run test-int",
     "dev-test": "npx nodemon -i node_modules -e js,json --exec 'npm test --silent'",
