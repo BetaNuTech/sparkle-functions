@@ -4,6 +4,9 @@ const { v4: uuidv4 } = require('uuid');
 const PROPERTY_BUCKET_NAME = `propertyImages${
   process.env.NODE_ENV === 'test' ? 'Test' : ''
 }`;
+const INSP_BUCKET_NAME = `inspectionItemImages${
+  process.env.NODE_ENV === 'test' ? 'Test' : ''
+}`;
 const PREFIX = 'services: storage:';
 
 module.exports = {
@@ -68,5 +71,29 @@ module.exports = {
     }
 
     return signedUrl;
+  },
+
+  /**
+   * Remove an inspection item photo uploaded
+   * file in firebase storage
+   * @param  {admin.storage} storage
+   * @param  {String} url
+   * @return {Promise}
+   */
+  deleteInspectionItemPhoto(storage, url) {
+    assert(storage && typeof storage.bucket === 'function', 'has storage');
+    assert(url && typeof url === 'string', 'has url string');
+
+    const fileName = (decodeURIComponent(url).split('?')[0] || '')
+      .split('/')
+      .pop();
+
+    return storage
+      .bucket()
+      .file(`${INSP_BUCKET_NAME}/${fileName}`)
+      .delete()
+      .catch(err => {
+        throw Error(`${PREFIX} file delete failed: ${err}`);
+      });
   },
 };

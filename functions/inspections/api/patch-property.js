@@ -90,6 +90,8 @@ module.exports = function createPatchProperty(fs) {
       );
     }
 
+    // TODO Property Inspection Reassignment notification
+
     res.status(201).send({ message: 'successful' });
   };
 };

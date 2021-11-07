@@ -1,6 +1,8 @@
 const assert = require('assert');
+const FieldValue = require('firebase-admin').firestore.FieldValue;
 const calculateScore = require('./calculate-score');
 const filterCompleted = require('./filter-completed-items');
+const inspUtil = require('../../../utils/inspection');
 const pipe = require('../../../utils/pipe');
 const { hasDiffs } = require('../../../utils/object-differ');
 
@@ -32,8 +34,10 @@ module.exports = function updateInspection(
   const changes = JSON.parse(JSON.stringify(userUpdates));
 
   pipe(
-    setSectionChanges,
-    setItemChanges,
+    setUpsertSections,
+    setRemovedMultiSections,
+    setUpsertItems,
+    setRemovedMultiSectionItems, // must go after removed multi sections
     setTotalItems,
     setItemsCompleted,
     setCompleted,
@@ -47,14 +51,14 @@ module.exports = function updateInspection(
   // Move item updates under template
   if (updates.items) {
     updates.template = updates.template || {};
-    updates.template.items = JSON.parse(JSON.stringify(updates.items));
+    updates.template.items = JSON.parse(JSON.stringify(updates.items)); // clone
     delete updates.items;
   }
 
   // Move section updates under template
   if (updates.sections) {
     updates.template = updates.template || {};
-    updates.template.sections = JSON.parse(JSON.stringify(updates.sections));
+    updates.template.sections = JSON.parse(JSON.stringify(updates.sections)); // clone
     delete updates.sections;
   }
 
@@ -63,14 +67,19 @@ module.exports = function updateInspection(
 
 /**
  * Clone all section changes to updates
+ * allowing users to modify existing sections
+ * and add new multi-sections to inspection
  * @param  {Object} config
  * @return {Object} - config
  */
-function setSectionChanges(config) {
+function setUpsertSections(config) {
   const { changes, current, updates } = config;
   const template = current.template || {};
 
   Object.keys(changes.sections || {}).forEach(id => {
+    const isSectionUpserted = Boolean(changes.sections[id]);
+    if (!isSectionUpserted) return;
+
     const sectionChanges = JSON.parse(JSON.stringify(changes.sections[id]));
     const sectionCurrent = JSON.parse(
       JSON.stringify((template.sections || {})[id] || {})
@@ -91,15 +100,43 @@ function setSectionChanges(config) {
 }
 
 /**
+ * Remove a delete multi-section
+ * by adding a Firstore delete value
+ * @param  {Object} config
+ * @return {Object} - config
+ */
+function setRemovedMultiSections(config) {
+  const { changes, current, updates } = config;
+  const template = current.template || {};
+
+  Object.keys(changes.sections || {}).forEach(id => {
+    const currentSection = (template.sections || {})[id] || {};
+    const isRemovable = currentSection.section_type === 'multi';
+    const isClonedMultiSection = currentSection.added_multi_section === true;
+    const isSectionRemoved = changes.sections[id] === null;
+
+    if (isRemovable && isClonedMultiSection && isSectionRemoved) {
+      updates.sections = updates.sections || {};
+      updates.sections[id] = FieldValue.delete();
+    }
+  });
+
+  return config;
+}
+
+/**
  * Clone all item changes to updates
  * @param  {Object} config
  * @return {Object} - config
  */
-function setItemChanges(config) {
+function setUpsertItems(config) {
   const { current, changes, updates } = config;
   const template = current.template || {};
 
   Object.keys(changes.items || {}).forEach(id => {
+    const isItemUpserted = Boolean(changes.items[id]);
+    if (!isItemUpserted) return;
+
     const itemChanges = JSON.parse(JSON.stringify(changes.items[id]));
     const itemCurrent = JSON.parse(
       JSON.stringify((template.items || {})[id] || {})
@@ -120,15 +157,46 @@ function setItemChanges(config) {
 }
 
 /**
+ * Remove a delete multi-section's items
+ * by adding a Firstore delete value to
+ * each item associated with the removed
+ * multi-section
+ * @param  {Object} config
+ * @return {Object} - config
+ */
+function setRemovedMultiSectionItems(config) {
+  const { current, updates } = config;
+  const template = current.template || {};
+
+  Object.keys(updates.sections || {}).forEach(id => {
+    // An object without any attributes signifies a FieldValue.delete
+    const isRemovingSection = Boolean(
+      updates.sections[id] && inspUtil.isFieldValueDelete(updates.sections[id])
+    );
+
+    if (isRemovingSection) {
+      Object.keys(template.items || {})
+        .filter(itemId => template.items[itemId].sectionId === id)
+        .forEach(itemId => {
+          updates.items = updates.items || {};
+          updates.items[itemId] = FieldValue.delete();
+        });
+    }
+  });
+
+  return config;
+}
+
+/**
  * Set total items counter
  * @param  {Object} config
  * @return {Object} - config
  */
 function setTotalItems(config) {
-  const { current, updates } = config;
+  const { current, changes, updates } = config;
   const template = current.template || {};
   const totalItems = []
-    .concat(Object.keys(template.items || {}), Object.keys(updates.items || {}))
+    .concat(Object.keys(template.items || {}), Object.keys(changes.items || {}))
     .filter((id, i, arr) => arr.indexOf(id) === i).length; // filter unique
 
   if (current.totalItems !== totalItems) {
@@ -144,9 +212,9 @@ function setTotalItems(config) {
  * @return {Object} - config
  */
 function setItemsCompleted(config) {
-  const { current, updates } = config;
+  const { current, changes, updates } = config;
   const template = current.template || {};
-  const mergedItems = mergeItems(template.items, updates.items);
+  const mergedItems = mergeItems(template.items, changes.items || {});
   const items = hashToArray(mergedItems);
   const itemsCompleted = filterCompleted(
     items,
@@ -182,25 +250,6 @@ function setDeficienciesExist(config) {
 }
 
 /**
- * Set `completionDate` when completed
- * @param  {Object} config
- * @return {Object} - config
- */
-function setCompletionDate(config) {
-  const { current, updates, now } = config;
-  const isCompleted =
-    typeof updates.inspectionCompleted !== 'undefined'
-      ? updates.inspectionCompleted
-      : current.inspectionCompleted;
-
-  if (isCompleted && !current.completionDate) {
-    updates.completionDate = now;
-  }
-
-  return config;
-}
-
-/**
  * Set if inspection completed
  * @param  {Object} config
  * @return {Object} - config
@@ -220,8 +269,27 @@ function setCompleted(config) {
 
   if (isCurrentlyCompleted && totalItems > itemsCompleted) {
     updates.inspectionCompleted = false; // allow unsetting completed
-  } else if (isCurrentlyIncomplete) {
+  } else if (isCurrentlyIncomplete && itemsCompleted >= totalItems) {
     updates.inspectionCompleted = true;
+  }
+
+  return config;
+}
+
+/**
+ * Set `completionDate` when completed
+ * @param  {Object} config
+ * @return {Object} - config
+ */
+function setCompletionDate(config) {
+  const { current, updates, now } = config;
+  const isCompleted =
+    typeof updates.inspectionCompleted !== 'undefined'
+      ? updates.inspectionCompleted
+      : current.inspectionCompleted;
+
+  if (isCompleted && !current.completionDate) {
+    updates.completionDate = now;
   }
 
   return config;

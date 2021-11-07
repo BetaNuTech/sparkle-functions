@@ -131,6 +131,7 @@ module.exports = function createOnDeleteV2Handler(fs, storage) {
         const item = insp.template.items[itemId];
 
         try {
+          // TODO: delete method from model
           await inspectionsModel.deleteItemUploads(storage, item);
         } catch (err) {
           // Allow failure
