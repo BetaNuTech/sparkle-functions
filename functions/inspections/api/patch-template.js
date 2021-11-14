@@ -5,6 +5,7 @@ const { getFullName } = require('../../utils/user');
 const inspectionsModel = require('../../models/inspections');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
 const doesContainInvalidAttr = require('../utils/does-contain-invalid-attr');
+const setItemDefaults = require('../utils/set-item-defaults');
 const validate = require('../utils/validate-update');
 const updateInspection = require('../utils/update');
 const propertiesModel = require('../../models/properties');
@@ -123,6 +124,19 @@ module.exports = function patch(db, storage) {
         ],
       });
     }
+
+    // Add missing item defaults
+    Object.keys((inspection.template || {}).items || {}).forEach(itemId => {
+      const item = inspection.template.items[itemId];
+      const itemDefaults = setItemDefaults(item);
+      const hasItemDefaultUpdates = Object.keys(itemDefaults).length > 0;
+
+      if (hasItemDefaultUpdates) {
+        updates.items = updates.items || {};
+        updates.items[itemId] = updates.items[itemId] || {};
+        Object.assign(updates.items[itemId], itemDefaults); // merge defaults into item
+      }
+    });
 
     // Calculate new inspection result
     const inspectionUpdates = updateInspection(inspection, updates);
