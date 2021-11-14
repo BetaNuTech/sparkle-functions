@@ -131,9 +131,7 @@ describe('Inspections | API | POST', () => {
       .stub(templatesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(templateId, template));
     sinon.stub(inspectionsModel, 'createId').returns(inspectionId);
-    sinon
-      .stub(inspectionsModel, 'createRecord')
-      .resolves(firebase.createDocSnapshot(templateId, inspection));
+    sinon.stub(inspectionsModel, 'createRecord').resolves();
 
     const res = await request(createApp())
       .post(`/t/${propertyId}`)
@@ -143,6 +141,49 @@ describe('Inspections | API | POST', () => {
 
     // Assertions
     const actual = res.body;
+    expect(actual).to.deep.equal(expected);
+  });
+
+  it('adds item defaults to embedded template', async () => {
+    const propertyId = uuid();
+    const templateId = uuid();
+    const inspectionId = uuid();
+    const itemId = uuid();
+    const template = {
+      trackDeficientItems: false,
+      name: 'Test template',
+      sections: {},
+      items: {
+        [itemId]: {
+          ...mocking.createIncompleteMainInputItem('twoactions_checkmarkx', {
+            sectionId: uuid(),
+          }),
+          mainInputSelection: undefined,
+        },
+      },
+    };
+    const property = mocking.createProperty();
+    const expected = -1;
+
+    // Stub Requests
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(propertyId, property));
+    sinon
+      .stub(templatesModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(templateId, template));
+    sinon.stub(inspectionsModel, 'createId').returns(inspectionId);
+    sinon.stub(inspectionsModel, 'createRecord').resolves();
+
+    const res = await request(createApp())
+      .post(`/t/${propertyId}`)
+      .send({ template: templateId })
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(201);
+
+    // Assertions
+    const actual =
+      res.body.data.attributes.template.items[itemId].mainInputSelection;
     expect(actual).to.deep.equal(expected);
   });
 });
