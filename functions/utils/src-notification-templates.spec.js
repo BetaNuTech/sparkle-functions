@@ -121,6 +121,21 @@ describe('Utils | Source Notifications Templates', () => {
           'authorEmail',
         ],
       },
+
+      {
+        template: 'inspection-reassign-summary',
+        values: ['currentDate', 'authorName'],
+      },
+      {
+        template: 'inspection-reassign-markdown-body',
+        values: [
+          'startDate',
+          'templateName',
+          'propertyName',
+          'authorName',
+          'authorEmail',
+        ],
+      },
       {
         template: 'team-created-summary',
         values: ['name', 'authorName'],
