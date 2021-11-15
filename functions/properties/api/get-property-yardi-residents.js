@@ -9,11 +9,11 @@ const PREFIX = 'properties: api: get-property-yardi-residents:';
 /**
  * Factory for creating a GET endpoint
  * that fetches a properties Yardi residents
- * @param {admin.firestore} fs
+ * @param {admin.firestore} db
  * @return {Function} - onRequest handler
  */
-module.exports = function createGetYardiResidents(fs) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function createGetYardiResidents(db) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
 
   /**
    * Handle GET request
@@ -28,6 +28,9 @@ module.exports = function createGetYardiResidents(fs) {
     const yardiConfig = req.yardiConfig;
     const send500Error = create500ErrHandler(PREFIX, res);
 
+    // Configure JSON API response
+    res.set('Content-Type', 'application/vnd.api+json');
+
     // Make Yardi & Cobalt API request
     let residents = null;
     let occupants = null;
@@ -36,7 +39,7 @@ module.exports = function createGetYardiResidents(fs) {
     try {
       const [result, cobaltData] = await Promise.all([
         yardi.getYardiPropertyResidents(property.code, yardiConfig),
-        requestCobaltTenants(fs, property.code),
+        requestCobaltTenants(db, property.code),
       ]);
       residents = result.residents;
       occupants = result.occupants;
@@ -134,9 +137,6 @@ module.exports = function createGetYardiResidents(fs) {
       json.included.push(record);
     });
 
-    // Configure JSON API response
-    res.set('Content-Type', 'application/vnd.api+json');
-
     // Success
     res.status(200).send(json);
   };
@@ -145,12 +145,12 @@ module.exports = function createGetYardiResidents(fs) {
 /**
  * Request Cobalt Tenant data
  * allowing for request to fail
- * @param {admin.firestore} fs
+ * @param {admin.firestore} db
  * @param  {String} propertyCode
  * @return {Promise} - resolves {Object}
  */
-function requestCobaltTenants(fs, propertyCode) {
-  return cobalt.getPropertyTenants(fs, propertyCode).catch(err => {
+function requestCobaltTenants(db, propertyCode) {
+  return cobalt.getPropertyTenants(db, propertyCode).catch(err => {
     log.error(`${PREFIX} Cobalt tenant request failed: ${err}`);
     return { data: [] }; // ignore failure
   });

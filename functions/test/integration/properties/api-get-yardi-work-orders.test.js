@@ -2,16 +2,65 @@ const request = require('supertest');
 const { expect } = require('chai');
 const sinon = require('sinon');
 const express = require('express');
+const systemModel = require('../../../models/system');
+const integrationModel = require('../../../models/integrations');
 const uuid = require('../../../test-helpers/uuid');
+const firebase = require('../../../test-helpers/firebase');
 const yardi = require('../../../services/yardi');
-const getPropertyWorkOrders = require('../../../properties/api/get-property-yardi-work-orders');
+const handler = require('../../../properties/api/get-property-yardi-work-orders');
+const yardiMiddleware = require('../../../properties/middleware/yardi-integration');
 
 describe("Properties | API | GET Property's Yardi Work Orders", () => {
   afterEach(() => sinon.restore());
 
+  it('returns an error when yardi credentials are not configured', async () => {
+    const expected = 'Organization not configured for Yardi';
+
+    // Setup requests
+    const property = { code: 'test' };
+    sinon.stub(systemModel, 'findYardi').rejects(Error('not found'));
+
+    const result = await request(createApp(property))
+      .get('/t/123')
+      .send()
+      .expect('Content-Type', /json/)
+      .expect(403);
+
+    const [error] = result.body.errors || [];
+    const actual = error.detail || '';
+    expect(actual).to.equal(expected);
+  });
+
+  it('returns an error when yardi details are not setup', async () => {
+    const expected = 'Organization details not configured for Yardi';
+
+    // Setup requests
+    const property = { code: 'test' };
+    sinon
+      .stub(systemModel, 'findYardi')
+      .resolves(firebase.createDocSnapshot('yardi', {}));
+    sinon.stub(integrationModel, 'findYardi').rejects(Error('not found'));
+
+    const result = await request(createApp(property))
+      .get('/t/123')
+      .send()
+      .expect('Content-Type', /json/)
+      .expect(403);
+
+    const [error] = result.body.errors || [];
+    const actual = error.detail || '';
+    expect(actual).to.equal(expected);
+  });
+
   it('returns a helpful error when Yardi request fails', done => {
     // Stup requests
     const property = { code: 'test' };
+    sinon
+      .stub(systemModel, 'findYardi')
+      .resolves(firebase.createDocSnapshot('yardi', {}));
+    sinon
+      .stub(integrationModel, 'findYardi')
+      .resolves(firebase.createDocSnapshot('yardi', {}));
     sinon
       .stub(yardi, 'getYardiPropertyWorkOrders')
       .rejects(Error('request timeout'));
@@ -36,6 +85,12 @@ describe("Properties | API | GET Property's Yardi Work Orders", () => {
     invalidCodeErr.code = 'ERR_NO_YARDI_PROPERTY';
 
     // Stup requests
+    sinon
+      .stub(systemModel, 'findYardi')
+      .resolves(firebase.createDocSnapshot('yardi', {}));
+    sinon
+      .stub(integrationModel, 'findYardi')
+      .resolves(firebase.createDocSnapshot('yardi', {}));
     sinon.stub(yardi, 'getYardiPropertyWorkOrders').rejects(invalidCodeErr);
 
     request(createApp(property))
@@ -56,6 +111,12 @@ describe("Properties | API | GET Property's Yardi Work Orders", () => {
     invalidCodeErr.code = 'ERR_BAD_YARDI_CREDENTIALS';
 
     // Stup requests
+    sinon
+      .stub(systemModel, 'findYardi')
+      .resolves(firebase.createDocSnapshot('yardi', {}));
+    sinon
+      .stub(integrationModel, 'findYardi')
+      .resolves(firebase.createDocSnapshot('yardi', {}));
     sinon.stub(yardi, 'getYardiPropertyWorkOrders').rejects(invalidCodeErr);
 
     request(createApp(property))
@@ -81,6 +142,12 @@ describe("Properties | API | GET Property's Yardi Work Orders", () => {
     };
 
     // Stup requests
+    sinon
+      .stub(systemModel, 'findYardi')
+      .resolves(firebase.createDocSnapshot('yardi', {}));
+    sinon
+      .stub(integrationModel, 'findYardi')
+      .resolves(firebase.createDocSnapshot('yardi', {}));
     sinon.stub(yardi, 'getYardiPropertyWorkOrders').resolves({
       workOrders: [workOrder],
     });
@@ -104,8 +171,8 @@ function createApp(property) {
     '/t/:propertyId',
     stubAuth,
     stubPropertyCode(property),
-    stubYardiConfig(),
-    getPropertyWorkOrders()
+    yardiMiddleware({ collection: () => ({}) }),
+    handler()
   );
   return app;
 }
@@ -118,13 +185,6 @@ function stubAuth(req, res, next) {
 function stubPropertyCode(property) {
   return (req, res, next) => {
     req.property = property;
-    next();
-  };
-}
-
-function stubYardiConfig(config = {}) {
-  return (req, res, next) => {
-    req.yardiConfig = config;
     next();
   };
 }
