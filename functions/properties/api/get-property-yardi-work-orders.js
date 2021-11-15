@@ -24,6 +24,9 @@ module.exports = function createGetYardiWorkOrders() {
     const yardiConfig = req.yardiConfig;
     const send500Error = create500ErrHandler(PREFIX, res);
 
+    // Configure JSON API response
+    res.set('Content-Type', 'application/vnd.api+json');
+
     let workOrders = null;
 
     // Lookup Work Orders
@@ -92,9 +95,6 @@ module.exports = function createGetYardiWorkOrders() {
 
       json.data.push(result);
     });
-
-    // Configure JSON API response
-    res.set('Content-Type', 'application/vnd.api+json');
 
     // Success
     res.status(200).send(json);
