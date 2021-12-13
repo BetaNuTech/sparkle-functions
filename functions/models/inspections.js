@@ -169,6 +169,7 @@ module.exports = modelSetup({
     const docRef = db.collection(INSPECTION_COLLECTION).doc(inspectionId);
     const finalData = JSON.parse(JSON.stringify(data)); // clone
     const template = finalData.template || {};
+    const deleteWrites = {};
     const itemDeletes = firestoreUtils.getDeleteWrites(
       template.items || {},
       'template.items'
@@ -178,23 +179,46 @@ module.exports = modelSetup({
       'template.sections'
     );
 
+    // Merge all delete updates
+    Object.assign(deleteWrites, itemDeletes, sectionDeletes);
+    const hasDeleteWrites = isObjectEmpty(deleteWrites) === false;
+
     // Remove nested nulls in items and sections
     firestoreUtils.removeNulls(template.items || {});
     firestoreUtils.removeNulls(template.sections || {});
 
-    // Merge delete writes into updates
-    Object.assign(finalData, itemDeletes, sectionDeletes);
+    // Remove empty section/items hashes
+    // which could clear all the inspection answers
+    const hasEmptyItems = isObjectEmpty((finalData.template || {}).items || {});
+    const hasEmptySections = isObjectEmpty(
+      (finalData.template || {}).sections || {}
+    );
+    if (hasEmptyItems) delete finalData.template.items;
+    if (hasEmptySections) delete finalData.template.sections;
 
+    // Remove empty template
+    const hasEmptyTemplate = isObjectEmpty(finalData.template || {});
+    if (hasEmptyTemplate) delete finalData.template;
+
+    // Add batched update
     if (batch) {
-      assert(typeof batch.set === 'function', 'has batch instance');
-      return Promise.resolve(batch.set(docRef, finalData, { merge }));
+      assert(
+        typeof batch.set === 'function' && typeof batch.update === 'function',
+        'has batch instance'
+      );
+      batch.set(docRef, finalData, { merge });
+      if (hasDeleteWrites) batch.update(docRef, deleteWrites); // add deletes
+      return Promise.resolve();
     }
 
-    return docRef.set(finalData, { merge });
+    // Normal update
+    return docRef.set(finalData, { merge }).then(
+      () => (hasDeleteWrites ? docRef.update(deleteWrites) : Promise.resolve()) // append any deletes
+    );
   },
 
   /**
-   * Create or update a Firestore inspection
+   * Create or update a inspection
    * @param  {firebaseAdmin.firestore} fs
    * @param  {String}  inspectionId
    * @param  {Object}  data
@@ -513,4 +537,13 @@ function getScore(inspection) {
   return inspection.score && typeof inspection.score === 'number'
     ? inspection.score
     : 0;
+}
+
+/**
+ * Determine if an object contains anything
+ * @param  {Object} obj
+ * @return {Boolean}
+ */
+function isObjectEmpty(obj) {
+  return Object.keys(obj).length === 0;
 }
