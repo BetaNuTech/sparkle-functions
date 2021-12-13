@@ -137,17 +137,13 @@ describe('Inspections | API | PATCH Template', () => {
     // its' items are completely removed from record
     const resultSnap = await inspectionsModel.findRecord(db, inspectionId);
     const result = resultSnap.data();
-    const hasSectionReference = Object.keys(
-      result.template.sections || {}
-    ).includes(deletedSectionId);
-    const hasItemReference = Object.keys(result.template.items || {}).includes(
-      deletedItemId
-    );
-    expect(hasSectionReference).to.equal(
-      false,
+    const sectionIds = Object.keys(result.template.sections || {});
+    const itemIds = Object.keys(result.template.items || {});
+    expect(sectionIds).to.deep.equal(
+      [sectionId],
       'removed deleted section reference'
     );
-    expect(hasItemReference).to.equal(false, 'removed deleted item reference');
+    expect(itemIds).to.deep.equal([itemId], 'removed deleted item reference');
 
     // Test results
     const actual = await findStorageFile(bucket, directory, destination); // find the upload
