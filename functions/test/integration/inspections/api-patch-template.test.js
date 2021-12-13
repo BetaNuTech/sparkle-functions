@@ -182,7 +182,7 @@ describe('Inspections PATCH TEMPLATE | API | PATCH Template', () => {
     expect(actual).to.deep.equal(expected);
   });
 
-  it('adds item defaults to a successful updated', async () => {
+  it('adds item defaults to a successful update', async () => {
     const expected = -1;
     const propertyId = uuid();
     const inspectionId = uuid();

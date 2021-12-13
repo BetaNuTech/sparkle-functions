@@ -2,7 +2,6 @@ const { expect } = require('chai');
 const config = require('../../../config');
 const mocking = require('../../../test-helpers/mocking');
 const uuid = require('../../../test-helpers/uuid');
-const inspUtil = require('../../../utils/inspection');
 const update = require('./index');
 
 const DEFICIENT_ITEM_ELIGIBLE = config.inspectionItems.deficientListEligible;
@@ -672,7 +671,7 @@ describe('Unit | Inspections | Utils | Update', () => {
   });
 
   it('removes a deleted multi section', () => {
-    const expected = true;
+    const expected = null;
     const propertyId = uuid();
     const origSectionId = uuid();
     const addedSectionId = uuid();
@@ -709,12 +708,12 @@ describe('Unit | Inspections | Utils | Update', () => {
     // Assertions
     const result = update(inspection, changes);
     const resultSections = (result.template || {}).sections || {};
-    const actual = inspUtil.isFieldValueDelete(resultSections[addedSectionId]);
+    const actual = resultSections[addedSectionId];
     expect(actual).to.equal(expected);
   });
 
   it("removes a deleted multi section's items", () => {
-    const expected = [true, true];
+    const expected = [null, null];
     const propertyId = uuid();
     const origSectionId = uuid();
     const addedSectionId = uuid();
@@ -757,10 +756,7 @@ describe('Unit | Inspections | Utils | Update', () => {
     // Assertions
     const result = update(inspection, changes);
     const resultSections = (result.template || {}).items || {};
-    const actual = [
-      inspUtil.isFieldValueDelete(resultSections.two),
-      inspUtil.isFieldValueDelete(resultSections.three),
-    ];
+    const actual = [resultSections.two, resultSections.three];
     expect(actual).to.deep.equal(expected);
   });
 });

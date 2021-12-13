@@ -1,5 +1,4 @@
 const assert = require('assert');
-const inspUtil = require('../../utils/inspection');
 
 /**
  * Collect all deleted inspection item photo
@@ -21,9 +20,7 @@ module.exports = (currentInspection, updatedInspection) => {
   const currentItems = (currentInspection.template || {}).items || {};
 
   return Object.keys(updatedItems)
-    .filter(id =>
-      Boolean(updatedItems[id] && inspUtil.isFieldValueDelete(updatedItems[id]))
-    ) // find removed items
+    .filter(id => updatedItems[id] === null) // find removed items
     .filter(id => Boolean(currentItems[id])) // check current item exists
     .filter(id => currentItems[id].photosData) // has photo data
     .map(id => JSON.parse(JSON.stringify(currentItems[id].photosData))) // Clone item's photo data (with ID)

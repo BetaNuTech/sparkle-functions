@@ -133,9 +133,25 @@ describe('Inspections | API | PATCH Template', () => {
       .expect('Content-Type', /json/)
       .expect(201);
 
+    // Check that deleted section and
+    // its' items are completely removed from record
+    const resultSnap = await inspectionsModel.findRecord(db, inspectionId);
+    const result = resultSnap.data();
+    const hasSectionReference = Object.keys(
+      result.template.sections || {}
+    ).includes(deletedSectionId);
+    const hasItemReference = Object.keys(result.template.items || {}).includes(
+      deletedItemId
+    );
+    expect(hasSectionReference).to.equal(
+      false,
+      'removed deleted section reference'
+    );
+    expect(hasItemReference).to.equal(false, 'removed deleted item reference');
+
     // Test results
     const actual = await findStorageFile(bucket, directory, destination); // find the upload
-    expect(actual).to.equal(expected);
+    expect(actual).to.equal(expected, 'removed deleted item photos');
   });
 
   it('should update property meta data when the inspection becomes complete', async () => {

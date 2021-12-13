@@ -4,6 +4,7 @@ const modelSetup = require('./utils/model-setup');
 const diModel = require('./deficient-items');
 const archiveModel = require('./_internal/archive');
 const inspUtils = require('../utils/inspection');
+const firestoreUtils = require('../utils/firestore');
 const storageApi = require('../services/storage');
 const config = require('../config');
 
@@ -164,14 +165,32 @@ module.exports = modelSetup({
       'has deficient item id'
     );
     assert(data && typeof data === 'object', 'has update data');
+
     const docRef = db.collection(INSPECTION_COLLECTION).doc(inspectionId);
+    const finalData = JSON.parse(JSON.stringify(data)); // clone
+    const template = finalData.template || {};
+    const itemDeletes = firestoreUtils.getDeleteWrites(
+      template.items || {},
+      'template.items'
+    );
+    const sectionDeletes = firestoreUtils.getDeleteWrites(
+      template.sections || {},
+      'template.sections'
+    );
+
+    // Remove nested nulls in items and sections
+    firestoreUtils.removeNulls(template.items || {});
+    firestoreUtils.removeNulls(template.sections || {});
+
+    // Merge delete writes into updates
+    Object.assign(finalData, itemDeletes, sectionDeletes);
 
     if (batch) {
       assert(typeof batch.set === 'function', 'has batch instance');
-      return Promise.resolve(batch.set(docRef, data, { merge }));
+      return Promise.resolve(batch.set(docRef, finalData, { merge }));
     }
 
-    return docRef.set(data, { merge });
+    return docRef.set(finalData, { merge });
   },
 
   /**
