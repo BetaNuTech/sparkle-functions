@@ -3,8 +3,6 @@ const mocking = require('../../test-helpers/mocking');
 const uuid = require('../../test-helpers/uuid');
 const findAll = require('./find-deleted-items-photo-urls');
 
-const DELETED_ENTRY = {};
-
 describe('Unit | Inspections | Utils | Find Delete Item Photo Urls', () => {
   it('returns an empty result when no items deleted', async () => {
     const expected = [];
@@ -20,7 +18,7 @@ describe('Unit | Inspections | Utils | Find Delete Item Photo Urls', () => {
     const updates = {
       template: {
         items: {
-          doesNotExist: DELETED_ENTRY,
+          doesNotExist: null,
         },
       },
     };
@@ -44,7 +42,7 @@ describe('Unit | Inspections | Utils | Find Delete Item Photo Urls', () => {
     const updates = {
       template: {
         items: {
-          one: DELETED_ENTRY,
+          one: null,
         },
       },
     };
@@ -105,13 +103,13 @@ describe('Unit | Inspections | Utils | Find Delete Item Photo Urls', () => {
     const updates = {
       template: {
         sections: {
-          [deletedSectionOneId]: DELETED_ENTRY,
-          [deletedSectionTwoId]: DELETED_ENTRY,
+          [deletedSectionOneId]: null,
+          [deletedSectionTwoId]: null,
         },
         items: {
-          one: DELETED_ENTRY,
-          two: DELETED_ENTRY,
-          three: DELETED_ENTRY,
+          one: null,
+          two: null,
+          three: null,
         },
       },
     };

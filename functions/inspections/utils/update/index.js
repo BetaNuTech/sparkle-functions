@@ -1,8 +1,6 @@
 const assert = require('assert');
-const FieldValue = require('firebase-admin').firestore.FieldValue;
 const calculateScore = require('./calculate-score');
 const filterCompleted = require('./filter-completed-items');
-const inspUtil = require('../../../utils/inspection');
 const pipe = require('../../../utils/pipe');
 const { hasDiffs } = require('../../../utils/object-differ');
 
@@ -117,7 +115,7 @@ function setRemovedMultiSections(config) {
 
     if (isRemovable && isClonedMultiSection && isSectionRemoved) {
       updates.sections = updates.sections || {};
-      updates.sections[id] = FieldValue.delete();
+      updates.sections[id] = null;
     }
   });
 
@@ -170,16 +168,14 @@ function setRemovedMultiSectionItems(config) {
 
   Object.keys(updates.sections || {}).forEach(id => {
     // An object without any attributes signifies a FieldValue.delete
-    const isRemovingSection = Boolean(
-      updates.sections[id] && inspUtil.isFieldValueDelete(updates.sections[id])
-    );
+    const isRemovingSection = updates.sections[id] === null;
 
     if (isRemovingSection) {
       Object.keys(template.items || {})
         .filter(itemId => template.items[itemId].sectionId === id)
         .forEach(itemId => {
           updates.items = updates.items || {};
-          updates.items[itemId] = FieldValue.delete();
+          updates.items[itemId] = null;
         });
     }
   });
