@@ -166,7 +166,6 @@ const prototype = {
           .sort((a, b) => a.index - b.index)
           .map(item => [
             ...this.getContentItemHeader(item),
-            ...this.getContentItemBody(item),
             ...this.getContentItemBodyNotes(item),
             ...this.getContentItemAdminUpdates(item),
             ...this.getContentItemPhotos(item),
@@ -210,7 +209,6 @@ const prototype = {
           .sort((a, b) => a.index - b.index)
           .map(item => [
             ...this.getContentItemHeader(item),
-            ...this.getContentItemBody(item),
             ...this.getContentItemBodyNotes(item),
             ...this.getContentItemAdminUpdates(item),
             ...this.getContentItemPhotos(item),
@@ -362,7 +360,6 @@ const prototype = {
     const itemHeader = {
       text: '',
       style: 'item',
-      margin: settings.fonts.item.margin,
     };
 
     if (item.isTextInputItem && item.isItemNA) {
@@ -385,7 +382,31 @@ const prototype = {
       itemHeader.text = `${capitalize(item.title) || 'Untitled'}`;
     }
 
-    return [itemHeader];
+    // Two column header
+    const body = this.getContentItemBody(item);
+    if (body.length) {
+      return [
+        {
+          columns: [
+            {
+              ...body[0],
+              width: 'auto', // minimize space
+            },
+            {
+              ...itemHeader,
+              width: '*', // fill available
+            },
+          ],
+        },
+      ];
+    }
+
+    return [
+      {
+        ...itemHeader,
+        margin: settings.fonts.item.margin,
+      },
+    ];
   },
 
   /**
@@ -577,32 +598,35 @@ const prototype = {
       return [];
     }
 
-    return [
-      ...photos
-        .map(photo => {
-          const attachment = this._itemAttachments[itemId].photosData[photo.id];
-          const { caption } = photo;
-          const result = [
-            {
-              image: attachment.datauri,
-              width: attachment.width,
-              height: attachment.height,
-              fit: [200, 200],
-              margin: settings.images.itemAttachment.margin,
-            },
-          ];
+    const columns = photos.reduce((result, photo, i) => {
+      const attachment = this._itemAttachments[itemId].photosData[photo.id];
+      const columnTarget = i % 3;
+      const { caption } = photo;
+      const resultRow = [
+        {
+          image: attachment.datauri,
+          width: attachment.width,
+          height: attachment.height,
+          fit: [200, 200],
+          margin: settings.images.itemAttachment.margin,
+        },
+      ];
 
-          if (caption) {
-            result.push({
-              text: caption,
-              margin: photoCaptionMargin,
-            });
-          }
+      if (!result[columnTarget]) {
+        result[columnTarget] = [];
+      }
 
-          return result;
-        })
-        .reduce((acc, val) => acc.concat(val), []), // flatten
-    ];
+      result[columnTarget].push(resultRow);
+      result[columnTarget].push({
+        text: caption || '',
+        margin: photoCaptionMargin,
+        width: Math.min(attachment.width, 200),
+      });
+
+      return result;
+    }, []);
+
+    return [{ columns }];
   },
 
   /**

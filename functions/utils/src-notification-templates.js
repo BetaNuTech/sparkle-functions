@@ -154,6 +154,16 @@ New Data:
 \`\`\`
 *Edited by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
 
+  // ///////////////////////////////////
+  // Property Inspection Reassignment
+  // //////////////////////////////////
+  'inspection-reassign-summary':
+    '{{{currentDate}}} inspection moved{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'inspection-reassign-markdown-body': `*Inspection Moved*
+\`Inspection created on {{{startDate}}}, with template: {{{templateName}}} has moved to {{{propertyName}}}\`
+*Moved by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
   // ////////////////
   // Team Creation
   // ////////////////

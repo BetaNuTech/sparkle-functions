@@ -4,6 +4,7 @@ const propertiesModel = require('../../models/properties');
 const templatesModel = require('../../models/templates');
 const inspectionsModel = require('../../models/inspections');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
+const setItemDefaults = require('../utils/set-item-defaults');
 const { getFullName } = require('../../utils/user');
 
 const PREFIX = 'inspection: api: post:';
@@ -117,6 +118,12 @@ module.exports = function post(db) {
         updatedAt: Math.floor(Date.now() / 1000),
         templateCategory: template.category || '',
       };
+
+      // Add item defaults
+      Object.keys(inspection.template.items || {}).forEach(itemId => {
+        const item = inspection.template.items[itemId];
+        Object.assign(item, setItemDefaults(item)); // merge defaults into item
+      });
 
       // Write inspection
       await inspectionsModel.createRecord(db, inspectionId, inspection);

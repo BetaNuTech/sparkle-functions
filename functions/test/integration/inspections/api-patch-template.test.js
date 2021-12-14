@@ -182,6 +182,66 @@ describe('Inspections PATCH TEMPLATE | API | PATCH Template', () => {
     expect(actual).to.deep.equal(expected);
   });
 
+  it('adds item defaults to a successful update', async () => {
+    const expected = -1;
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const sectionId = uuid();
+    const itemId = uuid();
+    const itemTwoId = uuid();
+    const currentItem = mocking.createIncompleteMainInputItem(
+      'twoactions_checkmarkx',
+      { sectionId }
+    );
+    const secondItem = mocking.createIncompleteMainInputItem(
+      'twoactions_checkmarkx',
+      { sectionId }
+    );
+    delete secondItem.mainInputSelection; // Remove default attribute
+    const updates = {
+      items: {
+        [itemId]: {
+          mainInputSelected: true,
+          mainInputSelection: 0,
+        },
+      },
+    };
+    const template = mocking.createTemplate({
+      name: 'test',
+      sections: {
+        [sectionId]: mocking.createSection(),
+      },
+      items: {
+        [itemId]: currentItem,
+        [itemTwoId]: secondItem,
+      },
+    });
+    const inspection = mocking.createInspection({
+      template,
+      inspectionCompleted: false,
+      totalItems: 2,
+      property: propertyId,
+    });
+
+    // Stub Requests
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+    sinon.stub(inspectionsModel, 'setRecord').resolves();
+
+    // Execute
+    const res = await request(createApp())
+      .patch(`/t/${inspectionId}`)
+      .send(updates)
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(201);
+
+    // Assertions
+    const actual =
+      res.body.data.attributes.template.items[itemTwoId].mainInputSelection;
+    expect(actual).to.equal(expected);
+  });
+
   it('sends notification upon successful inspection completion', async () => {
     const expected = true;
     const propertyId = uuid();

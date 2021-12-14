@@ -1,7 +1,11 @@
 const assert = require('assert');
+const moment = require('moment');
 const log = require('../../utils/logger');
 const inspectionsModel = require('../../models/inspections');
 const propertiesModel = require('../../models/properties');
+const notificationsModel = require('../../models/notifications');
+const notifyTemplate = require('../../utils/src-notification-templates');
+const { getFullName } = require('../../utils/user');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
 
 const PREFIX = 'inspections: api: patch property:';
@@ -9,11 +13,11 @@ const PREFIX = 'inspections: api: patch property:';
 /**
  * Factory for creating a PATCH endpoint for
  * reassigning an inspection's property
- * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
+ * @param  {firebaseAdmin.firestore} db - Firestore Admin DB instance
  * @return {Function} - onRequest handler
  */
-module.exports = function createPatchProperty(fs) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function createPatchProperty(db) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
 
   /**
    * Handle PATCH request for reassigning
@@ -26,16 +30,27 @@ module.exports = function createPatchProperty(fs) {
     const { params, body = {} } = req;
     const { inspectionId } = params;
     const { property: propertyId } = body;
+    const authorId = req.user ? req.user.id || '' : '';
+    const authorName = getFullName(req.user || {});
+    const authorEmail = req.user ? req.user.email : '';
     const send500Error = create500ErrHandler(PREFIX, res);
+
+    log.info('Inspection reassignment requested');
+
+    // Optional incognito mode query
+    // defaults to false
+    const incognitoMode = req.query.incognitoMode
+      ? req.query.incognitoMode.search(/true/i) > -1
+      : false;
 
     if (!propertyId) {
       return res.status(400).send({ message: 'body missing property' });
     }
 
-    // Lookup Firestore Property
+    // Lookup Property
     let property = null;
     try {
-      const propertySnap = await propertiesModel.findRecord(fs, propertyId);
+      const propertySnap = await propertiesModel.findRecord(db, propertyId);
       property = propertySnap.data() || null;
       if (!property) throw Error('Not found');
     } catch (err) {
@@ -43,11 +58,11 @@ module.exports = function createPatchProperty(fs) {
       return res.status(400).send({ message: 'body contains bad property' });
     }
 
-    // Lookup Firestore Inspection
+    // Lookup Inspection
     let inspection = null;
     try {
       const inspectionSnap = await inspectionsModel.findRecord(
-        fs,
+        db,
         inspectionId
       );
       inspection = inspectionSnap.data() || null;
@@ -61,10 +76,10 @@ module.exports = function createPatchProperty(fs) {
 
     const srcPropertyId = inspection.property;
 
-    // Perform reassign on Firestore
+    // Reassign inspection to new property
     try {
       await inspectionsModel.reassignProperty(
-        fs,
+        db,
         inspectionId,
         srcPropertyId,
         propertyId
@@ -77,10 +92,11 @@ module.exports = function createPatchProperty(fs) {
       );
     }
 
+    // Update each property's meta data
     try {
-      const batch = fs.batch();
-      await propertiesModel.updateMetaData(fs, srcPropertyId, batch);
-      await propertiesModel.updateMetaData(fs, propertyId, batch);
+      const batch = db.batch();
+      await propertiesModel.updateMetaData(db, srcPropertyId, batch);
+      await propertiesModel.updateMetaData(db, propertyId, batch);
       await batch.commit();
     } catch (err) {
       return send500Error(
@@ -90,7 +106,34 @@ module.exports = function createPatchProperty(fs) {
       );
     }
 
-    // TODO Property Inspection Reassignment notification
+    // Send global notification for an inspection completion
+    if (!incognitoMode) {
+      const propertyName = property.name;
+      const templateName = inspection.templateName || 'Unknown';
+      const currentDate = moment().format('MMM DD');
+      const startDate = moment(inspection.creationDate).format('MM/DD/YY');
+
+      try {
+        await notificationsModel.addRecord(db, {
+          title: propertyName,
+          summary: notifyTemplate('inspection-reassign-summary', {
+            currentDate,
+            authorName,
+          }),
+          markdownBody: notifyTemplate('inspection-reassign-markdown-body', {
+            startDate,
+            propertyName,
+            templateName,
+            authorName,
+            authorEmail,
+          }),
+          property: propertyId,
+          creator: authorId,
+        });
+      } catch (err) {
+        log.error(`${PREFIX} failed to create source notification: ${err}`); // proceed with error
+      }
+    }
 
     res.status(201).send({ message: 'successful' });
   };
