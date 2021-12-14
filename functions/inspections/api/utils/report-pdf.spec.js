@@ -175,7 +175,8 @@ describe('Inspections | API | Utils | Report PDF', function() {
             false,
             data
           );
-      const [result] = createReportPdf._proto.getContentItemHeader(item);
+      const [layout] = createReportPdf._proto.getContentItemHeader(item);
+      const result = layout.columns ? layout.columns[1] : layout;
       const actual = `text: ${result.text} | style: ${result.style}`;
       expect(actual).to.equal(expected, msg);
     }
@@ -384,7 +385,13 @@ describe('Inspections | API | Utils | Report PDF', function() {
     });
 
     const result = instance.getContentItemPhotos(item);
-    const actual = result.map(({ image }) => image).join(' | ');
+    const actual = result[0].columns
+      .reduce((flat, column) => {
+        flat.push(column[0][0]);
+        return flat;
+      }, [])
+      .map(({ image }) => image)
+      .join(' | ');
     expect(actual).to.equal(expected);
   });
 
@@ -446,8 +453,14 @@ describe('Inspections | API | Utils | Report PDF', function() {
         },
       },
     });
-    const [, result] = instance.getContentItemPhotos(item);
-    const actual = result ? result.text : '';
+    const result = instance.getContentItemPhotos(item);
+    const actual =
+      (result[0] &&
+        result[0].columns &&
+        result[0].columns[0] &&
+        result[0].columns[0][1] &&
+        result[0].columns[0][1].text) ||
+      '';
     expect(actual).to.equal(expected);
   });
 
@@ -621,6 +634,12 @@ Testor One made a total of 1 edit.`;
     const actual = result.reduce((acc, entry) => {
       if (entry.style && entry.style === 'item') {
         acc += 1;
+      } else if (
+        entry.columns &&
+        entry.columns[1] &&
+        entry.columns[1].style === 'item'
+      ) {
+        acc += 1;
       }
       return acc;
     }, 0);
@@ -682,6 +701,12 @@ Testor One made a total of 1 edit.`;
       .reduce((acc, entry) => {
         if (entry.style && entry.style === 'item' && entry.text) {
           acc.push(entry.text);
+        } else if (
+          entry.columns &&
+          entry.columns[1] &&
+          entry.columns[1].style === 'item'
+        ) {
+          acc.push(entry.columns[1].text);
         }
         return acc;
       }, [])
