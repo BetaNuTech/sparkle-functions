@@ -215,7 +215,10 @@ const prototype = {
           ]);
 
         // Flatten
-        return [].concat(...itemsContent);
+        return [].concat(
+          this.getContentSectionHeader(section.title),
+          ...itemsContent
+        );
       });
 
     const bottomMargin = settings.fonts.summaryHeader.margin[3] || 0;
@@ -569,6 +572,8 @@ const prototype = {
     const itemId = item.id;
     const type = `${item.mainInputType || item.itemType}`.toLowerCase();
     const photoCaptionMargin = settings.fonts.photoCaption.margin;
+    const photoMaxWidth = settings.images.itemAttachment.maxWidth;
+    const photoMaxHeight = settings.images.itemAttachment.maxHeight;
 
     // Ignore signature items
     // with invalid photo data
@@ -605,9 +610,10 @@ const prototype = {
       const resultRow = [
         {
           image: attachment.datauri,
-          width: attachment.width,
-          height: attachment.height,
-          fit: [200, 200],
+          fit: [
+            Math.min(attachment.width, photoMaxWidth),
+            Math.min(attachment.height, photoMaxHeight),
+          ],
           margin: settings.images.itemAttachment.margin,
         },
       ];
@@ -617,10 +623,13 @@ const prototype = {
       }
 
       result[columnTarget].push(resultRow);
+
+      // NOTE: text will fill available
+      // space in column and can't be set
+      // directly
       result[columnTarget].push({
         text: caption || '',
         margin: photoCaptionMargin,
-        width: Math.min(attachment.width, 200),
       });
 
       return result;

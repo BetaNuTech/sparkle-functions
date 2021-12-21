@@ -34,6 +34,8 @@ module.exports = Object.freeze({
 
     itemAttachment: {
       margin: [0, 4, 12, 4],
+      maxWidth: 185,
+      maxHeight: 200,
     },
 
     aItemIcon: {
@@ -118,7 +120,7 @@ module.exports = Object.freeze({
     sectionHeader: {
       fontSize: 20,
       font: 'helveticaMedium',
-      margin: [0, 13, 0, 4],
+      margin: [0, 18, 0, 4],
     },
 
     noteTitle: {
@@ -153,7 +155,7 @@ module.exports = Object.freeze({
     },
 
     photoCaption: {
-      margin: [0, 0, 0, 13],
+      margin: [0, 0, 12, 13],
     },
 
     footer: {
