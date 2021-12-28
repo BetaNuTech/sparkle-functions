@@ -32,7 +32,6 @@ module.exports = (fs, auth, settings, storage) => {
   assert(Boolean(auth), 'has firebase auth instance');
 
   const app = express();
-  const { inspectionUrl } = settings;
   app.use(bodyParser.json(), cors({ origin: true, credentials: true }));
   swaggerDocument.host = process.env.FIREBASE_FUNCTIONS_DOMAIN;
 
@@ -75,6 +74,19 @@ module.exports = (fs, auth, settings, storage) => {
     inspections.api.patchTemplate(fs, storage)
   );
 
+  // Upload a image to an inspection item
+  app.post(
+    '/v0/inspections/:inspectionId/template/items/:itemId/image',
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    fileParser,
+    inspections.api.postTemplateItemImage(fs, storage)
+  );
+
   // Inspection property
   // reassignment endpoint
   app.patch(
@@ -84,11 +96,6 @@ module.exports = (fs, auth, settings, storage) => {
   );
 
   // Generate Inspection PDF report
-  app.get(
-    '/v0/inspections/:inspection/pdf-report',
-    authUser(fs, auth),
-    inspections.api.createGetInspectionPDF(fs, inspectionUrl)
-  );
   app.patch(
     '/v0/inspections/:inspectionId/report-pdf',
     authUser(fs, auth),

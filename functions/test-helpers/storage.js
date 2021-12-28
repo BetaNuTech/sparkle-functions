@@ -14,6 +14,7 @@ const DEFICENT_UPLOAD_DIR = 'deficientItemImages';
 module.exports = {
   profileImagePath: PROFILE_IMG_PATH,
   propertyUploadDir: PROP_UPLOAD_DIR,
+  inspectionUploadDir: INSP_UPLOAD_DIR,
 
   async uploadPropertyImage(bucket, propertyId) {
     const destination = `${PROP_UPLOAD_DIR}/${propertyId}-${Date.now()}${uuid().replace(

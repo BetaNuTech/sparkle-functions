@@ -78,6 +78,7 @@ describe('Inspections | API | PATCH Template', () => {
     const deletedItemId = uuid();
     const bucket = storage.bucket();
     const sectionConfig = { title: 'Multi', section_type: 'multi' };
+    // TODO upload image using storage service and test this still works
     const {
       url,
       directory,

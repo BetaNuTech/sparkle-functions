@@ -18,7 +18,7 @@ module.exports = {
    * @param  {String} ext, file type extension included in storage path
    * @return {Promise} - resolves {string} property download URL
    */
-  async propertyUpload(storage, buffer, fileName, ext) {
+  propertyUpload(storage, buffer, fileName, ext) {
     assert(
       storage && typeof storage.bucket === 'function',
       'has storage instance'
@@ -27,50 +27,45 @@ module.exports = {
     assert(fileName && typeof fileName === 'string', 'has file name string');
     assert(ext && typeof ext === 'string', 'has file extension');
 
-    // Create firebase storage bucket & file
-    const bucket = storage.bucket();
-    const fileToBeUploaded = bucket.file(`${PROPERTY_BUCKET_NAME}/${fileName}`);
+    const dest = `${PROPERTY_BUCKET_NAME}/${fileName}`;
 
-    // Create writable stream
-    const stream = fileToBeUploaded.createWriteStream({
-      metadata: {
-        contentType: `image/${ext}`,
-        metadata: {
-          firebaseStorageDownloadTokens: uuidv4(),
-        },
-      },
-    });
+    // Initiate upload
+    return this._upload(storage, buffer, dest, ext).catch(err =>
+      Promise.reject(Error(`${PREFIX}: propertyUpload: ${err}`))
+    );
+  },
 
-    try {
-      await new Promise((resolve, reject) => {
-        stream.on('error', err => {
-          reject(Error(`write stream error: ${err}`));
-        });
-        stream.on('finish', resolve);
-        stream.end(buffer);
-      });
-    } catch (err) {
-      throw Error(`${PREFIX} propertyUpload: failed to upload image: ${err}`);
-    }
+  /**
+   * Uploading image to inspection item storage
+   * @param  {admin.storage} storage instance
+   * @param  {Buffer} buffer to be uploaded to storage
+   * @param  {String} inspectionId
+   * @param  {String} itemId
+   * @param  {String} fileName to include in storage url path
+   * @param  {String} ext, file type extension included in storage path
+   * @return {Promise} - resolves {string} property download URL
+   */
+  inspectionItemUpload(storage, buffer, inspectionId, itemId, fileName, ext) {
+    assert(
+      storage && typeof storage.bucket === 'function',
+      'has storage instance'
+    );
+    assert(buffer instanceof Buffer, 'has buffer to upload');
+    assert(
+      inspectionId && typeof inspectionId === 'string',
+      'has inspection id string'
+    );
+    assert(itemId && typeof itemId === 'string', 'has item id string');
+    assert(fileName && typeof fileName === 'string', 'has file name string');
+    assert(ext && typeof ext === 'string', 'has file extension');
 
-    let signedUrl = '';
-    try {
-      // Google signed URL Response
-      // https://googleapis.dev/nodejs/storage/latest/global.html#GetSignedUrlResponse
-      const getSignedUrlResponse = await fileToBeUploaded.getSignedUrl({
-        action: 'read',
-        expires: '03-09-2491',
-      });
-      signedUrl = getSignedUrlResponse[0];
-    } catch (err) {
-      throw Error(`${PREFIX} propertyUpload: failed to get signed URL: ${err}`);
-    }
+    // <item-dir>/<inspection-id>/<item-id>/<file-name>
+    const dest = `${INSP_BUCKET_NAME}/${inspectionId}/${itemId}/${fileName}.${ext}`;
 
-    if (!signedUrl) {
-      throw Error(`${PREFIX} propertyUpload: unexpected signed URL response`);
-    }
-
-    return signedUrl;
+    // Initiate upload
+    return this._upload(storage, buffer, dest, ext).catch(err =>
+      Promise.reject(Error(`${PREFIX}: inspectionItemUpload: ${err}`))
+    );
   },
 
   /**
@@ -93,7 +88,137 @@ module.exports = {
       .file(`${INSP_BUCKET_NAME}/${fileName}`)
       .delete()
       .catch(err => {
-        throw Error(`${PREFIX} file delete failed: ${err}`);
+        throw Error(
+          `${PREFIX} deleteInspectionItemPhoto: file delete failed: ${err}`
+        );
       });
+  },
+
+  /**
+   * Remove a specific inspection item photo entry
+   * @param  {admin.storage} storage
+   * @param  {String} url
+   * @return {Promise}
+   */
+  deleteInspectionItemPhotoEntry(storage, inspectionId, itemId, fileName) {
+    assert(storage && typeof storage.bucket === 'function', 'has storage');
+    assert(
+      inspectionId && typeof inspectionId === 'string',
+      'has inspection id string'
+    );
+    assert(itemId && typeof itemId === 'string', 'has item id string');
+    assert(fileName && typeof fileName === 'string', 'has file name string');
+    assert(
+      fileName.search(/\./) > 0,
+      'file name must contain an file extension'
+    );
+
+    return storage
+      .bucket()
+      .file(`${INSP_BUCKET_NAME}/${inspectionId}/${itemId}/${fileName}`)
+      .delete()
+      .catch(err => {
+        throw Error(
+          `${PREFIX} deleteInspectionItemPhotoEntry: file delete failed: ${err}`
+        );
+      });
+  },
+
+  /**
+   * Find an inspection item's photo upload file names
+   * @param  {firebaseAdmin.storage} bucket
+   * @param  {String} inspectionId
+   * @param  {String} itemId
+   * @return {Promise} - resolves {String[]} filenames
+   */
+  async findAllInspectionItemPhotoFileNames(storage, inspectionId, itemId) {
+    assert(
+      storage && typeof storage.bucket === 'function',
+      'has storage instance'
+    );
+    assert(
+      inspectionId && typeof inspectionId === 'string',
+      'has inspection id string'
+    );
+    assert(itemId && typeof itemId === 'string', 'has item id string');
+
+    const bucket = storage.bucket();
+    const prefix = `${INSP_BUCKET_NAME}/${inspectionId}/${itemId}`;
+
+    let files = [];
+    try {
+      [files] = await bucket.getFiles({ prefix });
+    } catch (err) {
+      throw Error(
+        `${PREFIX} findAllInspectionItemPhotoFileNames: failed to get files: ${err}`
+      );
+    }
+
+    return files
+      .map(file => file.name)
+      .map(filePath => filePath.split('/').pop());
+  },
+
+  /**
+   * Generic Firebase storage Buffer upload
+   * @param  {admin.storage} storage instance
+   * @param  {Buffer} buffer to be uploaded to storage
+   * @param  {String} file name to include in storage url path
+   * @param  {String} ext, file type extension included in storage path
+   * @return {Promise} - resolves {string} download URL
+   */
+  async _upload(storage, buffer, dest, ext) {
+    assert(
+      storage && typeof storage.bucket === 'function',
+      'has storage instance'
+    );
+    assert(buffer instanceof Buffer, 'has buffer to upload');
+    assert(dest && typeof dest === 'string', 'has upload destination string');
+    assert(ext && typeof ext === 'string', 'has file extension');
+
+    // Create firebase storage bucket & file
+    const bucket = storage.bucket();
+    const fileToBeUploaded = bucket.file(dest);
+
+    // Create writable stream
+    const stream = fileToBeUploaded.createWriteStream({
+      metadata: {
+        contentType: `image/${ext}`,
+        metadata: {
+          firebaseStorageDownloadTokens: uuidv4(),
+        },
+      },
+    });
+
+    try {
+      await new Promise((resolve, reject) => {
+        stream.on('error', err => {
+          reject(Error(`write stream error: ${err}`));
+        });
+        stream.on('finish', resolve);
+        stream.end(buffer);
+      });
+    } catch (err) {
+      throw Error(`${PREFIX} _upload: failed to upload image: ${err}`);
+    }
+
+    let signedUrl = '';
+    try {
+      // Google signed URL Response
+      // https://googleapis.dev/nodejs/storage/latest/global.html#GetSignedUrlResponse
+      const getSignedUrlResponse = await fileToBeUploaded.getSignedUrl({
+        action: 'read',
+        expires: '03-09-2491',
+      });
+      signedUrl = getSignedUrlResponse[0];
+    } catch (err) {
+      throw Error(`${PREFIX} _upload: failed to get signed URL: ${err}`);
+    }
+
+    if (!signedUrl) {
+      throw Error(`${PREFIX} _upload: unexpected signed URL response`);
+    }
+
+    return signedUrl;
   },
 };

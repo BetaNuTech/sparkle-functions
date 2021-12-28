@@ -5,9 +5,9 @@ const express = require('express');
 const fileParser = require('express-multipart-file-parser');
 const sinon = require('sinon');
 const imageUtil = require('../../../utils/images');
-const storage = require('../../../services/storage');
-const propertiesModel = require('../../../models/properties');
-const handler = require('../../../properties/api/post-image');
+const storageService = require('../../../services/storage');
+const inspectionsModel = require('../../../models/inspections');
+const handler = require('../../../inspections/api/post-template-item-image');
 const mocking = require('../../../test-helpers/mocking');
 const uuid = require('../../../test-helpers/uuid');
 const firebase = require('../../../test-helpers/firebase');
@@ -15,9 +15,10 @@ const log = require('../../../utils/logger');
 
 const SRC_PROFILE_IMG = 'test-image.jpg';
 const IMG_PATH = path.join(__dirname, `../../end-to-end/${SRC_PROFILE_IMG}`);
-const PROPERTY_ID = uuid();
+const ITEM_ID = uuid();
+const INSPECTION_ID = uuid();
 
-describe('Properties | API | POST Image', () => {
+describe('Inspections | API | POST Template Item Image', () => {
   beforeEach(() => {
     sinon.stub(log, 'info').callsFake(() => true);
     sinon.stub(log, 'error').callsFake(() => true);
@@ -29,7 +30,7 @@ describe('Properties | API | POST Image', () => {
 
     // Execute
     const res = await request(createApp())
-      .post(`/t/${PROPERTY_ID}`)
+      .post(`/t/${INSPECTION_ID}/${ITEM_ID}`)
       .send()
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(400);
@@ -43,25 +44,6 @@ describe('Properties | API | POST Image', () => {
     expect(actual).to.contain(expected);
   });
 
-  it('rejects request with invalid property upload target', async () => {
-    const expected = 'target';
-
-    // Execute
-    const res = await request(createApp())
-      .post(`/t/${PROPERTY_ID}?target=nope`)
-      .attach('file', IMG_PATH)
-      .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(400);
-
-    // Assertions
-    const result = res.body.errors || [];
-    const actual = result
-      .map(({ source }) => (source ? source.pointer : ''))
-      .sort()
-      .join(', ');
-    expect(actual).to.contain(expected);
-  });
-
   it('rejects request with unsupported image type', async () => {
     const expected = 'mime';
 
@@ -70,7 +52,7 @@ describe('Properties | API | POST Image', () => {
 
     // Execute
     const res = await request(createApp())
-      .post(`/t/${PROPERTY_ID}`)
+      .post(`/t/${INSPECTION_ID}/${ITEM_ID}`)
       .attach('file', IMG_PATH)
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(400);
@@ -84,16 +66,16 @@ describe('Properties | API | POST Image', () => {
     expect(actual).to.contain(expected);
   });
 
-  it('rejects request to update property with non-existent property', async () => {
-    const expected = 'Property not found';
+  it('rejects request to add photo to non-existent inspection', async () => {
+    const expected = 'Inspection not found';
 
     // Stub Requests
     sinon
-      .stub(propertiesModel, 'findRecord')
+      .stub(inspectionsModel, 'findRecord')
       .resolves(firebase.createDocSnapshot()); // empty
 
     const res = await request(createApp())
-      .post(`/t/${PROPERTY_ID}`)
+      .post(`/t/${INSPECTION_ID}/${ITEM_ID}`)
       .attach('file', IMG_PATH)
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(404);
@@ -104,78 +86,68 @@ describe('Properties | API | POST Image', () => {
     expect(actual).to.equal(expected);
   });
 
-  it('rejects request with unsupported image type', async () => {
-    const expected = 'mime';
+  it('rejects request to add photo to non-existent inspection item', async () => {
+    const expected = 'Inspection item not found';
+    const inspection = mocking.createInspection({ property: uuid() });
+    delete inspection.template;
 
-    // Stubs
-    sinon.stub(imageUtil, 'getMimeType').returns('');
+    // Stub Requests
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(INSPECTION_ID, inspection));
 
-    // Execute
     const res = await request(createApp())
-      .post(`/t/${PROPERTY_ID}`)
+      .post(`/t/${INSPECTION_ID}/${ITEM_ID}`)
       .attach('file', IMG_PATH)
       .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(400);
+      .expect(404);
 
     // Assertions
-    const result = res.body.errors || [];
-    const actual = result
-      .map(({ source }) => (source ? source.pointer : ''))
-      .sort()
-      .join(', ');
-    expect(actual).to.contain(expected);
+    const [error] = res.body.errors || [];
+    const actual = error ? error.title : '';
+    expect(actual).to.equal(expected);
   });
 
-  it('successfully updates a property profile image', async () => {
-    const property = mocking.createProperty();
+  it('successfully updates an inspection item image', async () => {
     const expected = {
-      photoURL: 'google.com/image.jpg',
-      photoName: `${PROPERTY_ID}.jpg`,
+      downloadURL: 'google.com/image.jpg',
     };
+    const sectionId = uuid();
+    const item = mocking.createCompletedMainInputItem(
+      'twoactions_checkmarkx',
+      false,
+      { sectionId }
+    );
+    const template = mocking.createTemplate({
+      name: 'test',
+      sections: {
+        [sectionId]: mocking.createSection(),
+      },
+      items: {
+        [ITEM_ID]: item,
+      },
+    });
+    const inspection = mocking.createInspection({
+      template,
+      property: uuid(),
+    });
 
     // Stubs
     sinon
-      .stub(propertiesModel, 'findRecord')
-      .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(INSPECTION_ID, inspection));
     sinon.stub(imageUtil, 'createImage').resolves(Buffer.from([]));
     sinon.stub(imageUtil, 'optimizeImage').resolves(Buffer.from([]));
-    sinon.stub(storage, 'propertyUpload').resolves(expected.photoURL);
-    sinon.stub(propertiesModel, 'updateRecord').resolves();
-
-    // Execute
-    const res = await request(createApp())
-      .post(`/t/${PROPERTY_ID}`)
-      .attach('file', IMG_PATH)
-      .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(201);
-
-    // Assertions
-    const result = res.body.data || {};
-    const actual = result.attributes || {};
-    expect(actual).to.deep.equal(expected);
-  });
-
-  it('successfully updates a property logo along with the banner image', async () => {
-    const property = mocking.createProperty();
-    const expected = {
-      logoURL: 'google.com/image_logo.jpg',
-      logoName: `${PROPERTY_ID}_logo.jpg`,
-      bannerPhotoURL: 'google.com/image_logo.jpg',
-      bannerPhotoName: `${PROPERTY_ID}_logo.jpg`,
-    };
-
-    // Stubs
     sinon
-      .stub(propertiesModel, 'findRecord')
-      .resolves(firebase.createDocSnapshot(PROPERTY_ID, property));
-    sinon.stub(imageUtil, 'createImage').resolves(Buffer.from([]));
-    sinon.stub(imageUtil, 'optimizeImage').resolves(Buffer.from([]));
-    sinon.stub(storage, 'propertyUpload').resolves(expected.logoURL);
-    sinon.stub(propertiesModel, 'updateRecord').resolves();
+      .stub(storageService, 'findAllInspectionItemPhotoFileNames')
+      .rejects(Error('oops')); // should ignore failure
+    sinon
+      .stub(storageService, 'inspectionItemUpload')
+      .resolves(expected.downloadURL);
 
     // Execute
     const res = await request(createApp())
-      .post(`/t/${PROPERTY_ID}?target=logo`)
+      .post(`/t/${INSPECTION_ID}/${ITEM_ID}`)
       .attach('file', IMG_PATH)
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(201);
@@ -190,7 +162,7 @@ describe('Properties | API | POST Image', () => {
 function createApp() {
   const app = express();
   app.post(
-    '/t/:propertyId',
+    '/t/:inspectionId/:itemId',
     stubAuth,
     fileParser,
     handler({ collection: () => {} }, { bucket: () => {} })

@@ -1,8 +1,8 @@
 const Jimp = require('jimp');
 const assert = require('assert');
 
-const PREFIX = 'properties: utils: images';
-const MIME_TYPES = [Jimp.MIME_PNG, Jimp.MIME_JPEG];
+const PREFIX = 'utils: images:';
+const MIME_TYPES = [Jimp.MIME_PNG, Jimp.MIME_JPEG, Jimp.MIME_GIF];
 
 module.exports = {
   /**
@@ -16,6 +16,7 @@ module.exports = {
     const src = mimeType.toLowerCase();
     const isJpg = src.search(/jpg|jpeg/g) > -1;
     const isPng = src.search(/png/g) > -1;
+    const isGif = src.search(/gif/g) > -1;
 
     if (isJpg) {
       return Jimp.MIME_JPEG;
@@ -23,6 +24,10 @@ module.exports = {
 
     if (isPng) {
       return Jimp.MIME_PNG;
+    }
+
+    if (isGif) {
+      return Jimp.MIME_GIF;
     }
 
     return '';
@@ -40,7 +45,7 @@ module.exports = {
       Jimp.read(fileBuffer, (err, image) => {
         if (err) {
           return reject(
-            Error(`${PREFIX}: createImage: error reading file: ${err}`)
+            Error(`${PREFIX} createImage: error reading file: ${err}`)
           );
         }
         resolve(image);
@@ -70,7 +75,7 @@ module.exports = {
         .getBuffer(mimeType, (err, data) => {
           if (err) {
             return reject(
-              Error(`${PREFIX}: optimizeImage: error optimizing file: ${err}`)
+              Error(`${PREFIX} optimizeImage: error optimizing file: ${err}`)
             );
           }
 
