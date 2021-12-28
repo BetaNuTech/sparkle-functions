@@ -125,6 +125,21 @@ module.exports = function patch(db, storage) {
       });
     }
 
+    // Avoid conflicts updating an inspection that
+    // has a PDF report currently being generated
+    if (inspection.inspectionReportStatus === 'generating') {
+      return res.status(409).send({
+        errors: [
+          {
+            source: { pointer: 'inspection' },
+            title: 'Inspection Locked for Report',
+            detail:
+              "Inspection cannot be updated while its' PDF report is being generated",
+          },
+        ],
+      });
+    }
+
     // Add missing item defaults
     Object.keys((inspection.template || {}).items || {}).forEach(itemId => {
       const item = inspection.template.items[itemId];

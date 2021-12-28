@@ -61,6 +61,32 @@ describe('Inspections PATCH TEMPLATE | API | PATCH Template', () => {
     expect(actual).to.equal(expected);
   });
 
+  it("rejects request to update inspection while its' PDF is being generated", async () => {
+    const expected = 'Inspection Locked for Report';
+    const inspectionId = uuid();
+    const inspection = mocking.createInspection({
+      property: uuid(),
+      inspectionReportStatus: 'generating',
+    });
+
+    // Stub Requests
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+
+    // Execute
+    const res = await request(createApp())
+      .patch(`/t/${inspectionId}`)
+      .send({ items: {} })
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(409);
+
+    // Assertions
+    const [result] = res.body.errors || [];
+    const actual = result ? result.title : '';
+    expect(actual).to.equal(expected);
+  });
+
   it('returns an empty success response when user updates would have no impact', async () => {
     const propertyId = uuid();
     const inspectionId = uuid();
