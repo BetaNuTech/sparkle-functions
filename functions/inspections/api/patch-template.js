@@ -11,7 +11,7 @@ const updateInspection = require('../utils/update');
 const propertiesModel = require('../../models/properties');
 const notificationsModel = require('../../models/notifications');
 const notifyTemplate = require('../../utils/src-notification-templates');
-const storageApi = require('../../services/storage');
+const storageService = require('../../services/storage');
 const findDeletedItemsPhotoUrls = require('../utils/find-deleted-items-photo-urls');
 
 const PREFIX = 'inspection: api: patch-template:';
@@ -188,9 +188,15 @@ module.exports = function patch(db, storage) {
     if (deletedItemsPhotoUrls.length) {
       try {
         await Promise.all(
-          deletedItemsPhotoUrls.map(photoUrl =>
-            storageApi.deleteInspectionItemPhoto(storage, photoUrl)
-          )
+          deletedItemsPhotoUrls.map(({ item, url }) => {
+            const fileName = storageService.getUrlFileName(url);
+            return storageService.deleteInspectionItemPhotoEntry(
+              storage,
+              inspectionId,
+              item,
+              fileName
+            );
+          })
         );
       } catch (err) {
         // Continue without error

@@ -7,6 +7,7 @@ const mocking = require('../../../test-helpers/mocking');
 const storageHelper = require('../../../test-helpers/storage');
 const inspectionsModel = require('../../../models/inspections');
 const propertiesModel = require('../../../models/properties');
+const storageService = require('../../../services/storage');
 const handler = require('../../../inspections/api/patch-template');
 const { cleanDb, findStorageFile } = require('../../../test-helpers/firebase');
 const { fs: db, storage } = require('../../setup');
@@ -78,12 +79,17 @@ describe('Inspections | API | PATCH Template', () => {
     const deletedItemId = uuid();
     const bucket = storage.bucket();
     const sectionConfig = { title: 'Multi', section_type: 'multi' };
-    // TODO upload image using storage service and test this still works
-    const {
-      url,
-      directory,
-      destination,
-    } = await storageHelper.uploadInspectionItemImage(bucket, inspectionId);
+    const fileName = `${Math.round(Date.now() / 1000)}`;
+
+    const fileBuffer = await storageHelper.createFileBuffer();
+    const url = await storageService.inspectionItemUpload(
+      storage,
+      fileBuffer,
+      inspectionId,
+      deletedItemId,
+      fileName,
+      'jpg'
+    );
     const inspection = mocking.createInspection({
       property: propertyId,
       score: 100,
@@ -147,7 +153,11 @@ describe('Inspections | API | PATCH Template', () => {
     expect(itemIds).to.deep.equal([itemId], 'removed deleted item reference');
 
     // Test results
-    const actual = await findStorageFile(bucket, directory, destination); // find the upload
+    const directory = storageService.getInspectionItemUploadDir(
+      inspectionId,
+      deletedItemId
+    );
+    const actual = await findStorageFile(bucket, directory, `${fileName}.jpg`); // find the upload
     expect(actual).to.equal(expected, 'removed deleted item photos');
   });
 
