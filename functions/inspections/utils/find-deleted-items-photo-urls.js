@@ -4,7 +4,7 @@ const assert = require('assert');
  * Collect all deleted inspection item photo
  * urls into a single flattened array
  * @param  {Object} inspection
- * @return {String[]} - deleted inspection item photo urls (downloadURL)
+ * @return {Object[]} - deleted inspection item photo urls (downloadURL)
  */
 module.exports = (currentInspection, updatedInspection) => {
   assert(
@@ -23,13 +23,19 @@ module.exports = (currentInspection, updatedInspection) => {
     .filter(id => updatedItems[id] === null) // find removed items
     .filter(id => Boolean(currentItems[id])) // check current item exists
     .filter(id => currentItems[id].photosData) // has photo data
-    .map(id => JSON.parse(JSON.stringify(currentItems[id].photosData))) // Clone item's photo data (with ID)
+    .map(id => ({
+      id,
+      photosData: JSON.parse(JSON.stringify(currentItems[id].photosData)),
+    })) // Clone item's photo data (with ID)
     .map(
-      photosData =>
-        Object.keys(photosData).map(id => photosData[id].downloadURL) // convert photo data to list of strings
+      ({ id, photosData }) =>
+        Object.keys(photosData).map(photoDataId => ({
+          item: id,
+          url: photosData[photoDataId].downloadURL,
+        })) // convert photo data to list of strings
     )
-    .reduce((acc, urls) => {
-      acc.push(...urls.filter(Boolean)); // Flatten all photos to single array
+    .reduce((acc, itemPhotosData) => {
+      acc.push(...itemPhotosData.filter(({ url }) => Boolean(url))); // Flatten all photos to single array
       return acc;
     }, []);
 };

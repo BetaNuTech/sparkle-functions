@@ -1,5 +1,6 @@
 const assert = require('assert');
 const { v4: uuidv4 } = require('uuid');
+const inspUtils = require('../utils/inspection');
 
 const PROPERTY_BUCKET_NAME = `propertyImages${
   process.env.NODE_ENV === 'test' ? 'Test' : ''
@@ -36,6 +37,34 @@ module.exports = {
   },
 
   /**
+   * Create inspection item upload dir path
+   * @param  {String} inspectionId
+   * @param  {String} itemId
+   * @return {String}
+   */
+  getInspectionItemUploadDir(inspectionId, itemId) {
+    assert(
+      inspectionId && typeof inspectionId === 'string',
+      'has inspection id string'
+    );
+    assert(itemId && typeof itemId === 'string', 'has item id string');
+    return `${INSP_BUCKET_NAME}/${inspectionId}/${itemId}`;
+  },
+
+  /**
+   * Get URL from firebase storage address
+   * @param  {String} url
+   * @return {String} - fileName
+   */
+  getUrlFileName(url) {
+    assert(url && typeof url === 'string', 'has url string');
+    const urlSegments = decodeURIComponent(url)
+      .split('?')[0]
+      .split('/');
+    return urlSegments.pop();
+  },
+
+  /**
    * Uploading image to inspection item storage
    * @param  {admin.storage} storage instance
    * @param  {Buffer} buffer to be uploaded to storage
@@ -43,7 +72,7 @@ module.exports = {
    * @param  {String} itemId
    * @param  {String} fileName to include in storage url path
    * @param  {String} ext, file type extension included in storage path
-   * @return {Promise} - resolves {string} property download URL
+   * @return {Promise<String>} - resolves property download URL
    */
   inspectionItemUpload(storage, buffer, inspectionId, itemId, fileName, ext) {
     assert(
@@ -60,7 +89,8 @@ module.exports = {
     assert(ext && typeof ext === 'string', 'has file extension');
 
     // <item-dir>/<inspection-id>/<item-id>/<file-name>
-    const dest = `${INSP_BUCKET_NAME}/${inspectionId}/${itemId}/${fileName}.${ext}`;
+    const dir = this.getInspectionItemUploadDir(inspectionId, itemId);
+    const dest = `${dir}/${fileName}.${ext}`;
 
     // Initiate upload
     return this._upload(storage, buffer, dest, ext).catch(err =>
@@ -69,34 +99,45 @@ module.exports = {
   },
 
   /**
-   * Remove an inspection item photo uploaded
-   * file in firebase storage
+   * Remove all uploads for an inspection's item
    * @param  {admin.storage} storage
-   * @param  {String} url
-   * @return {Promise}
+   * @param  {String} inspectionId
+   * @param  {String} itemId
+   * @param  {Object} item
+   * @return {Promise} - All remove requests grouped together
    */
-  deleteInspectionItemPhoto(storage, url) {
+  deleteInspectionItemUploads(storage, inspectionId, itemId, item) {
     assert(storage && typeof storage.bucket === 'function', 'has storage');
-    assert(url && typeof url === 'string', 'has url string');
+    assert(
+      inspectionId && typeof inspectionId === 'string',
+      'has inspection id string'
+    );
+    assert(itemId && typeof itemId === 'string', 'has item id string');
+    assert(item && typeof item === 'object', 'has item object');
 
-    const fileName = (decodeURIComponent(url).split('?')[0] || '')
-      .split('/')
-      .pop();
+    const requests = [];
+    const urls = inspUtils.getInspectionItemUploadUrls(item);
 
-    return storage
-      .bucket()
-      .file(`${INSP_BUCKET_NAME}/${fileName}`)
-      .delete()
-      .catch(err => {
-        throw Error(
-          `${PREFIX} deleteInspectionItemPhoto: file delete failed: ${err}`
-        );
-      });
+    for (let i = 0; i < urls.length; i++) {
+      const fileName = this.getUrlFileName(urls[i]);
+      requests.push(
+        this.deleteInspectionItemPhotoEntry(
+          storage,
+          inspectionId,
+          itemId,
+          fileName
+        )
+      );
+    }
+
+    return Promise.all(requests);
   },
 
   /**
    * Remove a specific inspection item photo entry
    * @param  {admin.storage} storage
+   * @param  {String} inspectionId
+   * @param  {String} itemId
    * @param  {String} url
    * @return {Promise}
    */
@@ -113,9 +154,11 @@ module.exports = {
       'file name must contain an file extension'
     );
 
+    const dir = this.getInspectionItemUploadDir(inspectionId, itemId);
+
     return storage
       .bucket()
-      .file(`${INSP_BUCKET_NAME}/${inspectionId}/${itemId}/${fileName}`)
+      .file(`${dir}/${fileName}`)
       .delete()
       .catch(err => {
         throw Error(
