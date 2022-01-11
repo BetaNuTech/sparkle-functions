@@ -1,9 +1,9 @@
 const { expect } = require('chai');
 const moment = require('moment');
-const createReportPdf = require('./report-pdf');
-const uuid = require('../../../test-helpers/uuid');
-const settings = require('../../../config/report-pdf-settings');
-const mocking = require('../../../test-helpers/mocking');
+const createReportPdf = require('./create');
+const uuid = require('../../test-helpers/uuid');
+const settings = require('../../config/report-pdf-settings');
+const mocking = require('../../test-helpers/mocking');
 
 const MAIN_INPUTS = {
   checkmark: 'twoactions_checkmarkx',
@@ -13,7 +13,7 @@ const MAIN_INPUTS = {
   oneToFive: 'fiveactions_onetofive',
 };
 
-describe('Inspections | API | Utils | Report PDF', function() {
+describe('Inspections | Report PDF | Create', function() {
   it('generates a pdf buffer of inspection', async () => {
     const propertyId = uuid();
     const inspectionId = uuid();

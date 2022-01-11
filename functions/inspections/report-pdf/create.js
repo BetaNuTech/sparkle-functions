@@ -2,7 +2,7 @@ const path = require('path');
 const assert = require('assert');
 const moment = require('moment');
 const PdfMake = require('pdfmake');
-const settings = require('../../../config/report-pdf-settings');
+const settings = require('../../config/report-pdf-settings');
 
 const DOC_SETTINGS = Object.freeze({
   pageSize: {
