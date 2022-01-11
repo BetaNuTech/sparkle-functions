@@ -5,6 +5,7 @@ const propertiesModel = require('../models/properties');
 const teamUsersModel = require('../models/team-users');
 const templatesModel = require('../models/templates');
 const inspectionsModel = require('../models/inspections');
+const storageService = require('../services/storage');
 const jobsModel = require('../models/jobs');
 
 const PREFIX = 'properties: on-delete-v2:';
@@ -131,12 +132,16 @@ module.exports = function createOnDeleteV2Handler(fs, storage) {
         const item = insp.template.items[itemId];
 
         try {
-          // TODO: delete method from model
-          await inspectionsModel.deleteItemUploads(storage, item);
+          await storageService.deleteInspectionItemUploads(
+            storage,
+            inspDoc.id,
+            itemId,
+            item
+          );
         } catch (err) {
           // Allow failure
           log.error(
-            `${PREFIX} failed to delete inspection: "${inspDoc.id}" item: "${itemId}" uploads | ${err}`
+            `${PREFIX} failed to delete inspection: "${inspDoc.id}" item: "${itemId}" uploads: ${err}`
           );
         }
       }

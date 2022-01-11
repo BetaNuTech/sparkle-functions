@@ -9,7 +9,8 @@ const uuid = require('../../../test-helpers/uuid');
 const inspectionsModel = require('../../../models/inspections');
 const propertiesModel = require('../../../models/properties');
 const notificationsModel = require('../../../models/notifications');
-const patchInspection = require('../../../inspections/api/patch-template');
+const handler = require('../../../inspections/api/patch-template');
+const reportPdf = require('../../../inspections/report-pdf');
 const firebase = require('../../../test-helpers/firebase');
 const { storage } = require('../../setup');
 
@@ -54,6 +55,32 @@ describe('Inspections PATCH TEMPLATE | API | PATCH Template', () => {
       .send({ items: {} })
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(404);
+
+    // Assertions
+    const [result] = res.body.errors || [];
+    const actual = result ? result.title : '';
+    expect(actual).to.equal(expected);
+  });
+
+  it("rejects request to update inspection while its' PDF is being generated", async () => {
+    const expected = 'Inspection Locked for Report';
+    const inspectionId = uuid();
+    const inspection = mocking.createInspection({
+      property: uuid(),
+      inspectionReportStatus: 'generating',
+    });
+
+    // Stub Requests
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+
+    // Execute
+    const res = await request(createApp())
+      .patch(`/t/${inspectionId}`)
+      .send({ items: {} })
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(409);
 
     // Assertions
     const [result] = res.body.errors || [];
@@ -299,6 +326,7 @@ describe('Inspections PATCH TEMPLATE | API | PATCH Template', () => {
           firebase.createDocSnapshot(property)
         )
       );
+    sinon.stub(reportPdf, 'regenerate').resolves({ inspection, warnings: [] });
     const sendNotification = sinon
       .stub(notificationsModel, 'addRecord')
       .resolves();
@@ -372,6 +400,7 @@ describe('Inspections PATCH TEMPLATE | API | PATCH Template', () => {
           firebase.createDocSnapshot(property)
         )
       );
+    sinon.stub(reportPdf, 'regenerate').resolves({ inspection, warnings: [] });
     const sendNotification = sinon
       .stub(notificationsModel, 'addRecord')
       .resolves();
@@ -387,6 +416,79 @@ describe('Inspections PATCH TEMPLATE | API | PATCH Template', () => {
     const actual = sendNotification.called;
     expect(actual).to.equal(expected);
   });
+
+  it('requests to generate a PDF report after a completed inspection is successfully updated', async () => {
+    const expected = true;
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const sectionId = uuid();
+    const itemId = uuid();
+    const property = mocking.createProperty();
+    const currentItem = mocking.createIncompleteMainInputItem(
+      'twoactions_checkmarkx',
+      { sectionId }
+    );
+    const completeInspUpdate = {
+      items: {
+        [itemId]: {
+          mainInputSelected: true,
+          mainInputSelection: 0,
+        },
+      },
+    };
+    const template = mocking.createTemplate({
+      name: 'test',
+      requireDeficientItemNoteAndPhoto: false,
+      sections: {
+        [sectionId]: mocking.createSection(),
+      },
+      items: {
+        [itemId]: currentItem,
+      },
+    });
+    const inspection = mocking.createInspection({
+      template,
+      inspectionCompleted: false,
+      totalItems: 1,
+      itemsCompleted: 0,
+      property: propertyId,
+    });
+    const updatedInspection = JSON.parse(JSON.stringify(inspection)); // clone
+    Object.assign(
+      updatedInspection.template.items[itemId],
+      completeInspUpdate.items[itemId] // Merge in user updates
+    );
+
+    // Stub Requests
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+    sinon
+      .stub(inspectionsModel, 'setRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, updatedInspection));
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(
+        firebase.createDocSnapshot(
+          propertyId,
+          firebase.createDocSnapshot(property)
+        )
+      );
+    const regenerate = sinon
+      .stub(reportPdf, 'regenerate')
+      .resolves({ inspection, warnings: [] });
+
+    // Execute
+    await request(createApp())
+      .patch(`/t/${inspectionId}?incognitoMode=true`)
+      .send(completeInspUpdate)
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(201);
+
+    // Assertions
+    const actual = regenerate.called;
+    expect(actual).to.equal(expected);
+  });
 });
 
 function createApp() {
@@ -395,7 +497,7 @@ function createApp() {
     '/t/:inspectionId',
     bodyParser.json(),
     stubAuth,
-    patchInspection(
+    handler(
       {
         collection: () => {},
         batch: () => ({ commit: () => Promise.resolve() }),

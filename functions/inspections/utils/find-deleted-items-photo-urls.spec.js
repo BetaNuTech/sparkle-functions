@@ -50,11 +50,18 @@ describe('Unit | Inspections | Utils | Find Delete Item Photo Urls', () => {
     expect(actual).to.deep.equal(expected);
   });
 
-  it('returns all deleted items photo URLs', async () => {
+  it('returns all deleted items id and photo URLs', async () => {
+    const itemOneId = uuid();
+    const itemTwoId = uuid();
+    const itemThreeId = uuid();
     const urlOne = 'google.com/pic.jpg';
     const urlTwo = 'twitter.com/pic.jpg';
     const urlThree = 'geocities.com/pic.jpg';
-    const expected = [urlOne, urlTwo, urlThree].sort();
+    const expected = [
+      { item: itemOneId, url: urlOne },
+      { item: itemTwoId, url: urlTwo },
+      { item: itemThreeId, url: urlThree },
+    ].sort();
     const deletedSectionOneId = uuid();
     const deletedSectionTwoId = uuid();
     const normalSectionThreeId = uuid();
@@ -67,7 +74,7 @@ describe('Unit | Inspections | Utils | Find Delete Item Photo Urls', () => {
           [normalSectionThreeId]: mocking.createSection(),
         },
         items: {
-          one: mocking.createItem({
+          [itemOneId]: mocking.createItem({
             sectionId: deletedSectionOneId,
             photosData: {
               [uuid()]: mocking.createInspectionItemPhotoData({
@@ -75,7 +82,7 @@ describe('Unit | Inspections | Utils | Find Delete Item Photo Urls', () => {
               }),
             },
           }),
-          two: mocking.createItem({
+          [itemTwoId]: mocking.createItem({
             sectionId: deletedSectionOneId,
             photosData: {
               [uuid()]: mocking.createInspectionItemPhotoData({
@@ -83,7 +90,7 @@ describe('Unit | Inspections | Utils | Find Delete Item Photo Urls', () => {
               }),
             },
           }),
-          three: mocking.createItem({
+          [itemThreeId]: mocking.createItem({
             sectionId: deletedSectionTwoId,
             photosData: {
               [uuid()]: mocking.createInspectionItemPhotoData({
@@ -107,9 +114,9 @@ describe('Unit | Inspections | Utils | Find Delete Item Photo Urls', () => {
           [deletedSectionTwoId]: null,
         },
         items: {
-          one: null,
-          two: null,
-          three: null,
+          [itemOneId]: null,
+          [itemTwoId]: null,
+          [itemThreeId]: null,
         },
       },
     };

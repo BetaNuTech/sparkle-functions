@@ -3,9 +3,7 @@ const FieldValue = require('firebase-admin').firestore.FieldValue;
 const modelSetup = require('./utils/model-setup');
 const diModel = require('./deficient-items');
 const archiveModel = require('./_internal/archive');
-const inspUtils = require('../utils/inspection');
 const firestoreUtils = require('../utils/firestore');
-const storageApi = require('../services/storage');
 const config = require('../config');
 
 const INSPECTION_COLLECTION = config.models.collections.inspections;
@@ -495,27 +493,6 @@ module.exports = modelSetup({
           `${PREFIX} removeForProperty: inspection deletes failed: ${err}`
         );
       });
-  },
-
-  /**
-   * Remove all uploads for an inspection's item
-   * TODO: move to inspection service
-   * @param  {admin.storage} storage
-   * @param  {Object} item
-   * @return {Promise} - All remove requests grouped together
-   */
-  deleteItemUploads(storage, item) {
-    assert(storage && typeof storage.bucket === 'function', 'has storage');
-    assert(item && typeof item === 'object', 'has item object');
-
-    const requests = [];
-    const urls = inspUtils.getInspectionItemUploadUrls(item);
-
-    for (let i = 0; i < urls.length; i++) {
-      requests.push(storageApi.deleteInspectionItemPhoto(storage, urls[i]));
-    }
-
-    return Promise.all(requests);
   },
 });
 

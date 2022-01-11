@@ -2,7 +2,7 @@ const assert = require('assert');
 const path = require('path');
 const propertiesModel = require('../../models/properties');
 const storage = require('../../services/storage');
-const imageUtil = require('../utils/images');
+const imageUtil = require('../../utils/images');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
 const log = require('../../utils/logger');
 

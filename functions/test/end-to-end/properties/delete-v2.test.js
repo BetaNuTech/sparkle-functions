@@ -13,6 +13,7 @@ const inspectionsModel = require('../../../models/inspections');
 const { fs, test, storage, cloudFunctions } = require('../../setup');
 const jobsModel = require('../../../models/jobs');
 const bidsModel = require('../../../models/bids');
+const storageService = require('../../../services/storage');
 
 describe('Properties | Delete | V2', () => {
   afterEach(() => cleanDb(null, fs));
@@ -316,13 +317,19 @@ describe('Properties | Delete | V2', () => {
     const bucket = storage.bucket();
     const propertyData = createProperty();
     const inspData = createInspection(propertyId, itemId);
+    const fileName = `${Math.round(Date.now() / 1000)}`;
 
     // Setup storage & database
-    const {
-      url,
-      directory,
-      destination,
-    } = await storageHelper.uploadInspectionItemImage(bucket, inspectionId);
+    const fileBuffer = await storageHelper.createFileBuffer();
+    const url = await storageService.inspectionItemUpload(
+      storage,
+      fileBuffer,
+      inspectionId,
+      itemId,
+      fileName,
+      'jpg'
+    );
+
     Object.assign(
       inspData.template.items[itemId],
       { photosData: { [Date.now()]: { downloadURL: url } } } // merge in photo data
@@ -337,7 +344,11 @@ describe('Properties | Delete | V2', () => {
     await wrapped(snap, { params: { propertyId } });
 
     // Test results
-    const actual = await findStorageFile(bucket, directory, destination); // find the upload
+    const directory = storageService.getInspectionItemUploadDir(
+      inspectionId,
+      itemId
+    );
+    const actual = await findStorageFile(bucket, directory, `${fileName}.jpg`); // find the upload
     expect(actual).to.equal(expected);
   });
 
@@ -349,16 +360,23 @@ describe('Properties | Delete | V2', () => {
     const bucket = storage.bucket();
     const propertyData = createProperty();
     const inspData = createInspection(propertyId, itemId);
+    const nowUnix = Math.round(Date.now() / 1000);
+    const fileName = `${nowUnix}`;
 
     // Setup storage & database
-    const {
-      url,
-      directory,
-      destination,
-    } = await storageHelper.uploadInspectionItemImage(bucket, inspectionId);
+    const fileBuffer = await storageHelper.createFileBuffer();
+    const url = await storageService.inspectionItemUpload(
+      storage,
+      fileBuffer,
+      inspectionId,
+      itemId,
+      fileName,
+      'jpg'
+    );
+
     Object.assign(
       inspData.template.items[itemId],
-      { photosData: { [Date.now()]: { downloadURL: url } } } // merge in photo data
+      { photosData: { [`${nowUnix}`]: { downloadURL: url } } } // merge in photo data
     );
     await propertiesModel.createRecord(fs, propertyId, propertyData);
     await archiveModel.inspection.createRecord(fs, inspectionId, inspData);
@@ -370,7 +388,11 @@ describe('Properties | Delete | V2', () => {
     await wrapped(snap, { params: { propertyId } });
 
     // Test results
-    const actual = await findStorageFile(bucket, directory, destination); // find the upload
+    const directory = storageService.getInspectionItemUploadDir(
+      inspectionId,
+      itemId
+    );
+    const actual = await findStorageFile(bucket, directory, `${fileName}.jpg`); // find the upload
     expect(actual).to.equal(expected);
   });
 

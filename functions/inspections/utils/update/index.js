@@ -155,10 +155,8 @@ function setUpsertItems(config) {
 }
 
 /**
- * Remove a delete multi-section's items
- * by adding a Firstore delete value to
- * each item associated with the removed
- * multi-section
+ * Remove all a deleted multi-section's
+ * items associated with it
  * @param  {Object} config
  * @return {Object} - config
  */
@@ -167,10 +165,10 @@ function setRemovedMultiSectionItems(config) {
   const template = current.template || {};
 
   Object.keys(updates.sections || {}).forEach(id => {
-    // An object without any attributes signifies a FieldValue.delete
     const isRemovingSection = updates.sections[id] === null;
 
     if (isRemovingSection) {
+      // Remove all items of deleted section
       Object.keys(template.items || {})
         .filter(itemId => template.items[itemId].sectionId === id)
         .forEach(itemId => {
@@ -191,9 +189,11 @@ function setRemovedMultiSectionItems(config) {
 function setTotalItems(config) {
   const { current, changes, updates } = config;
   const template = current.template || {};
+  const deletedItemIds = filterDeletedItemsIds(updates.items);
   const totalItems = []
     .concat(Object.keys(template.items || {}), Object.keys(changes.items || {}))
-    .filter((id, i, arr) => arr.indexOf(id) === i).length; // filter unique
+    .filter((id, i, arr) => arr.indexOf(id) === i) // filter unique
+    .filter(id => !deletedItemIds.includes(id)).length; // filter removed
 
   if (current.totalItems !== totalItems) {
     updates.totalItems = totalItems;
@@ -212,10 +212,11 @@ function setItemsCompleted(config) {
   const template = current.template || {};
   const mergedItems = mergeItems(template.items, changes.items || {});
   const items = hashToArray(mergedItems);
+  const deletedItemIds = filterDeletedItemsIds(updates.items);
   const itemsCompleted = filterCompleted(
     items,
     Boolean(template.requireDeficientItemNoteAndPhoto)
-  ).length;
+  ).filter(({ id }) => !deletedItemIds.includes(id)).length;
 
   if (current.itemsCompleted !== itemsCompleted) {
     updates.itemsCompleted = itemsCompleted;
@@ -234,8 +235,11 @@ function setDeficienciesExist(config) {
   const template = current.template || {};
   const mergedItems = mergeItems(template.items, updates.items);
   const items = hashToArray(mergedItems);
+  const deletedItemIds = filterDeletedItemsIds(updates.items);
   const deficienciesExist = Boolean(
-    items.filter(i => !i.isItemNA && i.deficient === true).length
+    items
+      .filter(({ id }) => !deletedItemIds.includes(id))
+      .filter(i => !i.isItemNA && i.deficient === true).length
   );
 
   if (current.deficienciesExist !== deficienciesExist) {
@@ -317,11 +321,13 @@ function setScore(config) {
   const template = current.template || {};
   const mergedItems = mergeItems(template.items, updates.items);
   const items = hashToArray(mergedItems);
+  const deletedItemIds = filterDeletedItemsIds(updates.items);
+  const finalItems = items.filter(({ id }) => !deletedItemIds.includes(id));
   const isCompleted =
     typeof updates.inspectionCompleted !== 'undefined'
       ? updates.inspectionCompleted
       : current.inspectionCompleted;
-  const score = isCompleted ? calculateScore(items) : 0;
+  const score = isCompleted ? calculateScore(finalItems) : 0;
 
   if (isCompleted && score !== current.score) {
     updates.score = score;
@@ -385,4 +391,14 @@ function mergeItems(current = {}, updates = {}) {
   });
 
   return merged;
+}
+
+/**
+ * Filter all items down to a list
+ * of the deleted ID's
+ * @param  {Object?} items
+ * @return {String[]}
+ */
+function filterDeletedItemsIds(items) {
+  return Object.keys(items || {}).filter(id => items[id] === null);
 }

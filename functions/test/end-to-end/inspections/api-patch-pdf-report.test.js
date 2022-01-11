@@ -7,7 +7,7 @@ const inspectionsModel = require('../../../models/inspections');
 const propertiesModel = require('../../../models/properties');
 const handler = require('../../../inspections/api/patch-report-pdf');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { fs, deletePDFInspection } = require('../../setup');
+const { fs: db, deletePDFInspection } = require('../../setup');
 
 // Avoid creating lots of PDF's
 const INSP_ID = uuid();
@@ -33,7 +33,7 @@ const PROPERTY_DATA = {
 
 describe('Inspections | API | PATCH PDF Report', () => {
   afterEach(async () => {
-    const inspDoc = await inspectionsModel.findRecord(fs, INSP_ID);
+    const inspDoc = await inspectionsModel.findRecord(db, INSP_ID);
     const reportURL = (inspDoc.data() || {}).inspectionReportURL || '';
 
     // Delete any generated PDF
@@ -43,13 +43,13 @@ describe('Inspections | API | PATCH PDF Report', () => {
       } catch (e) {} // eslint-disable-line no-empty
     }
 
-    return cleanDb(null, fs);
+    return cleanDb(null, db);
   });
 
   it("should update inspection's report attributes on success", async function() {
     // Setup database
-    await inspectionsModel.createRecord(fs, INSP_ID, INSPECTION_DATA);
-    await propertiesModel.createRecord(fs, PROPERTY_ID, PROPERTY_DATA);
+    await inspectionsModel.createRecord(db, INSP_ID, INSPECTION_DATA);
+    await propertiesModel.createRecord(db, PROPERTY_ID, PROPERTY_DATA);
 
     // Execute
     const app = createApp();
@@ -94,6 +94,6 @@ describe('Inspections | API | PATCH PDF Report', () => {
 
 function createApp() {
   const app = express();
-  app.patch('/:inspectionId', handler(fs));
+  app.patch('/:inspectionId', handler(db));
   return app;
 }
