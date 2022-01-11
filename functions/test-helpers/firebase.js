@@ -3,41 +3,6 @@ const uuid = require('./uuid');
 
 module.exports = {
   /**
-   * Create a Firebase database stub resolving provided data snapshot
-   * @param  {Object} config
-   * @param  {Object} dataSnapshot
-   * @param  {Object} childConf
-   * @return {Object} - configuration for `Object.defineProperty()`
-   */
-  createDatabaseStub(config = {}, dataSnapshot = {}, childConf = {}) {
-    const childWrapper = Object.assign(
-      {
-        child: () => childWrapper,
-        orderByChild: () => childWrapper,
-        orderByKey: () => childWrapper,
-        limitToFirst: () => childWrapper,
-        equalTo: () => childWrapper,
-        once: () => Promise.resolve(dataSnapshot),
-        remove: () => Promise.resolve(true),
-        set: () => Promise.resolve(),
-        update: () => Promise.resolve(),
-      },
-      childConf
-    );
-
-    return Object.assign(
-      {
-        writable: true,
-        value: () => ({
-          _isTestStub: true,
-          ref: () => childWrapper,
-        }),
-      },
-      config
-    );
-  },
-
-  /**
    * Create a Firestore stub for testing
    * @param  {Object} config
    * @param  {Object} dataSnapshot

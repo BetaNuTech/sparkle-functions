@@ -1,10 +1,10 @@
 const fs = require('fs');
 const log = require('../utils/logger');
 const { fs: db } = require('./setup'); // eslint-disable-line
-const createReportPdf = require('../inspections/api/utils/report-pdf');
+const createReportPdf = require('../inspections/report-pdf/create');
 const propertiesModel = require('../models/properties');
 const inspectionsModel = require('../models/inspections');
-const inspImages = require('../inspections/api/utils/inspection-images');
+const inspImages = require('../inspections/report-pdf/inspection-images');
 
 const [, , inspectionId] = process.argv; // eslint-disable-line
 if (!inspectionId) {

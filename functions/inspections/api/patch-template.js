@@ -13,6 +13,7 @@ const notificationsModel = require('../../models/notifications');
 const notifyTemplate = require('../../utils/src-notification-templates');
 const storageService = require('../../services/storage');
 const findDeletedItemsPhotoUrls = require('../utils/find-deleted-items-photo-urls');
+const reportPdf = require('../report-pdf');
 
 const PREFIX = 'inspection: api: patch-template:';
 
@@ -52,6 +53,11 @@ module.exports = function patch(db, storage) {
     const incognitoMode = req.query.incognitoMode
       ? req.query.incognitoMode.search(/true/i) > -1
       : false;
+
+    // Optional prevent generating report
+    const createReport = req.query.report
+      ? req.query.report.search(/true/i) > -1
+      : true;
 
     // Reject missing update request JSON
     if (!hasUpdates) {
@@ -283,6 +289,102 @@ module.exports = function patch(db, storage) {
         type: 'inspection',
         attributes: inspectionUpdates,
       },
+    });
+
+    // Merge updates into old inspection state
+    const isCompleted =
+      typeof inspectionUpdates.inspectionCompleted === 'boolean'
+        ? inspectionUpdates.inspectionCompleted
+        : Boolean(inspection.inspectionCompleted);
+
+    // Return before updating inspection report PDF
+    if (!isCompleted || !createReport) {
+      return;
+    }
+
+    log.info(`${PREFIX} generating a new PDF Report for "${inspectionId}"`);
+
+    const warnings = [];
+    try {
+      const result = await reportPdf.regenerate(
+        db,
+        inspectionId,
+        incognitoMode,
+        authorId,
+        authorName,
+        authorEmail
+      );
+      warnings.push(...result.warnings);
+      inspection = result.inspection; // contains updates
+    } catch (err) {
+      // Replace old inspection state
+      inspection = err.inspection || null;
+
+      // Log report status failure
+      if (
+        inspection &&
+        inspection.inspectionReportStatus === 'completed_failure'
+      ) {
+        log.info(
+          `${PREFIX} updated inspection "${inspectionId}" report status set to failed`
+        );
+      }
+
+      // Could not find inspection
+      if (err instanceof reportPdf.UnfoundInspectionError) {
+        log.error(`${PREFIX} missing requested inspection: ${err}`);
+      }
+
+      // Inspection has not property reference
+      if (err instanceof reportPdf.BadInspectionError) {
+        log.error(`${PREFIX} bad inspection record: ${err}`);
+      }
+
+      // Cannot create report for incomplete inspection
+      if (err instanceof reportPdf.IncompleteInspectionError) {
+        log.error(
+          `${PREFIX} requested to generate report for incomplete inspection: ${err}`
+        );
+      }
+
+      // Report PDF generation is currently in progress
+      if (err instanceof reportPdf.GeneratingReportError) {
+        log.error(
+          `${PREFIX} requested report for inspection already generating report: ${err}`
+        );
+      }
+
+      // Inspection does not need a new report
+      if (err instanceof reportPdf.ReportUpToDateError) {
+        log.error(
+          `${PREFIX} requested report for up to date inspection: ${err}`
+        );
+      }
+
+      // Inspection's property doesn't exist
+      if (err instanceof reportPdf.UnfoundPropertyError) {
+        log.error(
+          `${PREFIX} requested report for inspection without property: ${err}`
+        );
+      }
+
+      // Failed to add/replace inspections PDF report
+      if (err instanceof reportPdf.GenerationFailError) {
+        log.error(`${PREFIX} PDF generation failed: ${err}`);
+      }
+
+      // Could not load PDF report URL
+      if (err instanceof reportPdf.ReportUrlLookupError) {
+        log.error(`${PREFIX} S3 report upload failed: ${err}`);
+      }
+
+      // Unexpected error
+      log.error(`${PREFIX} unexpected PDF report error: ${err}`);
+    }
+
+    // Log any warnings
+    warnings.forEach(err => {
+      log.error(`${PREFIX} warning: ${err}`);
     });
   };
 };

@@ -6,13 +6,19 @@ const uuid = require('../../../test-helpers/uuid');
 const propertiesModel = require('../../../models/properties');
 const inspectionsModel = require('../../../models/inspections');
 const notificationsModel = require('../../../models/notifications');
-const patchPdf = require('../../../inspections/api/patch-report-pdf');
-const createReportPdf = require('../../../inspections/api/utils/report-pdf');
-const uploader = require('../../../inspections/api/utils/uploader');
+const handler = require('../../../inspections/api/patch-report-pdf');
+const createReportPdf = require('../../../inspections/report-pdf/create');
+const uploader = require('../../../inspections/report-pdf/uploader');
 const mocking = require('../../../test-helpers/mocking');
-const inspImages = require('../../../inspections/api/utils/inspection-images');
+const inspImages = require('../../../inspections/report-pdf/inspection-images');
+const log = require('../../../utils/logger');
+const firebase = require('../../../test-helpers/firebase');
 
 describe('Inspections | API | PATCH Report PDF', () => {
+  beforeEach(() => {
+    sinon.stub(log, 'info').callsFake(() => true);
+    sinon.stub(log, 'error').callsFake(() => true);
+  });
   afterEach(() => sinon.restore());
 
   it('rejects request for non-existent inspection', async () => {
@@ -20,7 +26,9 @@ describe('Inspections | API | PATCH Report PDF', () => {
     const inspectionId = uuid();
 
     // Stubs
-    sinon.stub(inspectionsModel, 'findRecord').resolves(createSnap());
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId));
 
     await request(createApp())
       .patch(`/${inspectionId}`)
@@ -42,7 +50,9 @@ describe('Inspections | API | PATCH Report PDF', () => {
     const inspection = createInspection({ property: '' });
 
     // Stubs
-    sinon.stub(inspectionsModel, 'findRecord').resolves(createSnap(inspection));
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
 
     await request(createApp())
       .patch(`/${inspectionId}`)
@@ -68,7 +78,9 @@ describe('Inspections | API | PATCH Report PDF', () => {
     });
 
     // Stubs
-    sinon.stub(inspectionsModel, 'findRecord').resolves(createSnap(inspection));
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
 
     await request(createApp())
       .patch(`/${inspectionId}`)
@@ -94,7 +106,9 @@ describe('Inspections | API | PATCH Report PDF', () => {
     });
 
     // Stubs
-    sinon.stub(inspectionsModel, 'findRecord').resolves(createSnap(inspection));
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
 
     await request(createApp())
       .patch(`/${inspectionId}`)
@@ -125,7 +139,9 @@ describe('Inspections | API | PATCH Report PDF', () => {
     });
 
     // Stubs
-    sinon.stub(inspectionsModel, 'findRecord').resolves(createSnap(inspection));
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
 
     await request(createApp())
       .patch(`/${inspectionId}`)
@@ -146,8 +162,12 @@ describe('Inspections | API | PATCH Report PDF', () => {
     const inspection = createInspection({ property: propertyId });
 
     // Stubs
-    sinon.stub(inspectionsModel, 'findRecord').resolves(createSnap(inspection));
-    sinon.stub(propertiesModel, 'findRecord').resolves(createSnap());
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(propertyId));
 
     await request(createApp())
       .patch(`/${inspectionId}`)
@@ -172,8 +192,12 @@ describe('Inspections | API | PATCH Report PDF', () => {
 
     // Stubs
     let actual = '';
-    sinon.stub(inspectionsModel, 'findRecord').resolves(createSnap(inspection));
-    sinon.stub(propertiesModel, 'findRecord').resolves(createSnap(property));
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(propertyId, property));
     sinon.stub(inspectionsModel, 'upsertRecord').callsFake((db, id, update) => {
       actual = update.inspectionReportStatus;
       return Promise.reject(Error('err'));
@@ -188,7 +212,7 @@ describe('Inspections | API | PATCH Report PDF', () => {
     expect(actual).to.equal(expected);
   });
 
-  it('sets inspection report status to failed when attactment did not load', async () => {
+  it('sets inspection report status to failed when attachment did not load', async () => {
     const expected = 'completed_failure';
     const propertyId = uuid();
     const inspectionId = uuid();
@@ -197,8 +221,12 @@ describe('Inspections | API | PATCH Report PDF', () => {
 
     // Stubs
     let actual = '';
-    sinon.stub(inspectionsModel, 'findRecord').resolves(createSnap(inspection));
-    sinon.stub(propertiesModel, 'findRecord').resolves(createSnap(property));
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(propertyId, property));
     sinon
       .stub(inspectionsModel, 'upsertRecord')
       .onFirstCall()
@@ -216,9 +244,7 @@ describe('Inspections | API | PATCH Report PDF', () => {
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(500)
       .then(res => {
-        expect(res.body.errors[0].detail).to.equal(
-          'Inspection Attachment data Error'
-        );
+        expect(res.body.errors[0].detail).to.equal('unexpected error');
       });
 
     expect(actual).to.equal(expected);
@@ -233,8 +259,12 @@ describe('Inspections | API | PATCH Report PDF', () => {
 
     // Stubs
     let actual = '';
-    sinon.stub(inspectionsModel, 'findRecord').resolves(createSnap(inspection));
-    sinon.stub(propertiesModel, 'findRecord').resolves(createSnap(property));
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(propertyId, property));
     sinon
       .stub(inspectionsModel, 'upsertRecord')
       .onFirstCall()
@@ -242,7 +272,7 @@ describe('Inspections | API | PATCH Report PDF', () => {
       .onSecondCall()
       .callsFake((db, id, update) => {
         actual = update.inspectionReportStatus;
-        return Promise.reject(Error('err'));
+        return Promise.resolve();
       });
     sinon.stub(inspImages, 'download').resolves({ template: { items: {} } });
     sinon.stub(createReportPdf._proto, 'generatePdf').rejects(Error('err'));
@@ -270,8 +300,12 @@ describe('Inspections | API | PATCH Report PDF', () => {
 
     // Stubs
     let actual = '';
-    sinon.stub(inspectionsModel, 'findRecord').resolves(createSnap(inspection));
-    sinon.stub(propertiesModel, 'findRecord').resolves(createSnap(property));
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(propertyId, property));
     sinon
       .stub(inspectionsModel, 'upsertRecord')
       .onFirstCall()
@@ -279,7 +313,7 @@ describe('Inspections | API | PATCH Report PDF', () => {
       .onSecondCall()
       .callsFake((db, id, update) => {
         actual = update.inspectionReportStatus;
-        return Promise.reject(Error('err'));
+        return Promise.resolve();
       });
     sinon.stub(inspImages, 'download').resolves({ template: { items: {} } });
     sinon
@@ -310,18 +344,22 @@ describe('Inspections | API | PATCH Report PDF', () => {
 
     // Stubs
     let actual = '';
-    sinon.stub(inspectionsModel, 'findRecord').resolves(createSnap(inspection));
-    sinon.stub(propertiesModel, 'findRecord').resolves(createSnap(property));
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(propertyId, property));
     sinon
       .stub(inspectionsModel, 'upsertRecord')
       .onFirstCall()
       .resolves()
       .onSecondCall()
-      .rejects()
+      .rejects() // write success
       .onThirdCall()
       .callsFake((db, id, update) => {
         actual = update.inspectionReportStatus;
-        return Promise.reject(Error('err'));
+        return Promise.resolve();
       });
     sinon.stub(inspImages, 'download').resolves({ template: { items: {} } });
     sinon
@@ -335,7 +373,7 @@ describe('Inspections | API | PATCH Report PDF', () => {
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(500)
       .then(res => {
-        expect(res.body.errors[0].detail).to.equal('Inspection update failed');
+        expect(res.body.errors[0].detail).to.equal('unexpected error');
       });
 
     expect(actual).to.equal(expected);
@@ -349,8 +387,12 @@ describe('Inspections | API | PATCH Report PDF', () => {
     const property = mocking.createProperty();
 
     // Stubs
-    sinon.stub(inspectionsModel, 'findRecord').resolves(createSnap(inspection));
-    sinon.stub(propertiesModel, 'findRecord').resolves(createSnap(property));
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(propertyId, property));
     sinon
       .stub(inspectionsModel, 'upsertRecord')
       .onFirstCall()
@@ -382,8 +424,12 @@ describe('Inspections | API | PATCH Report PDF', () => {
     const property = mocking.createProperty();
 
     // Stubs
-    sinon.stub(inspectionsModel, 'findRecord').resolves(createSnap(inspection));
-    sinon.stub(propertiesModel, 'findRecord').resolves(createSnap(property));
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(propertyId, property));
     sinon
       .stub(inspectionsModel, 'upsertRecord')
       .onFirstCall()
@@ -410,15 +456,8 @@ describe('Inspections | API | PATCH Report PDF', () => {
 
 function createApp() {
   const app = express();
-  app.patch('/:inspectionId', patchPdf({ collection: () => {} }));
+  app.patch('/:inspectionId', handler({ collection: () => {} }));
   return app;
-}
-
-function createSnap(data) {
-  return {
-    exists: Boolean(data),
-    data: () => data,
-  };
 }
 
 function createInspection(inspConfig = {}) {

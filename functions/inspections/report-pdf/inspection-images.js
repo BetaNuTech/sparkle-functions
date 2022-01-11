@@ -1,6 +1,6 @@
 const Jimp = require('jimp');
 const base64ItemImage = require('./base-64-item-image');
-const { getItemPhotoData } = require('../../../utils/inspection');
+const { getItemPhotoData } = require('../../utils/inspection');
 
 const { keys, assign } = Object;
 
