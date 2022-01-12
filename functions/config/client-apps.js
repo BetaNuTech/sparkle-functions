@@ -14,7 +14,7 @@ const config = {
       'properties/{{propertyId}}/deficient-items/{{deficientItemId}}',
 
     inspectionPath:
-      'properties/{{propertyId}}/update-inspection/{{inspectionId}}',
+      'beta/properties/{{propertyId}}/inspections/edit/{{inspectionId}}/',
 
     jobPath: 'properties/{{propertyId}}/jobs/edit/{{jobId}}',
 
