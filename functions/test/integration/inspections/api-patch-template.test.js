@@ -417,6 +417,91 @@ describe('Inspections PATCH TEMPLATE | API | PATCH Template', () => {
     expect(actual).to.equal(expected);
   });
 
+  it('adds an inspection report to the queue when it becomes completed', async () => {
+    const expected = {
+      inspectionReportStatus: 'queued',
+      inspectionReportLastQueued: 1, // updated from truethy source
+    };
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const sectionId = uuid();
+    const itemId = uuid();
+    const property = mocking.createProperty();
+    const currentItem = mocking.createIncompleteMainInputItem(
+      'twoactions_checkmarkx',
+      { sectionId }
+    );
+    const completeInspUpdate = {
+      items: {
+        [itemId]: {
+          mainInputSelected: true,
+          mainInputSelection: 0,
+        },
+      },
+    };
+    const template = mocking.createTemplate({
+      name: 'test',
+      requireDeficientItemNoteAndPhoto: false,
+      sections: {
+        [sectionId]: mocking.createSection(),
+      },
+      items: {
+        [itemId]: currentItem,
+      },
+    });
+    const inspection = mocking.createInspection({
+      template,
+      inspectionCompleted: false,
+      totalItems: 1,
+      itemsCompleted: 0,
+      property: propertyId,
+    });
+    const updatedInspection = JSON.parse(JSON.stringify(inspection)); // clone
+    Object.assign(
+      updatedInspection.template.items[itemId],
+      completeInspUpdate.items[itemId] // Merge in user updates
+    );
+
+    // Stub Requests
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+    const setRecord = sinon
+      .stub(inspectionsModel, 'setRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, updatedInspection));
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(
+        firebase.createDocSnapshot(
+          propertyId,
+          firebase.createDocSnapshot(property)
+        )
+      );
+    sinon.stub(reportPdf, 'regenerate').resolves({ inspection, warnings: [] });
+
+    // Execute
+    await request(createApp())
+      .patch(`/t/${inspectionId}?incognitoMode=true`)
+      .send(completeInspUpdate)
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(201);
+
+    // Assertions
+    const result = setRecord.firstCall || { args: [] };
+    const resultPayload = result.args[2] || {};
+    const actual = {
+      inspectionReportStatus: resultPayload.inspectionReportStatus,
+      inspectionReportLastQueued: resultPayload.inspectionReportLastQueued,
+    };
+
+    // Update dynamic portion
+    if (actual.inspectionReportLastQueued) {
+      expected.inspectionReportLastQueued = actual.inspectionReportLastQueued;
+    }
+
+    expect(actual).to.deep.equal(expected);
+  });
+
   it('requests to generate a PDF report after a completed inspection is successfully updated', async () => {
     const expected = true;
     const propertyId = uuid();
