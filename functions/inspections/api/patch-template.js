@@ -169,6 +169,22 @@ module.exports = function patch(db, storage) {
       return res.status(204).send();
     }
 
+    // Merge updates into old inspection state
+    const isCompleted =
+      typeof inspectionUpdates.inspectionCompleted === 'boolean'
+        ? inspectionUpdates.inspectionCompleted
+        : Boolean(inspection.inspectionCompleted);
+
+    const needsNewReport = isCompleted && createReport;
+
+    // Pre-emptively set report to queued
+    if (needsNewReport) {
+      inspectionUpdates.inspectionReportStatus = 'queued';
+      inspectionUpdates.inspectionReportLastQueued = Math.round(
+        Date.now() / 1000
+      );
+    }
+
     // Start batch update
     const batch = db.batch();
 
@@ -291,14 +307,8 @@ module.exports = function patch(db, storage) {
       },
     });
 
-    // Merge updates into old inspection state
-    const isCompleted =
-      typeof inspectionUpdates.inspectionCompleted === 'boolean'
-        ? inspectionUpdates.inspectionCompleted
-        : Boolean(inspection.inspectionCompleted);
-
     // Return before updating inspection report PDF
-    if (!isCompleted || !createReport) {
+    if (!needsNewReport) {
       return;
     }
 
