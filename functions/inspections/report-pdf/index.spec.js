@@ -411,6 +411,39 @@ describe('Inspections | Report PDF', () => {
     ];
     expect(actual).to.deep.equal(expected);
   });
+
+  it("updates inspections report date with its' updated last date", async () => {
+    const expected = 485671;
+    const inspectionId = uuid();
+    const propertyId = uuid();
+    const inspection = createInspection({
+      property: propertyId,
+      updatedLastDate: expected,
+    });
+    const property = mocking.createProperty();
+
+    // Stubs
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(propertyId, property));
+    sinon.stub(inspImages, 'download').resolves({ template: { items: {} } });
+    sinon
+      .stub(createReportPdf._proto, 'generatePdf')
+      .resolves(Buffer.from([0]));
+    sinon.stub(uploader, 's3').resolves('/url/test');
+    sinon.stub(notificationsModel, 'addRecord').rejects(Error('fail'));
+    const upsert = sinon.stub(inspectionsModel, 'upsertRecord').resolves();
+
+    await reportPdf.regenerate(DB, inspectionId);
+
+    const result = upsert.secondCall || { args: [] };
+    const updatePayload = result.args[2] || {};
+    const actual = updatePayload.inspectionReportUpdateLastDate || 0;
+    expect(actual).to.deep.equal(expected);
+  });
 });
 
 function createInspection(inspConfig = {}) {
