@@ -12,17 +12,17 @@ const PREFIX = 'properties: on-delete-v2:';
 
 /**
  * Factory for firestore property on delete handler
- * @param  {admin.firestore} fs - Firebase Admin DB instance
- * @param  {firebaseAdmin.storage} storage - Firebase Admin Storage instance
+ * @param  {admin.firestore} db
+ * @param  {admin.storage} storage
  * @return {Function} - property onDelete handler
  */
-module.exports = function createOnDeleteV2Handler(fs, storage) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function createOnDeleteV2Handler(db, storage) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
   assert(storage && typeof storage.bucket === 'function', 'has storage');
 
   return async (propertySnap, event) => {
     const { propertyId } = event.params;
-    const batch = fs.batch();
+    const batch = db.batch();
     const property = propertySnap.data() || {};
     // Remove property's inspections
     let inspectionDocSnaps = [];
@@ -30,7 +30,7 @@ module.exports = function createOnDeleteV2Handler(fs, storage) {
       const [
         activeInspDocSnaps,
         archivedInspDocSnaps,
-      ] = await inspectionsModel.removeForProperty(fs, propertyId, batch);
+      ] = await inspectionsModel.removeForProperty(db, propertyId, batch);
       inspectionDocSnaps = [
         ...activeInspDocSnaps.docs,
         ...archivedInspDocSnaps.docs,
@@ -46,7 +46,7 @@ module.exports = function createOnDeleteV2Handler(fs, storage) {
       const [
         activeDiDocSnaps,
         archivedDiDocSnaps,
-      ] = await diModel.removeForProperty(fs, propertyId, batch);
+      ] = await diModel.removeForProperty(db, propertyId, batch);
       diDocSnaps = [...activeDiDocSnaps.docs, ...archivedDiDocSnaps.docs];
     } catch (err) {
       log.error(`${PREFIX} failed to remove deficiencies | ${err}`);
@@ -57,7 +57,7 @@ module.exports = function createOnDeleteV2Handler(fs, storage) {
     // relationships with property
     try {
       await templatesModel.updatePropertyRelationships(
-        fs,
+        db,
         propertyId,
         Object.keys(property.templates || {}),
         [],
@@ -74,7 +74,7 @@ module.exports = function createOnDeleteV2Handler(fs, storage) {
     if (property.team) {
       try {
         await teamUsersModel.removeProperty(
-          fs,
+          db,
           property.team,
           propertyId,
           batch
@@ -87,7 +87,7 @@ module.exports = function createOnDeleteV2Handler(fs, storage) {
 
     // Deleting all jobs associate with property
     try {
-      await jobsModel.deletePropertyJobAndBids(fs, propertyId, batch);
+      await jobsModel.deletePropertyJobAndBids(db, propertyId, batch);
     } catch (err) {
       // Allow failure
       log.error(

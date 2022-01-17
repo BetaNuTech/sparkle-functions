@@ -82,4 +82,13 @@ module.exports = {
       },
     };
   },
+
+  createStorage(cb = () => {}) {
+    return {
+      bucket: (...args) => {
+        cb(...args);
+        return Promise.resolve();
+      },
+    };
+  },
 };
