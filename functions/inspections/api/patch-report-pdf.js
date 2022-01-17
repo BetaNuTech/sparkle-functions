@@ -11,7 +11,7 @@ const PREFIX = 'inspections: api: patch-report-pdf:';
  * @param  {admin.firestore} db - Firestore Admin DB instance
  * @return {Function} - onRequest handler
  */
-module.exports = function createOnGetReportPdfHandler(db) {
+module.exports = function createPatchReportPdfHandler(db) {
   assert(db && typeof db.collection === 'function', 'has firestore db');
 
   /**

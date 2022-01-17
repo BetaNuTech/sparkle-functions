@@ -37,6 +37,62 @@ module.exports = {
   },
 
   /**
+   * Calculate the byte size of all files in
+   * an inspection's media folder
+   * @param  {admin.storage} storage
+   * @param  {String} inspectionId
+   * @return {Promise<Number>} - total size in bytes
+   */
+  async calculateInspectionFolderByteSize(storage, inspectionId) {
+    assert(
+      storage && typeof storage.bucket === 'function',
+      'has storage instance'
+    );
+    assert(
+      inspectionId && typeof inspectionId === 'string',
+      'has inspection id string'
+    );
+
+    // Get inspection's photo bucket
+    let bucket = null;
+    try {
+      [bucket] = await storage
+        .bucket()
+        .get(`${INSP_BUCKET_NAME}/${inspectionId}`);
+    } catch (err) {
+      throw Error(
+        `${PREFIX} calculateInspectionFolderByteSize: get bucket: ${err}`
+      );
+    }
+
+    // Get all files in bucket
+    let files = [];
+    try {
+      [files] = await bucket.getFiles();
+    } catch (err) {
+      throw Error(
+        `${PREFIX} calculateInspectionFolderByteSize: failed to get bucket files: ${err}`
+      );
+    }
+
+    let folderByteSize = 0;
+
+    // Lookup each files metadata
+    // and add it to the total byte size
+    for (let i = 0; i < files.length; i++) {
+      try {
+        const [fileMetadata] = await files[i].getMetadata();
+        const fileByteSize = fileMetadata.size
+          ? parseInt(fileMetadata.size, 10) || 0
+          : 0;
+        folderByteSize += fileByteSize;
+      } catch (err) {} // eslint-disable-line no-empty
+    }
+
+    return folderByteSize;
+  },
+
+  /**
    * Create inspection item upload dir path
    * @param  {String} inspectionId
    * @param  {String} itemId

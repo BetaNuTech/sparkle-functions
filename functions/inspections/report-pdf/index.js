@@ -4,13 +4,16 @@ const propertiesModel = require('../../models/properties');
 const inspectionsModel = require('../../models/inspections');
 const notificationsModel = require('../../models/notifications');
 const notifyTemplate = require('../../utils/src-notification-templates');
+const storageService = require('../../services/storage');
 const createReportPdf = require('./create');
 const inspImages = require('./inspection-images');
 const uploader = require('./uploader');
-const { clientApps } = require('../../config');
+const { clientApps, inspection: inspectionConfig } = require('../../config');
 
 const PREFIX = 'inspections: reportPdf:';
 const HTTPS_URL = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_+.~#?&//=]*)/; // eslint-disable-line max-len
+const MAX_TIMEOUT = inspectionConfig.reportPdfGenerationMaxTimeout;
+const MAX_BYTE_SIZE = inspectionConfig.reportPdfMemoryInBytes;
 
 module.exports = {
   UnexpectedError,
@@ -22,6 +25,7 @@ module.exports = {
   UnfoundPropertyError,
   GenerationFailError,
   ReportUrlLookupError,
+  OversizedStorageError,
 
   /**
    * Regenerate an inspection's PDF Report
@@ -35,6 +39,7 @@ module.exports = {
    */
   async regenerate(
     db,
+    storage,
     inspectionId,
     incognitoMode = false,
     authorId = '',
@@ -43,6 +48,7 @@ module.exports = {
     srcInspection = null
   ) {
     assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(storage && typeof storage.bucket === 'function', 'has storage');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has inspection ID'
@@ -98,7 +104,10 @@ module.exports = {
     }
 
     // Inspection generation in progress
-    if (inspection.inspectionReportStatus === 'generating') {
+    if (
+      inspection.inspectionReportStatus === 'generating' &&
+      isUnderStatusChangeMaxTimeout(inspection)
+    ) {
       throw new GeneratingReportError(
         `${PREFIX} inspection "${inspectionId}" PDF report already requested`,
         inspection
@@ -137,10 +146,32 @@ module.exports = {
 
     property.id = propertyId;
 
+    // Lookup byte size of all
+    // an inspections uploads
+    let folderByteSize = 0;
+    try {
+      folderByteSize = await storageService.calculateInspectionFolderByteSize(
+        storage,
+        inspectionId
+      );
+    } catch (err) {} // eslint-disable-line no-empty
+
+    // Reject creating report we know
+    // is too large before downloading
+    // item images into memory
+    if (folderByteSize >= MAX_BYTE_SIZE) {
+      await failInspectionReport(db, inspectionId);
+      throw new OversizedStorageError(
+        `${PREFIX} inspection "${inspectionId}" media ${folderByteSize} bytes is larger than allowcated memory ${MAX_BYTE_SIZE} bytes`,
+        inspection
+      );
+    }
+
     // Set generating report generation status
     try {
       await inspectionsModel.upsertRecord(db, inspectionId, {
         inspectionReportStatus: 'generating',
+        inspectionReportStatusChanged: Math.round(Date.now() / 1000),
       });
     } catch (err) {
       throw new UnexpectedError(
@@ -200,6 +231,7 @@ module.exports = {
     const inspectionUpdates = {
       inspectionReportURL,
       inspectionReportStatus: 'completed_success',
+      inspectionReportStatusChanged: Math.round(Date.now() / 1000),
       // Dates must match for clients to
       // check if report is outdated
       inspectionReportUpdateLastDate: inspection.updatedLastDate,
@@ -301,7 +333,10 @@ function failInspectionReport(db, inspectionId) {
   assert(db && typeof db.collection === 'function', 'has firestore db');
   assert(inspectionId && typeof inspectionId === 'string', 'has inspection ID');
 
-  const update = { inspectionReportStatus: 'completed_failure' };
+  const update = {
+    inspectionReportStatus: 'completed_failure',
+    inspectionReportStatusChanged: Math.round(Date.now() / 1000),
+  };
 
   return inspectionsModel
     .upsertRecord(db, inspectionId, update)
@@ -326,6 +361,19 @@ function formatTimestamp(timestamp, format = 'MMM DD') {
     return moment(parseInt(timestamp * 1000, 10)).format(format);
   }
   return '';
+}
+
+/**
+ * Report has not passed function timeout
+ * @param  {Object} inspection
+ * @return {Boolean} - under timeout
+ */
+function isUnderStatusChangeMaxTimeout(inspection) {
+  assert(inspection && typeof inspection === 'object', 'has inspection');
+  const inspectionReportStatusChanged =
+    inspection.inspectionReportStatusChanged || 0;
+  const cutoff = Math.round(Date.now() / 1000) - MAX_TIMEOUT;
+  return inspectionReportStatusChanged > cutoff;
 }
 
 /**
@@ -440,3 +488,16 @@ function ReportUrlLookupError(message = '', inspection) {
   this.inspection = inspection;
 }
 ReportUrlLookupError.prototype = new Error();
+
+/**
+ * Inspection's storage data is too large
+ * @param {String?} message
+ * @param {Object} inspection
+ */
+function OversizedStorageError(message = '', inspection) {
+  assert(inspection && typeof inspection === 'object', 'has inspection');
+  this.name = 'OversizedStorageError';
+  this.message = message;
+  this.inspection = inspection;
+}
+OversizedStorageError.prototype = new Error();
