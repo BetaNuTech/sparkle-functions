@@ -98,22 +98,11 @@ module.exports = function postTemplateItemPhoto(db, stg) {
     }
 
     const items = (inspection.template || {}).items || {};
-    const inspectionItem = items[itemId];
-    const hasInspectionItem = Boolean(inspectionItem);
 
-    if (!hasInspectionItem) {
-      log.error(
-        `${PREFIX} requested inspection item: "${itemId}" does not exist`
-      );
-      return res.status(404).send({
-        errors: [
-          {
-            source: { pointer: 'item' },
-            title: 'Inspection item not found',
-          },
-        ],
-      });
-    }
+    // NOTE: item doesn't have to exist in database
+    //       this allow users to publish photos to
+    //       unpublished multi-section's items
+    const inspectionItem = items[itemId] || {};
 
     // Create base64 image to manipulate
     let image = null;

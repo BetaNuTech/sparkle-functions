@@ -86,28 +86,6 @@ describe('Inspections | API | POST Template Item Image', () => {
     expect(actual).to.equal(expected);
   });
 
-  it('rejects request to add photo to non-existent inspection item', async () => {
-    const expected = 'Inspection item not found';
-    const inspection = mocking.createInspection({ property: uuid() });
-    delete inspection.template;
-
-    // Stub Requests
-    sinon
-      .stub(inspectionsModel, 'findRecord')
-      .resolves(firebase.createDocSnapshot(INSPECTION_ID, inspection));
-
-    const res = await request(createApp())
-      .post(`/t/${INSPECTION_ID}/${ITEM_ID}`)
-      .attach('file', IMG_PATH)
-      .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(404);
-
-    // Assertions
-    const [error] = res.body.errors || [];
-    const actual = error ? error.title : '';
-    expect(actual).to.equal(expected);
-  });
-
   it('successfully updates an inspection item image', async () => {
     const expected = {
       downloadURL: 'google.com/image.jpg',
