@@ -93,40 +93,6 @@ describe('Inspections | Report PDF', () => {
     expect(actual).to.equal(expected);
   });
 
-  it('uses an optional inspection when provided', async () => {
-    const expected = true;
-    const inspectionId = uuid();
-    const inspection = createInspection();
-    delete inspection.property; // cause bad inspection error
-
-    // Stubs
-    const findRecord = sinon
-      .stub(inspectionsModel, 'findRecord')
-      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
-
-    let result = null;
-    try {
-      await reportPdf.regenerate(
-        DB,
-        STORAGE,
-        inspectionId,
-        false,
-        uuid(),
-        'testor',
-        'test@email.co',
-        inspection
-      );
-    } catch (err) {
-      result = err;
-    }
-
-    // Rejects with bad inspection
-    // error and does not call find record
-    const actual =
-      result instanceof BadInspectionError && findRecord.called === false;
-    expect(actual).to.equal(expected);
-  });
-
   it('rejects for incomplete inspection with incomplete inspection error', async () => {
     const expected = true;
     const propertyId = uuid();
@@ -180,7 +146,7 @@ describe('Inspections | Report PDF', () => {
   });
 
   it('allows regenerating an in progress PDF report when past max generation timeout', async () => {
-    const expected = true;
+    const expected = 'generating';
     const propertyId = uuid();
     const inspectionId = uuid();
     const nowUnix = Math.round(Date.now() / 1000);
@@ -192,21 +158,23 @@ describe('Inspections | Report PDF', () => {
     const property = mocking.createProperty();
 
     // Stubs
+    let actual = '';
     sinon
       .stub(inspectionsModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(inspectionId, inspection));
     sinon
       .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
-    const upsert = sinon
-      .stub(inspectionsModel, 'upsertRecord')
-      .rejects(Error('err'));
+    sinon.stub(storageService, 'calculateInspectionFolderByteSize').resolves(0);
+    sinon.stub(inspectionsModel, 'upsertRecord').callsFake((db, id, update) => {
+      actual = update.inspectionReportStatus;
+      return Promise.reject(Error('fail'));
+    });
 
     try {
       await reportPdf.regenerate(DB, STORAGE, inspectionId);
     } catch (err) {} // eslint-disable-line
 
-    const actual = upsert.called;
     expect(actual).to.equal(expected);
   });
 
@@ -289,6 +257,33 @@ describe('Inspections | Report PDF', () => {
     }
 
     const actual = result instanceof OversizedStorageError;
+    expect(actual).to.equal(expected);
+  });
+
+  it('should return immediately after error checks in dry run mode', async () => {
+    const expected = false;
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const inspection = createInspection({ property: propertyId });
+    const property = mocking.createProperty();
+
+    // Stubs
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(propertyId, property));
+    sinon.stub(storageService, 'calculateInspectionFolderByteSize').resolves(0);
+    const upsertRecord = sinon
+      .stub(inspectionsModel, 'upsertRecord')
+      .resolves();
+
+    try {
+      await reportPdf.regenerate(DB, STORAGE, inspectionId, '', '', true);
+    } catch (err) {} // eslint-disable-line
+
+    const actual = upsertRecord.called;
     expect(actual).to.equal(expected);
   });
 

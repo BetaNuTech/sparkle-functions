@@ -60,7 +60,6 @@ interface inspection {
   // Report (PDF) attributes
   inspectionReportStatus?: string;
   inspectionReportUpdateLastDate?: number; // UNIX timestamp
-  inspectionReportLastQueued?: number; // UNIX timestamp
   inspectionReportStatusChanged?: number; // UNIX timestamp
 
   // Relationships

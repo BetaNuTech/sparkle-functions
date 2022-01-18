@@ -156,6 +156,7 @@ exports.api = functions
       {
         inspectionUrl: config.clientApps.web.inspectionURL,
       },
-      storage
+      storage,
+      pubsubClient
     )
   );

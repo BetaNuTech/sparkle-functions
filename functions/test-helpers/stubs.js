@@ -91,4 +91,13 @@ module.exports = {
       },
     };
   },
+
+  createPublisher(cb = () => {}) {
+    return {
+      publish: (...args) => {
+        cb(...args);
+        return Promise.resolve();
+      },
+    };
+  },
 };
