@@ -29,12 +29,14 @@ module.exports = {
 
   /**
    * Regenerate an inspection's PDF Report
+   * @param  {admin.firestore} db
+   * @pram   {admin.storage} storage
    * @param  {String} inspectionId
    * @param  {Booleaen?} incognitoMode
    * @param  {String?} authorId
    * @param  {String?} authorName
    * @param  {String?} authorEmail
-   * @param  {Object?} inspection
+   * @param  {Boolean?} dryRun
    * @return {Promise<Object>} - resolves result payload
    */
   async regenerate(
@@ -45,7 +47,7 @@ module.exports = {
     authorId = '',
     authorName = '',
     authorEmail = '',
-    srcInspection = null
+    dryRun = false
   ) {
     assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(storage && typeof storage.bucket === 'function', 'has storage');
@@ -56,28 +58,24 @@ module.exports = {
     assert(typeof authorId === 'string', 'author ID is a string');
     assert(typeof authorName === 'string', 'author name is a string');
     assert(typeof authorEmail === 'string', 'author email is a string');
-    assert(typeof srcInspection === 'object', 'has optional inspection object');
+    assert(typeof dryRun === 'boolean', 'has optional dry run boolean');
 
     let propertyId = '';
-    let inspection = srcInspection // use provided inspction
-      ? JSON.parse(JSON.stringify(srcInspection)) // deep clone
-      : null;
+    let inspection = null;
     let hasPreviousPDFReport = false;
     const result = { inspection: null, warnings: [] };
 
     // Lookup Inspection
-    if (!srcInspection) {
-      try {
-        const inspectionSnap = await inspectionsModel.findRecord(
-          db,
-          inspectionId
-        );
-        inspection = inspectionSnap.data() || null;
-      } catch (err) {
-        throw new UnexpectedError(
-          `${PREFIX} inspection "${inspectionId}" lookup failed: ${err}`
-        );
-      }
+    try {
+      const inspectionSnap = await inspectionsModel.findRecord(
+        db,
+        inspectionId
+      );
+      inspection = inspectionSnap.data() || null;
+    } catch (err) {
+      throw new UnexpectedError(
+        `${PREFIX} inspection "${inspectionId}" lookup failed: ${err}`
+      );
     }
 
     // Reject request for invalid inspection
@@ -160,11 +158,16 @@ module.exports = {
     // is too large before downloading
     // item images into memory
     if (folderByteSize >= MAX_BYTE_SIZE) {
-      await failInspectionReport(db, inspectionId);
+      if (!dryRun) await failInspectionReport(db, inspectionId);
       throw new OversizedStorageError(
         `${PREFIX} inspection "${inspectionId}" media ${folderByteSize} bytes is larger than allowcated memory ${MAX_BYTE_SIZE} bytes`,
         inspection
       );
+    }
+
+    // Avoid updates if in dry run mode
+    if (dryRun) {
+      return { inspection, warnings: [] };
     }
 
     // Set generating report generation status

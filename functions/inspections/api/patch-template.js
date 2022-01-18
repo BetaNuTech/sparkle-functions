@@ -13,20 +13,24 @@ const notificationsModel = require('../../models/notifications');
 const notifyTemplate = require('../../utils/src-notification-templates');
 const storageService = require('../../services/storage');
 const findDeletedItemsPhotoUrls = require('../utils/find-deleted-items-photo-urls');
-const reportPdf = require('../report-pdf');
 
 const PREFIX = 'inspection: api: patch-template:';
 
 /**
  * Factory for updating inspection put request
  * that updates an inspection's template
- * @param  {firebaseAdmin.firestore} db - Firestore Admin DB instance
+ * @param  {admin.firestore} db
  * @param  {admin.storage} storage
+ * @param  {admin.functions.pubsub.Publisher} completePublisher - publisher for complete inspection update event
  * @return {Function} - request handler
  */
-module.exports = function patch(db, storage) {
+module.exports = function patchTemplate(db, storage, completePublisher) {
   assert(db && typeof db.collection === 'function', 'has firestore db');
   assert(storage && typeof storage.bucket === 'function', 'has storage');
+  assert(
+    completePublisher && typeof completePublisher.publish === 'function',
+    'has publisher'
+  );
 
   /**
    * Handle PATCH request
@@ -180,7 +184,7 @@ module.exports = function patch(db, storage) {
     // Pre-emptively set report to queued
     if (needsNewReport) {
       inspectionUpdates.inspectionReportStatus = 'queued';
-      inspectionUpdates.inspectionReportLastQueued = Math.round(
+      inspectionUpdates.inspectionReportStatusChanged = Math.round(
         Date.now() / 1000
       );
     }
@@ -312,89 +316,18 @@ module.exports = function patch(db, storage) {
       return;
     }
 
-    log.info(`${PREFIX} generating a new PDF Report for "${inspectionId}"`);
+    log.info(`${PREFIX} requesting new PDF Report for "${inspectionId}"`);
 
-    const warnings = [];
     try {
-      const result = await reportPdf.regenerate(
-        db,
-        inspectionId,
-        incognitoMode,
-        authorId,
-        authorName,
-        authorEmail
+      await completePublisher.publish(
+        Buffer.from(
+          [inspectionId, incognitoMode ? '' : authorId]
+            .filter(Boolean)
+            .join('/')
+        )
       );
-      warnings.push(...result.warnings);
-      inspection = result.inspection; // contains updates
     } catch (err) {
-      // Replace old inspection state
-      inspection = err.inspection || null;
-
-      // Log report status failure
-      if (
-        inspection &&
-        inspection.inspectionReportStatus === 'completed_failure'
-      ) {
-        log.info(
-          `${PREFIX} updated inspection "${inspectionId}" report status set to failed`
-        );
-      }
-
-      // Could not find inspection
-      if (err instanceof reportPdf.UnfoundInspectionError) {
-        log.error(`${PREFIX} missing requested inspection: ${err}`);
-      }
-
-      // Inspection has not property reference
-      if (err instanceof reportPdf.BadInspectionError) {
-        log.error(`${PREFIX} bad inspection record: ${err}`);
-      }
-
-      // Cannot create report for incomplete inspection
-      if (err instanceof reportPdf.IncompleteInspectionError) {
-        log.error(
-          `${PREFIX} requested to generate report for incomplete inspection: ${err}`
-        );
-      }
-
-      // Report PDF generation is currently in progress
-      if (err instanceof reportPdf.GeneratingReportError) {
-        log.error(
-          `${PREFIX} requested report for inspection already generating report: ${err}`
-        );
-      }
-
-      // Inspection does not need a new report
-      if (err instanceof reportPdf.ReportUpToDateError) {
-        log.error(
-          `${PREFIX} requested report for up to date inspection: ${err}`
-        );
-      }
-
-      // Inspection's property doesn't exist
-      if (err instanceof reportPdf.UnfoundPropertyError) {
-        log.error(
-          `${PREFIX} requested report for inspection without property: ${err}`
-        );
-      }
-
-      // Failed to add/replace inspections PDF report
-      if (err instanceof reportPdf.GenerationFailError) {
-        log.error(`${PREFIX} PDF generation failed: ${err}`);
-      }
-
-      // Could not load PDF report URL
-      if (err instanceof reportPdf.ReportUrlLookupError) {
-        log.error(`${PREFIX} S3 report upload failed: ${err}`);
-      }
-
-      // Unexpected error
-      log.error(`${PREFIX} unexpected PDF report error: ${err}`);
+      log.error(`${PREFIX} publish event failed: ${err}`);
     }
-
-    // Log any warnings
-    warnings.forEach(err => {
-      log.error(`${PREFIX} warning: ${err}`);
-    });
   };
 };
