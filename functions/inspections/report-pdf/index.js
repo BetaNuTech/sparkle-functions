@@ -237,7 +237,7 @@ module.exports = {
       inspectionReportStatusChanged: Math.round(Date.now() / 1000),
       // Dates must match for clients to
       // check if report is outdated
-      inspectionReportUpdateLastDate: inspection.updatedLastDate,
+      inspectionReportUpdateLastDate: inspection.updatedAt,
     };
     try {
       await inspectionsModel.upsertRecord(db, inspectionId, inspectionUpdates);
@@ -314,14 +314,14 @@ module.exports = {
  */
 function inspectionReportUpToDate({
   inspectionReportUpdateLastDate,
-  updatedLastDate,
+  updatedAt,
 }) {
   return (
-    updatedLastDate &&
-    typeof updatedLastDate === 'number' &&
+    updatedAt &&
+    typeof updatedAt === 'number' &&
     inspectionReportUpdateLastDate &&
     typeof inspectionReportUpdateLastDate === 'number' &&
-    inspectionReportUpdateLastDate > updatedLastDate
+    inspectionReportUpdateLastDate >= updatedAt
   );
 }
 

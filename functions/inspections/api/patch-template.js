@@ -230,7 +230,7 @@ module.exports = function patchTemplate(db, storage, completePublisher) {
       }
     }
 
-    // checking for property meta data updates
+    // Checking for property meta data updates
     const { updatedLastDate } = inspectionUpdates;
     const hasUpdatedLastDate = Boolean(
       updatedLastDate && updatedLastDate !== inspection.updatedLastDate

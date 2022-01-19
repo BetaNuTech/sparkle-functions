@@ -138,7 +138,7 @@ describe('Inspections | API | PATCH Report PDF', () => {
     const inspectionId = uuid();
     const inspection = createInspection({
       property: propertyId,
-      updatedLastDate: now - 1,
+      updatedAt: now,
       ...expected,
     });
 

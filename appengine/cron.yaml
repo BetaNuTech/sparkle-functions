@@ -3,64 +3,20 @@ cron:
   url: /publish/push-messages-sync
   schedule: every 1 hours
 
-- description: Trigger resend of unsent staging /push-messages
-  url: /publish/staging-push-messages-sync
-  schedule: every 1 hours
-
 - description: Trigger publishing of pending slack notifications /notifications
   url: /publish/notifications-sync
   schedule: every 1 hours
 
-- description: Trigger publishing of pending staging slack notifications /notifications
-  url: /publish/staging-notifications-sync
-  schedule: every 1 hours
-
-- description: Trigger sync of all /inspections
-  url: /publish/inspections-sync
-  schedule: every 24 hours from 00:00 to 01:00
-
-- description: Trigger sync of all staging /inspections
-  url: /publish/staging-inspections-sync
-  schedule: every 24 hours from 00:00 to 01:00
-
-- description: Trigger sync of all /templates
-  url: /publish/templates-sync
-  schedule: every 24 hours from 00:00 to 01:00
-
-- description: Trigger sync of all /teams
-  url: /publish/teams-sync
-  schedule: every 24 hours from 00:00 to 01:00
-
-- description: Trigger sync of all staging /teams
-  url: /publish/staging-teams-sync
-  schedule: every 24 hours from 00:00 to 01:00
-
-- description: Trigger sync of all staging /templates
-  url: /publish/staging-templates-sync
-  schedule: every 24 hours from 00:00 to 01:00
-
 - description: Trigger sync of all /registrationTokens
   url: /publish/registration-tokens-sync
   schedule: every saturday 00:00
-
-- description: Trigger sync of all staging /registrationTokens
-  url: /publish/staging-registration-tokens-sync
-  schedule: every saturday 00:00
-
-- description: Trigger sync of all /properties
-  url: /publish/properties-sync
-  schedule: every 24 hours from 03:00 to 04:00
-  timezone: America/New_York
-
-- description: Trigger sync of all staging /properties
-  url: /publish/staging-properties-sync
-  schedule: every 24 hours from 03:00 to 04:00
   timezone: America/New_York
 
 - description: Trigger sync of all /propertyInspectionDeficientItems
   url: /publish/deficient-items-sync
   schedule: every 1 hours
 
-- description: Trigger sync of all staging /propertyInspectionDeficientItems
-  url: /publish/staging-deficient-items-sync
-  schedule: every 1 hours
+- description: Trigger sync of all stalled inspection report PDFs
+  url: /publish/inspection-report-pdf-sync
+  schedule: every 24 hours from 00:00 to 01:00
+  timezone: America/New_York
