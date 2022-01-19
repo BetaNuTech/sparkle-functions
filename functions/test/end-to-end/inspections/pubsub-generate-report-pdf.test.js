@@ -53,7 +53,7 @@ describe('Inspections | Pubsub | Generate Report PDF', function() {
       deficienciesExist: false,
       lastInspectionScore: 100,
       inspectionCompleted: true,
-      updatedLastDate: 123456,
+      updatedAt: 123456,
       template: mocking.createTemplate({
         sections: { [sectionId]: mocking.createSection() },
         items: {
@@ -109,7 +109,7 @@ describe('Inspections | Pubsub | Generate Report PDF', function() {
         actual: inspectionReportUpdateLastDate,
         expectedType: 'number',
         differentThan: inspection.inspectionReportUpdateLastDate,
-        expected: inspection.updatedLastDate,
+        expected: inspection.updatedAt,
         msg: 'set record report last update date',
       },
     ].forEach(({ actual, expected, expectedType, differentThan, msg }) => {
@@ -139,7 +139,7 @@ describe('Inspections | Pubsub | Generate Report PDF', function() {
       deficienciesExist: false,
       lastInspectionScore: 100,
       inspectionCompleted: true,
-      updatedLastDate: 123456,
+      updatedAt: 123456,
       template: mocking.createTemplate({
         sections: { [sectionId]: mocking.createSection() },
         items: {

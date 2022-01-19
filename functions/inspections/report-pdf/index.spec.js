@@ -185,7 +185,7 @@ describe('Inspections | Report PDF', () => {
     const inspectionId = uuid();
     const inspection = createInspection({
       property: propertyId,
-      updatedLastDate: now - 1,
+      updatedAt: now - 1,
       inspectionReportURL: '/test',
       inspectionReportStatus: 'completed_success',
       inspectionReportUpdateLastDate: now,
@@ -517,7 +517,7 @@ describe('Inspections | Report PDF', () => {
     const propertyId = uuid();
     const inspection = createInspection({
       property: propertyId,
-      updatedLastDate: expected,
+      updatedAt: expected,
     });
     const property = mocking.createProperty();
 

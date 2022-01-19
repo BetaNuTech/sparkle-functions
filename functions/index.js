@@ -145,6 +145,12 @@ exports.generateReportPdf = inspections.pubsub.generateReportPdf(
   'complete-inspection-update'
 );
 
+exports.reportPdfSync = inspections.pubsub.reportPdfSync(
+  fs,
+  functions.pubsub,
+  'inspection-report-pdf-sync'
+);
+
 // HTTPS Router API
 
 exports.api = functions

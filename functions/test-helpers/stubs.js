@@ -15,7 +15,7 @@ module.exports = {
    * Create a snapshot of a
    * payload or a group of payloads
    * @param  {Object|Array} payload
-   * @param  {String} id
+   * @param  {String?} id
    * @return {Object} - snapshot lookalike
    */
   wrapSnapshot(payload = {}, id) {
@@ -40,8 +40,8 @@ module.exports = {
 
   createSnapshot(id = uuid(), data = null) {
     return {
-      exists: Boolean(data),
       id,
+      exists: Boolean(data),
       data: () => data,
     };
   },
