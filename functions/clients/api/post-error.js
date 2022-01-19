@@ -1,20 +1,13 @@
-const { ErrorReporting } = require('@google-cloud/error-reporting');
-const config = require('../../config');
+const errorsService = require('../../services/errors');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
 
 const PREFIX = 'clients: api: post error:';
 
 /**
  * Factory for client requested error report
- * @param  {admin.firestore} fs
  * @return {Function} - Express middleware
  */
 module.exports = function createPostError() {
-  const errors = new ErrorReporting({
-    projectId: config.firebase.projectId,
-    credentials: config.firebase.credentialJson,
-  });
-
   /**
    * Handle POST request for generating
    * error report
@@ -59,14 +52,7 @@ module.exports = function createPostError() {
 
     // Send error report
     try {
-      await new Promise((resolve, reject) => {
-        errors.report(message, err => {
-          if (err) {
-            return reject(err);
-          }
-          resolve();
-        });
-      });
+      await errorsService.report(message);
     } catch (err) {
       return send500Error(err, 'error failed to send', 'unexpected error');
     }

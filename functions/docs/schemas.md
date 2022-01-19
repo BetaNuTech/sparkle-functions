@@ -59,8 +59,8 @@ interface inspection {
 
   // Report (PDF) attributes
   inspectionReportStatus?: string;
-  inspectionReportUpdateLastDate: number; // UNIX timestamp
-  inspectionReportLastQueued: number; // UNIX timestamp
+  inspectionReportUpdateLastDate?: number; // UNIX timestamp
+  inspectionReportStatusChanged?: number; // UNIX timestamp
 
   // Relationships
   templateId: string; // template ID

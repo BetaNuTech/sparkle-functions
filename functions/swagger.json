@@ -1377,9 +1377,19 @@
           }
         ],
         "responses": {
-          "500": {
+          "200": {
             "schema": {
-              "$ref": "#/definitions/ERROR"
+              "$ref": "#/definitions/REPORTPDFRESPONSE200"
+            }
+          },
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/REPORTPDFRESPONSE"
+            }
+          },
+          "202": {
+            "schema": {
+              "$ref": "#/definitions/REPORTPDFRESPONSE"
             }
           },
           "400": {
@@ -1387,19 +1397,9 @@
               "$ref": "#/definitions/BADSTATUS400"
             }
           },
-          "409": {
+          "500": {
             "schema": {
-              "$ref": "#/definitions/BADSTATUS409"
-            }
-          },
-          "200": {
-            "schema": {
-              "$ref": "#/definitions/REPORTPDFRESPONSE200"
-            }
-          },
-          "202": {
-            "schema": {
-              "$ref": "#/definitions/REPORTPDFRESPONSE"
+              "$ref": "#/definitions/ERROR"
             }
           }
         }

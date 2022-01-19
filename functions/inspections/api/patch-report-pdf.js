@@ -1,18 +1,29 @@
 const assert = require('assert');
-const { getFullName } = require('../../utils/user');
-const log = require('../../utils/logger');
 const reportPdf = require('../report-pdf');
+const log = require('../../utils/logger');
+const inspectionsModel = require('../../models/inspections');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
 
 const PREFIX = 'inspections: api: patch-report-pdf:';
 
 /**
  * Factory for inspection PDF generator endpoint
- * @param  {admin.firestore} db - Firestore Admin DB instance
+ * @param  {admin.firestore} db
+ * @param  {admin.storage} storage
+ * @param  {admin.functions.pubsub.Publisher} completePublisher - publisher for complete inspection update event
  * @return {Function} - onRequest handler
  */
-module.exports = function createOnGetReportPdfHandler(db) {
+module.exports = function createPatchReportPdfHandler(
+  db,
+  storage,
+  completePublisher
+) {
   assert(db && typeof db.collection === 'function', 'has firestore db');
+  assert(storage && typeof storage.bucket === 'function', 'has storage');
+  assert(
+    completePublisher && typeof completePublisher.publish === 'function',
+    'has publisher'
+  );
 
   /**
    * Generate an inspection PDF report for an inspection
@@ -23,8 +34,6 @@ module.exports = function createOnGetReportPdfHandler(db) {
   return async (req, res) => {
     const { inspectionId } = req.params;
     const authorId = req.user ? req.user.id || '' : '';
-    const authorName = getFullName(req.user || {});
-    const authorEmail = req.user ? req.user.email : '';
     const send500Error = create500ErrHandler(PREFIX, res);
 
     // Optional incognito mode query
@@ -36,159 +45,161 @@ module.exports = function createOnGetReportPdfHandler(db) {
     // Set content type
     res.set('Content-Type', 'application/vnd.api+json');
 
+    // Determine if any errors would
+    // result from generating PDF report
+    // and send an informative response to
+    // the user so they know why it failed
+    let dryRunErr = null;
     let inspection = null;
-    const warnings = [];
     try {
-      const result = await reportPdf.regenerate(
+      await reportPdf.regenerate(
         db,
+        storage,
         inspectionId,
-        incognitoMode,
-        authorId,
-        authorName,
-        authorEmail
+        true, // incognito
+        '',
+        '',
+        '',
+        true // dry run request
       );
-      warnings.push(...result.warnings);
-      inspection = result.inspection; // contains updates
     } catch (err) {
+      dryRunErr = err;
       inspection = err.inspection || null;
-
-      // Log report status failure
-      if (
-        inspection &&
-        inspection.inspectionReportStatus === 'completed_failure'
-      ) {
-        log.info(
-          `${PREFIX} updated inspection "${inspectionId}" report status set to failed`
-        );
-      }
-
-      // Could not find inspection
-      if (err instanceof reportPdf.UnfoundInspectionError) {
-        log.error(`${PREFIX} missing requested inspection: ${err}`);
-        return res.status(400).send({
-          errors: [
-            {
-              detail: `Bad Request: inspection "${inspectionId}" could not be found`,
-            },
-          ],
-        });
-      }
-
-      // Inspection has not property reference
-      if (err instanceof reportPdf.BadInspectionError) {
-        log.error(`${PREFIX} bad inspection record: ${err}`);
-        return res.status(400).send({
-          errors: [
-            {
-              detail: `Bad Request: inspection "${inspectionId}" not associated with a property`,
-            },
-          ],
-        });
-      }
-
-      // Cannot create report for incomplete inspection
-      if (err instanceof reportPdf.IncompleteInspectionError) {
-        log.error(
-          `${PREFIX} requested to generate report for incomplete inspection: ${err}`
-        );
-        return res.status(400).send({
-          errors: [
-            {
-              detail: `Bad Request: inspection "${inspectionId}" not completed`,
-            },
-          ],
-        });
-      }
-
-      // Report PDF generation is currently in progress
-      if (err instanceof reportPdf.GeneratingReportError) {
-        log.error(
-          `${PREFIX} requested report for inspection already generating report: ${err}`
-        );
-        return res.status(202).send({
-          data: {
-            id: inspectionId,
-            type: 'inspection',
-            attributes: { inspectionReportStatus: 'generating' },
-          },
-        });
-      }
-
-      // Inspection does not need a new report
-      if (err instanceof reportPdf.ReportUpToDateError) {
-        log.error(
-          `${PREFIX} requested report for up to date inspection: ${err}`
-        );
-        return res.status(200).send({
-          data: {
-            id: inspectionId,
-            type: 'inspection',
-            attributes: {
-              inspectionReportURL: inspection
-                ? inspection.inspectionReportURL
-                : '',
-              inspectionReportStatus: inspection
-                ? inspection.inspectionReportStatus
-                : '',
-              inspectionReportUpdateLastDate: inspection
-                ? inspection.inspectionReportUpdateLastDate
-                : '',
-            },
-          },
-        });
-      }
-
-      // Inspection's property doesn't exist
-      if (err instanceof reportPdf.UnfoundPropertyError) {
-        log.error(`${PREFIX} property lookup failed: ${err}`);
-        return res.status(400).send({
-          errors: [
-            {
-              detail: `Bad Request: associated property "${
-                inspection ? inspection.property : ''
-              }" could not be recovered`,
-            },
-          ],
-        });
-      }
-
-      // Failed to add/replace inspections PDF report
-      if (err instanceof reportPdf.GenerationFailError) {
-        log.error(`${PREFIX} PDF generation failed: ${err}`);
-        return res.status(500).send({
-          errors: [{ detail: 'Inspection PDF generation failed' }],
-        });
-      }
-
-      // Could not load PDF report URL
-      if (err instanceof reportPdf.ReportUrlLookupError) {
-        log.error(`${PREFIX} S3 report upload failed: ${err}`);
-        return res.status(500).send({
-          errors: [{ detail: 'Inspection Report PDF did not save' }],
-        });
-      }
-
-      // Unexpected error
-      return send500Error(err, 'system error', 'unexpected error');
     }
 
-    // Log acceptable errors
-    warnings.forEach(err => {
-      log.error(`${PREFIX} warning: ${err}`);
-    });
+    // Could not find inspection
+    if (dryRunErr instanceof reportPdf.UnfoundInspectionError) {
+      log.error(`${PREFIX} missing requested inspection: ${dryRunErr}`);
+      return res.status(400).send({
+        errors: [
+          {
+            detail: `Bad Request: inspection "${inspectionId}" could not be found`,
+          },
+        ],
+      });
+    }
+
+    // Inspection has no property reference
+    if (dryRunErr instanceof reportPdf.BadInspectionError) {
+      log.error(`${PREFIX} bad inspection record: ${dryRunErr}`);
+      return res.status(400).send({
+        errors: [
+          {
+            detail: `Bad Request: inspection "${inspectionId}" not associated with a property`,
+          },
+        ],
+      });
+    }
+
+    // Cannot create report for incomplete inspection
+    if (dryRunErr instanceof reportPdf.IncompleteInspectionError) {
+      log.error(
+        `${PREFIX} requested to generate report for incomplete inspection: ${dryRunErr}`
+      );
+      return res.status(400).send({
+        errors: [
+          {
+            detail: `Bad Request: inspection "${inspectionId}" not completed`,
+          },
+        ],
+      });
+    }
+
+    // Report PDF generation is currently in progress
+    if (dryRunErr instanceof reportPdf.GeneratingReportError) {
+      log.error(
+        `${PREFIX} requested report for inspection already generating report: ${dryRunErr}`
+      );
+      return res.status(202).send({
+        data: {
+          id: inspectionId,
+          type: 'inspection',
+          attributes: { inspectionReportStatus: 'generating' },
+        },
+      });
+    }
+
+    // Inspection does not need a new report
+    if (dryRunErr instanceof reportPdf.ReportUpToDateError) {
+      log.error(
+        `${PREFIX} requested report for up to date inspection: ${dryRunErr}`
+      );
+      return res.status(200).send({
+        data: {
+          id: inspectionId,
+          type: 'inspection',
+          attributes: {
+            inspectionReportURL: inspection
+              ? inspection.inspectionReportURL
+              : '',
+            inspectionReportStatus: inspection
+              ? inspection.inspectionReportStatus
+              : '',
+            inspectionReportUpdateLastDate: inspection
+              ? inspection.inspectionReportUpdateLastDate
+              : '',
+          },
+        },
+      });
+    }
+
+    // Inspection's property doesn't exist
+    if (dryRunErr instanceof reportPdf.UnfoundPropertyError) {
+      log.error(`${PREFIX} property lookup failed: ${dryRunErr}`);
+      return res.status(400).send({
+        errors: [
+          {
+            detail: `Bad Request: associated property "${
+              inspection ? inspection.property : ''
+            }" could not be recovered`,
+          },
+        ],
+      });
+    }
+
+    // Inspection is too large for allocated memory
+    if (dryRunErr instanceof reportPdf.OversizedStorageError) {
+      log.error(`${PREFIX} inspection storage oversized failure: ${dryRunErr}`);
+      return res.status(400).send({
+        errors: [
+          {
+            title: 'Oversized inspection',
+            detail: `inspection "${inspectionId}" is oversized, please contact an admin`,
+          },
+        ],
+      });
+    }
+
+    const updates = {
+      inspectionReportStatus: 'queued',
+      inspectionReportStatusChanged: Math.round(Date.now() / 1000),
+    };
+
+    try {
+      await inspectionsModel.updateRecord(db, inspectionId, updates);
+    } catch (err) {
+      return send500Error(err, 'Inspection update failed', 'unexpected error');
+    }
 
     // Send updated inspection
     res.status(201).send({
       data: {
         id: inspectionId,
         type: 'inspection',
-        attributes: {
-          inspectionReportURL: inspection.inspectionReportURL,
-          inspectionReportStatus: inspection.inspectionReportStatus,
-          inspectionReportUpdateLastDate:
-            inspection.inspectionReportUpdateLastDate,
-        },
+        attributes: updates,
       },
     });
+
+    try {
+      await completePublisher.publish(
+        Buffer.from(
+          [inspectionId, incognitoMode ? '' : authorId]
+            .filter(Boolean)
+            .join('/')
+        )
+      );
+    } catch (err) {
+      log.error(`${PREFIX} publish event failed: ${err}`);
+    }
   };
 };

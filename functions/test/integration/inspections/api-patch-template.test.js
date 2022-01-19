@@ -10,11 +10,13 @@ const inspectionsModel = require('../../../models/inspections');
 const propertiesModel = require('../../../models/properties');
 const notificationsModel = require('../../../models/notifications');
 const handler = require('../../../inspections/api/patch-template');
-const reportPdf = require('../../../inspections/report-pdf');
 const firebase = require('../../../test-helpers/firebase');
-const { storage } = require('../../setup');
+const stubs = require('../../../test-helpers/stubs');
 
 const USER_ID = '123';
+const DB = stubs.createFirestore();
+const STORAGE = stubs.createStorage();
+const PUBLISHER = stubs.createPublisher();
 
 describe('Inspections PATCH TEMPLATE | API | PATCH Template', () => {
   beforeEach(() => {
@@ -326,7 +328,6 @@ describe('Inspections PATCH TEMPLATE | API | PATCH Template', () => {
           firebase.createDocSnapshot(property)
         )
       );
-    sinon.stub(reportPdf, 'regenerate').resolves({ inspection, warnings: [] });
     const sendNotification = sinon
       .stub(notificationsModel, 'addRecord')
       .resolves();
@@ -400,7 +401,6 @@ describe('Inspections PATCH TEMPLATE | API | PATCH Template', () => {
           firebase.createDocSnapshot(property)
         )
       );
-    sinon.stub(reportPdf, 'regenerate').resolves({ inspection, warnings: [] });
     const sendNotification = sinon
       .stub(notificationsModel, 'addRecord')
       .resolves();
@@ -420,7 +420,7 @@ describe('Inspections PATCH TEMPLATE | API | PATCH Template', () => {
   it('adds an inspection report to the queue when it becomes completed', async () => {
     const expected = {
       inspectionReportStatus: 'queued',
-      inspectionReportLastQueued: 1, // updated from truethy source
+      inspectionReportStatusChanged: 1, // updated from truethy source
     };
     const propertyId = uuid();
     const inspectionId = uuid();
@@ -477,7 +477,6 @@ describe('Inspections PATCH TEMPLATE | API | PATCH Template', () => {
           firebase.createDocSnapshot(property)
         )
       );
-    sinon.stub(reportPdf, 'regenerate').resolves({ inspection, warnings: [] });
 
     // Execute
     await request(createApp())
@@ -491,18 +490,20 @@ describe('Inspections PATCH TEMPLATE | API | PATCH Template', () => {
     const resultPayload = result.args[2] || {};
     const actual = {
       inspectionReportStatus: resultPayload.inspectionReportStatus,
-      inspectionReportLastQueued: resultPayload.inspectionReportLastQueued,
+      inspectionReportStatusChanged:
+        resultPayload.inspectionReportStatusChanged,
     };
 
     // Update dynamic portion
-    if (actual.inspectionReportLastQueued) {
-      expected.inspectionReportLastQueued = actual.inspectionReportLastQueued;
+    if (actual.inspectionReportStatusChanged) {
+      expected.inspectionReportStatusChanged =
+        actual.inspectionReportStatusChanged;
     }
 
     expect(actual).to.deep.equal(expected);
   });
 
-  it('requests to generate a PDF report after a completed inspection is successfully updated', async () => {
+  it('publishes request to generate a PDF report after completed inspection is successfully updated', async () => {
     const expected = true;
     const propertyId = uuid();
     const inspectionId = uuid();
@@ -559,9 +560,7 @@ describe('Inspections PATCH TEMPLATE | API | PATCH Template', () => {
           firebase.createDocSnapshot(property)
         )
       );
-    const regenerate = sinon
-      .stub(reportPdf, 'regenerate')
-      .resolves({ inspection, warnings: [] });
+    const publish = sinon.stub(PUBLISHER, 'publish').resolves();
 
     // Execute
     await request(createApp())
@@ -571,7 +570,7 @@ describe('Inspections PATCH TEMPLATE | API | PATCH Template', () => {
       .expect(201);
 
     // Assertions
-    const actual = regenerate.called;
+    const actual = publish.called;
     expect(actual).to.equal(expected);
   });
 });
@@ -582,13 +581,7 @@ function createApp() {
     '/t/:inspectionId',
     bodyParser.json(),
     stubAuth,
-    handler(
-      {
-        collection: () => {},
-        batch: () => ({ commit: () => Promise.resolve() }),
-      },
-      storage
-    )
+    handler(DB, STORAGE, PUBLISHER)
   );
   return app;
 }

@@ -7,7 +7,8 @@ const inspectionsModel = require('../../../models/inspections');
 const propertiesModel = require('../../../models/properties');
 const handler = require('../../../inspections/api/patch-report-pdf');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { fs: db, deletePDFInspection } = require('../../setup');
+const stubs = require('../../../test-helpers/stubs');
+const { fs: db, storage } = require('../../setup');
 
 // Avoid creating lots of PDF's
 const INSP_ID = uuid();
@@ -19,6 +20,7 @@ const INSPECTION_DATA = mocking.createInspection({
   totalItems: 1,
   inspectionReportURL: 'old-url.com',
   inspectionReportUpdateLastDate: 1601494027,
+  inspectionReportStatusChanged: 1,
   inspectionCompleted: true,
   template: {
     name: 'template',
@@ -32,21 +34,9 @@ const PROPERTY_DATA = {
 };
 
 describe('Inspections | API | PATCH PDF Report', () => {
-  afterEach(async () => {
-    const inspDoc = await inspectionsModel.findRecord(db, INSP_ID);
-    const reportURL = (inspDoc.data() || {}).inspectionReportURL || '';
+  afterEach(() => cleanDb(null, db));
 
-    // Delete any generated PDF
-    if (reportURL) {
-      try {
-        await deletePDFInspection(reportURL);
-      } catch (e) {} // eslint-disable-line no-empty
-    }
-
-    return cleanDb(null, db);
-  });
-
-  it("should update inspection's report attributes on success", async function() {
+  it('should queue an inspection for PDF report generation on success', async function() {
     // Setup database
     await inspectionsModel.createRecord(db, INSP_ID, INSPECTION_DATA);
     await propertiesModel.createRecord(db, PROPERTY_ID, PROPERTY_DATA);
@@ -60,26 +50,20 @@ describe('Inspections | API | PATCH PDF Report', () => {
 
     // Get Result
     const {
-      inspectionReportURL,
       inspectionReportStatus,
-      inspectionReportUpdateLastDate,
+      inspectionReportStatusChanged,
     } = res.body.data.attributes;
 
     // Assertions
     [
       {
-        actual: inspectionReportURL,
-        notExpected: INSPECTION_DATA.inspectionReportURL,
-        msg: 'updated record report URL',
-      },
-      {
         actual: inspectionReportStatus,
-        expected: 'completed_success',
+        expected: 'queued',
         msg: 'set record report status',
       },
       {
-        actual: inspectionReportUpdateLastDate,
-        notExpected: INSPECTION_DATA.inspectionReportUpdateLastDate,
+        actual: inspectionReportStatusChanged,
+        notExpected: INSPECTION_DATA.inspectionReportStatusChanged,
         msg: 'set record report last update date',
       },
     ].forEach(({ actual, expected, notExpected, msg }) => {
@@ -94,6 +78,6 @@ describe('Inspections | API | PATCH PDF Report', () => {
 
 function createApp() {
   const app = express();
-  app.patch('/:inspectionId', handler(db));
+  app.patch('/:inspectionId', handler(db, storage, stubs.createPublisher()));
   return app;
 }

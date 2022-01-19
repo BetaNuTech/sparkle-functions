@@ -27,11 +27,15 @@ const swaggerDocument = require('./swagger.json');
  * @param  {Object} storage
  * @return {Express}
  */
-module.exports = (fs, auth, settings, storage) => {
+module.exports = (fs, auth, settings, storage, pubsubClient) => {
   assert(Boolean(fs), 'has firestore database instance');
   assert(Boolean(auth), 'has firebase auth instance');
 
   const app = express();
+  const completeInspUpdatePublisher = pubsubClient
+    .topic('complete-inspection-update')
+    .publisher();
+
   app.use(bodyParser.json(), cors({ origin: true, credentials: true }));
   swaggerDocument.host = process.env.FIREBASE_FUNCTIONS_DOMAIN;
 
@@ -71,7 +75,7 @@ module.exports = (fs, auth, settings, storage) => {
       team: true,
       property: true,
     }),
-    inspections.api.patchTemplate(fs, storage)
+    inspections.api.patchTemplate(fs, storage, completeInspUpdatePublisher)
   );
 
   // Upload a image to an inspection item
@@ -99,7 +103,11 @@ module.exports = (fs, auth, settings, storage) => {
   app.patch(
     '/v0/inspections/:inspectionId/report-pdf',
     authUser(fs, auth),
-    inspections.api.createPatchReportPDF(fs)
+    inspections.api.createPatchReportPDF(
+      fs,
+      storage,
+      completeInspUpdatePublisher
+    )
   );
 
   // Request Property's residents from Yardi

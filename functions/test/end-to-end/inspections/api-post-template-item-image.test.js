@@ -30,13 +30,12 @@ describe('Inspections | API | POST Template Item Image', () => {
   });
 
   it("should add an inspection item's image to storage", async () => {
-    const sectionId = uuid();
     const inspection = mocking.createInspection({
       property: uuid(),
       template: mocking.createTemplate({
         name: 'template',
-        items: { [ITEM_ID]: mocking.createItem({ sectionId }) },
-        sections: { [sectionId]: mocking.createSection() },
+        items: {}, // item isn't published to database yet
+        sections: {},
       }),
     });
     const bucket = storage.bucket();

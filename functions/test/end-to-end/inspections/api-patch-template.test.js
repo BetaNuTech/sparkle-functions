@@ -1,5 +1,4 @@
 const { expect } = require('chai');
-const sinon = require('sinon');
 const express = require('express');
 const request = require('supertest');
 const bodyParser = require('body-parser');
@@ -11,32 +10,11 @@ const propertiesModel = require('../../../models/properties');
 const storageService = require('../../../services/storage');
 const handler = require('../../../inspections/api/patch-template');
 const { cleanDb, findStorageFile } = require('../../../test-helpers/firebase');
-const { fs: db, storage, deletePDFInspection } = require('../../setup');
+const stubs = require('../../../test-helpers/stubs');
+const { fs: db, storage } = require('../../setup');
 
 describe('Inspections | API | PATCH Template', () => {
-  let cleanupInspId = '';
-  afterEach(async () => {
-    let reportURL = '';
-    if (cleanupInspId) {
-      try {
-        const inspDoc = await inspectionsModel.findRecord(db, cleanupInspId);
-        reportURL = inspDoc
-          ? (inspDoc.data() || {}).inspectionReportURL || ''
-          : '';
-      } catch (e) {} // eslint-disable-line no-empty
-      cleanupInspId = '';
-    }
-
-    // Delete any generated PDF
-    if (reportURL) {
-      try {
-        await deletePDFInspection(reportURL);
-      } catch (e) {} // eslint-disable-line no-empty
-    }
-
-    sinon.restore();
-    await cleanDb(null, db);
-  });
+  afterEach(() => cleanDb(null, db));
 
   it('should update a inspection record', async () => {
     const propertyId = uuid();
@@ -188,7 +166,6 @@ describe('Inspections | API | PATCH Template', () => {
     const unexpected = 0;
     const propertyId = uuid();
     const inspectionId = uuid();
-    cleanupInspId = inspectionId; // cleanup PDF after test
     const sectionId = uuid();
     const itemId = uuid();
     const inspection = mocking.createInspection({
@@ -246,113 +223,6 @@ describe('Inspections | API | PATCH Template', () => {
     const actual = result.lastInspectionScore;
     expect(actual).to.not.equal(unexpected);
   });
-
-  it("should generate a new completed inspection's report after on success", async function() {
-    const propertyId = uuid();
-    const inspectionId = uuid();
-    cleanupInspId = inspectionId; // cleanup PDF after test
-    const sectionId = uuid();
-    const itemId = uuid();
-    const inspection = mocking.createInspection({
-      property: propertyId,
-      score: 0,
-      totalItems: 1,
-      itemsCompleted: 0,
-      deficienciesExist: false,
-      lastInspectionScore: 0,
-      inspectionCompleted: false,
-      updatedLastDate: 0,
-      inspectionReportURL: 'old-report.pdf',
-      inspectionReportStatus: 'completed_failure',
-      inspectionReportUpdateLastDate: 1,
-      template: mocking.createTemplate({
-        sections: { [sectionId]: mocking.createSection() },
-        items: {
-          [itemId]: mocking.createIncompleteMainInputItem(
-            'twoactions_checkmarkx',
-            { sectionId }
-          ),
-        },
-      }),
-    });
-    const property = mocking.createProperty({
-      name: `name${propertyId}`,
-      inspections: [inspectionId],
-    });
-
-    // Complete inspection
-    const update = {
-      items: {
-        [itemId]: {
-          mainInputSelected: true,
-          mainInputSelection: 0,
-        },
-      },
-    };
-
-    // Setup database
-    await inspectionsModel.createRecord(db, inspectionId, inspection);
-    await propertiesModel.createRecord(db, propertyId, property);
-
-    // Stubs
-    const updateCalls = sinon
-      .stub(inspectionsModel, 'upsertRecord')
-      .callThrough();
-
-    // Execute
-    await request(createApp())
-      .patch(`/t/${inspectionId}/template`)
-      .send(update)
-      .expect('Content-Type', /json/)
-      .expect(201);
-
-    // Report is created after response sent
-    // await for inspection to be updated to
-    // signal report has been uploaded
-    while (updateCalls.callCount < 2) {
-      await new Promise(r => setTimeout(r, 500));
-    }
-    const resultSnap = await inspectionsModel.findRecord(db, inspectionId);
-    const result = resultSnap.data() || {};
-
-    // Get Result
-    const {
-      inspectionReportURL,
-      inspectionReportStatus,
-      inspectionReportUpdateLastDate,
-    } = result;
-
-    // Assertions
-    [
-      {
-        actual: inspectionReportURL,
-        expectedType: 'string',
-        differentThan: inspection.inspectionReportURL,
-        msg: 'updated record report URL',
-      },
-      {
-        actual: inspectionReportStatus,
-        expectedType: 'string',
-        differentThan: inspection.inspectionReportStatus,
-        expected: 'completed_success',
-        msg: 'set record report status',
-      },
-      {
-        actual: inspectionReportUpdateLastDate,
-        expectedType: 'number',
-        differentThan: inspection.inspectionReportUpdateLastDate,
-        msg: 'set record report last update date',
-      },
-    ].forEach(({ actual, expected, expectedType, differentThan, msg }) => {
-      expect(actual).to.be.ok;
-      expect(actual).to.be.a(expectedType, msg);
-      expect(actual).to.not.equal(differentThan, msg);
-
-      if (expected) {
-        expect(actual).to.equal(expected);
-      }
-    });
-  });
 });
 
 function createApp(user = {}) {
@@ -361,7 +231,7 @@ function createApp(user = {}) {
     '/t/:inspectionId/template',
     bodyParser.json(),
     stubAuth(user),
-    handler(db, storage)
+    handler(db, storage, stubs.createPublisher())
   );
   return app;
 }

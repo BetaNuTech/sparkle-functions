@@ -5,14 +5,16 @@ const sinon = require('sinon');
 const uuid = require('../../../test-helpers/uuid');
 const propertiesModel = require('../../../models/properties');
 const inspectionsModel = require('../../../models/inspections');
-const notificationsModel = require('../../../models/notifications');
 const handler = require('../../../inspections/api/patch-report-pdf');
-const createReportPdf = require('../../../inspections/report-pdf/create');
-const uploader = require('../../../inspections/report-pdf/uploader');
 const mocking = require('../../../test-helpers/mocking');
-const inspImages = require('../../../inspections/report-pdf/inspection-images');
 const log = require('../../../utils/logger');
+const storageService = require('../../../services/storage');
 const firebase = require('../../../test-helpers/firebase');
+const stubs = require('../../../test-helpers/stubs');
+
+const DB = stubs.createFirestore();
+const STORAGE = stubs.createStorage();
+const PUBLISHER = stubs.createPublisher();
 
 describe('Inspections | API | PATCH Report PDF', () => {
   beforeEach(() => {
@@ -98,11 +100,13 @@ describe('Inspections | API | PATCH Report PDF', () => {
 
   it("immediately resolves inspection when its' report is already generating", async () => {
     let body = null;
+    const nowUnix = Math.round(Date.now() / 1000);
     const propertyId = uuid();
     const inspectionId = uuid();
     const inspection = createInspection({
       property: propertyId,
       inspectionReportStatus: 'generating',
+      inspectionReportStatusChanged: nowUnix - 1, // not past timeout
     });
 
     // Stubs
@@ -134,7 +138,7 @@ describe('Inspections | API | PATCH Report PDF', () => {
     const inspectionId = uuid();
     const inspection = createInspection({
       property: propertyId,
-      updatedLastDate: now - 1,
+      updatedAt: now,
       ...expected,
     });
 
@@ -183,203 +187,78 @@ describe('Inspections | API | PATCH Report PDF', () => {
     );
   });
 
-  it('sets inspection report status to generating', async () => {
-    const expected = 'generating';
-    const propertyId = uuid();
+  it('rejects generating an inspection when its storage data is too large for allocated memory', async () => {
+    let body = null;
     const inspectionId = uuid();
+    const propertyId = uuid();
     const inspection = createInspection({ property: propertyId });
     const property = mocking.createProperty();
 
-    // Stubs
-    let actual = '';
     sinon
       .stub(inspectionsModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(inspectionId, inspection));
     sinon
       .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
-    sinon.stub(inspectionsModel, 'upsertRecord').callsFake((db, id, update) => {
-      actual = update.inspectionReportStatus;
-      return Promise.reject(Error('err'));
+    sinon
+      .stub(storageService, 'calculateInspectionFolderByteSize')
+      .resolves(Infinity);
+
+    await request(createApp())
+      .patch(`/${inspectionId}`)
+      .send()
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(400)
+      .then(res => {
+        body = res.body;
+      });
+
+    expect(body.errors[0].detail).to.contain(
+      `inspection "${inspectionId}" is oversized, please contact an admin`
+    );
+  });
+
+  it('updates an eligible inspection into the PDF reporting queue', async () => {
+    const expected = {
+      inspectionReportStatus: 'queued',
+      inspectionReportStatusChanged: 1, // updated from truethy source
+    };
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const inspection = createInspection({ property: propertyId });
+    const property = mocking.createProperty();
+
+    // Stubs
+    let actual = {};
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(propertyId, property));
+    sinon.stub(storageService, 'calculateInspectionFolderByteSize').resolves(0);
+    sinon.stub(PUBLISHER, 'publish').resolves();
+    sinon.stub(inspectionsModel, 'updateRecord').callsFake((db, id, update) => {
+      actual = update;
+      // Update dynamic portion
+      if (actual.inspectionReportStatusChanged) {
+        expected.inspectionReportStatusChanged =
+          actual.inspectionReportStatusChanged;
+      }
+      return Promise.resolve();
     });
 
-    await request(createApp())
+    const result = await request(createApp())
       .patch(`/${inspectionId}`)
       .send()
       .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(500);
+      .expect(201);
 
-    expect(actual).to.equal(expected);
+    expect(actual, 'db write').to.deep.equal(expected);
+    expect(result.body.data.attributes, 'payload').to.deep.equal(expected);
   });
 
-  it('sets inspection report status to failed when attachment did not load', async () => {
-    const expected = 'completed_failure';
-    const propertyId = uuid();
-    const inspectionId = uuid();
-    const inspection = createInspection({ property: propertyId });
-    const property = mocking.createProperty();
-
-    // Stubs
-    let actual = '';
-    sinon
-      .stub(inspectionsModel, 'findRecord')
-      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
-    sinon
-      .stub(propertiesModel, 'findRecord')
-      .resolves(firebase.createDocSnapshot(propertyId, property));
-    sinon
-      .stub(inspectionsModel, 'upsertRecord')
-      .onFirstCall()
-      .resolves()
-      .onSecondCall()
-      .callsFake((db, id, update) => {
-        actual = update.inspectionReportStatus;
-        return Promise.reject(Error('err'));
-      });
-    sinon.stub(inspImages, 'download').rejects(Error('err'));
-
-    await request(createApp())
-      .patch(`/${inspectionId}`)
-      .send()
-      .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(500)
-      .then(res => {
-        expect(res.body.errors[0].detail).to.equal('unexpected error');
-      });
-
-    expect(actual).to.equal(expected);
-  });
-
-  it('sets inspection report status to failed upon report generation failure', async () => {
-    const expected = 'completed_failure';
-    const propertyId = uuid();
-    const inspectionId = uuid();
-    const inspection = createInspection({ property: propertyId });
-    const property = mocking.createProperty();
-
-    // Stubs
-    let actual = '';
-    sinon
-      .stub(inspectionsModel, 'findRecord')
-      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
-    sinon
-      .stub(propertiesModel, 'findRecord')
-      .resolves(firebase.createDocSnapshot(propertyId, property));
-    sinon
-      .stub(inspectionsModel, 'upsertRecord')
-      .onFirstCall()
-      .resolves()
-      .onSecondCall()
-      .callsFake((db, id, update) => {
-        actual = update.inspectionReportStatus;
-        return Promise.resolve();
-      });
-    sinon.stub(inspImages, 'download').resolves({ template: { items: {} } });
-    sinon.stub(createReportPdf._proto, 'generatePdf').rejects(Error('err'));
-
-    await request(createApp())
-      .patch(`/${inspectionId}`)
-      .send()
-      .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(500)
-      .then(res => {
-        expect(res.body.errors[0].detail).to.equal(
-          'Inspection PDF generation failed'
-        );
-      });
-
-    expect(actual).to.equal(expected);
-  });
-
-  it('sets inspection report status to failed report fails to upload', async () => {
-    const expected = 'completed_failure';
-    const propertyId = uuid();
-    const inspectionId = uuid();
-    const inspection = createInspection({ property: propertyId });
-    const property = mocking.createProperty();
-
-    // Stubs
-    let actual = '';
-    sinon
-      .stub(inspectionsModel, 'findRecord')
-      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
-    sinon
-      .stub(propertiesModel, 'findRecord')
-      .resolves(firebase.createDocSnapshot(propertyId, property));
-    sinon
-      .stub(inspectionsModel, 'upsertRecord')
-      .onFirstCall()
-      .resolves()
-      .onSecondCall()
-      .callsFake((db, id, update) => {
-        actual = update.inspectionReportStatus;
-        return Promise.resolve();
-      });
-    sinon.stub(inspImages, 'download').resolves({ template: { items: {} } });
-    sinon
-      .stub(createReportPdf._proto, 'generatePdf')
-      .resolves(Buffer.from([0]));
-    sinon.stub(uploader, 's3').rejects(Error('err'));
-
-    await request(createApp())
-      .patch(`/${inspectionId}`)
-      .send()
-      .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(500)
-      .then(res => {
-        expect(res.body.errors[0].detail).to.equal(
-          'Inspection Report PDF did not save'
-        );
-      });
-
-    expect(actual).to.equal(expected);
-  });
-
-  it('sets inspection report status to failed when inspection write fails', async () => {
-    const expected = 'completed_failure';
-    const propertyId = uuid();
-    const inspectionId = uuid();
-    const inspection = createInspection({ property: propertyId });
-    const property = mocking.createProperty();
-
-    // Stubs
-    let actual = '';
-    sinon
-      .stub(inspectionsModel, 'findRecord')
-      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
-    sinon
-      .stub(propertiesModel, 'findRecord')
-      .resolves(firebase.createDocSnapshot(propertyId, property));
-    sinon
-      .stub(inspectionsModel, 'upsertRecord')
-      .onFirstCall()
-      .resolves()
-      .onSecondCall()
-      .rejects() // write success
-      .onThirdCall()
-      .callsFake((db, id, update) => {
-        actual = update.inspectionReportStatus;
-        return Promise.resolve();
-      });
-    sinon.stub(inspImages, 'download').resolves({ template: { items: {} } });
-    sinon
-      .stub(createReportPdf._proto, 'generatePdf')
-      .resolves(Buffer.from([0]));
-    sinon.stub(uploader, 's3').resolves('/url/test');
-
-    await request(createApp())
-      .patch(`/${inspectionId}`)
-      .send()
-      .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(500)
-      .then(res => {
-        expect(res.body.errors[0].detail).to.equal('unexpected error');
-      });
-
-    expect(actual).to.equal(expected);
-  });
-
-  it('sends notification upon successful PDF report creation', async () => {
+  it('publishes request to generate a PDF report after successfully add it into the queue', async () => {
     const expected = true;
     const propertyId = uuid();
     const inspectionId = uuid();
@@ -393,18 +272,9 @@ describe('Inspections | API | PATCH Report PDF', () => {
     sinon
       .stub(propertiesModel, 'findRecord')
       .resolves(firebase.createDocSnapshot(propertyId, property));
-    sinon
-      .stub(inspectionsModel, 'upsertRecord')
-      .onFirstCall()
-      .resolves()
-      .onSecondCall()
-      .resolves();
-    sinon.stub(inspImages, 'download').resolves({ template: { items: {} } });
-    sinon
-      .stub(createReportPdf._proto, 'generatePdf')
-      .resolves(Buffer.from([0]));
-    sinon.stub(uploader, 's3').resolves('/url/test');
-    const result = sinon.stub(notificationsModel, 'addRecord').resolves();
+    sinon.stub(storageService, 'calculateInspectionFolderByteSize').resolves(0);
+    sinon.stub(inspectionsModel, 'updateRecord').resolves();
+    const publish = sinon.stub(PUBLISHER, 'publish').resolves();
 
     await request(createApp())
       .patch(`/${inspectionId}`)
@@ -412,51 +282,14 @@ describe('Inspections | API | PATCH Report PDF', () => {
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(201);
 
-    const actual = result.called;
-    expect(actual).to.equal(expected);
-  });
-
-  it('does not send notification in incognito mode', async () => {
-    const expected = false;
-    const propertyId = uuid();
-    const inspectionId = uuid();
-    const inspection = createInspection({ property: propertyId });
-    const property = mocking.createProperty();
-
-    // Stubs
-    sinon
-      .stub(inspectionsModel, 'findRecord')
-      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
-    sinon
-      .stub(propertiesModel, 'findRecord')
-      .resolves(firebase.createDocSnapshot(propertyId, property));
-    sinon
-      .stub(inspectionsModel, 'upsertRecord')
-      .onFirstCall()
-      .resolves()
-      .onSecondCall()
-      .resolves();
-    sinon.stub(inspImages, 'download').resolves({ template: { items: {} } });
-    sinon
-      .stub(createReportPdf._proto, 'generatePdf')
-      .resolves(Buffer.from([0]));
-    sinon.stub(uploader, 's3').resolves('/url/test');
-    const result = sinon.stub(notificationsModel, 'addRecord').resolves();
-
-    await request(createApp())
-      .patch(`/${inspectionId}?incognitoMode=true`)
-      .send()
-      .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(201);
-
-    const actual = result.called;
-    expect(actual).to.equal(expected);
+    const actual = publish.called;
+    expect(actual).to.deep.equal(expected);
   });
 });
 
 function createApp() {
   const app = express();
-  app.patch('/:inspectionId', handler({ collection: () => {} }));
+  app.patch('/:inspectionId', handler(DB, STORAGE, PUBLISHER));
   return app;
 }
 
