@@ -52,6 +52,9 @@ module.exports = function generateReportPdf(db, pubsub, storage, topic = '') {
         authorName = getFullName(user);
         authorEmail = user.email || '';
         incognitoMode = !authorName; // Deactivated when author discoverd
+        log.info(
+          `${PREFIX} author "${authorId}" information recovered successfully`
+        );
       } catch (err) {
         log.error(`${PREFIX} user "${authorId}" destructuring failed: ${err}`);
 
