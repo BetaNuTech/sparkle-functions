@@ -5,6 +5,7 @@ const inspectionsModel = require('../../models/inspections');
 const notificationsModel = require('../../models/notifications');
 const notifyTemplate = require('../../utils/src-notification-templates');
 const storageService = require('../../services/storage');
+const log = require('../../utils/logger');
 const createReportPdf = require('./create');
 const inspImages = require('./inspection-images');
 const uploader = require('./uploader');
@@ -72,6 +73,9 @@ module.exports = {
         inspectionId
       );
       inspection = inspectionSnap.data() || null;
+      log.info(
+        `${PREFIX} inspection "${inspectionId}" record recovered successfully`
+      );
     } catch (err) {
       throw new UnexpectedError(
         `${PREFIX} inspection "${inspectionId}" lookup failed: ${err}`
@@ -129,6 +133,9 @@ module.exports = {
     try {
       const propertySnap = await propertiesModel.findRecord(db, propertyId);
       property = propertySnap.data() || null;
+      log.info(
+        `${PREFIX} property "${propertyId}" record recovered successfully`
+      );
     } catch (err) {
       throw new UnexpectedError(
         `${PREFIX} failed to lookup inspection "${inspectionId}" property "${propertyId}": ${err}`
@@ -148,9 +155,13 @@ module.exports = {
     // an inspections uploads
     let folderByteSize = 0;
     try {
+      log.info(`${PREFIX} inspection storage calculation started`);
       folderByteSize = await storageService.calculateInspectionFolderByteSize(
         storage,
         inspectionId
+      );
+      log.info(
+        `${PREFIX} inspection storage calculation completed: found ${folderByteSize} bytes`
       );
     } catch (err) {} // eslint-disable-line no-empty
 
@@ -176,6 +187,9 @@ module.exports = {
         inspectionReportStatus: 'generating',
         inspectionReportStatusChanged: Math.round(Date.now() / 1000),
       });
+      log.info(
+        `${PREFIX} inspection "${inspectionId}" set to generating successfully`
+      );
     } catch (err) {
       throw new UnexpectedError(
         `${PREFIX} setting inspection "${inspectionId}" report status "generating" failed: ${err}`
@@ -200,6 +214,9 @@ module.exports = {
     let pdfBuffer = null;
     try {
       pdfBuffer = await reportPdf.generatePdf();
+      log.info(
+        `${PREFIX} inspection "${inspectionId}" PDF report generated successfully`
+      );
     } catch (err) {
       const failInspupdate = await failInspectionReport(db, inspectionId);
       Object.assign(inspection, failInspupdate);
@@ -220,6 +237,9 @@ module.exports = {
         .split(/\n/)
         .map(s => s.trim())
         .filter(s => s.search(HTTPS_URL) > -1);
+      log.info(
+        `${PREFIX} inspection "${inspectionId}" S3 report URL downloaded successfully`
+      );
     } catch (err) {
       const failInspupdate = await failInspectionReport(db, inspectionId);
       Object.assign(inspection, failInspupdate);
@@ -241,6 +261,9 @@ module.exports = {
     };
     try {
       await inspectionsModel.upsertRecord(db, inspectionId, inspectionUpdates);
+      log.info(
+        `${PREFIX} inspection "${inspectionId}" set to completed successfully`
+      );
     } catch (err) {
       await failInspectionReport(db, inspectionId);
       throw new UnexpectedError(
