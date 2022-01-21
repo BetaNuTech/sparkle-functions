@@ -15,7 +15,7 @@ const config = require('../../config');
 const storageService = require('../../services/storage');
 
 const MAX_TIMEOUT = config.inspection.reportPdfGenerationMaxTimeout;
-const MAX_INSPECTION_BYTE_SIZE = config.inspection.reportPdfMemoryInBytes;
+// const MAX_INSPECTION_BYTE_SIZE = config.inspection.reportPdfMemoryInBytes;
 const DB = firebase.createFirestoreStub();
 const STORAGE = createStorage();
 const {
@@ -28,7 +28,7 @@ const {
   UnfoundPropertyError,
   GenerationFailError,
   ReportUrlLookupError,
-  OversizedStorageError,
+  // OversizedStorageError,
 } = reportPdf;
 
 describe('Inspections | Report PDF', () => {
@@ -232,33 +232,33 @@ describe('Inspections | Report PDF', () => {
     expect(actual).to.equal(expected);
   });
 
-  it('rejects generating an inspection when its storage data is too large for allocated memory', async () => {
-    const expected = true;
-    const inspectionId = uuid();
-    const propertyId = uuid();
-    const inspection = createInspection({ property: propertyId });
-    const property = mocking.createProperty();
+  // it('rejects generating an inspection when its storage data is too large for allocated memory', async () => {
+  //   const expected = true;
+  //   const inspectionId = uuid();
+  //   const propertyId = uuid();
+  //   const inspection = createInspection({ property: propertyId });
+  //   const property = mocking.createProperty();
 
-    sinon
-      .stub(inspectionsModel, 'findRecord')
-      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
-    sinon
-      .stub(propertiesModel, 'findRecord')
-      .resolves(firebase.createDocSnapshot(propertyId, property));
-    sinon
-      .stub(storageService, 'calculateInspectionFolderByteSize')
-      .resolves(MAX_INSPECTION_BYTE_SIZE);
+  //   sinon
+  //     .stub(inspectionsModel, 'findRecord')
+  //     .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+  //   sinon
+  //     .stub(propertiesModel, 'findRecord')
+  //     .resolves(firebase.createDocSnapshot(propertyId, property));
+  //   sinon
+  //     .stub(storageService, 'calculateInspectionFolderByteSize')
+  //     .resolves(MAX_INSPECTION_BYTE_SIZE);
 
-    let result = null;
-    try {
-      await reportPdf.regenerate(DB, STORAGE, inspectionId);
-    } catch (err) {
-      result = err;
-    }
+  //   let result = null;
+  //   try {
+  //     await reportPdf.regenerate(DB, STORAGE, inspectionId);
+  //   } catch (err) {
+  //     result = err;
+  //   }
 
-    const actual = result instanceof OversizedStorageError;
-    expect(actual).to.equal(expected);
-  });
+  //   const actual = result instanceof OversizedStorageError;
+  //   expect(actual).to.equal(expected);
+  // });
 
   it('should return immediately after error checks in dry run mode', async () => {
     const expected = false;
