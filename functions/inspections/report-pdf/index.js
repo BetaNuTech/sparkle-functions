@@ -4,7 +4,7 @@ const propertiesModel = require('../../models/properties');
 const inspectionsModel = require('../../models/inspections');
 const notificationsModel = require('../../models/notifications');
 const notifyTemplate = require('../../utils/src-notification-templates');
-const storageService = require('../../services/storage');
+// const storageService = require('../../services/storage');
 const log = require('../../utils/logger');
 const createReportPdf = require('./create');
 const inspImages = require('./inspection-images');
@@ -153,15 +153,15 @@ module.exports = {
 
     // Lookup byte size of all
     // an inspections uploads
-    let folderByteSize = 0;
+    const folderByteSize = 0;
     try {
-      log.info(`${PREFIX} inspection storage calculation started`);
-      folderByteSize = await storageService.calculateInspectionFolderByteSize(
-        storage,
-        inspectionId
-      );
+      log.info(`${PREFIX} [stubbed] inspection storage calculation started`);
+      // folderByteSize = await storageService.calculateInspectionFolderByteSize(
+      //   storage,
+      //   inspectionId
+      // );
       log.info(
-        `${PREFIX} inspection storage calculation completed: found ${folderByteSize} bytes`
+        `${PREFIX} [stubbed] inspection storage calculation completed: found ${folderByteSize} bytes`
       );
     } catch (err) {} // eslint-disable-line no-empty
 
