@@ -1,6 +1,6 @@
 const assert = require('assert');
-const s3Client = require('../../../utils/s3-client');
-const CONFIG = require('../../../config');
+const s3Client = require('../../utils/s3-client');
+const CONFIG = require('../../config');
 
 module.exports = {
   /**

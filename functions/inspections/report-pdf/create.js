@@ -2,7 +2,7 @@ const path = require('path');
 const assert = require('assert');
 const moment = require('moment');
 const PdfMake = require('pdfmake');
-const settings = require('../../../config/report-pdf-settings');
+const settings = require('../../config/report-pdf-settings');
 
 const DOC_SETTINGS = Object.freeze({
   pageSize: {
@@ -166,7 +166,6 @@ const prototype = {
           .sort((a, b) => a.index - b.index)
           .map(item => [
             ...this.getContentItemHeader(item),
-            ...this.getContentItemBody(item),
             ...this.getContentItemBodyNotes(item),
             ...this.getContentItemAdminUpdates(item),
             ...this.getContentItemPhotos(item),
@@ -210,14 +209,16 @@ const prototype = {
           .sort((a, b) => a.index - b.index)
           .map(item => [
             ...this.getContentItemHeader(item),
-            ...this.getContentItemBody(item),
             ...this.getContentItemBodyNotes(item),
             ...this.getContentItemAdminUpdates(item),
             ...this.getContentItemPhotos(item),
           ]);
 
         // Flatten
-        return [].concat(...itemsContent);
+        return [].concat(
+          this.getContentSectionHeader(section.title),
+          ...itemsContent
+        );
       });
 
     const bottomMargin = settings.fonts.summaryHeader.margin[3] || 0;
@@ -362,7 +363,6 @@ const prototype = {
     const itemHeader = {
       text: '',
       style: 'item',
-      margin: settings.fonts.item.margin,
     };
 
     if (item.isTextInputItem && item.isItemNA) {
@@ -385,7 +385,31 @@ const prototype = {
       itemHeader.text = `${capitalize(item.title) || 'Untitled'}`;
     }
 
-    return [itemHeader];
+    // Two column header
+    const body = this.getContentItemBody(item);
+    if (body.length) {
+      return [
+        {
+          columns: [
+            {
+              ...body[0],
+              width: 'auto', // minimize space
+            },
+            {
+              ...itemHeader,
+              width: '*', // fill available
+            },
+          ],
+        },
+      ];
+    }
+
+    return [
+      {
+        ...itemHeader,
+        margin: settings.fonts.item.margin,
+      },
+    ];
   },
 
   /**
@@ -548,6 +572,8 @@ const prototype = {
     const itemId = item.id;
     const type = `${item.mainInputType || item.itemType}`.toLowerCase();
     const photoCaptionMargin = settings.fonts.photoCaption.margin;
+    const photoMaxWidth = settings.images.itemAttachment.maxWidth;
+    const photoMaxHeight = settings.images.itemAttachment.maxHeight;
 
     // Ignore signature items
     // with invalid photo data
@@ -577,32 +603,39 @@ const prototype = {
       return [];
     }
 
-    return [
-      ...photos
-        .map(photo => {
-          const attachment = this._itemAttachments[itemId].photosData[photo.id];
-          const { caption } = photo;
-          const result = [
-            {
-              image: attachment.datauri,
-              width: attachment.width,
-              height: attachment.height,
-              fit: [200, 200],
-              margin: settings.images.itemAttachment.margin,
-            },
-          ];
+    const columns = photos.reduce((result, photo, i) => {
+      const attachment = this._itemAttachments[itemId].photosData[photo.id];
+      const columnTarget = i % 3;
+      const { caption } = photo;
+      const resultRow = [
+        {
+          image: attachment.datauri,
+          fit: [
+            Math.min(attachment.width, photoMaxWidth),
+            Math.min(attachment.height, photoMaxHeight),
+          ],
+          margin: settings.images.itemAttachment.margin,
+        },
+      ];
 
-          if (caption) {
-            result.push({
-              text: caption,
-              margin: photoCaptionMargin,
-            });
-          }
+      if (!result[columnTarget]) {
+        result[columnTarget] = [];
+      }
 
-          return result;
-        })
-        .reduce((acc, val) => acc.concat(val), []), // flatten
-    ];
+      result[columnTarget].push(resultRow);
+
+      // NOTE: text will fill available
+      // space in column and can't be set
+      // directly
+      result[columnTarget].push({
+        text: caption || '',
+        margin: photoCaptionMargin,
+      });
+
+      return result;
+    }, []);
+
+    return [{ columns }];
   },
 
   /**

@@ -76,6 +76,23 @@ Inspection Report: {{{reportUrl}}}{{/if}}
 
 *Updated by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
 
+  // /////////////////////////////////
+  // Property Inspection Completion
+  // /////////////////////////////////
+
+  'inspection-completion-summary':
+    '{{{completionDate}}} inspection completed by{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}}), using {{{templateName}}} template',
+
+  'inspection-completion-markdown-body': `*Inspection Completed*
+\`\`\`
+{{#if templateName}}Template: {{{templateName}}}{{/if}}
+{{#if startDate}}Inspection Start Date: {{{startDate}}}{{/if}}
+{{#if score}}Score: {{{score}}}{{/if}}
+{{#if deficientItemCount}}# of deficient items: {{{deficientItemCount}}}{{/if}}
+\`\`\`{{#if url}}
+Inspection: {{{url}}}{{/if}}
+*Completed by*: {{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
   // /////////////////////////////////////
   // Property Creation
   // /////////////////////////////////////
@@ -136,6 +153,16 @@ New Data:
 {{#if currentPhotoURL}}photoURL: {{{currentPhotoURL}}}{{/if}}
 \`\`\`
 *Edited by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // ///////////////////////////////////
+  // Property Inspection Reassignment
+  // //////////////////////////////////
+  'inspection-reassign-summary':
+    '{{{currentDate}}} inspection moved{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'inspection-reassign-markdown-body': `*Inspection Moved*
+\`Inspection created on {{{startDate}}}, with template: {{{templateName}}} has moved to {{{propertyName}}}\`
+*Moved by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
 
   // ////////////////
   // Team Creation

@@ -121,6 +121,21 @@ describe('Utils | Source Notifications Templates', () => {
           'authorEmail',
         ],
       },
+
+      {
+        template: 'inspection-reassign-summary',
+        values: ['currentDate', 'authorName'],
+      },
+      {
+        template: 'inspection-reassign-markdown-body',
+        values: [
+          'startDate',
+          'templateName',
+          'propertyName',
+          'authorName',
+          'authorEmail',
+        ],
+      },
       {
         template: 'team-created-summary',
         values: ['name', 'authorName'],
@@ -144,6 +159,22 @@ describe('Utils | Source Notifications Templates', () => {
       {
         template: 'team-delete-markdown-body',
         values: ['name', 'authorName', 'authorEmail'],
+      },
+      {
+        template: 'inspection-completion-summary',
+        values: ['completionDate', 'authorName', 'authorEmail', 'templateName'],
+      },
+      {
+        template: 'inspection-completion-markdown-body',
+        values: [
+          'templateName',
+          'startDate',
+          'score',
+          'deficientItemCount',
+          'url',
+          'authorName',
+          'authorEmail',
+        ],
       },
     ];
 

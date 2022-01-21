@@ -1315,7 +1315,7 @@
           {
             "name": "integration",
             "in": "body",
-            "description": "Inspection patch property payload.",
+            "description": "Change inspection property relationship to reassign inspection to a new property",
             "required": ["property"],
             "properties": {
               "property": {
@@ -1377,9 +1377,19 @@
           }
         ],
         "responses": {
-          "500": {
+          "200": {
             "schema": {
-              "$ref": "#/definitions/ERROR"
+              "$ref": "#/definitions/REPORTPDFRESPONSE200"
+            }
+          },
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/REPORTPDFRESPONSE"
+            }
+          },
+          "202": {
+            "schema": {
+              "$ref": "#/definitions/REPORTPDFRESPONSE"
             }
           },
           "400": {
@@ -1387,14 +1397,9 @@
               "$ref": "#/definitions/BADSTATUS400"
             }
           },
-          "200": {
+          "500": {
             "schema": {
-              "$ref": "#/definitions/REPORTPDFRESPONSE200"
-            }
-          },
-          "202": {
-            "schema": {
-              "$ref": "#/definitions/REPORTPDFRESPONSE"
+              "$ref": "#/definitions/ERROR"
             }
           }
         }
@@ -1438,6 +1443,125 @@
           "304": {
             "type": "object",
             "properties": {}
+          }
+        }
+      }
+    },
+    "/v0/inspections/{inspectionId}/template": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "inspectionId",
+          "in": "path",
+          "required": true,
+          "description": "inspection id.",
+          "type": "string"
+        }
+      ],
+      "patch": {
+        "tags": ["Inspection"],
+        "parameters": [
+          {
+            "name": "integration",
+            "in": "body",
+            "description": "Inspection updating",
+            "required": [],
+            "properties": {}
+          }
+        ],
+        "responses": {
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "204": {},
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/CREATEINSPECTION"
+            }
+          }
+        }
+      }
+    },
+
+    "/v0/inspections/{inspectionId}/template/items/{itemId}/image": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "inspectionId",
+          "in": "path",
+          "required": true,
+          "description": "inspection id.",
+          "type": "string"
+        },
+        {
+          "name": "itemId",
+          "in": "path",
+          "required": true,
+          "description": "inspection item id.",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": ["Inspection"],
+        "consumes": ["multipart/form-data"],
+        "parameters": [
+          {
+            "name": "file",
+            "in": "formData",
+            "type": "file",
+            "required": true,
+            "description": "File that we need to upload to the inspection item's photos"
+          }
+        ],
+        "responses": {
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/INSPITEMIMGUPLOADSUCCESS"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
           }
         }
       }
@@ -2829,6 +2953,30 @@
                   "type": "string"
                 },
                 "photoName": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "INSPITEMIMGUPLOADSUCCESS": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "downloadURL": {
                   "type": "string"
                 }
               }

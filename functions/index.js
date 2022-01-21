@@ -135,6 +135,22 @@ exports.cleanupNotificationsV2 = notifications.pubsub.cleanPublished(
   'notifications-sync'
 );
 
+exports.generateReportPdf = inspections.pubsub.generateReportPdf(
+  fs,
+  functions.runWith({
+    timeoutSeconds: config.inspection.reportPdfGenerationMaxTimeout,
+    memory: config.inspection.reportPdfMemory,
+  }).pubsub,
+  storage,
+  'complete-inspection-update'
+);
+
+exports.reportPdfSync = inspections.pubsub.reportPdfSync(
+  fs,
+  functions.pubsub,
+  'inspection-report-pdf-sync'
+);
+
 // HTTPS Router API
 
 exports.api = functions
@@ -146,6 +162,7 @@ exports.api = functions
       {
         inspectionUrl: config.clientApps.web.inspectionURL,
       },
-      storage
+      storage,
+      pubsubClient
     )
   );

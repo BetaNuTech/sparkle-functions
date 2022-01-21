@@ -54,11 +54,13 @@ interface inspection {
   inspectionReportFilename?: string;
   inspectionReportURL?: string;
   score?: number;
+  totalItems?: number;
   templateName: string;
 
   // Report (PDF) attributes
   inspectionReportStatus?: string;
-  inspectionReportUpdateLastDate: number; // UNIX timestamp
+  inspectionReportUpdateLastDate?: number; // UNIX timestamp
+  inspectionReportStatusChanged?: number; // UNIX timestamp
 
   // Relationships
   templateId: string; // template ID
@@ -119,16 +121,31 @@ interface InspectionItem {
   photos: boolean;
   sectionId: string;
   title: string;
-  signatureDownloadURL: string;
-  signatureTimestampKey: string;
-  version: number;
+  signatureDownloadURL?: string;
+  signatureTimestampKey?: string;
+  version?: number;
+  photosData?: object;
+}
+```
+
+## Inspection Item Photo Data
+
+```typescript
+interface inspectionItemPhotoData {
+  title: string;
+  downloadURL: string;
+  sectionId: string;
+  caption?: string;
+  version?: number;
+  signatureDownloadURL?: string;
+  signatureTimestampKey?: string;
 }
 ```
 
 ## Inspection/Template Section
 
 ```typescript
-interface InspectionSection {
+interface inspectionSection {
   index: number;
   title: string;
   added_multi_section: boolean;

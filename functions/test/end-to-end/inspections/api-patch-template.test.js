@@ -4,11 +4,14 @@ const request = require('supertest');
 const bodyParser = require('body-parser');
 const uuid = require('../../../test-helpers/uuid');
 const mocking = require('../../../test-helpers/mocking');
+const storageHelper = require('../../../test-helpers/storage');
 const inspectionsModel = require('../../../models/inspections');
 const propertiesModel = require('../../../models/properties');
+const storageService = require('../../../services/storage');
 const handler = require('../../../inspections/api/patch-template');
-const { cleanDb } = require('../../../test-helpers/firebase');
-const { fs: db } = require('../../setup');
+const { cleanDb, findStorageFile } = require('../../../test-helpers/firebase');
+const stubs = require('../../../test-helpers/stubs');
+const { fs: db, storage } = require('../../setup');
 
 describe('Inspections | API | PATCH Template', () => {
   afterEach(() => cleanDb(null, db));
@@ -50,7 +53,7 @@ describe('Inspections | API | PATCH Template', () => {
 
     // Execute
     await request(createApp())
-      .patch(`/t/${inspectionId}/template`)
+      .patch(`/t/${inspectionId}/template?report=false`)
       .send(update)
       .expect('Content-Type', /json/)
       .expect(201);
@@ -65,6 +68,98 @@ describe('Inspections | API | PATCH Template', () => {
     const actual = updatedInspection.data() || null;
     delete actual.updatedAt;
     expect(actual).to.deep.equal(expected);
+  });
+
+  it('should cleanup an inspection items photos when it gets deleted', async () => {
+    const expected = undefined;
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const sectionId = uuid();
+    const deletedSectionId = uuid();
+    const itemId = uuid();
+    const deletedItemId = uuid();
+    const bucket = storage.bucket();
+    const sectionConfig = { title: 'Multi', section_type: 'multi' };
+    const fileName = `${Math.round(Date.now() / 1000)}`;
+
+    const fileBuffer = await storageHelper.createFileBuffer();
+    const url = await storageService.inspectionItemUpload(
+      storage,
+      fileBuffer,
+      inspectionId,
+      deletedItemId,
+      fileName,
+      'jpg'
+    );
+    const inspection = mocking.createInspection({
+      property: propertyId,
+      score: 100,
+      totalItems: 1,
+      itemsCompleted: 1,
+      deficienciesExist: false,
+      inspectionReportURL: 'old-url.com',
+      inspectionReportUpdateLastDate: 1601494027,
+      inspectionCompleted: true,
+      templateName: 'template',
+      template: mocking.createTemplate({
+        name: 'template',
+        items: {
+          [itemId]: mocking.createItem({ sectionId }),
+          [deletedItemId]: mocking.createItem({
+            sectionId: deletedSectionId,
+            photosData: {
+              [uuid()]: mocking.createInspectionItemPhotoData({
+                downloadURL: url,
+              }),
+            },
+          }),
+        },
+        sections: {
+          [sectionId]: mocking.createSection(sectionConfig), // original section
+          [deletedSectionId]: mocking.createSection({
+            // cloned multi-section
+            ...sectionConfig,
+            index: 1,
+            added_multi_section: true,
+          }),
+        },
+      }),
+    });
+    const update = {
+      sections: {
+        [deletedSectionId]: null,
+      },
+    };
+
+    // Setup database
+    await inspectionsModel.createRecord(db, inspectionId, inspection);
+
+    // Execute
+    await request(createApp())
+      .patch(`/t/${inspectionId}/template?report=false`)
+      .send(update)
+      .expect('Content-Type', /json/)
+      .expect(201);
+
+    // Check that deleted section and
+    // its' items are completely removed from record
+    const resultSnap = await inspectionsModel.findRecord(db, inspectionId);
+    const result = resultSnap.data();
+    const sectionIds = Object.keys(result.template.sections || {});
+    const itemIds = Object.keys(result.template.items || {});
+    expect(sectionIds).to.deep.equal(
+      [sectionId],
+      'removed deleted section reference'
+    );
+    expect(itemIds).to.deep.equal([itemId], 'removed deleted item reference');
+
+    // Test results
+    const directory = storageService.getInspectionItemUploadDir(
+      inspectionId,
+      deletedItemId
+    );
+    const actual = await findStorageFile(bucket, directory, `${fileName}.jpg`); // find the upload
+    expect(actual).to.equal(expected, 'removed deleted item photos');
   });
 
   it('should update property meta data when the inspection becomes complete', async () => {
@@ -115,7 +210,7 @@ describe('Inspections | API | PATCH Template', () => {
 
     // Execute
     await request(createApp())
-      .patch(`/t/${inspectionId}/template`)
+      .patch(`/t/${inspectionId}/template?report=false`)
       .send(update)
       .expect('Content-Type', /json/)
       .expect(201);
@@ -136,7 +231,7 @@ function createApp(user = {}) {
     '/t/:inspectionId/template',
     bodyParser.json(),
     stubAuth(user),
-    handler(db)
+    handler(db, storage, stubs.createPublisher())
   );
   return app;
 }

@@ -5,15 +5,15 @@ module.exports = Object.freeze({
     width: 612,
     height: 792,
     defaultFont: 'helvetica',
-    margin: [33, 80, 33, 73],
+    margin: [18, 80, 18, 73],
   },
 
   header: {
-    margin: [33, 32, 33, 0],
+    margin: [18, 32, 18, 0],
   },
 
   footer: {
-    margin: [33, 16, 33, 0],
+    margin: [18, 16, 18, 0],
   },
 
   /**
@@ -29,11 +29,13 @@ module.exports = Object.freeze({
 
     itemIcon: {
       fit: [22, 22],
-      margin: [10, 8, 0, 4],
+      margin: [0, 16, 0, 0],
     },
 
     itemAttachment: {
-      margin: [29, 4, 0, 4],
+      margin: [0, 4, 12, 4],
+      maxWidth: 185,
+      maxHeight: 200,
     },
 
     aItemIcon: {
@@ -118,7 +120,7 @@ module.exports = Object.freeze({
     sectionHeader: {
       fontSize: 20,
       font: 'helveticaMedium',
-      margin: [0, 13, 0, 4],
+      margin: [0, 18, 0, 4],
     },
 
     noteTitle: {
@@ -136,7 +138,7 @@ module.exports = Object.freeze({
 
     item: {
       fontSize: 15,
-      margin: [0, 21, 0, 0],
+      margin: [6, 21, 0, 0],
       marginTextInput: [0, 21, 0, 13],
     },
 
@@ -153,7 +155,7 @@ module.exports = Object.freeze({
     },
 
     photoCaption: {
-      margin: [225, 0, 0, 13],
+      margin: [0, 0, 12, 13],
     },
 
     footer: {

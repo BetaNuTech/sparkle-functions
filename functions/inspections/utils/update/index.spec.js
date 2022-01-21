@@ -7,9 +7,89 @@ const update = require('./index');
 const DEFICIENT_ITEM_ELIGIBLE = config.inspectionItems.deficientListEligible;
 
 describe('Unit | Inspections | Utils | Update', () => {
-  // TODO
-  // it('appends new multi sections', () => {});
-  // it('appends new multi section associated items', () => {});
+  it('appends a new multi section', () => {
+    const expected = 1;
+    const propertyId = uuid();
+    const origSectionId = uuid();
+    const addedSectionId = uuid();
+    const sectionConfig = { title: 'Multi', section_type: 'multi' };
+    const inspection = mocking.createInspection({
+      property: propertyId,
+      totalItems: 0,
+      template: {
+        sections: {
+          [origSectionId]: mocking.createSection(sectionConfig), // original section
+        },
+        items: {
+          one: mocking.createIncompleteMainInputItem('twoactions_checkmarkx', {
+            sectionId: origSectionId,
+          }),
+        },
+      },
+    });
+    const changes = {
+      sections: {
+        [addedSectionId]: mocking.createSection({
+          ...sectionConfig,
+          index: 1,
+          added_multi_section: true,
+        }),
+      },
+      items: {
+        two: mocking.createIncompleteMainInputItem('twoactions_checkmarkx', {
+          sectionId: addedSectionId,
+        }),
+      },
+    };
+
+    // Assertions
+    const result = update(inspection, changes);
+    const resultSections = (result.template || {}).sections || {};
+    const actual = Object.keys(resultSections).length;
+    expect(actual).to.equal(expected);
+  });
+
+  it('appends new multi section associated items', () => {
+    const expected = 1;
+    const propertyId = uuid();
+    const origSectionId = uuid();
+    const addedSectionId = uuid();
+    const sectionConfig = { title: 'Multi', section_type: 'multi' };
+    const inspection = mocking.createInspection({
+      property: propertyId,
+      totalItems: 0,
+      template: {
+        sections: {
+          [origSectionId]: mocking.createSection(sectionConfig), // original section
+        },
+        items: {
+          one: mocking.createIncompleteMainInputItem('twoactions_checkmarkx', {
+            sectionId: origSectionId,
+          }),
+        },
+      },
+    });
+    const changes = {
+      sections: {
+        [addedSectionId]: mocking.createSection({
+          ...sectionConfig,
+          index: 1,
+          added_multi_section: true,
+        }),
+      },
+      items: {
+        two: mocking.createIncompleteMainInputItem('twoactions_checkmarkx', {
+          sectionId: addedSectionId,
+        }),
+      },
+    };
+
+    // Assertions
+    const result = update(inspection, changes);
+    const resultItems = (result.template || {}).items || {};
+    const actual = Object.keys(resultItems).length;
+    expect(actual).to.equal(expected);
+  });
 
   it('sets total items in the inspections', () => {
     const expected = 2;
@@ -588,5 +668,177 @@ describe('Unit | Inspections | Utils | Update', () => {
     );
     const actual = result.updatedLastDate;
     expect(actual).to.equal(expected);
+  });
+
+  it('removes a deleted multi section', () => {
+    const expected = null;
+    const propertyId = uuid();
+    const origSectionId = uuid();
+    const addedSectionId = uuid();
+    const sectionConfig = { title: 'Multi', section_type: 'multi' };
+    const inspection = mocking.createInspection({
+      property: propertyId,
+      totalItems: 0,
+      template: {
+        sections: {
+          [origSectionId]: mocking.createSection(sectionConfig), // original section
+          [addedSectionId]: mocking.createSection({
+            // cloned multi-section
+            ...sectionConfig,
+            index: 1,
+            added_multi_section: true,
+          }),
+        },
+        items: {
+          one: mocking.createIncompleteMainInputItem('twoactions_checkmarkx', {
+            sectionId: origSectionId,
+          }),
+          two: mocking.createIncompleteMainInputItem('twoactions_checkmarkx', {
+            sectionId: addedSectionId,
+          }),
+        },
+      },
+    });
+    const changes = {
+      sections: {
+        [addedSectionId]: null,
+      },
+    };
+
+    // Assertions
+    const result = update(inspection, changes);
+    const resultSections = (result.template || {}).sections || {};
+    const actual = resultSections[addedSectionId];
+    expect(actual).to.equal(expected);
+  });
+
+  it("removes a deleted multi section's items", () => {
+    const expected = [null, null];
+    const propertyId = uuid();
+    const origSectionId = uuid();
+    const addedSectionId = uuid();
+    const sectionConfig = { title: 'Multi', section_type: 'multi' };
+    const inspection = mocking.createInspection({
+      property: propertyId,
+      totalItems: 0,
+      template: {
+        sections: {
+          [origSectionId]: mocking.createSection(sectionConfig), // original section
+          [addedSectionId]: mocking.createSection({
+            // cloned multi-section
+            ...sectionConfig,
+            index: 1,
+            added_multi_section: true,
+          }),
+        },
+        items: {
+          one: mocking.createIncompleteMainInputItem('twoactions_checkmarkx', {
+            sectionId: origSectionId,
+          }),
+          two: mocking.createIncompleteMainInputItem('twoactions_checkmarkx', {
+            sectionId: addedSectionId,
+          }),
+          three: mocking.createIncompleteMainInputItem(
+            'twoactions_checkmarkx',
+            {
+              sectionId: addedSectionId,
+            }
+          ),
+        },
+      },
+    });
+    const changes = {
+      sections: {
+        [addedSectionId]: null,
+      },
+    };
+
+    // Assertions
+    const result = update(inspection, changes);
+    const resultSections = (result.template || {}).items || {};
+    const actual = [resultSections.two, resultSections.three];
+    expect(actual).to.deep.equal(expected);
+  });
+
+  it('updates total, completed items, completed, deficiencies, and score when a multi section is deleted', () => {
+    const expected = {
+      totalItems: 2,
+      itemsCompleted: 2,
+      inspectionCompleted: true,
+      deficienciesExist: false,
+      score: 100,
+    };
+    const propertyId = uuid();
+    const origSectionId = uuid();
+    const addedSectionId = uuid();
+    const sectionConfig = { title: 'Multi', section_type: 'multi' };
+
+    // Inspection with one, preiviously added, multi-section
+    const inspection = mocking.createInspection({
+      property: propertyId,
+      totalItems: 4,
+      itemsCompleted: 3,
+      inspectionCompleted: false,
+      deficienciesExist: true,
+      score: 50,
+      template: {
+        sections: {
+          [origSectionId]: mocking.createSection(sectionConfig), // original section
+          [addedSectionId]: mocking.createSection({
+            // cloned multi-section
+            ...sectionConfig,
+            index: 1,
+            added_multi_section: true,
+          }),
+        },
+        items: {
+          one: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            false, // sufficient
+            {
+              sectionId: origSectionId,
+            }
+          ),
+          two: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            false, // sufficient
+            {
+              sectionId: origSectionId,
+            }
+          ),
+          three: mocking.createIncompleteMainInputItem(
+            'twoactions_checkmarkx',
+            {
+              sectionId: addedSectionId,
+            }
+          ),
+          four: mocking.createCompletedMainInputItem(
+            'twoactions_checkmarkx',
+            true, // deficient
+            {
+              sectionId: addedSectionId,
+            }
+          ),
+        },
+      },
+    });
+
+    // Removes items "three" & "four"
+    const changes = {
+      sections: {
+        [addedSectionId]: null,
+      },
+    };
+
+    // Assertions
+    const result = update(inspection, changes);
+    const actual = {
+      totalItems: result.totalItems,
+      itemsCompleted: result.itemsCompleted,
+      inspectionCompleted: result.inspectionCompleted,
+      deficienciesExist: result.deficienciesExist,
+      score: result.score,
+    };
+    expect(actual).to.deep.equal(expected);
   });
 });
