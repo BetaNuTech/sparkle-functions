@@ -1,17 +1,23 @@
 const express = require('express');
-const { fs, auth, storage } = require('./setup'); // eslint-disable-line
+const PubSub = require('@google-cloud/pubsub');
+const { fs: db, auth, storage } = require('./setup'); // eslint-disable-line
 const config = require('../config');
 const router = require('../router');
 
+const { firebase: firebaseConfig } = config;
 const port = process.env.PORT || 6000;
+const pubsubClient = new PubSub({
+  projectId: firebaseConfig ? firebaseConfig.projectId : '',
+});
 
 const routes = router(
-  fs,
+  db,
   auth,
   {
     inspectionUrl: config.clientApps.web.inspectionURL,
   },
-  storage
+  storage,
+  pubsubClient
 );
 
 // Make similar to production

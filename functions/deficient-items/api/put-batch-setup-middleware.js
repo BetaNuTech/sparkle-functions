@@ -41,12 +41,14 @@ module.exports = function putBatchSetup(db) {
 
     // Lookup first deficincy
     let deficiency = null;
+    let propertyId = '';
     try {
       const deficiencySnap = await deficiencyModel.findRecord(
         db,
         deficiencyIds[0]
       );
-      deficiency = deficiencySnap.data();
+      deficiency = deficiencySnap.data() || null;
+      propertyId = deficiency ? deficiency.property : '';
     } catch (err) {
       return send500Error(
         err,
@@ -57,15 +59,7 @@ module.exports = function putBatchSetup(db) {
 
     // Add deficiency's property
     // to the request params
-    try {
-      req.propertyId = deficiency.property || '';
-    } catch (err) {
-      return send500Error(
-        err,
-        'deficient item lookup failed',
-        'unexpected error'
-      );
-    }
+    req.propertyId = propertyId || '';
 
     // Proceed
     next();
