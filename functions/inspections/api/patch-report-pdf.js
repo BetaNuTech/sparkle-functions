@@ -44,6 +44,9 @@ module.exports = function createPatchReportPdfHandler(
 
     // Set content type
     res.set('Content-Type', 'application/vnd.api+json');
+    log.info(
+      `${PREFIX} Report PDF requested for inspection: "${inspectionId}"`
+    );
 
     // Determine if any errors would
     // result from generating PDF report
@@ -177,6 +180,9 @@ module.exports = function createPatchReportPdfHandler(
 
     try {
       await inspectionsModel.updateRecord(db, inspectionId, updates);
+      log.info(
+        `${PREFIX} updated inspection "${inspectionId}" report to queued successfully`
+      );
     } catch (err) {
       return send500Error(err, 'Inspection update failed', 'unexpected error');
     }
@@ -197,6 +203,9 @@ module.exports = function createPatchReportPdfHandler(
             .filter(Boolean)
             .join('/')
         )
+      );
+      log.info(
+        `${PREFIX} published completed inspection report request for: "${inspectionId}" successfully`
       );
     } catch (err) {
       log.error(`${PREFIX} publish event failed: ${err}`);

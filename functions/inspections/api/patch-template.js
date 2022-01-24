@@ -50,7 +50,9 @@ module.exports = function patchTemplate(db, storage, completePublisher) {
 
     // Set content type
     res.set('Content-Type', 'application/vnd.api+json');
-    log.info('Update inspection requested');
+    log.info(
+      `${PREFIX} Update inspection requested for inspection: "${inspectionId}"`
+    );
 
     // Optional incognito mode query
     // defaults to false
@@ -135,9 +137,14 @@ module.exports = function patchTemplate(db, storage, completePublisher) {
       });
     }
 
+    log.info(`${PREFIX} recovered inspection: "${inspectionId}" successfully`);
+
     // Avoid conflicts updating an inspection that
     // has a PDF report currently being generated
     if (inspection.inspectionReportStatus === 'generating') {
+      log.error(
+        `${PREFIX} requested inspection: "${inspectionId}" is currently generating report and cannot be updated`
+      );
       return res.status(409).send({
         errors: [
           {
@@ -170,6 +177,9 @@ module.exports = function patchTemplate(db, storage, completePublisher) {
     // Exit eairly if user updates
     // had no impact on inspection
     if (!hasInspectionUpdates) {
+      log.info(
+        `${PREFIX} update to inspection: "${inspectionId}" had no effect`
+      );
       return res.status(204).send();
     }
 
@@ -205,6 +215,10 @@ module.exports = function patchTemplate(db, storage, completePublisher) {
       return send500Error(err, 'inspection write failed', 'unexpected error');
     }
 
+    log.info(
+      `${PREFIX} successfully added update to inspection: "${inspectionId}" to batched update`
+    );
+
     // Cleanup any deleted item photos from storage
     const deletedItemsPhotoUrls = findDeletedItemsPhotoUrls(
       inspection,
@@ -224,6 +238,9 @@ module.exports = function patchTemplate(db, storage, completePublisher) {
             );
           })
         );
+        log.info(
+          `${PREFIX} successfully removed delete items storage for inspection: "${inspectionId}"`
+        );
       } catch (err) {
         // Continue without error
         log.error(`${PREFIX} item delete storage fail: ${err}`);
@@ -240,6 +257,9 @@ module.exports = function patchTemplate(db, storage, completePublisher) {
     if (hasUpdatedLastDate) {
       try {
         await propertiesModel.updateMetaData(db, propertyId, batch);
+        log.info(
+          `${PREFIX} successfully added property: "${propertyId}" updates to batch`
+        );
       } catch (err) {
         log.error(`${PREFIX} property meta data update failed: ${err}`);
       }
@@ -248,6 +268,9 @@ module.exports = function patchTemplate(db, storage, completePublisher) {
     // Atomically commit inspection/property writes
     try {
       await batch.commit();
+      log.info(
+        `${PREFIX} batched updated to inspection "${inspectionId}" successful`
+      );
     } catch (err) {
       return send500Error(
         err,
@@ -297,6 +320,9 @@ module.exports = function patchTemplate(db, storage, completePublisher) {
           property: propertyId,
           creator: authorId,
         });
+        log.info(
+          `${PREFIX} inspection completion global notification for inspection: "${inspectionId}" successfully created`
+        );
       } catch (err) {
         log.error(`${PREFIX} failed to create source notification: ${err}`); // proceed with error
       }
@@ -325,6 +351,9 @@ module.exports = function patchTemplate(db, storage, completePublisher) {
             .filter(Boolean)
             .join('/')
         )
+      );
+      log.info(
+        `${PREFIX} published completed inspection report request for: "${inspectionId}" successfully`
       );
     } catch (err) {
       log.error(`${PREFIX} publish event failed: ${err}`);

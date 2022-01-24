@@ -6,6 +6,7 @@ const getLatestCompletedInspection = require('./api/get-latest-completed');
 const createPatchReportPDF = require('./api/patch-report-pdf');
 const patchTemplate = require('./api/patch-template');
 const postTemplateItemImage = require('./api/post-template-item-image');
+const propertyAuthSetupMiddleware = require('./api/property-auth-setup-middleware');
 const generateReportPdf = require('./pubsub/generate-report-pdf');
 const reportPdfSync = require('./pubsub/report-pdf-sync');
 
@@ -20,6 +21,7 @@ module.exports = {
     post,
     patchTemplate,
     postTemplateItemImage,
+    propertyAuthSetupMiddleware,
   },
 
   pubsub: {
