@@ -47,6 +47,9 @@ module.exports = function postTemplateItemPhoto(db, stg) {
 
     // Reject missing file payload
     if (!uploadFile) {
+      log.error(
+        `${PREFIX} inspection: "${inspectionId}" missing file attachment`
+      );
       return res.status(400).send({
         errors: [
           {
@@ -59,6 +62,9 @@ module.exports = function postTemplateItemPhoto(db, stg) {
 
     // Reject unsupported file types
     if (!mimeType) {
+      log.error(
+        `${PREFIX} inspection: "${inspectionId}" file attachment has unacceptable mime type`
+      );
       return res.status(400).send({
         errors: [
           {
@@ -97,6 +103,7 @@ module.exports = function postTemplateItemPhoto(db, stg) {
       });
     }
 
+    log.info(`${PREFIX} recovered inspection: "${inspectionId}" successfully`);
     const items = (inspection.template || {}).items || {};
 
     // NOTE: item doesn't have to exist in database
@@ -108,6 +115,9 @@ module.exports = function postTemplateItemPhoto(db, stg) {
     let image = null;
     try {
       image = await imageUtil.createImage(uploadFile.buffer);
+      log.info(
+        `${PREFIX} processed inspection: "${inspectionId}" image successfully`
+      );
     } catch (err) {
       return send500Error(err, 'Image read failed', 'unexpected error');
     }
@@ -115,6 +125,9 @@ module.exports = function postTemplateItemPhoto(db, stg) {
     // Process & compress image
     try {
       image = await imageUtil.optimizeImage(image, mimeType);
+      log.info(
+        `${PREFIX} optimized inspection: "${inspectionId}" image successfully`
+      );
     } catch (err) {
       return send500Error(err, 'Image manipulation error', 'unexpected error');
     }
@@ -140,6 +153,9 @@ module.exports = function postTemplateItemPhoto(db, stg) {
         const photoId = fileName.split('.')[0]; // remove file extension
         publishedPhotos[photoId] = true; // add to published photos hash
       });
+      log.info(
+        `${PREFIX} inspection: "${inspectionId}" existing photo lookup successful`
+      );
     } catch (err) {
       // Allow failure
       log.error(`${PREFIX} previous item photo lookup failed: ${err}`);

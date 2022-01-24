@@ -69,6 +69,7 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
   // Update Inspection Items
   app.patch(
     '/v0/inspections/:inspectionId/template',
+    inspections.api.propertyAuthSetupMiddleware(fs),
     authUser(fs, auth, {
       admin: true,
       corporate: true,
@@ -81,6 +82,7 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
   // Upload a image to an inspection item
   app.post(
     '/v0/inspections/:inspectionId/template/items/:itemId/image',
+    inspections.api.propertyAuthSetupMiddleware(fs),
     authUser(fs, auth, {
       admin: true,
       corporate: true,
@@ -102,7 +104,13 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
   // Generate Inspection PDF report
   app.patch(
     '/v0/inspections/:inspectionId/report-pdf',
-    authUser(fs, auth),
+    inspections.api.propertyAuthSetupMiddleware(fs),
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
     inspections.api.createPatchReportPDF(
       fs,
       storage,
@@ -225,6 +233,8 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
   // Create Trello Card for deficiency
   app.post(
     '/v0/deficiencies/:deficiencyId/trello/card',
+    // setup property-level auth requirements
+    deficiencies.api.putBatchSetupMiddleware(fs),
     authUser(fs, auth, {
       admin: true,
       corporate: true,

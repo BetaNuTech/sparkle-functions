@@ -8,7 +8,7 @@ const uuid = require('../../../test-helpers/uuid');
 const stubs = require('../../../test-helpers/stubs');
 const mocking = require('../../../test-helpers/mocking');
 const deficiencyModel = require('../../../models/deficient-items');
-const putBatchSetupMiddleware = require('../../../deficient-items/api/put-batch-setup-middleware');
+const middleware = require('../../../deficient-items/api/put-batch-setup-middleware');
 
 describe('Deficiencies | API | PUT Batch Setup Middlware', () => {
   afterEach(() => sinon.restore());
@@ -72,7 +72,7 @@ function createApp() {
   app.put(
     '/t',
     bodyParser.json(),
-    putBatchSetupMiddleware({
+    middleware({
       collection: () => {},
     }),
     // Send the "propertyId" request param as success payload
