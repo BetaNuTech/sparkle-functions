@@ -105,7 +105,6 @@ describe('Inspections | API | POST', () => {
       templateName: template.name,
       itemsCompleted: 0,
       inspectionCompleted: false,
-      completionDate: 0,
       deficienciesExist: false,
       score: 0,
       createdAt: Math.floor(Date.now() / 1000),
