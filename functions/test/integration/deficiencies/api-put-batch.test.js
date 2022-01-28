@@ -17,6 +17,21 @@ const USER_ID = '123';
 describe('Deficiencies | API | PUT Batch', () => {
   afterEach(() => sinon.restore());
 
+  it('rejects request missing any deficient item ids', done => {
+    request(createApp())
+      .put('/t')
+      .send({ update: true })
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(400)
+      .then(res => {
+        expect(res.body.errors[0].detail).to.contain(
+          'Bad Request: One or more deficient item ids must be provided as query params'
+        );
+        done();
+      })
+      .catch(done);
+  });
+
   it('rejects request to update more than 10 deficient items', done => {
     const query = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
       .map(id => `id=${id}`)

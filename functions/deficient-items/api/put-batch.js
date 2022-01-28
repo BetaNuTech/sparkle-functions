@@ -41,9 +41,29 @@ module.exports = function createPutDeficiencyBatch(fs) {
     const deficiencyIds = Array.isArray(srcDeficiencyIds)
       ? srcDeficiencyIds
       : [srcDeficiencyIds];
+    const hasDeficiencyIds = Boolean(
+      Array.isArray(deficiencyIds) &&
+        deficiencyIds.length &&
+        deficiencyIds.every(id => id && typeof id === 'string')
+    );
 
     // Set content type
     res.set('Content-Type', 'application/vnd.api+json');
+
+    // Reject missing, required, deficient item ids
+    if (!hasDeficiencyIds) {
+      log.error(
+        `${PREFIX} request missing any discoverable deficient item identifiers`
+      );
+      return res.status(400).send({
+        errors: [
+          {
+            detail:
+              'Bad Request: One or more deficient item ids must be provided as query params',
+          },
+        ],
+      });
+    }
 
     log.info(
       `PUT deficienc${
