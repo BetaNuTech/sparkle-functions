@@ -13,21 +13,6 @@ const middleware = require('../../../deficient-items/api/put-batch-setup-middlew
 describe('Deficiencies | API | PUT Batch Setup Middlware', () => {
   afterEach(() => sinon.restore());
 
-  it('rejects request missing any deficient item ids', done => {
-    request(createApp())
-      .put('/t')
-      .send({ update: true })
-      .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(400)
-      .then(res => {
-        expect(res.body.errors[0].detail).to.contain(
-          'Bad Request: One or more deficient item ids must be provided as query params'
-        );
-        done();
-      })
-      .catch(done);
-  });
-
   it('rejects when first deficient item read fails', done => {
     sinon.stub(log, 'error').callsFake(() => true);
     sinon.stub(deficiencyModel, 'findRecord').rejects(Error('dang'));
