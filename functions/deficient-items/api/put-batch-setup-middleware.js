@@ -26,17 +26,10 @@ module.exports = function putBatchSetup(db) {
         deficiencyIds.every(id => id && typeof id === 'string')
     );
 
-    // Reject missing, required, deficient item ids
+    // Proceed without providing any
+    // validation for property-level users
     if (!hasDeficiencyIds) {
-      res.set('Content-Type', 'application/vnd.api+json');
-      return res.status(400).send({
-        errors: [
-          {
-            detail:
-              'Bad Request: One or more deficient item ids must be provided as query params',
-          },
-        ],
-      });
+      return next();
     }
 
     // Lookup first deficincy
