@@ -16,6 +16,7 @@ module.exports = {
   profileImagePath: PROFILE_IMG_PATH,
   propertyUploadDir: PROP_UPLOAD_DIR,
   inspectionUploadDir: INSP_UPLOAD_DIR,
+  deficientItemUploadDir: DEFICENT_UPLOAD_DIR,
 
   /**
    * Convert a local file to an in memory buffer
