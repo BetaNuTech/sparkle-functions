@@ -260,6 +260,20 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
     deficiencies.api.putBatch(fs)
   );
 
+  // Upload a image to an deficiency
+  app.post(
+    '/v0/deficiencies/:deficiencyId/image',
+    deficiencies.api.putBatchSetupMiddleware(fs),
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    fileParser,
+    deficiencies.api.postImage(fs, storage)
+  );
+
   // Create new user
   app.post(
     '/v0/users',
