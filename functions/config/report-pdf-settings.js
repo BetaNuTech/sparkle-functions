@@ -29,7 +29,7 @@ module.exports = Object.freeze({
 
     itemIcon: {
       fit: [22, 22],
-      margin: [0, 16, 0, 0],
+      margin: [0, 15, 0, 0],
     },
 
     itemAttachment: {
@@ -149,9 +149,9 @@ module.exports = Object.freeze({
     },
 
     na: {
-      fontSize: 20,
+      fontSize: 17,
       italic: true,
-      margin: [],
+      margin: [0, 19, 0, 0],
     },
 
     photoCaption: {

@@ -3,21 +3,22 @@ const assert = require('assert');
 const log = require('../../utils/logger');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
 const imageUtil = require('../../utils/images');
-const inspectionsModel = require('../../models/inspections');
+const uuid = require('../../utils/short-uuid');
+const deficiencyModel = require('../../models/deficient-items');
 const storageService = require('../../services/storage');
-const createPhotoDataId = require('../utils/create-item-photo-data-id');
+// const createPhotoDataId = require('../utils/create-item-photo-data-id');
 
-const PREFIX = 'inspection: api: post-template-item-image:';
+const PREFIX = 'deficient-items: api: post-image:';
 
 /**
- * Factory for creating an inspection item
+ * Factory for creating a deficient item
  * photo in firebase storate without modifying
- * the inspection record itself
+ * the deficient record itself
  * @param  {admin.firestore} db - Firestore Admin DB instance
  * @param  {admin.storage} stg instance
  * @return {Function} - request handler
  */
-module.exports = function postTemplateItemImage(db, stg) {
+module.exports = function postDeficientItemPhoto(db, stg) {
   assert(db && typeof db.collection === 'function', 'has firestore db');
   assert(
     stg && typeof stg.bucket === 'function',
@@ -31,7 +32,7 @@ module.exports = function postTemplateItemImage(db, stg) {
    * @return {Promise}
    */
   return async (req, res) => {
-    const { inspectionId, itemId } = req.params;
+    const { deficiencyId } = req.params;
     const uploadFile = (req.files || [])[0] || null;
     const mimeType = imageUtil.getMimeType(
       uploadFile ? uploadFile.mimetype : 'n/a'
@@ -40,7 +41,7 @@ module.exports = function postTemplateItemImage(db, stg) {
 
     res.set('Content-Type', 'application/vnd.api+json');
     log.info(
-      `Uploading inpsection "${inspectionId}" item: "${itemId}" image: ${
+      `Uploading deficient item "${deficiencyId}" image: ${
         mimeType ? ' | mime: "' + mimeType + '"' : '' // eslint-disable-line
       }`
     );
@@ -48,7 +49,7 @@ module.exports = function postTemplateItemImage(db, stg) {
     // Reject missing file payload
     if (!uploadFile) {
       log.error(
-        `${PREFIX} inspection: "${inspectionId}" missing file attachment`
+        `${PREFIX} deficient item "${deficiencyId}" missing file attachment`
       );
       return res.status(400).send({
         errors: [
@@ -63,7 +64,7 @@ module.exports = function postTemplateItemImage(db, stg) {
     // Reject unsupported file types
     if (!mimeType) {
       log.error(
-        `${PREFIX} inspection: "${inspectionId}" file attachment has unacceptable mime type`
+        `${PREFIX} deficient item "${deficiencyId}" file attachment has unacceptable mime type`
       );
       return res.status(400).send({
         errors: [
@@ -76,47 +77,40 @@ module.exports = function postTemplateItemImage(db, stg) {
       });
     }
 
-    // Lookup Inspection
-    let inspection = null;
+    // Lookup deficiency
+    let deficiency = null;
     try {
-      const inspectionSnap = await inspectionsModel.findRecord(
-        db,
-        inspectionId
-      );
-      inspection = inspectionSnap.data() || null;
+      const inspectionSnap = await deficiencyModel.findRecord(db, deficiencyId);
+      deficiency = inspectionSnap.data() || null;
     } catch (err) {
       return send500Error(err, 'inspection lookup failed', 'unexpected error');
     }
 
-    // Invalid inspection
-    if (!inspection) {
+    // Invalid deficiency
+    if (!deficiency) {
       log.error(
-        `${PREFIX} requested inspection: "${inspectionId}" does not exist`
+        `${PREFIX} requested deficient item "${deficiencyId}" does not exist`
       );
       return res.status(404).send({
         errors: [
           {
-            source: { pointer: 'inspection' },
-            title: 'Inspection not found',
+            source: { pointer: 'deficient-item' },
+            title: 'Deficient item not found',
           },
         ],
       });
     }
 
-    log.info(`${PREFIX} recovered inspection: "${inspectionId}" successfully`);
-    const items = (inspection.template || {}).items || {};
-
-    // NOTE: item doesn't have to exist in database
-    //       this allow users to publish photos to
-    //       unpublished multi-section's items
-    const inspectionItem = items[itemId] || {};
+    log.info(
+      `${PREFIX} recovered deficient item "${deficiencyId}" successfully`
+    );
 
     // Create base64 image to manipulate
     let image = null;
     try {
       image = await imageUtil.createImage(uploadFile.buffer);
       log.info(
-        `${PREFIX} processed inspection: "${inspectionId}" image successfully`
+        `${PREFIX} processed deficient item "${deficiencyId}" image successfully`
       );
     } catch (err) {
       return send500Error(err, 'Image read failed', 'unexpected error');
@@ -126,52 +120,26 @@ module.exports = function postTemplateItemImage(db, stg) {
     try {
       image = await imageUtil.optimizeImage(image, mimeType);
       log.info(
-        `${PREFIX} optimized inspection: "${inspectionId}" image successfully`
+        `${PREFIX} optimized deficient item "${deficiencyId}" image successfully`
       );
     } catch (err) {
       return send500Error(err, 'Image manipulation error', 'unexpected error');
     }
 
-    // Lookup all published inspection
-    // item photo entry file names
-    // and merge with inspection item's photos
-    //
-    // NOTE: inspection item photo ID's are a UNIX
-    //       timestamp that must be unique, so previous
-    //       upload names are necessary
-    const publishedPhotos = JSON.parse(
-      JSON.stringify(inspectionItem.photosData || {})
-    );
-    try {
-      const publishedFileNames = await storageService.findAllInspectionItemPhotoFileNames(
-        stg,
-        inspectionId,
-        itemId
-      );
-
-      publishedFileNames.forEach(fileName => {
-        const photoId = fileName.split('.')[0]; // remove file extension
-        publishedPhotos[photoId] = true; // add to published photos hash
-      });
-      log.info(
-        `${PREFIX} inspection: "${inspectionId}" existing photo lookup successful`
-      );
-    } catch (err) {
-      // Allow failure
-      log.error(`${PREFIX} previous item photo lookup failed: ${err}`);
-    }
-
     // Fetch file and upload to firebase storage
     let storageUrl = '';
-    const photoDataId = createPhotoDataId(publishedPhotos);
+    const photoId = uuid();
     try {
-      storageUrl = await storageService.inspectionItemUpload(
+      storageUrl = await storageService.deficientItemUpload(
         stg,
         image,
-        inspectionId,
-        itemId,
-        photoDataId,
+        deficiency.property,
+        deficiencyId,
+        photoId,
         path.extname(uploadFile.originalname).split('.')[1]
+      );
+      log.info(
+        `${PREFIX} deficient item "${deficiencyId}" image uploaded successfully to: "${storageUrl}"`
       );
     } catch (err) {
       return send500Error(
@@ -184,8 +152,8 @@ module.exports = function postTemplateItemImage(db, stg) {
     // Successful upload
     return res.status(201).send({
       data: {
-        id: photoDataId,
-        type: 'inspection-item-photo-data',
+        id: photoId,
+        type: 'deficient-item-photo-data',
         attributes: {
           downloadURL: storageUrl,
         },

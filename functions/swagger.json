@@ -33,8 +33,8 @@
       "description": "API for inspections"
     },
     {
-      "name": "Deficient",
-      "description": "API for deficient"
+      "name": "Deficiencies",
+      "description": "API for deficient items"
     },
     {
       "name": "Users",
@@ -1540,7 +1540,7 @@
         "responses": {
           "201": {
             "schema": {
-              "$ref": "#/definitions/INSPITEMIMGUPLOADSUCCESS"
+              "$ref": "#/definitions/GENERICFILEUPLOADSUCCESS"
             }
           },
           "400": {
@@ -1690,7 +1690,7 @@
         }
       ],
       "post": {
-        "tags": ["Deficient"],
+        "tags": ["Deficiencies"],
         "parameters": [
           {
             "name": "deficient",
@@ -1719,6 +1719,64 @@
         }
       }
     },
+    "/v0/deficiencies/{deficiencyId}/image": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "deficiencyId",
+          "in": "path",
+          "required": true,
+          "description": "deficiency id.",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": ["Deficiencies"],
+        "consumes": ["multipart/form-data"],
+        "parameters": [
+          {
+            "name": "file",
+            "in": "formData",
+            "type": "file",
+            "required": true,
+            "description": "File that we need to upload to the deficient item's photos"
+          }
+        ],
+        "responses": {
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/GENERICFILEUPLOADSUCCESS"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
     "/v0/deficiencies": {
       "parameters": [
         {
@@ -1730,7 +1788,7 @@
         }
       ],
       "put": {
-        "tags": ["Deficient"],
+        "tags": ["Deficiencies"],
         "parameters": [
           {
             "name": "deficient",
@@ -2961,7 +3019,7 @@
         }
       }
     },
-    "INSPITEMIMGUPLOADSUCCESS": {
+    "GENERICFILEUPLOADSUCCESS": {
       "type": "object",
       "properties": {
         "data": {

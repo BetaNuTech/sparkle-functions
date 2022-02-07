@@ -8,6 +8,7 @@ const PROPERTY_BUCKET_NAME = `propertyImages${
 const INSP_BUCKET_NAME = `inspectionItemImages${
   process.env.NODE_ENV === 'test' ? 'Test' : ''
 }`;
+const DEF_BUCKET_NAME = 'deficientItemImages';
 const PREFIX = 'services: storage:';
 
 module.exports = {
@@ -108,6 +109,24 @@ module.exports = {
   },
 
   /**
+   * Create deficient item upload dir path
+   * @param  {String} propertyId
+   * @param  {String} deficiencyId
+   * @return {String}
+   */
+  getDeficientItemUploadDir(propertyId, deficiencyId) {
+    assert(
+      propertyId && typeof propertyId === 'string',
+      'has property id string'
+    );
+    assert(
+      deficiencyId && typeof deficiencyId === 'string',
+      'has deficient item id string'
+    );
+    return `${DEF_BUCKET_NAME}/${propertyId}/${deficiencyId}`;
+  },
+
+  /**
    * Get URL from firebase storage address
    * @param  {String} url
    * @return {String} - fileName
@@ -151,6 +170,50 @@ module.exports = {
     // Initiate upload
     return this._upload(storage, buffer, dest, ext).catch(err =>
       Promise.reject(Error(`${PREFIX}: inspectionItemUpload: ${err}`))
+    );
+  },
+
+  /**
+   * Uploading image to deficient item storage
+   * @param  {admin.storage} storage instance
+   * @param  {Buffer} buffer to be uploaded to storage
+   * @param  {String} propertyId
+   * @param  {String} deficiencyId
+   * @param  {String} fileName to include in storage url path
+   * @param  {String} ext, file type extension included in storage path
+   * @return {Promise<String>} - resolves property download URL
+   */
+  deficientItemUpload(
+    storage,
+    buffer,
+    propertyId,
+    deficiencyId,
+    fileName,
+    ext
+  ) {
+    assert(
+      storage && typeof storage.bucket === 'function',
+      'has storage instance'
+    );
+    assert(buffer instanceof Buffer, 'has buffer to upload');
+    assert(
+      propertyId && typeof propertyId === 'string',
+      'has property id string'
+    );
+    assert(
+      deficiencyId && typeof deficiencyId === 'string',
+      'has deficient item id string'
+    );
+    assert(fileName && typeof fileName === 'string', 'has file name string');
+    assert(ext && typeof ext === 'string', 'has file extension');
+
+    // <def-dir>/<property-id>/<deficiency-id>/<file-name>.<file-type>
+    const dir = this.getDeficientItemUploadDir(propertyId, deficiencyId);
+    const dest = `${dir}/${fileName}.${ext}`;
+
+    // Initiate upload
+    return this._upload(storage, buffer, dest, ext).catch(err =>
+      Promise.reject(Error(`${PREFIX}: deficientItemUpload: ${err}`))
     );
   },
 
@@ -219,6 +282,43 @@ module.exports = {
       .catch(err => {
         throw Error(
           `${PREFIX} deleteInspectionItemPhotoEntry: file delete failed: ${err}`
+        );
+      });
+  },
+
+  /**
+   * Remove a specific deficient item photo entry
+   * @param  {admin.storage} storage
+   * @param  {String} inspectionId
+   * @param  {String} itemId
+   * @param  {String} url
+   * @return {Promise}
+   */
+  deleteDeficientItemPhoto(storage, propertyId, deficiencyId, fileName) {
+    assert(storage && typeof storage.bucket === 'function', 'has storage');
+    assert(
+      propertyId && typeof propertyId === 'string',
+      'has property id string'
+    );
+    assert(
+      deficiencyId && typeof deficiencyId === 'string',
+      'has deficient item id string'
+    );
+    assert(fileName && typeof fileName === 'string', 'has file name string');
+    assert(
+      fileName.search(/\./) > 0,
+      'file name must contain an file extension'
+    );
+
+    const dir = this.getDeficientItemUploadDir(propertyId, deficiencyId);
+
+    return storage
+      .bucket()
+      .file(`${dir}/${fileName}`)
+      .delete()
+      .catch(err => {
+        throw Error(
+          `${PREFIX} deleteDeficientItemPhoto: file delete failed: ${err}`
         );
       });
   },
