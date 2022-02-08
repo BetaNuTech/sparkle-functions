@@ -57,9 +57,7 @@ module.exports = {
     // Get inspection's photo bucket
     let bucket = null;
     try {
-      [bucket] = await storage
-        .bucket()
-        .get(`${INSP_BUCKET_NAME}/${inspectionId}`);
+      [bucket] = await storage.bucket().get();
     } catch (err) {
       throw Error(
         `${PREFIX} calculateInspectionFolderByteSize: get bucket: ${err}`
@@ -69,7 +67,9 @@ module.exports = {
     // Get all files in bucket
     let files = [];
     try {
-      [files] = await bucket.getFiles();
+      [files] = await bucket.getFiles({
+        prefix: `${INSP_BUCKET_NAME}/${inspectionId}`,
+      });
     } catch (err) {
       throw Error(
         `${PREFIX} calculateInspectionFolderByteSize: failed to get bucket files: ${err}`
