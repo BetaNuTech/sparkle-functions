@@ -44,14 +44,18 @@ const deficiencySchema = new Schema({
   willRequireProgressNote: {
     type: Boolean,
   },
+  completedPhotos: {
+    type: Object,
+  },
 });
 
 /**
  * Validate a def
- * @param {Object} deficientUpdate
+ * @param {Object} update
  * @return {Object[]} errors [{path: String, message: String}]
  */
-module.exports = deficientUpdate => {
-  assert(deficientUpdate && typeof deficientUpdate, 'has deficiency update');
-  return deficiencySchema.validate(deficientUpdate);
+module.exports = update => {
+  assert(update && typeof update, 'has deficiency update');
+  const clone = JSON.parse(JSON.stringify(update));
+  return deficiencySchema.validate(clone);
 };

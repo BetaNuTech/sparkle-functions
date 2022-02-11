@@ -12,11 +12,11 @@ const PREFIX = 'deficient-items: api: put batch:';
 /**
  * Factory for client requested Deficiency
  * archiving on DI state updates
- * @param  {admin.firestore} fs
+ * @param  {admin.firestore} db
  * @return {Function} - Express middleware
  */
-module.exports = function createPutDeficiencyBatch(fs) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function createPutDeficiencyBatch(db) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
 
   /**
    * Handle PUT request for updating
@@ -109,7 +109,7 @@ module.exports = function createPutDeficiencyBatch(fs) {
     const deficiencies = [];
     try {
       const deficienciesSnap = await deficiencyModel.findMany(
-        fs,
+        db,
         ...deficiencyIds
       );
       deficienciesSnap.docs.forEach(doc =>
@@ -152,7 +152,7 @@ module.exports = function createPutDeficiencyBatch(fs) {
     // Collect updates to deficient items
     const notUpdated = [];
     const updateResults = [];
-    const batch = fs.batch();
+    const batch = db.batch();
     for (let i = 0; i < deficiencies.length; i++) {
       const deficiency = deficiencies[i];
       const deficiencyId = deficiency.id;
@@ -171,7 +171,7 @@ module.exports = function createPutDeficiencyBatch(fs) {
       if (hasDeficiencyUpdates) {
         try {
           await deficiencyModel.updateRecord(
-            fs,
+            db,
             deficiencyId,
             deficiencyUpdates,
             batch
