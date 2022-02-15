@@ -10,7 +10,7 @@ const mocking = require('../../../test-helpers/mocking');
 const deficiencyModel = require('../../../models/deficient-items');
 const middleware = require('../../../deficient-items/api/put-batch-setup-middleware');
 
-describe('Deficiencies | API | PUT Batch Setup Middlware', () => {
+describe('Deficient Items | API | PUT Batch Setup Middlware', () => {
   afterEach(() => sinon.restore());
 
   it('rejects when first deficient item read fails', done => {

@@ -1,11 +1,14 @@
 const assert = require('assert');
 const log = require('../../utils/logger');
 const deficiencyModel = require('../../models/deficient-items');
+const propertiesModel = require('../../models/properties');
+const notificationsModel = require('../../models/notifications');
 const updateItem = require('../utils/update-deficient-item');
 const canUserTransitionDeficientItem = require('../utils/can-user-transition-deficient-item-state');
 const validateUpdate = require('../utils/validate-deficient-item-update');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
 const unflatten = require('../../utils/unflatten-string-attrs');
+const configureNotifications = require('../utils/configure-notifications');
 
 const PREFIX = 'deficient-items: api: put batch:';
 
@@ -13,10 +16,18 @@ const PREFIX = 'deficient-items: api: put batch:';
  * Factory for client requested Deficiency
  * archiving on DI state updates
  * @param  {admin.firestore} db
+ * @param  {Boolean} enableProgressNoteNotifications
  * @return {Function} - Express middleware
  */
-module.exports = function createPutDeficiencyBatch(db) {
+module.exports = function createPutDeficiencyBatch(
+  db,
+  enableProgressNoteNotifications
+) {
   assert(db && typeof db.collection === 'function', 'has firestore db');
+  assert(
+    typeof enableProgressNoteNotifications === 'boolean',
+    'has enabled progress note notification feature flag'
+  );
 
   /**
    * Handle PUT request for updating
@@ -46,6 +57,18 @@ module.exports = function createPutDeficiencyBatch(db) {
         deficiencyIds.length &&
         deficiencyIds.every(id => id && typeof id === 'string')
     );
+
+    // Is client requesting notifications
+    // for their requested updates
+    const isNotifying = req.query.notify
+      ? req.query.notify.search(/true/i) > -1
+      : false;
+
+    // Optional incognito mode query
+    // defaults to false
+    const incognitoMode = req.query.incognitoMode
+      ? req.query.incognitoMode.search(/true/i) > -1
+      : false;
 
     // Set content type
     res.set('Content-Type', 'application/vnd.api+json');
@@ -148,6 +171,7 @@ module.exports = function createPutDeficiencyBatch(db) {
     const progressNote = updateCopy.progressNote || '';
     delete updateCopy.progressNote;
     const updatedAt = parsedUpdatedAt || Math.round(Date.now() / 1000);
+    const originalDeficiencyState = deficiencies[0].state;
 
     // Collect updates to deficient items
     const notUpdated = [];
@@ -213,7 +237,7 @@ module.exports = function createPutDeficiencyBatch(db) {
       });
     }
 
-    // Commit all updates in batched transation
+    // Commit all updates in batched transaction
     try {
       await batch.commit();
     } catch (err) {
@@ -236,7 +260,8 @@ module.exports = function createPutDeficiencyBatch(db) {
       });
     });
 
-    //
+    // Send bad request when
+    // updates did not cause any writes
     if (!updateResults.length) {
       delete payload.data;
       payload.errors = [
@@ -255,5 +280,127 @@ module.exports = function createPutDeficiencyBatch(db) {
 
     // Success response
     res.status(200).send(payload);
+
+    // Client did not request any global
+    // notifications for update
+    if (!isNotifying || incognitoMode) {
+      return;
+    }
+
+    log.info(`${PREFIX} creating global notifications for successful update`);
+
+    const notificationsBatch = db.batch();
+    const propertyId = deficiencies[0].property;
+    const { attributes: appliedUpdates } = updateResults[0];
+    const isProgressNoteUpdate = Boolean(appliedUpdates.progressNotes);
+
+    // Lookup Property
+    let property = null;
+    try {
+      const propertySnap = await propertiesModel.findRecord(db, propertyId);
+      property = propertySnap.data() || null;
+      if (!property) throw Error('Not found');
+      property.id = propertyId;
+    } catch (err) {
+      log.error(`${PREFIX} property lookup failed | ${err}`);
+      return res.status(400).send({ message: 'body contains bad property' });
+    }
+
+    // Lookup updated deficincies
+    const updatedDeficiencies = [];
+    try {
+      const deficienciesSnap = await deficiencyModel.findMany(
+        db,
+        ...updateResults.map(({ id }) => id)
+      );
+      deficienciesSnap.docs.forEach(doc =>
+        updatedDeficiencies.push({ ...doc.data(), id: doc.id })
+      );
+    } catch (err) {
+      return send500Error(
+        err,
+        'deficient items lookup failed',
+        'unexpected error'
+      );
+    }
+
+    // Notification configurations ready
+    // to be added to the batch update
+    const notificationConfigs = [];
+
+    // Add progress note update
+    // notifications when they're enabled
+    if (
+      progressNote &&
+      isProgressNoteUpdate &&
+      enableProgressNoteNotifications
+    ) {
+      log.info(`${PREFIX} generating progress note update notifications`);
+      const progressNoteNotifications = updatedDeficiencies
+        .map(deficientItem => {
+          try {
+            return configureNotifications.createProgressNote(
+              progressNote,
+              user,
+              property,
+              deficientItem
+            );
+          } catch (err) {
+            log.error(
+              `${PREFIX} failed to create progress note notification for deficiency: "${deficientItem.id}": ${err}`
+            );
+          }
+
+          return null;
+        })
+        .filter(Boolean);
+
+      notificationConfigs.push(...progressNoteNotifications);
+    }
+
+    // Add DI change update notification
+    log.info(`${PREFIX} generating change notifications`);
+    const changeNotifications = updatedDeficiencies
+      .map(deficientItem => {
+        try {
+          return configureNotifications.createDeficiencyUpdate(
+            originalDeficiencyState,
+            user,
+            property,
+            deficientItem
+          );
+        } catch (err) {
+          log.error(
+            `${PREFIX} failed to create change notification for deficiency: "${deficientItem.id}": ${err}`
+          );
+        }
+
+        return null;
+      })
+      .filter(Boolean);
+    notificationConfigs.push(...changeNotifications);
+
+    // Add notification records to batch update
+    for (let i = 0; i < notificationConfigs.length; i++) {
+      const recordConfig = notificationConfigs[i];
+      try {
+        await notificationsModel.addRecord(
+          db,
+          recordConfig,
+          notificationsBatch
+        );
+      } catch (err) {
+        log.error(`${PREFIX} failed to add notification to batch: ${err}`);
+      }
+    }
+
+    log.info(`${PREFIX} creating ${notificationConfigs.length} notifications`);
+
+    // Commit all notifications in batched transaction
+    try {
+      await notificationsBatch.commit();
+    } catch (err) {
+      log.error(`${PREFIX} notification batch write failed: ${err}`);
+    }
   };
 };

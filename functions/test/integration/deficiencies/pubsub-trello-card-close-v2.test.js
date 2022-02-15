@@ -17,7 +17,7 @@ const createHandler = require('../../../deficient-items/pubsub/trello-card-close
 
 const INITIAL_STATE = config.deficientItems.initialState;
 
-describe('Deficiencies | Pubsub | Trello Card Close V2', function() {
+describe('Deficient Items | Pubsub | Trello Card Close V2', function() {
   afterEach(() => sinon.restore());
 
   it('does not update trello card when deficiency has no trello card', async () => {

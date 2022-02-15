@@ -17,7 +17,7 @@ const SRC_PROFILE_IMG = 'test-image.jpg';
 const IMG_PATH = path.join(__dirname, `../../end-to-end/${SRC_PROFILE_IMG}`);
 const DEF_ITEM_ID = uuid();
 
-describe('Deficiencies | API | POST Image', () => {
+describe('Deficient Items | API | POST Image', () => {
   beforeEach(() => {
     sinon.stub(log, 'info').callsFake(() => true);
     sinon.stub(log, 'error').callsFake(() => true);
