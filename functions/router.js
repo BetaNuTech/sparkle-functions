@@ -17,6 +17,7 @@ const authUser = require('./utils/auth-firebase-user');
 const authUserCrud = require('./middleware/auth-user-crud');
 const authTrelloReq = require('./utils/auth-trello-request');
 const swaggerDocument = require('./swagger.json');
+const config = require('./config');
 
 /**
  * Configure Express app with
@@ -246,6 +247,9 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
   );
 
   // Update 1 or more deficiencies
+  const enableProgressNoteNotifications = Boolean(
+    config.notifications.enabled.deficientItemProgressNote
+  );
   app.put(
     '/v0/deficiencies',
     // setup property-level auth requirements
@@ -257,7 +261,7 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
       team: true,
       property: true,
     }),
-    deficiencies.api.putBatch(fs)
+    deficiencies.api.putBatch(fs, enableProgressNoteNotifications)
   );
 
   // Upload a image to an deficiency

@@ -13,7 +13,7 @@ const { fs, test, cloudFunctions } = require('../../setup');
 const DEF_ITEM_URI = config.clientApps.web.deficientItemURL;
 const OVERDUE_ELIGIBLE_STATES = config.deficientItems.overdueEligibleStates;
 
-describe('Deficiency |  Pubsub | Overdue Sync V2', () => {
+describe('Deficient Items | Pubsub | Overdue Sync V2', () => {
   afterEach(() => cleanDb(null, fs));
 
   it('should set all eligible, past due, deficiencies to overdue', async () => {

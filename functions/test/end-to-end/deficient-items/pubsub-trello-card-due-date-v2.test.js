@@ -11,7 +11,7 @@ const propertyModel = require('../../../models/properties');
 const TRELLO_PUT_CARD_RESPONSE = require('../../../test-helpers/mocks/put-trello-card.json');
 const { fs, test, cloudFunctions } = require('../../setup');
 
-describe('Deficiency |  Pubsub | Trello Card Due Date V2', function() {
+describe('Deficient Items | Pubsub | Trello Card Due Date V2', function() {
   afterEach(async () => {
     nock.cleanAll();
     await cleanDb(null, fs);

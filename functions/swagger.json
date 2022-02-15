@@ -1687,6 +1687,22 @@
           "required": true,
           "description": "deficiency id.",
           "type": "string"
+        },
+        {
+          "name": "notify",
+          "in": "query",
+          "required": false,
+          "description": "Flag requesting API to manage global notifications of update",
+          "type": "string",
+          "enum": ["true", "false"]
+        },
+        {
+          "name": "incognitoMode",
+          "in": "query",
+          "required": false,
+          "description": "Flag requesting API to manage update silently",
+          "type": "string",
+          "enum": ["true", "false"]
         }
       ],
       "post": {
@@ -1801,6 +1817,14 @@
           "in": "query",
           "required": false,
           "description": "Flag requesting API to manage global notifications of update",
+          "type": "string",
+          "enum": ["true", "false"]
+        },
+        {
+          "name": "incognitoMode",
+          "in": "query",
+          "required": false,
+          "description": "Flag requesting API to manage update silently",
           "type": "string",
           "enum": ["true", "false"]
         }

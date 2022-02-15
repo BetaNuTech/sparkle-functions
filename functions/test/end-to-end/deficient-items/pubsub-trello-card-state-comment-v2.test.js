@@ -8,7 +8,7 @@ const usersModel = require('../../../models/users');
 const deficiencyModel = require('../../../models/deficient-items');
 const { fs, test, cloudFunctions } = require('../../setup');
 
-describe('Deficiency | Pubsub | Trello Card State Comment', () => {
+describe('Deficient Items | Pubsub | Trello Card State Comment', () => {
   afterEach(async () => {
     nock.cleanAll();
     await cleanDb(null, fs);

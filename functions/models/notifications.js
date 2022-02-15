@@ -7,22 +7,22 @@ const NOTIFICATIONS_COLLECTION = 'notifications';
 module.exports = modelSetup({
   /**
    * Find all slack notifications
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @return {Promise}
    */
-  findAll(fs) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
-    return fs.collection(NOTIFICATIONS_COLLECTION).get();
+  findAll(db) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    return db.collection(NOTIFICATIONS_COLLECTION).get();
   },
 
   /**
    * Find all slack notifications
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @return {Promise}
    */
-  findAllSlack(fs) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
-    return fs
+  findAllSlack(db) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    return db
       .collection(NOTIFICATIONS_COLLECTION)
       .where('medium', '==', 'slack')
       .get();
@@ -30,22 +30,22 @@ module.exports = modelSetup({
 
   /**
    * Remove all notifications intended for Slack
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {firestore.batch?} parentBatch
    * @return {Promise}
    */
-  async removeAllSlack(fs, parentBatch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  async removeAllSlack(db, parentBatch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     if (parentBatch) {
       assert(typeof parentBatch.delete === 'function', 'has firestore batch');
     }
 
-    const batch = parentBatch || fs.batch();
+    const batch = parentBatch || db.batch();
 
     // Lookup all slack medium notifications
     let slackNotificationsSnap = null;
     try {
-      slackNotificationsSnap = await this.findAllSlack(fs);
+      slackNotificationsSnap = await this.findAllSlack(db);
     } catch (err) {
       throw Error(
         `${PREFIX} removeAllSlack: failed to lookup notifications | ${err}`
@@ -65,13 +65,13 @@ module.exports = modelSetup({
 
   /**
    * Create a Firestore notification
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {Object} data
    * @param  {firestore.batch?} batch
    * @return {Promise} - resolves {DocumentSnapshot}
    */
-  addRecord(fs, data, batch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  addRecord(db, data, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(data && typeof data === 'object', 'has data');
     if (data.message) {
       assert(typeof data.message === 'string', 'data has message string');
@@ -93,7 +93,7 @@ module.exports = modelSetup({
     }
 
     // Generates a document with a new ID
-    const doc = fs.collection(NOTIFICATIONS_COLLECTION).doc();
+    const doc = db.collection(NOTIFICATIONS_COLLECTION).doc();
 
     if (batch) {
       batch.create(doc, data);
@@ -105,17 +105,17 @@ module.exports = modelSetup({
 
   /**
    * Lookup Firestore Notification
-   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {String} notificationId
    * @return {Promise}
    */
-  findRecord(fs, notificationId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  findRecord(db, notificationId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(
       notificationId && typeof notificationId === 'string',
       'has notification id'
     );
-    return fs
+    return db
       .collection(NOTIFICATIONS_COLLECTION)
       .doc(notificationId)
       .get();
@@ -123,14 +123,14 @@ module.exports = modelSetup({
 
   /**
    * Update Firestore notification
-   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {String} notificationId
    * @param  {Object} data
    * @param  {firestore.batch?} batch
    * @return {Promise}
    */
-  updateRecord(fs, notificationId, data, batch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  updateRecord(db, notificationId, data, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(
       notificationId && typeof notificationId === 'string',
       'has notification id'
@@ -140,7 +140,7 @@ module.exports = modelSetup({
       assert(typeof batch.update === 'function', 'has firestore batch');
     }
 
-    const doc = fs.collection(NOTIFICATIONS_COLLECTION).doc(notificationId);
+    const doc = db.collection(NOTIFICATIONS_COLLECTION).doc(notificationId);
 
     if (batch) {
       batch.update(doc, data);
@@ -152,14 +152,14 @@ module.exports = modelSetup({
 
   /**
    * Create a Firestore notification
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String?} notificationId
    * @param  {Object} data
    * @param  {firestore.batch?} batch
    * @return {Promise} - resolves {WriteResult}
    */
-  createRecord(fs, notificationId, data, batch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  createRecord(db, notificationId, data, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     if (notificationId) {
       assert(typeof notificationId === 'string', 'has notification id');
     }
@@ -168,8 +168,8 @@ module.exports = modelSetup({
       assert(typeof batch.create === 'function', 'has firestore batch');
     }
     notificationId =
-      notificationId || fs.collection(NOTIFICATIONS_COLLECTION).doc().id;
-    const doc = fs.collection(NOTIFICATIONS_COLLECTION).doc(notificationId);
+      notificationId || db.collection(NOTIFICATIONS_COLLECTION).doc().id;
+    const doc = db.collection(NOTIFICATIONS_COLLECTION).doc(notificationId);
 
     if (batch) {
       return Promise.resolve(batch.create(doc, data));
@@ -180,13 +180,13 @@ module.exports = modelSetup({
 
   /**
    * Query all notifications
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {Object} query
    * @param  {firestore.transaction?} transaction
    * @return {Promise} - resolves {DataSnapshot}
    */
-  query(fs, query, transaction) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  query(db, query, transaction) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(query && typeof query === 'object', 'has query');
     if (transaction) {
       assert(
@@ -195,7 +195,7 @@ module.exports = modelSetup({
       );
     }
 
-    let fsQuery = fs.collection(NOTIFICATIONS_COLLECTION);
+    let fsQuery = db.collection(NOTIFICATIONS_COLLECTION);
 
     // Append each query as where clause
     Object.keys(query).forEach(attr => {
@@ -216,13 +216,13 @@ module.exports = modelSetup({
 
   /**
    * Delete Firestore Notification
-   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {String} notificationId
    * @param  {firestore.batch?} batch
    * @return {Promise} resolves {Document}
    */
-  destroyRecord(fs, notificationId, batch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  destroyRecord(db, notificationId, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(
       notificationId && typeof notificationId === 'string',
       'has notification id'
@@ -230,7 +230,7 @@ module.exports = modelSetup({
     if (batch) {
       assert(typeof batch.delete === 'function', 'has firestore batch');
     }
-    const doc = fs.collection(NOTIFICATIONS_COLLECTION).doc(notificationId);
+    const doc = db.collection(NOTIFICATIONS_COLLECTION).doc(notificationId);
 
     if (batch) {
       batch.delete(doc);
