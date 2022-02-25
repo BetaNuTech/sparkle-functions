@@ -15,7 +15,7 @@ let fileName = '';
 const PROPERTY_ID = uuid();
 const DEF_ITEM_ID = uuid();
 
-describe('Deficiency | API | POST Image', () => {
+describe('Deficient Items | API | POST Image', () => {
   afterEach(async () => {
     await cleanDb(null, db);
 

@@ -6,7 +6,7 @@ const systemModel = require('../../../models/system');
 const trelloService = require('../../../services/trello');
 const createHandler = require('../../../deficient-items/on-update-completed-photo-v2');
 
-describe('Deficiencies | On Update Completed Photo V2', function() {
+describe('Deficient Items | On Update Completed Photo V2', function() {
   afterEach(() => sinon.restore());
 
   it('should not publish completed photo when completed photos unchanged', async () => {

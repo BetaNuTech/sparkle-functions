@@ -187,36 +187,36 @@ describe('Inspections | API | PATCH Report PDF', () => {
     );
   });
 
-  // it('rejects generating an inspection when its storage data is too large for allocated memory', async () => {
-  //   let body = null;
-  //   const inspectionId = uuid();
-  //   const propertyId = uuid();
-  //   const inspection = createInspection({ property: propertyId });
-  //   const property = mocking.createProperty();
+  it('rejects generating an inspection when its storage data is too large for allocated memory', async () => {
+    let body = null;
+    const inspectionId = uuid();
+    const propertyId = uuid();
+    const inspection = createInspection({ property: propertyId });
+    const property = mocking.createProperty();
 
-  //   sinon
-  //     .stub(inspectionsModel, 'findRecord')
-  //     .resolves(firebase.createDocSnapshot(inspectionId, inspection));
-  //   sinon
-  //     .stub(propertiesModel, 'findRecord')
-  //     .resolves(firebase.createDocSnapshot(propertyId, property));
-  //   sinon
-  //     .stub(storageService, 'calculateInspectionFolderByteSize')
-  //     .resolves(Infinity);
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(propertyId, property));
+    sinon
+      .stub(storageService, 'calculateInspectionFolderByteSize')
+      .resolves(Infinity);
 
-  //   await request(createApp())
-  //     .patch(`/${inspectionId}`)
-  //     .send()
-  //     .expect('Content-Type', /application\/vnd.api\+json/)
-  //     .expect(400)
-  //     .then(res => {
-  //       body = res.body;
-  //     });
+    await request(createApp())
+      .patch(`/${inspectionId}`)
+      .send()
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(400)
+      .then(res => {
+        body = res.body;
+      });
 
-  //   expect(body.errors[0].detail).to.contain(
-  //     `inspection "${inspectionId}" is oversized, please contact an admin`
-  //   );
-  // });
+    expect(body.errors[0].detail).to.contain(
+      `inspection "${inspectionId}" is oversized, please contact an admin`
+    );
+  });
 
   it('updates an eligible inspection into the PDF reporting queue', async () => {
     const expected = {

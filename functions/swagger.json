@@ -1687,6 +1687,22 @@
           "required": true,
           "description": "deficiency id.",
           "type": "string"
+        },
+        {
+          "name": "notify",
+          "in": "query",
+          "required": false,
+          "description": "Flag requesting API to manage global notifications of update",
+          "type": "string",
+          "enum": ["true", "false"]
+        },
+        {
+          "name": "incognitoMode",
+          "in": "query",
+          "required": false,
+          "description": "Flag requesting API to manage update silently",
+          "type": "string",
+          "enum": ["true", "false"]
         }
       ],
       "post": {
@@ -1785,6 +1801,32 @@
           "required": true,
           "description": "Authorization token.",
           "type": "string"
+        },
+        {
+          "name": "id",
+          "in": "query",
+          "required": true,
+          "description": "Deficient Item ids to \"batch\" apply update payload to",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "notify",
+          "in": "query",
+          "required": false,
+          "description": "Flag requesting API to manage global notifications of update",
+          "type": "string",
+          "enum": ["true", "false"]
+        },
+        {
+          "name": "incognitoMode",
+          "in": "query",
+          "required": false,
+          "description": "Flag requesting API to manage update silently",
+          "type": "string",
+          "enum": ["true", "false"]
         }
       ],
       "put": {
@@ -1801,6 +1843,50 @@
               },
               "currentDueDate": {
                 "type": "number"
+              },
+              "state": {
+                "type": "string"
+              },
+              "currentPlanToFix": {
+                "type": "string"
+              },
+              "currentResponsibilityGroup": {
+                "type": "string"
+              },
+              "progressNote": {
+                "type": "string"
+              },
+              "currentDeferredDate": {
+                "type": "number"
+              },
+              "currentReasonIncomplete": {
+                "type": "string"
+              },
+              "currentReasonIncomplete": {
+                "type": "string"
+              },
+              "currentCompleteNowReason": {
+                "type": "string"
+              },
+              "isDuplicate": {
+                "type": "boolean"
+              },
+              "willRequireProgressNote": {
+                "type": "boolean"
+              },
+              "completedPhotos": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "createdAt": { "type": "number" },
+                    "startDate": { "type": "number" },
+                    "caption": { "type": "string" },
+                    "user": { "type": "string" },
+                    "downloadURL": { "type": "string" },
+                    "storageDBPath": { "type": "string" }
+                  }
+                }
               }
             }
           }

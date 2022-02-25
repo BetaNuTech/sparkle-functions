@@ -6,7 +6,7 @@ describe('Utils | Source Notifications Templates', () => {
     const tests = [
       {
         template: 'deficient-item-state-change-summary',
-        values: ['title', 'previousState', 'state'],
+        values: ['title', 'previousState', 'state', 'authorName'],
       },
       {
         template: 'deficient-item-state-change-markdown-body',
@@ -29,6 +29,51 @@ describe('Utils | Source Notifications Templates', () => {
           'currentReasonIncomplete',
           'url',
           'trelloUrl',
+        ],
+      },
+      {
+        template: 'deficient-item-update-summary',
+        values: ['title', 'authorName'],
+      },
+      {
+        template: 'deficient-item-update-markdown-body',
+        values: [
+          'title',
+          'section',
+          'subSection',
+          'currentDueDateDay',
+          'currentDeferredDateDay',
+          'currentPlanToFix',
+          'currentResponsibilityGroup',
+          'currentProgressNote',
+          {
+            currentProgressNote: 'currentProgressNote',
+            progressNoteDateDay: 'progressNoteDateDay',
+          },
+          'currentCompleteNowReason',
+          'currentReasonIncomplete',
+          'url',
+          'trelloUrl',
+          'authorName',
+          'authorEmail',
+        ],
+      },
+      {
+        template: 'deficient-item-progress-note-summary',
+        values: ['title', 'authorName', 'authorEmail'],
+      },
+      {
+        template: 'deficient-item-progress-note-markdown-body',
+        values: [
+          'title',
+          'section',
+          'subSection',
+          'dueDateDay',
+          'currentResponsibilityGroup',
+          'currentPlanToFix',
+          'progressNote',
+          'authorName',
+          'authorEmail',
         ],
       },
       {

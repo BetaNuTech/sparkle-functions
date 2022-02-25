@@ -7,14 +7,16 @@ const log = require('../../../utils/logger');
 const uuid = require('../../../test-helpers/uuid');
 const stubs = require('../../../test-helpers/stubs');
 const mocking = require('../../../test-helpers/mocking');
+const propertyModel = require('../../../models/properties');
 const deficiencyModel = require('../../../models/deficient-items');
+const notificationsModel = require('../../../models/notifications');
 const updateDeficiency = require('../../../deficient-items/utils/update-deficient-item');
 const unflatten = require('../../../utils/unflatten-string-attrs');
 const putBatch = require('../../../deficient-items/api/put-batch');
 
 const USER_ID = '123';
 
-describe('Deficiencies | API | PUT Batch', () => {
+describe('Deficient Items | API | PUT Batch', () => {
   afterEach(() => sinon.restore());
 
   it('rejects request missing any deficient item ids', done => {
@@ -290,6 +292,130 @@ describe('Deficiencies | API | PUT Batch', () => {
       })
       .catch(done);
   });
+
+  it('creates global notifications for all progress note updates', async () => {
+    const expected = 'Progress Note just added';
+    const deficiencyId = uuid();
+    const changes = { progressNote: 'progress' };
+    const propertyId = uuid();
+    const property = mocking.createProperty({ id: propertyId });
+    const deficiency = mocking.createDeficiency({
+      state: 'pending',
+      inspection: uuid(),
+      property: propertyId,
+      item: uuid(),
+    });
+    deficiency.id = deficiencyId;
+    sinon
+      .stub(deficiencyModel, 'findMany')
+      .resolves(stubs.wrapSnapshot([deficiency]));
+    sinon
+      .stub(propertyModel, 'findRecord')
+      .resolves(stubs.wrapSnapshot(property));
+    sinon.stub(deficiencyModel, 'updateRecord').resolves();
+    const addNotification = sinon
+      .stub(notificationsModel, 'addRecord')
+      .resolves();
+
+    const updatedAt = Math.round(Date.now() / 1000);
+
+    await request(createApp())
+      .put(`/t?id=${deficiencyId}&updatedAt=${updatedAt}&notify=true`)
+      .send(changes)
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(200);
+
+    const result = addNotification.firstCall || { args: [] };
+    const actual = (result.args[1] || { summary: '' }).summary;
+
+    expect(actual).to.contain(expected);
+  });
+
+  it('creates global notifications for all state change updates', async () => {
+    const expected = 'Deficient Item moved';
+    const deficiencyId = uuid();
+    const changes = { state: 'go-back' };
+    const propertyId = uuid();
+    const property = mocking.createProperty({ id: propertyId });
+    const deficiency = mocking.createDeficiency({
+      state: 'incomplete',
+      inspection: uuid(),
+      property: propertyId,
+      item: uuid(),
+    });
+    const updatedDeficiency = mocking.createDeficiency({
+      state: 'go-back',
+      inspection: uuid(),
+      property: propertyId,
+      item: uuid(),
+    });
+    deficiency.id = deficiencyId;
+    sinon
+      .stub(deficiencyModel, 'findMany')
+      .onFirstCall()
+      .resolves(stubs.wrapSnapshot([deficiency]))
+      .onSecondCall()
+      .resolves(stubs.wrapSnapshot([updatedDeficiency]));
+    sinon
+      .stub(propertyModel, 'findRecord')
+      .resolves(stubs.wrapSnapshot(property));
+    sinon.stub(deficiencyModel, 'updateRecord').resolves();
+    const addNotification = sinon
+      .stub(notificationsModel, 'addRecord')
+      .resolves();
+
+    const updatedAt = Math.round(Date.now() / 1000);
+
+    await request(createApp())
+      .put(`/t?id=${deficiencyId}&updatedAt=${updatedAt}&notify=true`)
+      .send(changes)
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(200);
+
+    const result = addNotification.firstCall || { args: [] };
+    const actual = (result.args[1] || { markdownBody: '' }).markdownBody;
+
+    expect(actual).to.contain(expected);
+  });
+
+  it('creates global notifications for all non-state updates', async () => {
+    const expected = '*Deficient Item Updated*';
+    const deficiencyId = uuid();
+    const changes = { currentResponsibilityGroup: 'site_level_in-house' };
+    const propertyId = uuid();
+    const property = mocking.createProperty({ id: propertyId });
+    const deficiency = mocking.createDeficiency({
+      state: 'requires-action',
+      inspection: uuid(),
+      property: propertyId,
+      item: uuid(),
+    });
+    delete deficiency.currentDueDate; // needed for state change
+    deficiency.id = deficiencyId;
+    sinon
+      .stub(deficiencyModel, 'findMany')
+      .resolves(stubs.wrapSnapshot([deficiency]));
+    sinon
+      .stub(propertyModel, 'findRecord')
+      .resolves(stubs.wrapSnapshot(property));
+    sinon.stub(deficiencyModel, 'updateRecord').resolves();
+    const addNotification = sinon
+      .stub(notificationsModel, 'addRecord')
+      .resolves();
+
+    const updatedAt = Math.round(Date.now() / 1000);
+
+    await request(createApp())
+      .put(`/t?id=${deficiencyId}&updatedAt=${updatedAt}&notify=true`)
+      .send(changes)
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(200);
+
+    const result = addNotification.firstCall || { args: [] };
+    const actual = (result.args[1] || { markdownBody: '' }).markdownBody;
+
+    expect(actual).to.contain(expected);
+  });
 });
 
 function createApp(user = {}) {
@@ -298,13 +424,16 @@ function createApp(user = {}) {
     '/t',
     bodyParser.json(),
     stubAuth(user),
-    putBatch({
-      collection: () => {},
-      batch: () => ({
-        update: () => {},
-        commit: () => Promise.resolve(),
-      }),
-    })
+    putBatch(
+      {
+        collection: () => {},
+        batch: () => ({
+          update: () => {},
+          commit: () => Promise.resolve(),
+        }),
+      },
+      true // enable progress note notifications
+    )
   );
   return app;
 }

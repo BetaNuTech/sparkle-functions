@@ -12,7 +12,7 @@ const deficiencyModel = require('../../../models/deficient-items');
 const systemModel = require('../../../models/system');
 const { fs, test, cloudFunctions } = require('../../setup');
 
-describe('Deficiency | Update Progress Notes V2', () => {
+describe('Deficient Items | Update Progress Notes V2', () => {
   afterEach(async () => {
     nock.cleanAll();
     await cleanDb(null, fs);

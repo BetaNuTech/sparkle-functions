@@ -6,7 +6,7 @@ const systemModel = require('../../../models/system');
 const usersModel = require('../../../models/users');
 const createHandler = require('../../../deficient-items/on-update-progress-note-v2');
 
-describe('Deficiencies | On Update Progress Note V2', function() {
+describe('Deficient Items | On Update Progress Note V2', function() {
   afterEach(() => sinon.restore());
 
   it('should not publish comment when progress notes unchanged', async () => {

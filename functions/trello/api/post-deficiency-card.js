@@ -7,10 +7,13 @@ const deficiencyModel = require('../../models/deficient-items');
 const inspectionsModel = require('../../models/inspections');
 const integrationsModel = require('../../models/integrations');
 const propertiesModel = require('../../models/properties');
+const notificationsModel = require('../../models/notifications');
 const trello = require('../../services/trello');
 const config = require('../../config');
 const { getItemPhotoData } = require('../../utils/inspection');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
+const notifyTemplate = require('../../utils/src-notification-templates');
+const { getFullName } = require('../../utils/user');
 
 const PREFIX = 'trello: api: post-card:';
 const ITEM_VALUE_NAMES = config.inspectionItems.valueNames;
@@ -19,15 +22,15 @@ const DEF_ITEM_URI = config.clientApps.web.deficientItemURL;
 /**
  * Factory for creating POST request handler
  * that creates new Trello card for a deficiency
- * @param  {admin.firestore} fs - Firestore Admin DB instance
+ * @param  {admin.firestore} db - Firestore Admin DB instance
  * @param  {String} deficiencyUri
  * @return {Function} - onRequest handler
  */
 module.exports = function createOnTrelloDeficientItemCard(
-  fs,
+  db,
   deficiencyUri = DEF_ITEM_URI
 ) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  assert(db && typeof db.collection === 'function', 'has firestore db');
   assert(
     deficiencyUri && typeof deficiencyUri === 'string',
     'has deficiency uri string'
@@ -63,6 +66,18 @@ module.exports = function createOnTrelloDeficientItemCard(
       'has user configuration in request'
     );
 
+    // Is client requesting notifications
+    // for their requested updates
+    const isNotifying = req.query.notify
+      ? req.query.notify.search(/true/i) > -1
+      : false;
+
+    // Optional incognito mode query
+    // defaults to false
+    const incognitoMode = req.query.incognitoMode
+      ? req.query.incognitoMode.search(/true/i) > -1
+      : false;
+
     log.info(`${PREFIX} requested by user: "${user.id}"`);
 
     // Configure JSON API response
@@ -72,7 +87,7 @@ module.exports = function createOnTrelloDeficientItemCard(
     let deficiency = null;
     let propertyId = '';
     try {
-      const deficiencySnap = await deficiencyModel.findRecord(fs, deficiencyId);
+      const deficiencySnap = await deficiencyModel.findRecord(db, deficiencyId);
       deficiency = deficiencySnap.data() || null;
       if (!deficiency) {
         throw Error(`deficiency: "${deficiencyId}" does not exist`);
@@ -83,8 +98,9 @@ module.exports = function createOnTrelloDeficientItemCard(
           `deficiency: "${deficiencyId}" has no "property" association`
         );
       }
+      deficiency.id = deficiencyId;
     } catch (err) {
-      log.error(`${PREFIX} deficiency lookup failed | ${err}`);
+      log.error(`${PREFIX} deficiency lookup failed: ${err}`);
       return res.status(409).send({
         errors: [
           {
@@ -97,11 +113,12 @@ module.exports = function createOnTrelloDeficientItemCard(
     // Lookup Property
     let property = null;
     try {
-      const propertySnap = await propertiesModel.findRecord(fs, propertyId);
+      const propertySnap = await propertiesModel.findRecord(db, propertyId);
       property = propertySnap.data() || null;
       if (!property) throw Error(`property: "${propertyId}" does not exist`);
+      property.id = propertyId;
     } catch (err) {
-      log.error(`${PREFIX} property lookup failed | ${err}`);
+      log.error(`${PREFIX} property lookup failed: ${err}`);
       return res.status(409).send({
         errors: [
           {
@@ -115,7 +132,7 @@ module.exports = function createOnTrelloDeficientItemCard(
     // previously published Trello Card
     try {
       const trelloCardId = await systemModel.findTrelloCardId(
-        fs,
+        db,
         propertyId,
         deficiencyId
       );
@@ -123,7 +140,7 @@ module.exports = function createOnTrelloDeficientItemCard(
         throw Error('trello card already exists for deficiency');
       }
     } catch (err) {
-      log.error(`${PREFIX} | ${err}`);
+      log.error(`${PREFIX} failed to find trello card identifier: ${err}`);
       return res.status(409).send({
         errors: [
           {
@@ -137,7 +154,7 @@ module.exports = function createOnTrelloDeficientItemCard(
     let trelloPropertyConfig = null;
     try {
       const trelloIntegrationSnap = await integrationsModel.findTrelloProperty(
-        fs,
+        db,
         propertyId
       );
 
@@ -167,7 +184,7 @@ module.exports = function createOnTrelloDeficientItemCard(
     let inspectionItem = null;
     try {
       const inspectionSnap = await inspectionsModel.findRecord(
-        fs,
+        db,
         deficiency.inspection
       );
       const inspection = inspectionSnap.data() || null;
@@ -193,7 +210,7 @@ module.exports = function createOnTrelloDeficientItemCard(
     // Lookup Trello public facing details
     let trelloOrganization = null;
     try {
-      const trelloOrgSnap = await integrationsModel.findTrello(fs);
+      const trelloOrgSnap = await integrationsModel.findTrello(db);
       trelloOrganization = trelloOrgSnap.data() || {};
     } catch (err) {
       // Allow failure
@@ -255,7 +272,7 @@ module.exports = function createOnTrelloDeficientItemCard(
     } catch (err) {
       return send500Error(
         err,
-        `Error retrieved from Trello API | ${err}`,
+        `Error retrieved from Trello API: ${err}`,
         'Error from trello API'
       );
     }
@@ -284,12 +301,12 @@ module.exports = function createOnTrelloDeficientItemCard(
       );
     }
 
-    const batch = fs.batch();
+    const batch = db.batch();
 
     // Update system trello/property cards
     try {
       await systemModel.upsertPropertyTrello(
-        fs,
+        db,
         propertyId,
         { cards: { [cardId]: deficiencyId } },
         batch
@@ -297,26 +314,26 @@ module.exports = function createOnTrelloDeficientItemCard(
     } catch (err) {
       return send500Error(
         err,
-        `failed to update system trello property | ${err}`,
+        `failed to update system trello property: ${err}`,
         'Trello card reference failed to save'
       );
     }
 
     // Update deficiency trello card url
     try {
-      await deficiencyModel.updateRecord(
-        fs,
-        deficiencyId,
-        {
-          updatedAt: Math.round(Date.now() / 1000),
-          trelloCardURL: cardUrl,
-        },
-        batch
-      );
+      const update = {
+        updatedAt: Math.round(Date.now() / 1000),
+        trelloCardURL: cardUrl,
+      };
+      await deficiencyModel.updateRecord(db, deficiencyId, update, batch);
+
+      // Keep deficiency up to date for
+      // any requested notification
+      Object.assign(deficiency, update);
     } catch (err) {
       return send500Error(
         err,
-        `failed to update deficiency trello card | ${err}`,
+        `failed to update deficiency trello card: ${err}`,
         'Deficiency failed to save'
       );
     }
@@ -326,7 +343,7 @@ module.exports = function createOnTrelloDeficientItemCard(
     } catch (err) {
       return send500Error(
         err,
-        `failed to commit database writes | ${err}`,
+        `failed to commit database writes: ${err}`,
         'System error'
       );
     }
@@ -345,5 +362,81 @@ module.exports = function createOnTrelloDeficientItemCard(
         },
       },
     });
+
+    // Client did not request any global
+    // notifications for update
+    if (!isNotifying || incognitoMode) {
+      return;
+    }
+
+    log.info(`${PREFIX} sending Trello Card create notification`);
+
+    try {
+      await notificationsModel.addRecord(
+        db,
+        createNotificationConfig(user, property, deficiency)
+      );
+    } catch (err) {
+      log.error(`${PREFIX} failed to add notification: ${err}`);
+    }
   };
 };
+
+/**
+ * Create Global Notification for creation
+ * of Deficient Item Trello card
+ * @param  {Object} user
+ * @param  {Object} property
+ * @param  {Object} deficientItem
+ * @return {Object} - trello card notification config
+ */
+function createNotificationConfig(user, property, deficientItem) {
+  assert(
+    `${PREFIX} createNotificationConfig: has user`,
+    user && typeof user === 'object'
+  );
+  assert(
+    `${PREFIX} createNotificationConfig: has property`,
+    property && typeof property === 'object'
+  );
+  assert(
+    `${PREFIX} createNotificationConfig: has deficiency`,
+    deficientItem && typeof deficientItem === 'object'
+  );
+
+  // Create Global Notification
+  const propertyName = property.name;
+  const title = deficientItem.itemTitle || 'Unknown Item';
+  const section = deficientItem.sectionTitle || '';
+  const subSection = deficientItem.sectionSubtitle || '';
+  const trelloCardURL = deficientItem.trelloCardURL || 'google.com';
+  const authorName = getFullName(user) || 'Unknown User';
+  const authorEmail = user.email || 'Missing Email';
+  const authorId = user.id;
+
+  const result = {
+    title: propertyName,
+    summary: notifyTemplate('deficient-item-trello-card-create-summary', {
+      title,
+      authorName,
+    }),
+    markdownBody: notifyTemplate(
+      'deficient-item-trello-card-create-markdown-body',
+      {
+        title,
+        section,
+        subSection,
+        trelloCardURL,
+        authorName,
+        authorEmail,
+      }
+    ),
+    property: property.id,
+  };
+
+  if (authorId) {
+    result.creator = authorId;
+  }
+
+  return result;
+}
