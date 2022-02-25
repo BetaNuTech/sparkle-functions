@@ -18,7 +18,7 @@ const createHandler = require('../../../deficient-items/pubsub/sync-overdue-v2')
 const REQUIRED_ACTIONS_VALUES = config.deficientItems.requiredActionStates;
 const OVERDUE_ELIGIBLE_STATES = config.deficientItems.overdueEligibleStates;
 
-describe('Deficiencies | Pubsub | Sync Overdue V2', function() {
+describe('Deficient Items | Pubsub | Sync Overdue V2', function() {
   beforeEach(() => sinon.stub(deficiencyModel, 'uuid').callsFake(uuid));
   afterEach(() => sinon.restore());
 

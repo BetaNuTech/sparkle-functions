@@ -11,6 +11,7 @@ const deficiencyModel = require('../../../models/deficient-items');
 const propertiesModel = require('../../../models/properties');
 const inspectionsModel = require('../../../models/inspections');
 const integrationsModel = require('../../../models/integrations');
+const notificationsModel = require('../../../models/notifications');
 const handler = require('../../../trello/api/post-deficiency-card');
 
 const CLIENT_API_DOMAIN =
@@ -659,6 +660,77 @@ ${CLIENT_API_DOMAIN.replace('{{propertyId}}', propertyId).replace(
         done();
       })
       .catch(done);
+  });
+
+  it('creates global notifications for trello card creation', async () => {
+    const expected = 'Trello card created for Deficient Item';
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const itemId = uuid();
+    const deficiencyId = uuid();
+    const integrationId = `trello-${propertyId}`;
+    const inspection = mocking.createInspection({
+      property: propertyId,
+      inspectionCompleted: true,
+    });
+    const item = mocking.createCompletedMainInputItem(
+      'twoactions_checkmarkx',
+      true
+    );
+    inspection.template.trackDeficientItems = true;
+    inspection.template.items[itemId] = item;
+    const deficiency = mocking.createDeficiency(
+      {
+        property: propertyId,
+        inspection: inspectionId,
+        item: itemId,
+        itemScore: 1,
+        itemInspectorNotes: 'inspector notes',
+        currentPlanToFix: 'fix it',
+        sectionTitle: 'Title',
+        sectionSubtitle: 'Sub Title',
+      },
+      inspection,
+      item
+    );
+    const property = mocking.createProperty({ zip: '46077' }); // Indianapolis zip
+    const trelloIntegration = mocking.createPropertyTrelloIntegration();
+    const trelloResponse = { id: uuid(), shortUrl: 'test.com/image.png' };
+
+    sinon
+      .stub(deficiencyModel, 'findRecord')
+      .resolves(createSnapshot(deficiencyId, deficiency));
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(createSnapshot(propertyId, property));
+    sinon.stub(systemModel, 'findTrelloCardId').resolves('');
+    sinon
+      .stub(integrationsModel, 'findTrello')
+      .resolves(createSnapshot('trello'));
+    sinon
+      .stub(integrationsModel, 'findTrelloProperty')
+      .resolves(createSnapshot(integrationId, trelloIntegration));
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(createSnapshot(inspectionId, inspection));
+    sinon.stub(systemModel, 'upsertPropertyTrello').resolves();
+    sinon.stub(trelloService, 'publishAllCardAttachments').resolves([]);
+    sinon.stub(deficiencyModel, 'updateRecord').resolves();
+    sinon.stub(trelloService, 'publishListCard').resolves(trelloResponse);
+    const addNotification = sinon
+      .stub(notificationsModel, 'addRecord')
+      .resolves();
+
+    await request(createApp())
+      .post(`/t/${deficiencyId}?notify=true`)
+      .send()
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(201);
+
+    const result = addNotification.firstCall || { args: [] };
+    const actual = (result.args[1] || { summary: '' }).summary || '';
+
+    expect(actual).to.contain(expected);
   });
 });
 

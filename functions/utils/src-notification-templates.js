@@ -7,7 +7,7 @@ const templates = {
   // /////////////////////////////////////////
 
   'deficient-item-state-change-summary':
-    'Deficient Item: {{{title}}} moved from {{{previousState}}} to {{{state}}} by Sparkle',
+    'Deficient Item: {{{title}}} moved from {{{previousState}}} to {{{state}}} by {{#if authorName}}{{{authorName}}}{{else}}Sparkle{{/if}}',
 
   'deficient-item-state-change-markdown-body': `Deficient Item moved{{#if previousState}} from *{{{previousState}}}*{{/if}}{{#if state}} to state *{{{state}}}*.{{/if}}
 
@@ -33,6 +33,72 @@ Deficient Item: {{{url}}}{{#if trelloUrl}}
 Trello Card: {{{trelloUrl}}}{{/if}}
 
 *Updated by*: Sparkle`,
+
+  // /////////////////////////////////////////////
+  // Property Deficient Item - Non-State Update
+  // /////////////////////////////////////////////
+
+  'deficient-item-update-summary':
+    'Deficient Item: {{{title}}} updated{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'deficient-item-update-markdown-body': `*Deficient Item Updated*
+\`\`\`
+{{#if title}}Title: {{{title}}}{{/if}}
+{{#if section}}Section: {{{section}}}{{/if}}
+{{#if subSection}}Sub-section: {{{subSection}}}{{/if}}
+{{#if currentDeferredDateDay}}Deferred Due Date: {{{currentDeferredDateDay}}}{{else}}{{#if currentDueDateDay}}Due Date: {{{currentDueDateDay}}}{{/if}}{{/if}}
+{{#if currentPlanToFix}}Plan to fix: {{{currentPlanToFix}}}{{/if}}
+{{#if currentResponsibilityGroup}}Responsibility Group: {{{currentResponsibilityGroup}}}{{/if}}
+\`\`\`{{#if currentProgressNote}}
+\`\`\`
+Progress Note{{#if progressNoteDateDay}} ({{{progressNoteDateDay}}}){{/if}}: {{{currentProgressNote}}}
+\`\`\`{{/if}}{{#if currentCompleteNowReason}}
+\`\`\`
+Complete Now Reason: {{{currentCompleteNowReason}}}
+\`\`\`{{/if}}{{#if currentReasonIncomplete}}
+\`\`\`
+Reason Incomplete: {{{currentReasonIncomplete}}}
+\`\`\`{{/if}}
+Deficient Item: {{{url}}}{{#if trelloUrl}}
+Trello Card: {{{trelloUrl}}}{{/if}}
+*Updated by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // ///////////////////////////////////////////
+  // Property Deficient Item - Progress Note
+  // ///////////////////////////////////////////
+
+  'deficient-item-progress-note-summary':
+    'Progress Note just added to Deficient Item {{{title}}} by{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})',
+
+  'deficient-item-progress-note-markdown-body': `Progress Note just added to Deficient Item.
+\`\`\`
+{{#if title}}Title: {{{title}}}{{/if}}
+{{#if section}}Section: {{{section}}}{{/if}}
+{{#if subSection}}Sub-section: {{{subSection}}}{{/if}}
+{{#if dueDateDay}}Due Date: {{{dueDateDay}}}{{/if}}
+{{#if currentResponsibilityGroup}}Responsibility Group: {{{currentResponsibilityGroup}}}{{/if}}
+{{#if currentPlanToFix}}Plan to fix: {{{currentPlanToFix}}}{{/if}}
+\`\`\`{{#if progressNote}}
+\`\`\`
+{{{progressNote}}}
+\`\`\`{{/if}}
+*Added by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // /////////////////////////////////////////////////
+  // Property Deficient Item - Trello Card Creation
+  // /////////////////////////////////////////////////
+
+  'deficient-item-trello-card-create-summary':
+    'Trello card created for Deficient Item: {{{title}}}{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'deficient-item-trello-card-create-markdown-body': `*Trello card created for deficient item.*
+\`\`\`
+{{#if title}}Title: {{{title}}}{{/if}}
+{{#if section}}Section: {{{section}}}{{/if}}
+{{#if subSection}}Sub-section: {{{subSection}}}{{/if}}
+\`\`\`{{#if trelloCardURL}}
+Trello Card: {{{trelloCardURL}}}{{/if}}
+*Created by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
 
   // ////////////////////////////////////////
   // Property Inspection - Report Creation

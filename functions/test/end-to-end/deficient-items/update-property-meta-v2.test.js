@@ -11,7 +11,7 @@ const { fs, test, pubsub, cloudFunctions } = require('../../setup');
 const REQUIRED_ACTIONS_VALUES = config.deficientItems.requiredActionStates;
 const FOLLOW_UP_ACTION_VALUES = config.deficientItems.followUpActionStates;
 
-describe('Deficiency | Property Meta Sync', () => {
+describe('Deficient Items | Property Meta Sync', () => {
   afterEach(() => cleanDb(null, fs));
 
   it("should not update property meta when an item's required action status does not change", async () => {

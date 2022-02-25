@@ -17,7 +17,7 @@ const createHandler = require('../../../deficient-items/pubsub/trello-card-state
 
 const INITIAL_STATE = config.deficientItems.initialState;
 
-describe('Deficiencies | Pubsub | Trello Card Status Comment V2', function() {
+describe('Deficient Items | Pubsub | Trello Card Status Comment V2', function() {
   afterEach(() => sinon.restore());
 
   it('should not create comment when deficiency has no trello card', async () => {

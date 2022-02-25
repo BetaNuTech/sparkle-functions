@@ -11,7 +11,7 @@ const CLIENT_DOMAIN =
 const config = {
   web: {
     deficientItemPath:
-      'properties/{{propertyId}}/deficient-items/{{deficientItemId}}',
+      'beta/properties/{{propertyId}}/deficient-items/edit/{{deficientItemId}}/',
 
     inspectionPath:
       'beta/properties/{{propertyId}}/inspections/edit/{{inspectionId}}/',
