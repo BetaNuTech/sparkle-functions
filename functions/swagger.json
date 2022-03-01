@@ -29,6 +29,10 @@
       "description": "API for properties"
     },
     {
+      "name": "Templates",
+      "description": "API for templates"
+    },
+    {
       "name": "Inspection",
       "description": "API for inspections"
     },
@@ -39,6 +43,10 @@
     {
       "name": "Users",
       "description": "API for users"
+    },
+    {
+      "name": "Teams",
+      "description": "API for teams"
     }
   ],
   "schemes": ["http"],
@@ -1672,6 +1680,53 @@
         }
       }
     },
+    "/v0/templates/": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": ["Templates"],
+        "summary": "Creating or cloning a new template.  Only Admin/Corporate users",
+        "parameters": [
+          {
+            "name": "clone",
+            "in": "path",
+            "required": true,
+            "description": "Existing template identifier to clone",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful template creation",
+            "schema": {
+              "$ref": "#/definitions/UPSERTTEMPLATE"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
     "/v0/deficiencies/{deficiencyId}/trello/card": {
       "parameters": [
         {
@@ -2443,6 +2498,48 @@
               "properties": {
                 "team": {
                   "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "UPSERTTEMPLATE": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "createdAt": {
+                  "type": "number"
+                },
+                "updatedAt": {
+                  "type": "number"
+                },
+                "trackDeficientItems": {
+                  "type": "boolean"
+                },
+                "requireDeficientItemNoteAndPhoto": {
+                  "type": "boolean"
+                },
+                "sections": {
+                  "type": "object"
+                },
+                "items": {
+                  "type": "object"
                 }
               }
             }

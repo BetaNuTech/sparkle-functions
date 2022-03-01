@@ -9,6 +9,7 @@ const trello = require('./trello');
 const deficiencies = require('./deficient-items');
 const properties = require('./properties');
 const inspections = require('./inspections');
+const templates = require('./templates');
 const jobs = require('./jobs');
 const users = require('./users');
 const clients = require('./clients');
@@ -126,6 +127,13 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
     inspections.api.getLatestCompletedInspection(fs)
   );
 
+  // Create a template
+  app.post(
+    '/v0/templates',
+    authUser(fs, auth, { admin: true, corporate: true }),
+    templates.api.post(fs)
+  );
+
   // Request Property's residents from Yardi
   app.get(
     '/v0/properties/:propertyId/yardi/residents',
@@ -154,10 +162,7 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
   // Update a property
   app.put(
     '/v0/properties/:propertyId',
-    authUser(fs, auth, {
-      admin: true,
-      corporate: true,
-    }),
+    authUser(fs, auth, { admin: true, corporate: true }),
     properties.api.put(fs)
   );
 

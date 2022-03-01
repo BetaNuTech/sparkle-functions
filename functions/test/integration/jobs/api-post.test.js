@@ -5,7 +5,7 @@ const bodyParser = require('body-parser');
 const sinon = require('sinon');
 const jobsModel = require('../../../models/jobs');
 const propertiesModel = require('../../../models/properties');
-const post = require('../../../jobs/api/post');
+const handler = require('../../../jobs/api/post');
 const mocking = require('../../../test-helpers/mocking');
 const uuid = require('../../../test-helpers/uuid');
 const firebase = require('../../../test-helpers/firebase');
@@ -188,7 +188,7 @@ function createApp() {
     '/t/:propertyId',
     bodyParser.json(),
     stubAuth,
-    post({ collection: () => {} })
+    handler({ collection: () => {} })
   );
   return app;
 }

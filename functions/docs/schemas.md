@@ -79,6 +79,8 @@ interface inspection {
 interface Template {
   id?: string;
   name: string;
+  createdAt: number;
+  updatedAt?: number;
   description?: string;
   category?: string; // template category relationship
   trackDeficientItems: boolean;
