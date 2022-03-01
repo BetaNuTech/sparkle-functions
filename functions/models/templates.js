@@ -9,14 +9,14 @@ const { isArray } = Array;
 module.exports = modelSetup({
   /**
    * Lookup Firestore Template
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {String} templateId
    * @return {Promise}
    */
-  findRecord(fs, templateId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  findRecord(db, templateId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(templateId && typeof templateId === 'string', 'has template id');
-    return fs
+    return db
       .collection(TEMPLATE_COLLECTION)
       .doc(templateId)
       .get();
@@ -24,14 +24,14 @@ module.exports = modelSetup({
 
   /**
    * Remove Firestore Template
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {String} templateId
    * @return {Promise}
    */
-  removeRecord(fs, templateId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  removeRecord(db, templateId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(templateId && typeof templateId === 'string', 'has template id');
-    return fs
+    return db
       .collection(TEMPLATE_COLLECTION)
       .doc(templateId)
       .delete();
@@ -39,17 +39,17 @@ module.exports = modelSetup({
 
   /**
    * Update/add Firestore Template
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {String} templateId
    * @param  {Object} data
    * @return {Promise} - resolves {DocumentReference}
    */
-  async upsertRecord(fs, templateId, data) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  async upsertRecord(db, templateId, data) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(templateId && typeof templateId === 'string', 'has template id');
     assert(data && typeof data === 'object', 'has upsert data');
 
-    const docRef = fs.collection(TEMPLATE_COLLECTION).doc(templateId);
+    const docRef = db.collection(TEMPLATE_COLLECTION).doc(templateId);
     let docSnap = null;
 
     try {
@@ -92,17 +92,27 @@ module.exports = modelSetup({
   },
 
   /**
+   * Create a firestore document id
+   * @param  {admin.firestore} db
+   * @return {String}
+   */
+  createId(db) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    return db.collection(TEMPLATE_COLLECTION).doc().id;
+  },
+
+  /**
    * Create a Firestore template
-   * @param  {firebaseAdmin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String} templateId
    * @param  {Object} data
    * @return {Promise} - resolves {WriteResult}
    */
-  createRecord(fs, templateId, data) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  createRecord(db, templateId, data) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(templateId && typeof templateId === 'string', 'has template id');
     assert(data && typeof data === 'object', 'has data');
-    return fs
+    return db
       .collection(TEMPLATE_COLLECTION)
       .doc(templateId)
       .create(data);
@@ -110,14 +120,14 @@ module.exports = modelSetup({
 
   /**
    * Lookup all templates associated with a category
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {String} categoryId
    * @return {Promise} - resolves {QuerySnapshot}
    */
-  queryByCategory(fs, categoryId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  queryByCategory(db, categoryId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(categoryId && typeof categoryId === 'string', 'has category id');
-    return fs
+    return db
       .collection(TEMPLATE_COLLECTION)
       .where('category', '==', categoryId)
       .get();
@@ -125,13 +135,13 @@ module.exports = modelSetup({
 
   /**
    * Batch update templates
-   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {Object} updates - { id: { name: "update" } }
    * @return {Promise}
    */
-  batchUpdate(fs, updates) {
-    const batch = fs.batch();
-    const templatesRef = fs.collection(TEMPLATE_COLLECTION);
+  batchUpdate(db, updates) {
+    const batch = db.batch();
+    const templatesRef = db.collection(TEMPLATE_COLLECTION);
 
     if (!updates || !Object.keys(updates).length) {
       return Promise.resolve();
@@ -150,11 +160,11 @@ module.exports = modelSetup({
 
   /**
    * Lookup all template documents snapshots
-   * @param  {firebaseAdmin.firestore} fs
+   * @param  {admin.firestore} db
    * @return {Promise} - resolves {DocumentSnapshot[]}
    */
-  findAll(fs) {
-    return fs
+  findAll(db) {
+    return db
       .collection(TEMPLATE_COLLECTION)
       .get()
       .then(collectionSnap => {
@@ -173,7 +183,7 @@ module.exports = modelSetup({
    * Firestore templates properties
    * relationships. Removes old and
    * adds new property relationships
-   * @param  {firebaseAdmin.firestore} fs
+   * @param  {admin.firestore} fs
    * @param  {String} propertyId
    * @param  {String[]} beforeTemplates
    * @param  {String[]} afterTemplates
