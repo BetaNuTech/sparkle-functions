@@ -23,24 +23,24 @@ const propertyMetaUpdates = pipe([
 module.exports = modelSetup({
   /**
    * Lookup all properties
-   * @param  {firebaseAdmin.firestore} fs
+   * @param  {admin.firestore} db
    * @return {Promise} - resolves {DocumentSnapshot[]}
    */
-  findAll(fs) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
-    return fs.collection(PROPERTY_COLLECTION).get();
+  findAll(db) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    return db.collection(PROPERTY_COLLECTION).get();
   },
 
   /**
    * Batch remove all firestore property
    * relationships to a deleted team
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String[]} propertyIds
    * @param  {firestore.batch?} parentBatch
    * @return {Promise}
    */
-  batchRemoveTeam(fs, propertyIds, parentBatch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  batchRemoveTeam(db, propertyIds, parentBatch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(
       propertyIds && Array.isArray(propertyIds),
       'has property ids is an array'
@@ -56,8 +56,8 @@ module.exports = modelSetup({
       );
     }
 
-    const batch = parentBatch || fs.batch();
-    const collection = fs.collection(PROPERTY_COLLECTION);
+    const batch = parentBatch || db.batch();
+    const collection = db.collection(PROPERTY_COLLECTION);
 
     // Remove each properties team
     propertyIds.forEach(id => {
@@ -73,15 +73,59 @@ module.exports = modelSetup({
   },
 
   /**
+   * Batch remove all firestore property
+   * relationships to a deleted template
+   * @param  {admin.firestore} db
+   * @param  {String[]} propertyIds
+   * @param  {firestore.batch?} parentBatch
+   * @return {Promise}
+   */
+  batchRemoveTemplate(db, propertyIds, templateId, parentBatch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(
+      propertyIds && Array.isArray(propertyIds),
+      'has property ids is an array'
+    );
+    assert(
+      propertyIds.every(id => id && typeof id === 'string'),
+      'property ids is an array of strings'
+    );
+    assert(templateId && typeof templateId === 'string', 'has template id');
+    if (parentBatch) {
+      assert(
+        typeof parentBatch.update === 'function',
+        'has firestore batch/transaction'
+      );
+    }
+
+    const batch = parentBatch || db.batch();
+    const collection = db.collection(PROPERTY_COLLECTION);
+
+    // Remove each properties team
+    propertyIds.forEach(id => {
+      const propertyDoc = collection.doc(id);
+      batch.update(propertyDoc, {
+        [`templates.${templateId}`]: FieldValue.delete(),
+      });
+    });
+
+    if (parentBatch) {
+      return Promise.resolve(parentBatch);
+    }
+
+    return batch.commit();
+  },
+
+  /**
    * Lookup Firestore Property
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {String} propertyId
    * @return {Promise}
    */
-  findRecord(fs, propertyId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  findRecord(db, propertyId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
-    return fs
+    return db
       .collection(PROPERTY_COLLECTION)
       .doc(propertyId)
       .get();
@@ -89,17 +133,17 @@ module.exports = modelSetup({
 
   /**
    * Create a Firestore property
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String} propertyId
    * @param  {Object} data
    * @return {Promise} - resolves {WriteResult}
    */
-  createRecord(fs, propertyId, data) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  createRecord(db, propertyId, data) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(data && typeof data === 'object', 'has data');
     if (propertyId === undefined)
-      propertyId = fs.collection(PROPERTY_COLLECTION).doc().id;
-    return fs
+      propertyId = db.collection(PROPERTY_COLLECTION).doc().id;
+    return db
       .collection(PROPERTY_COLLECTION)
       .doc(propertyId)
       .create(data);
@@ -107,39 +151,39 @@ module.exports = modelSetup({
 
   /**
    * Create a firestore doc id for collection
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @return {String}
    */
-  createId(fs) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
-    return fs.collection(PROPERTY_COLLECTION).doc().id;
+  createId(db) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    return db.collection(PROPERTY_COLLECTION).doc().id;
   },
 
   /**
    * Create a firestore document reference
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String} id
    * @return {firestore.DocumentReference}
    */
-  createDocRef(fs, id) {
+  createDocRef(db, id) {
     assert(id && typeof id === 'string', 'has document reference id');
-    return fs.collection(PROPERTY_COLLECTION).doc(id);
+    return db.collection(PROPERTY_COLLECTION).doc(id);
   },
 
   /**
    * Update Firestore Property
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {String} propertyId
    * @param  {Object} data
    * @param  {firestore.batch?} parentBatch
    * @return {Promise}
    */
-  updateRecord(fs, propertyId, data, parentBatch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  updateRecord(db, propertyId, data, parentBatch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(data && typeof data === 'object', 'has update data');
 
-    const docRef = fs.collection(PROPERTY_COLLECTION).doc(propertyId);
+    const docRef = db.collection(PROPERTY_COLLECTION).doc(propertyId);
 
     if (parentBatch) {
       parentBatch.update(docRef, data);
@@ -151,17 +195,17 @@ module.exports = modelSetup({
 
   /**
    * Create or update a Firestore property
-   * @param  {firebaseAdmin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String}  propertyId
    * @param  {Object}  data
    * @return {Promise} - resolves {DocumentReference}
    */
-  async upsertRecord(fs, propertyId, data) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  async upsertRecord(db, propertyId, data) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(data && typeof data === 'object', 'has upsert data');
 
-    const docRef = fs.collection(PROPERTY_COLLECTION).doc(propertyId);
+    const docRef = db.collection(PROPERTY_COLLECTION).doc(propertyId);
     let docSnap = null;
 
     try {
@@ -214,14 +258,14 @@ module.exports = modelSetup({
 
   /**
    * Remove Firestore Property
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {String} propertyId
    * @return {Promise}
    */
-  removeRecord(fs, propertyId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  removeRecord(db, propertyId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
-    return fs
+    return db
       .collection(PROPERTY_COLLECTION)
       .doc(propertyId)
       .delete();
@@ -229,16 +273,16 @@ module.exports = modelSetup({
 
   /**
    * Query all properties
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {Object} query
    * @param  {firestore.transaction?} transaction
    * @return {Promise} - resolves {DataSnapshot}
    */
-  query(fs, query, transaction) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  query(db, query, transaction) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(query && typeof query === 'object', 'has query');
 
-    let fsQuery = fs.collection(PROPERTY_COLLECTION);
+    let dbQuery = db.collection(PROPERTY_COLLECTION);
 
     // Append each query as where clause
     Object.keys(query).forEach(attr => {
@@ -247,7 +291,7 @@ module.exports = modelSetup({
         queryArgs && Array.isArray(queryArgs),
         'has query arguments array'
       );
-      fsQuery = fsQuery.where(attr, ...queryArgs);
+      dbQuery = dbQuery.where(attr, ...queryArgs);
     });
 
     if (transaction) {
@@ -255,28 +299,28 @@ module.exports = modelSetup({
         typeof transaction.get === 'function',
         'has firestore transaction'
       );
-      return Promise.resolve(transaction.get(fsQuery));
+      return Promise.resolve(transaction.get(dbQuery));
     }
 
-    return fsQuery.get(query);
+    return dbQuery.get(query);
   },
 
   /**
    * Update a property's metadata relating
    * to inspections and deficiencies
-   * @param  {admin.firestore} fs - Firestore Admin DB instance
+   * @param  {admin.firestore} db - Firestore Admin DB instance
    * @param  {String} propertyId
    * @param  {firestore.batch?} parentBatch
    * @return {Promise} - resolves {Object} updates
    */
-  async updateMetaData(fs, propertyId, parentBatch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  async updateMetaData(db, propertyId, parentBatch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
 
     // Lookup all property's inspections
     const inspections = [];
     try {
-      const inspectionsSnap = await inspectionsModel.query(fs, {
+      const inspectionsSnap = await inspectionsModel.query(db, {
         property: ['==', propertyId],
         completionDate: ['>', 0],
       });
@@ -291,7 +335,7 @@ module.exports = modelSetup({
     const propertyDeficiencies = [];
     try {
       const deficienciesSnap = await defItemsModel.queryByProperty(
-        fs,
+        db,
         propertyId
       );
       deficienciesSnap.docs.forEach(doc => {
@@ -317,7 +361,7 @@ module.exports = modelSetup({
 
     // Update Firebase Property
     try {
-      await this.updateRecord(fs, propertyId, updates, parentBatch);
+      await this.updateRecord(db, propertyId, updates, parentBatch);
     } catch (err) {
       throw Error(`${PREFIX} failed to update property metadata: ${err}`);
     }
@@ -327,7 +371,7 @@ module.exports = modelSetup({
 
   /**
    * Delete a property's image uploads
-   * TODO: Move to properties service
+   * TODO: Move to properties storage service
    * @param  {admin.storage} storage
    * @param  {String} url
    * @return {Promise}

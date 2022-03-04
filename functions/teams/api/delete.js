@@ -35,7 +35,7 @@ module.exports = function createDelete(db) {
 
     // Set content type
     res.set('Content-Type', 'application/vnd.api+json');
-    log.info('Update team requested');
+    log.info(`Delete team: "${teamId}" requested`);
 
     // Optional incognito mode query
     // defaults to false

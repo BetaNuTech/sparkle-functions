@@ -1727,6 +1727,49 @@
         }
       }
     },
+    "/v0/templates/{templateId}": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "inspectionId",
+          "in": "path",
+          "required": true,
+          "description": "inspection id.",
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "tags": ["Templates"],
+        "summary": "Deleting a template. Only for admin users",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Successful template delete, contains no payload or body"
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
     "/v0/deficiencies/{deficiencyId}/trello/card": {
       "parameters": [
         {
