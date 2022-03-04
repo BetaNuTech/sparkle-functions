@@ -134,6 +134,13 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
     templates.api.post(fs)
   );
 
+  // Delete a template
+  app.delete(
+    '/v0/templates',
+    authUser(fs, auth, { admin: true }),
+    templates.api.delete(fs)
+  );
+
   // Request Property's residents from Yardi
   app.get(
     '/v0/properties/:propertyId/yardi/residents',

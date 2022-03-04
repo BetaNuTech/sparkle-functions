@@ -230,6 +230,16 @@ New Data:
 \`Inspection created on {{{startDate}}}, with template: {{{templateName}}} has moved to {{{propertyName}}}\`
 *Moved by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
 
+  // ////////////////////
+  // Template Deletion
+  // ////////////////////
+
+  'template-delete-summary':
+    '{{{name}}} deleted{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'template-delete-markdown-body': `\`{{{name}}} deleted\`
+*Deleted by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
   // ////////////////
   // Team Creation
   // ////////////////

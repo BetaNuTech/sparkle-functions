@@ -166,7 +166,14 @@ describe('Utils | Source Notifications Templates', () => {
           'authorEmail',
         ],
       },
-
+      {
+        template: 'template-delete-summary',
+        values: ['name', 'authorName'],
+      },
+      {
+        template: 'template-delete-markdown-body',
+        values: ['name', 'authorName', 'authorEmail'],
+      },
       {
         template: 'inspection-reassign-summary',
         values: ['currentDate', 'authorName'],
