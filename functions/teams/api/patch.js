@@ -132,7 +132,7 @@ module.exports = function createPatchTeam(db) {
 
     if (!incognitoMode) {
       try {
-        // Notify of new inspection report
+        // Notify of updated team
         await notificationsModel.addRecord(db, {
           title: 'Team Update',
           summary: notifyTemplate('team-update-summary', {

@@ -120,6 +120,7 @@ module.exports = modelSetup({
 
   /**
    * Lookup all templates associated with a category
+   * TODO: replace with query method
    * @param  {admin.firestore} db - Firestore DB instance
    * @param  {String} categoryId
    * @return {Promise} - resolves {QuerySnapshot}
@@ -131,6 +132,40 @@ module.exports = modelSetup({
       .collection(TEMPLATE_COLLECTION)
       .where('category', '==', categoryId)
       .get();
+  },
+
+  /**
+   * Query all templates
+   * @param  {admin.firestore} db
+   * @param  {Object} query
+   * @param  {firestore.transaction?} transaction
+   * @return {Promise} - resolves {DataSnapshot}
+   */
+  query(db, query, transaction) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(query && typeof query === 'object', 'has query');
+
+    let dbQuery = db.collection(TEMPLATE_COLLECTION);
+
+    // Append each query as where clause
+    Object.keys(query).forEach(attr => {
+      const queryArgs = query[attr];
+      assert(
+        queryArgs && Array.isArray(queryArgs),
+        'has query arguments array'
+      );
+      dbQuery = dbQuery.where(attr, ...queryArgs);
+    });
+
+    if (transaction) {
+      assert(
+        typeof transaction.get === 'function',
+        'has firestore transaction'
+      );
+      return Promise.resolve(transaction.get(dbQuery));
+    }
+
+    return dbQuery.get(query);
   },
 
   /**
@@ -183,7 +218,7 @@ module.exports = modelSetup({
    * Firestore templates properties
    * relationships. Removes old and
    * adds new property relationships
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String} propertyId
    * @param  {String[]} beforeTemplates
    * @param  {String[]} afterTemplates
@@ -191,13 +226,13 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   updatePropertyRelationships(
-    fs,
+    db,
     propertyId,
     beforeTemplates,
     afterTemplates,
     parentBatch
   ) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(
       isArray(beforeTemplates) &&
@@ -212,9 +247,9 @@ module.exports = modelSetup({
 
     const added = afterTemplates.filter(t => !beforeTemplates.includes(t));
     const removed = beforeTemplates.filter(t => !afterTemplates.includes(t));
-    const batch = parentBatch || fs.batch();
+    const batch = parentBatch || db.batch();
 
-    const templatesRef = fs.collection(TEMPLATE_COLLECTION);
+    const templatesRef = db.collection(TEMPLATE_COLLECTION);
 
     // Append each new relationship
     // add to batch
@@ -245,22 +280,22 @@ module.exports = modelSetup({
   /**
    * Remove a category from
    * all associated templates
-   * @param  {admin.firestore} fs - Firestore Admin DB instance
+   * @param  {admin.firestore} db - Firestore Admin DB instance
    * @param  {String} categoryId
    * @param  {firestore.batch?} batch
    * @return {Promise}
    */
-  removeCategory(fs, categoryId, batch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  removeCategory(db, categoryId, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(categoryId && typeof categoryId === 'string', 'has category id');
     if (batch) {
       assert(typeof batch.update === 'function', 'has firestore batch');
     }
 
-    return fs
+    return db
       .runTransaction(async transaction => {
         const transOrBatch = batch || transaction;
-        const templateQuery = fs
+        const templateQuery = db
           .collection(TEMPLATE_COLLECTION)
           .where('category', '==', categoryId);
 
@@ -285,5 +320,46 @@ module.exports = modelSetup({
       .catch(err => {
         throw Error(`${PREFIX} removeCategory: transaction failed: ${err}`);
       });
+  },
+
+  /**
+   * Batch remove all firestore template
+   * relationships to a deleted category
+   * @param  {admin.firestore} db
+   * @param  {String[]} templateIds
+   * @param  {firestore.batch?} parentBatch
+   * @return {Promise}
+   */
+  batchRemoveCategory(db, templateIds, parentBatch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(
+      templateIds && Array.isArray(templateIds),
+      'has template ids as an array'
+    );
+    assert(
+      templateIds.every(id => id && typeof id === 'string'),
+      'template ids is an array of strings'
+    );
+    if (parentBatch) {
+      assert(
+        typeof parentBatch.update === 'function',
+        'has firestore batch/transaction'
+      );
+    }
+
+    const batch = parentBatch || db.batch();
+    const collection = db.collection(TEMPLATE_COLLECTION);
+
+    // Remove each templates' category
+    templateIds.forEach(id => {
+      const propertyDoc = collection.doc(id);
+      batch.update(propertyDoc, { category: FieldValue.delete() });
+    });
+
+    if (parentBatch) {
+      return Promise.resolve(parentBatch);
+    }
+
+    return batch.commit();
   },
 });

@@ -93,6 +93,7 @@ module.exports = modelSetup({
 
   /**
    * Remove Firestore Template Category
+   * TODO: replace with delete record
    * @param  {firebaseAdmin.firestore} db - Firestore DB instance
    * @param  {String} categoryId
    * @return {Promise}
@@ -117,6 +118,33 @@ module.exports = modelSetup({
     batch.delete(docRef);
 
     return batch.commit();
+  },
+
+  /**
+   * Remove template category
+   * @param  {admin.firestore} db - Firestore DB instance
+   * @param  {String} templateCategoryId
+   * @param  {firestore.batch?} batch
+   * @return {Promise<void>}
+   */
+  deleteRecord(db, templateCategoryId, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(
+      templateCategoryId && typeof templateCategoryId === 'string',
+      'has team id'
+    );
+
+    const doc = db
+      .collection(TEMPLATE_CATEGORIES_COLLECTION)
+      .doc(templateCategoryId);
+
+    if (batch) {
+      assert(typeof batch.delete === 'function', 'has batch instance');
+      batch.delete(doc);
+      return Promise.resolve();
+    }
+
+    return doc.delete();
   },
 
   /**
