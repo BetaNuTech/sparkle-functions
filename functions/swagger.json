@@ -33,6 +33,10 @@
       "description": "API for templates"
     },
     {
+      "name": "Template Categories",
+      "description": "API for template categories"
+    },
+    {
       "name": "Inspection",
       "description": "API for inspections"
     },
@@ -1508,7 +1512,6 @@
         }
       }
     },
-
     "/v0/inspections/{inspectionId}/template/items/{itemId}/image": {
       "parameters": [
         {
@@ -1760,6 +1763,62 @@
           "404": {
             "schema": {
               "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/template-categories/": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": ["Template Categories"],
+        "summary": "Creating a new template category. Only for admin or corporate users",
+        "parameters": [
+          {
+            "name": "template category",
+            "in": "body",
+            "description": "template category details",
+            "required": ["name"],
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful template category creation",
+            "schema": {
+              "$ref": "#/definitions/UPSERTTEMPLATECATEGORY"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "409": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS409"
             }
           },
           "500": {
@@ -2583,6 +2642,30 @@
                 },
                 "items": {
                   "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "UPSERTTEMPLATECATEGORY": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
                 }
               }
             }

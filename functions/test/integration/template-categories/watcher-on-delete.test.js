@@ -8,7 +8,7 @@ const {
   createSnapshot,
 } = require('../../../test-helpers/stubs');
 
-describe('Template Categories | Delete Template Categories', () => {
+describe('Template Categories | Watchers | Delete Template Categories', () => {
   afterEach(() => sinon.restore());
 
   it('should delete template categories', async () => {

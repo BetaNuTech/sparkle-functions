@@ -810,5 +810,17 @@ module.exports = {
     };
   },
 
+  /**
+   * Create a template category
+   * @param  {Object?} templateCategoryConfig
+   * @return {Object}
+   */
+  createTemplateCategory(templateCategoryConfig = {}) {
+    return {
+      name: 'test template category',
+      ...templateCategoryConfig,
+    };
+  },
+
   nowUnix,
 };

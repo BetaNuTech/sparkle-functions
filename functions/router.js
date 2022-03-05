@@ -10,6 +10,7 @@ const deficiencies = require('./deficient-items');
 const properties = require('./properties');
 const inspections = require('./inspections');
 const templates = require('./templates');
+const templateCategories = require('./template-categories');
 const jobs = require('./jobs');
 const users = require('./users');
 const clients = require('./clients');
@@ -139,6 +140,13 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
     '/v0/templates',
     authUser(fs, auth, { admin: true }),
     templates.api.delete(fs)
+  );
+
+  // Create a template category
+  app.post(
+    '/v0/template-categories',
+    authUser(fs, auth, { admin: true, corporate: true }),
+    templateCategories.api.post(fs)
   );
 
   // Request Property's residents from Yardi
