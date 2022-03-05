@@ -240,6 +240,18 @@ New Data:
   'template-delete-markdown-body': `\`{{{name}}} deleted\`
 *Deleted by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
 
+  // /////////////////////////////
+  // Template Category Creation
+  // /////////////////////////////
+
+  'template-category-created-summary':
+    '{{{name}}} created{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'template-category-created-markdown-body': `\`\`\`
+{{#if name}}Name: {{{name}}}{{/if}}
+\`\`\`
+*Created by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
   // ////////////////
   // Team Creation
   // ////////////////

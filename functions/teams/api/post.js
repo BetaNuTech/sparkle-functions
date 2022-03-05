@@ -11,7 +11,7 @@ const PREFIX = 'teams: api: post:';
 
 /**
  * Factory for creating a POST team endpoint
- * @param  {firebaseAdmin.firestore} db - Firestore Admin DB instance
+ * @param  {admin.firestore} db - Firestore Admin DB instance
  * @return {Function} - onRequest handler
  */
 
@@ -94,7 +94,7 @@ module.exports = function createPostTeam(db) {
 
     if (!incognitoMode) {
       try {
-        // Notify of new inspection report
+        // Notify of new team
         await notificationsModel.addRecord(db, {
           title: 'Team Creation',
           summary: notifyTemplate('team-created-summary', {

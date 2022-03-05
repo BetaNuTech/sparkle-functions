@@ -175,6 +175,14 @@ describe('Utils | Source Notifications Templates', () => {
         values: ['name', 'authorName', 'authorEmail'],
       },
       {
+        template: 'template-category-created-summary',
+        values: ['name', 'authorName'],
+      },
+      {
+        template: 'template-category-created-markdown-body',
+        values: ['name', 'authorName', 'authorEmail'],
+      },
+      {
         template: 'inspection-reassign-summary',
         values: ['currentDate', 'authorName'],
       },

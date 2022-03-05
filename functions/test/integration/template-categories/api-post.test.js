@@ -3,22 +3,22 @@ const { expect } = require('chai');
 const express = require('express');
 const bodyParser = require('body-parser');
 const sinon = require('sinon');
-const teamsModel = require('../../../models/teams');
+const templateCategoriesModel = require('../../../models/template-categories');
 const notificationsModel = require('../../../models/notifications');
-const handler = require('../../../teams/api/post');
+const handler = require('../../../template-categories/api/post');
 const mocking = require('../../../test-helpers/mocking');
 const uuid = require('../../../test-helpers/uuid');
 const firebase = require('../../../test-helpers/firebase');
 const log = require('../../../utils/logger');
 
-describe('Teams | API | POST', () => {
+describe('Template Categories | API | POST', () => {
   beforeEach(() => {
     sinon.stub(log, 'info').callsFake(() => true);
     sinon.stub(log, 'error').callsFake(() => true);
   });
   afterEach(() => sinon.restore());
 
-  it('rejects request to create team without a payload', async () => {
+  it('rejects request to create template category without a payload', async () => {
     const expected = 'name';
     const res = await request(createApp())
       .post('/t')
@@ -35,7 +35,7 @@ describe('Teams | API | POST', () => {
     expect(actual).to.equal(expected);
   });
 
-  it('rejects request to create team without a providing a name', async () => {
+  it('rejects request to create template category without a providing a name', async () => {
     const expected = 'name';
     const res = await request(createApp())
       .post('/t')
@@ -52,27 +52,31 @@ describe('Teams | API | POST', () => {
     expect(actual).to.equal(expected);
   });
 
-  it('rejects request to create team with a name that is already in use', () => {
-    const existingTeam = mocking.createTeam({ name: 'In Use' });
+  it('rejects request to create template category with a name that is already in use', () => {
+    const existingCategory = mocking.createTemplateCategory({ name: 'In Use' });
     sinon
-      .stub(teamsModel, 'query')
-      .resolves(firebase.createQuerySnapshot([existingTeam]));
+      .stub(templateCategoriesModel, 'query')
+      .resolves(firebase.createQuerySnapshot([existingCategory]));
 
     return request(createApp())
       .post('/t')
-      .send({ name: existingTeam.name.toLowerCase() })
+      .send({ name: existingCategory.name.toLowerCase() })
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(409); // Assertion
   });
 
-  it('creates a valid team and titlizes user provided name', async () => {
+  it('creates a valid temlate category and titlizes user provided name', async () => {
     const expected = 'It Is Titlized';
 
     // Stubs
-    sinon.stub(teamsModel, 'query').resolves(firebase.createQuerySnapshot([])); // empty
-    sinon.stub(teamsModel, 'createId').returns(uuid());
+    sinon
+      .stub(templateCategoriesModel, 'query')
+      .resolves(firebase.createQuerySnapshot([])); // empty
+    sinon.stub(templateCategoriesModel, 'createId').returns(uuid());
     sinon.stub(notificationsModel, 'addRecord').resolves();
-    const createReq = sinon.stub(teamsModel, 'createRecord').resolves({});
+    const createReq = sinon
+      .stub(templateCategoriesModel, 'createRecord')
+      .resolves({});
 
     // Execute
     await request(createApp())
@@ -87,13 +91,15 @@ describe('Teams | API | POST', () => {
     expect(actual).to.equal(expected);
   });
 
-  it('sends notification upon successful team creation', async () => {
+  it('sends notification upon successful template category creation', async () => {
     const expected = true;
 
     // Stubs
-    sinon.stub(teamsModel, 'query').resolves(firebase.createQuerySnapshot([])); // empty
-    sinon.stub(teamsModel, 'createId').returns(uuid());
-    sinon.stub(teamsModel, 'createRecord').resolves({});
+    sinon
+      .stub(templateCategoriesModel, 'query')
+      .resolves(firebase.createQuerySnapshot([])); // empty
+    sinon.stub(templateCategoriesModel, 'createId').returns(uuid());
+    sinon.stub(templateCategoriesModel, 'createRecord').resolves({});
     const sendNotification = sinon
       .stub(notificationsModel, 'addRecord')
       .resolves();
@@ -101,7 +107,7 @@ describe('Teams | API | POST', () => {
     // Execute
     await request(createApp())
       .post('/t')
-      .send({ name: 'New Team' })
+      .send({ name: 'New Template Category' })
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(201);
 
@@ -114,16 +120,18 @@ describe('Teams | API | POST', () => {
     const expected = false;
 
     // Stubs
-    sinon.stub(teamsModel, 'query').resolves(firebase.createQuerySnapshot([])); // empty
-    sinon.stub(teamsModel, 'createId').returns(uuid());
-    sinon.stub(teamsModel, 'createRecord').resolves({});
+    sinon
+      .stub(templateCategoriesModel, 'query')
+      .resolves(firebase.createQuerySnapshot([])); // empty
+    sinon.stub(templateCategoriesModel, 'createId').returns(uuid());
+    sinon.stub(templateCategoriesModel, 'createRecord').resolves({});
     const sendNotification = sinon
       .stub(notificationsModel, 'addRecord')
       .resolves();
 
     await request(createApp())
       .post('/t?incognitoMode=true')
-      .send({ name: 'New Team' })
+      .send({ name: 'New Template Category' })
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(201);
 
