@@ -1,7 +1,8 @@
 const post = require('./api/post');
-const onDelete = require('./watchers/on-delete');
+const onDelete = require('./api/delete');
+const onDeleteWatcher = require('./watchers/on-delete');
 
 module.exports = {
-  api: { post },
-  watchers: { onDelete },
+  api: { post, delete: onDelete },
+  watchers: { onDelete: onDeleteWatcher },
 };

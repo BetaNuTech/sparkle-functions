@@ -109,7 +109,7 @@ module.exports = function createPostTeam(db) {
           creator: req.user ? req.user.id || '' : '',
         });
       } catch (err) {
-        log.error(`${PREFIX} failed to create source notification | ${err}`); // proceed with error
+        log.error(`${PREFIX} failed to create source notification: ${err}`); // proceed with error
       }
     }
 

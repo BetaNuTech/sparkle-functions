@@ -1829,6 +1829,54 @@
         }
       }
     },
+    "/v0/teams/{templateCategoryId}/": {
+      "parameters": [
+        {
+          "name": "templateCategoryId",
+          "in": "path",
+          "required": true,
+          "description": "template category id being deleted or updated.",
+          "type": "string"
+        },
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "tags": ["Template Categories"],
+        "summary": "Deleting a template category. Only for admin and corporate users",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Successful template category delete, contains no payload or body"
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
     "/v0/deficiencies/{deficiencyId}/trello/card": {
       "parameters": [
         {

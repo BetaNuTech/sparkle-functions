@@ -252,6 +252,16 @@ New Data:
 \`\`\`
 *Created by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
 
+  // /////////////////////////////
+  // Template Category Deletion
+  // /////////////////////////////
+
+  'template-category-delete-summary':
+    '{{{name}}} deleted{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'template-category-delete-markdown-body': `\`{{{name}}} deleted\`
+*Deleted by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
   // ////////////////
   // Team Creation
   // ////////////////
