@@ -65,6 +65,33 @@ module.exports = modelSetup({
   },
 
   /**
+   * Update firestore template category
+   * @param  {admin.firestore} db - Firestore DB instance
+   * @param  {String} templateCategoryId
+   * @param  {Object} data
+   * @param  {firestore.batch?} batch
+   * @return {Promise<void>}
+   */
+  updateRecord(db, templateCategoryId, data, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(
+      templateCategoryId && typeof templateCategoryId === 'string',
+      'has template category id'
+    );
+    assert(data && typeof data === 'object', 'has update data');
+    const docRef = db
+      .collection(TEMPLATE_CATEGORIES_COLLECTION)
+      .doc(templateCategoryId);
+
+    if (batch) {
+      assert(typeof batch.update === 'function', 'has batch instance');
+      return Promise.resolve(batch.update(docRef, data));
+    }
+
+    return docRef.update(data);
+  },
+
+  /**
    * Create a firestore document id
    * @param  {admin.firestore} db
    * @return {String}
