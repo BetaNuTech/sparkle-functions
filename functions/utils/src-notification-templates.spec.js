@@ -191,6 +191,14 @@ describe('Utils | Source Notifications Templates', () => {
         values: ['name', 'authorName', 'authorEmail'],
       },
       {
+        template: 'template-category-update-summary',
+        values: ['previousName', 'name', 'authorName'],
+      },
+      {
+        template: 'template-category-update-markdown-body',
+        values: ['previousName', 'name', 'authorName', 'authorEmail'],
+      },
+      {
         template: 'inspection-reassign-summary',
         values: ['currentDate', 'authorName'],
       },

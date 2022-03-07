@@ -137,7 +137,7 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
 
   // Delete a template
   app.delete(
-    '/v0/templates',
+    '/v0/templates/:templateId',
     authUser(fs, auth, { admin: true }),
     templates.api.delete(fs)
   );
@@ -147,6 +147,13 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
     '/v0/template-categories',
     authUser(fs, auth, { admin: true, corporate: true }),
     templateCategories.api.post(fs)
+  );
+
+  // Update a template category
+  app.patch(
+    '/v0/template-categories/:templateCategoryId',
+    authUser(fs, auth, { admin: true, corporate: true }),
+    templateCategories.api.patch(fs)
   );
 
   // Delete a template category

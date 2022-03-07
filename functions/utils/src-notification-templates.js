@@ -262,6 +262,23 @@ New Data:
   'template-category-delete-markdown-body': `\`{{{name}}} deleted\`
 *Deleted by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
 
+  // ///////////////////////////
+  // Template Category Update
+  // ///////////////////////////
+
+  'template-category-update-summary':
+    '{{{previousName}}} updated to {{{name}}}{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'template-category-update-markdown-body': `Previous Data:
+\`\`\`
+Name: {{{previousName}}}
+\`\`\`
+New Data:
+\`\`\`
+Name: {{{name}}}
+\`\`\`
+*Edited by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
   // ////////////////
   // Team Creation
   // ////////////////

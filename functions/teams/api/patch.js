@@ -151,7 +151,7 @@ module.exports = function createPatchTeam(db) {
       }
     }
 
-    // Send newly created team
+    // Send updated team
     res.status(201).send({
       data: {
         id: teamId,
