@@ -230,6 +230,55 @@ New Data:
 \`Inspection created on {{{startDate}}}, with template: {{{templateName}}} has moved to {{{propertyName}}}\`
 *Moved by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
 
+  // ////////////////////
+  // Template Deletion
+  // ////////////////////
+
+  'template-delete-summary':
+    '{{{name}}} deleted{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'template-delete-markdown-body': `\`{{{name}}} deleted\`
+*Deleted by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // /////////////////////////////
+  // Template Category Creation
+  // /////////////////////////////
+
+  'template-category-created-summary':
+    '{{{name}}} created{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'template-category-created-markdown-body': `\`\`\`
+{{#if name}}Name: {{{name}}}{{/if}}
+\`\`\`
+*Created by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // /////////////////////////////
+  // Template Category Deletion
+  // /////////////////////////////
+
+  'template-category-delete-summary':
+    '{{{name}}} deleted{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'template-category-delete-markdown-body': `\`{{{name}}} deleted\`
+*Deleted by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // ///////////////////////////
+  // Template Category Update
+  // ///////////////////////////
+
+  'template-category-update-summary':
+    '{{{previousName}}} updated to {{{name}}}{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'template-category-update-markdown-body': `Previous Data:
+\`\`\`
+Name: {{{previousName}}}
+\`\`\`
+New Data:
+\`\`\`
+Name: {{{name}}}
+\`\`\`
+*Edited by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
   // ////////////////
   // Team Creation
   // ////////////////
