@@ -44,6 +44,7 @@ interface property {
 interface inspection {
   id?: string;
   updatedAt: number; // UNIX timestamp (default to now)
+  completedAt?: number; // UNIX timestamp when template became complete
   updatedLastDate: number; // UNIX timestamp
   creationDate: number; // UNIX timestamp (default to now)
   completionDate?: number; // UNIX timestamp

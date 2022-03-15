@@ -167,6 +167,43 @@ describe('Utils | Source Notifications Templates', () => {
         ],
       },
       {
+        template: 'template-creation-summary',
+        values: ['name', 'authorName'],
+      },
+      {
+        template: 'template-creation-markdown-body',
+        values: [
+          'name',
+          'description',
+          'category',
+          'sectionsCount',
+          'itemsCount',
+          'authorName',
+          'authorEmail',
+        ],
+      },
+      {
+        template: 'template-update-summary',
+        values: ['name', 'authorName'],
+      },
+      {
+        template: 'template-update-markdown-body',
+        values: [
+          'previousName',
+          'previousDescription',
+          'previousCategory',
+          'previousSectionsCount',
+          'previousItemsCount',
+          'currentName',
+          'currentDescription',
+          'currentCategory',
+          'currentSectionsCount',
+          'currentItemsCount',
+          'authorName',
+          'authorEmail',
+        ],
+      },
+      {
         template: 'template-delete-summary',
         values: ['name', 'authorName'],
       },
