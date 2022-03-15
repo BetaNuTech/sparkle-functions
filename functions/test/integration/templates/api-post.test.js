@@ -68,8 +68,9 @@ describe('Templates | API | POST', () => {
     const expectedName = 'Copy: Cloned Template';
     const expected = mocking.createTemplate({
       name: 'Cloned Template',
-      sections: { [sectionId]: clonedSection },
-      items: { [itemId]: clonedItem },
+      clone: clonedTemplateId,
+      sections: { [sectionId]: { ...clonedSection, clone: sectionId } },
+      items: { [itemId]: { ...clonedItem, clone: itemId } },
     });
 
     // Stub Requests

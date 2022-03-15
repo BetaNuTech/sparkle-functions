@@ -1,4 +1,5 @@
 const { expect } = require('chai');
+const uuid = require('../../test-helpers/uuid');
 const mocking = require('../../test-helpers/mocking');
 const forkTemplate = require('./fork-template');
 
@@ -17,11 +18,14 @@ describe('Templates | Utils | Fork Template', () => {
       items: {},
     });
     const expected = [JSON.stringify(sectionOne), JSON.stringify(sectionTwo)];
-    const result = forkTemplate(srcTemplate);
+    const result = forkTemplate('1', srcTemplate);
     const sections = (result || {}).sections || {};
     const actual = Object.values(sections)
       .sort((a, b) => a.index - b.index)
-      .map(section => JSON.stringify(section));
+      .map(section => {
+        delete section.clone; // tested separately
+        return JSON.stringify(section);
+      });
 
     expect(sections.one).to.equal(
       undefined,
@@ -55,11 +59,14 @@ describe('Templates | Utils | Fork Template', () => {
       },
     });
     const expected = [JSON.stringify(itemOne), JSON.stringify(itemTwo)];
-    const result = forkTemplate(srcTemplate);
+    const result = forkTemplate('1', srcTemplate);
     const items = (result || {}).items || {};
     const actual = Object.values(items)
       .sort((a, b) => a.index - b.index)
-      .map(item => JSON.stringify(item));
+      .map(item => {
+        delete item.clone; // tested separately
+        return JSON.stringify(item);
+      });
 
     expect(items.one).to.equal(undefined, 'removed old item one identifier');
     expect(items.two).to.equal(undefined, 'removed old item two identifier');
@@ -87,13 +94,36 @@ describe('Templates | Utils | Fork Template', () => {
       },
     });
     const expected = [0, 0];
-    const result = forkTemplate(srcTemplate);
+    const result = forkTemplate('1', srcTemplate);
     const items = (result || {}).items || {};
     const actual = Object.values(items).map(item => item.version);
 
-    expect(actual).to.deep.equal(
-      expected,
-      'successfully cloned section object'
-    );
+    expect(actual).to.deep.equal(expected);
+  });
+
+  it('it sets a clone reference in template, sections, and items', () => {
+    const templateId = uuid();
+    const sectionId = uuid();
+    const itemId = uuid();
+    const expected = [templateId, sectionId, itemId];
+    const section = mocking.createSection();
+    const item = mocking.createItem({
+      index: 0,
+      sectionId,
+    });
+    const srcTemplate = mocking.createTemplate({
+      sections: {
+        [sectionId]: section,
+      },
+      items: {
+        [itemId]: item,
+      },
+    });
+    const result = forkTemplate(templateId, srcTemplate) || {};
+    const [resultItem] = Object.values(result.items || {});
+    const [resultSection] = Object.values(result.sections || {});
+
+    const actual = [result.clone, resultSection.clone, resultItem.clone];
+    expect(actual).to.deep.equal(expected);
   });
 });
