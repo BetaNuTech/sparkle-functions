@@ -135,6 +135,13 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
     templates.api.post(fs)
   );
 
+  // Update a template
+  app.patch(
+    '/v0/templates/:templateId',
+    authUser(fs, auth, { admin: true, corporate: true }),
+    templates.api.patch(fs)
+  );
+
   // Delete a template
   app.delete(
     '/v0/templates/:templateId',

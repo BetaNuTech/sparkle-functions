@@ -1781,6 +1781,47 @@
             }
           }
         }
+      },
+      "patch": {
+        "tags": ["Templates"],
+        "summary": "Update a template. Only for admin or corporate users",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Successful template update, payload contains updates",
+            "schema": {
+              "$ref": "#/definitions/UPSERTTEMPLATE"
+            }
+          },
+          "204": {
+            "description": "Successful update, that had no impact on template"
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
       }
     },
     "/v0/template-categories/": {

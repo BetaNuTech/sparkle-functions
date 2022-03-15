@@ -28,13 +28,18 @@ module.exports = function createDelete(db) {
   return async (req, res) => {
     const { params } = req;
     const { templateId } = params;
+    const authorId = req.user ? req.user.id || '' : '';
     const authorName = getFullName(req.user || {});
     const authorEmail = req.user ? req.user.email : '';
     const send500Error = create500ErrHandler(PREFIX, res);
 
     // Set content type
     res.set('Content-Type', 'application/vnd.api+json');
-    log.info(`Delete template: "${templateId}" requested`);
+    log.info(
+      `Delete template: "${templateId}" requested${
+        authorId ? ` by "${authorId}"` : ''
+      }`
+    );
 
     // Optional incognito mode query
     // defaults to false
@@ -133,7 +138,7 @@ module.exports = function createDelete(db) {
             authorName,
             authorEmail,
           }),
-          creator: req.user ? req.user.id || '' : '',
+          creator: authorId,
         });
       } catch (err) {
         log.error(`${PREFIX} failed to create source notification: ${err}`); // proceed with error
