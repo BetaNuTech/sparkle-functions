@@ -123,7 +123,7 @@ const bidSchema = new Schema({
 });
 
 /**
- * Validate a def
+ * Validate a bid update
  * @param {Object} bid
  * @return {Object[]} errors [{path: String, message: String}]
  */

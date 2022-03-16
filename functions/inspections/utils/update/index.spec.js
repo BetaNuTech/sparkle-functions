@@ -755,8 +755,8 @@ describe('Unit | Inspections | Utils | Update', () => {
 
     // Assertions
     const result = update(inspection, changes);
-    const resultSections = (result.template || {}).items || {};
-    const actual = [resultSections.two, resultSections.three];
+    const resultItems = (result.template || {}).items || {};
+    const actual = [resultItems.two, resultItems.three];
     expect(actual).to.deep.equal(expected);
   });
 

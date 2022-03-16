@@ -29,6 +29,14 @@
       "description": "API for properties"
     },
     {
+      "name": "Templates",
+      "description": "API for templates"
+    },
+    {
+      "name": "Template Categories",
+      "description": "API for template categories"
+    },
+    {
       "name": "Inspection",
       "description": "API for inspections"
     },
@@ -39,6 +47,10 @@
     {
       "name": "Users",
       "description": "API for users"
+    },
+    {
+      "name": "Teams",
+      "description": "API for teams"
     }
   ],
   "schemes": ["http"],
@@ -1500,7 +1512,6 @@
         }
       }
     },
-
     "/v0/inspections/{inspectionId}/template/items/{itemId}/image": {
       "parameters": [
         {
@@ -1672,6 +1683,312 @@
         }
       }
     },
+    "/v0/templates/": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": ["Templates"],
+        "summary": "Creating or cloning a new template.  Only Admin/Corporate users",
+        "parameters": [
+          {
+            "name": "clone",
+            "in": "path",
+            "required": true,
+            "description": "Existing template identifier to clone",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful template creation",
+            "schema": {
+              "$ref": "#/definitions/UPSERTTEMPLATE"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/templates/{templateId}": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "inspectionId",
+          "in": "path",
+          "required": true,
+          "description": "inspection id.",
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "tags": ["Templates"],
+        "summary": "Deleting a template. Only for admin users",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Successful template delete, contains no payload or body"
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Templates"],
+        "summary": "Update a template. Only for admin or corporate users",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Successful template update, payload contains updates",
+            "schema": {
+              "$ref": "#/definitions/UPSERTTEMPLATE"
+            }
+          },
+          "204": {
+            "description": "Successful update, that had no impact on template"
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/template-categories/": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": ["Template Categories"],
+        "summary": "Creating a new template category. Only for admin or corporate users",
+        "parameters": [
+          {
+            "name": "payload",
+            "in": "body",
+            "description": "template category details",
+            "required": ["name"],
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful template category creation",
+            "schema": {
+              "$ref": "#/definitions/UPSERTTEMPLATECATEGORY"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "409": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS409"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/teams/{templateCategoryId}/": {
+      "parameters": [
+        {
+          "name": "templateCategoryId",
+          "in": "path",
+          "required": true,
+          "description": "template category id being deleted or updated.",
+          "type": "string"
+        },
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "patch": {
+        "tags": ["Template Categories"],
+        "summary": "Updating a template category. Only for admin or corporate users",
+        "parameters": [
+          {
+            "name": "payload",
+            "in": "body",
+            "description": "template category details",
+            "required": ["name"],
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful template category update",
+            "schema": {
+              "$ref": "#/definitions/UPSERTTEMPLATECATEGORY"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "409": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS409"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Template Categories"],
+        "summary": "Deleting a template category. Only for admin and corporate users",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Successful template category delete, contains no payload or body"
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+
     "/v0/deficiencies/{deficiencyId}/trello/card": {
       "parameters": [
         {
@@ -2442,6 +2759,72 @@
               "type": "object",
               "properties": {
                 "team": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "UPSERTTEMPLATE": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "createdAt": {
+                  "type": "number"
+                },
+                "updatedAt": {
+                  "type": "number"
+                },
+                "trackDeficientItems": {
+                  "type": "boolean"
+                },
+                "requireDeficientItemNoteAndPhoto": {
+                  "type": "boolean"
+                },
+                "sections": {
+                  "type": "object"
+                },
+                "items": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "UPSERTTEMPLATECATEGORY": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "name": {
                   "type": "string"
                 }
               }

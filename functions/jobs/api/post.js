@@ -16,12 +16,12 @@ const DEFAULT_AUTH_RULES = config.jobs.authorizedRuleTypes[0];
 
 /**
  * Factory for creating a POST job endpoint
- * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
+ * @param  {admin.firestore} db - Firestore Admin DB instance
  * @return {Function} - onRequest handler
  */
 
-module.exports = function createPostJob(fs) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function createPostJob(db) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
 
   /**
    * Handle POST request for creating
@@ -60,7 +60,7 @@ module.exports = function createPostJob(fs) {
     // Lookup Property
     let property = null;
     try {
-      const propertySnap = await propertiesModel.findRecord(fs, propertyId);
+      const propertySnap = await propertiesModel.findRecord(db, propertyId);
       property = propertySnap.data() || null;
     } catch (err) {
       return send500Error(err, 'property lookup failed', 'unexpected error');
@@ -110,14 +110,14 @@ module.exports = function createPostJob(fs) {
     }
 
     // Generate Job ID
-    const jobId = jobsModel.createId(fs);
+    const jobId = jobsModel.createId(db);
 
     // Add property relationship
-    job.property = propertiesModel.createDocRef(fs, propertyId);
+    job.property = propertiesModel.createDocRef(db, propertyId);
 
     // Persist new job
     try {
-      await jobsModel.createRecord(fs, jobId, job);
+      await jobsModel.createRecord(db, jobId, job);
     } catch (err) {
       return send500Error(err, 'job creation failed', err.message);
     }

@@ -230,6 +230,96 @@ New Data:
 \`Inspection created on {{{startDate}}}, with template: {{{templateName}}} has moved to {{{propertyName}}}\`
 *Moved by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
 
+  // ////////////////////
+  // Template Creation
+  // ////////////////////
+
+  'template-creation-summary':
+    '{{{name}}} created{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'template-creation-markdown-body': `\`\`\`
+{{#if name}}Name: {{{name}}}{{/if}}
+{{#if description}}Description: {{{description}}}{{/if}}
+{{#if category}}Category: {{{category}}}{{/if}}
+{{#if sectionsCount}}# of section(s): {{{sectionsCount}}}{{/if}}
+{{#if itemsCount}}# of item(s): {{{itemsCount}}}{{/if}}
+\`\`\`
+*Created by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // //////////////////
+  // Template Update
+  // //////////////////
+
+  'template-update-summary':
+    '{{{name}}} updated{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'template-update-markdown-body': `Previous Data:
+\`\`\`
+{{#if previousName}}Name: {{{previousName}}}{{/if}}
+{{#if previousDescription}}Description: {{{previousDescription}}}{{/if}}
+{{#if previousCategory}}Category: {{{previousCategory}}}{{/if}}
+{{#if previousSectionsCount}}# of section(s): {{{previousSectionsCount}}}{{/if}}
+{{#if previousItemsCount}}# of item(s): {{{previousItemsCount}}}{{/if}}
+\`\`\`
+New Data:
+\`\`\`
+{{#if currentName}}Name: {{{currentName}}}{{/if}}
+{{#if currentDescription}}Description: {{{currentDescription}}}{{/if}}
+{{#if currentCategory}}Category: {{{currentCategory}}}{{/if}}
+{{#if currentSectionsCount}}# of section(s): {{{currentSectionsCount}}}{{/if}}
+{{#if currentItemsCount}}# of item(s): {{{currentItemsCount}}}{{/if}}
+\`\`\`
+*Edited by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // ////////////////////
+  // Template Deletion
+  // ////////////////////
+
+  'template-delete-summary':
+    '{{{name}}} deleted{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'template-delete-markdown-body': `\`{{{name}}} deleted\`
+*Deleted by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // /////////////////////////////
+  // Template Category Creation
+  // /////////////////////////////
+
+  'template-category-created-summary':
+    '{{{name}}} created{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'template-category-created-markdown-body': `\`\`\`
+{{#if name}}Name: {{{name}}}{{/if}}
+\`\`\`
+*Created by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // /////////////////////////////
+  // Template Category Deletion
+  // /////////////////////////////
+
+  'template-category-delete-summary':
+    '{{{name}}} deleted{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'template-category-delete-markdown-body': `\`{{{name}}} deleted\`
+*Deleted by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // ///////////////////////////
+  // Template Category Update
+  // ///////////////////////////
+
+  'template-category-update-summary':
+    '{{{previousName}}} updated to {{{name}}}{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'template-category-update-markdown-body': `Previous Data:
+\`\`\`
+Name: {{{previousName}}}
+\`\`\`
+New Data:
+\`\`\`
+Name: {{{name}}}
+\`\`\`
+*Edited by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
   // ////////////////
   // Team Creation
   // ////////////////

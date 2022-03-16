@@ -1,6 +1,7 @@
 const assert = require('assert');
 const FieldValue = require('firebase-admin').firestore.FieldValue;
 const modelSetup = require('./utils/model-setup');
+const firestoreUtils = require('../utils/firestore');
 
 const PREFIX = 'models: templates:';
 const TEMPLATE_COLLECTION = 'templates';
@@ -9,14 +10,14 @@ const { isArray } = Array;
 module.exports = modelSetup({
   /**
    * Lookup Firestore Template
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {String} templateId
    * @return {Promise}
    */
-  findRecord(fs, templateId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  findRecord(db, templateId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(templateId && typeof templateId === 'string', 'has template id');
-    return fs
+    return db
       .collection(TEMPLATE_COLLECTION)
       .doc(templateId)
       .get();
@@ -24,14 +25,14 @@ module.exports = modelSetup({
 
   /**
    * Remove Firestore Template
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {String} templateId
    * @return {Promise}
    */
-  removeRecord(fs, templateId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  removeRecord(db, templateId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(templateId && typeof templateId === 'string', 'has template id');
-    return fs
+    return db
       .collection(TEMPLATE_COLLECTION)
       .doc(templateId)
       .delete();
@@ -39,17 +40,17 @@ module.exports = modelSetup({
 
   /**
    * Update/add Firestore Template
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {String} templateId
    * @param  {Object} data
    * @return {Promise} - resolves {DocumentReference}
    */
-  async upsertRecord(fs, templateId, data) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  async upsertRecord(db, templateId, data) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(templateId && typeof templateId === 'string', 'has template id');
     assert(data && typeof data === 'object', 'has upsert data');
 
-    const docRef = fs.collection(TEMPLATE_COLLECTION).doc(templateId);
+    const docRef = db.collection(TEMPLATE_COLLECTION).doc(templateId);
     let docSnap = null;
 
     try {
@@ -92,17 +93,85 @@ module.exports = modelSetup({
   },
 
   /**
+   * Set Firestore Template
+   * @param  {admin.firestore} db
+   * @param  {String} templateId
+   * @param  {Object} data
+   * @param  {firestore.batch?} batch
+   * @param  {Boolean} merge - deep merge record
+   * @return {Promise}
+   */
+  setRecord(db, templateId, data, batch, merge = false) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(templateId && typeof templateId === 'string', 'has template id');
+    assert(data && typeof data === 'object', 'has update data');
+
+    const docRef = db.collection(TEMPLATE_COLLECTION).doc(templateId);
+    const finalData = JSON.parse(JSON.stringify(data)); // clone
+    const deleteWrites = {};
+    const itemDeletes = firestoreUtils.getDeleteWrites(
+      finalData.items || {},
+      'items'
+    );
+    const sectionDeletes = firestoreUtils.getDeleteWrites(
+      finalData.sections || {},
+      'sections'
+    );
+
+    // Merge all delete updates
+    Object.assign(deleteWrites, itemDeletes, sectionDeletes);
+    const hasDeleteWrites = isObjectEmpty(deleteWrites) === false;
+
+    // Remove nested nulls in items and sections
+    firestoreUtils.removeNulls(finalData.items || {});
+    firestoreUtils.removeNulls(finalData.sections || {});
+
+    // Remove empty section/items hashes
+    // which could clear all the items
+    const hasEmptyItems = isObjectEmpty((finalData || {}).items || {});
+    const hasEmptySections = isObjectEmpty((finalData || {}).sections || {});
+    if (hasEmptyItems) delete finalData.items;
+    if (hasEmptySections) delete finalData.sections;
+
+    // Add batched update
+    if (batch) {
+      assert(
+        typeof batch.set === 'function' && typeof batch.update === 'function',
+        'has batch instance'
+      );
+      batch.set(docRef, finalData, { merge });
+      if (hasDeleteWrites) batch.update(docRef, deleteWrites); // add deletes
+      return Promise.resolve();
+    }
+
+    // Normal update
+    return docRef.set(finalData, { merge }).then(
+      () => (hasDeleteWrites ? docRef.update(deleteWrites) : Promise.resolve()) // append any deletes
+    );
+  },
+
+  /**
+   * Create a firestore document id
+   * @param  {admin.firestore} db
+   * @return {String}
+   */
+  createId(db) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    return db.collection(TEMPLATE_COLLECTION).doc().id;
+  },
+
+  /**
    * Create a Firestore template
-   * @param  {firebaseAdmin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String} templateId
    * @param  {Object} data
    * @return {Promise} - resolves {WriteResult}
    */
-  createRecord(fs, templateId, data) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  createRecord(db, templateId, data) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(templateId && typeof templateId === 'string', 'has template id');
     assert(data && typeof data === 'object', 'has data');
-    return fs
+    return db
       .collection(TEMPLATE_COLLECTION)
       .doc(templateId)
       .create(data);
@@ -110,28 +179,63 @@ module.exports = modelSetup({
 
   /**
    * Lookup all templates associated with a category
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * TODO: replace with query method
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {String} categoryId
    * @return {Promise} - resolves {QuerySnapshot}
    */
-  queryByCategory(fs, categoryId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  queryByCategory(db, categoryId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(categoryId && typeof categoryId === 'string', 'has category id');
-    return fs
+    return db
       .collection(TEMPLATE_COLLECTION)
       .where('category', '==', categoryId)
       .get();
   },
 
   /**
+   * Query all templates
+   * @param  {admin.firestore} db
+   * @param  {Object} query
+   * @param  {firestore.transaction?} transaction
+   * @return {Promise} - resolves {DataSnapshot}
+   */
+  query(db, query, transaction) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(query && typeof query === 'object', 'has query');
+
+    let dbQuery = db.collection(TEMPLATE_COLLECTION);
+
+    // Append each query as where clause
+    Object.keys(query).forEach(attr => {
+      const queryArgs = query[attr];
+      assert(
+        queryArgs && Array.isArray(queryArgs),
+        'has query arguments array'
+      );
+      dbQuery = dbQuery.where(attr, ...queryArgs);
+    });
+
+    if (transaction) {
+      assert(
+        typeof transaction.get === 'function',
+        'has firestore transaction'
+      );
+      return Promise.resolve(transaction.get(dbQuery));
+    }
+
+    return dbQuery.get(query);
+  },
+
+  /**
    * Batch update templates
-   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {Object} updates - { id: { name: "update" } }
    * @return {Promise}
    */
-  batchUpdate(fs, updates) {
-    const batch = fs.batch();
-    const templatesRef = fs.collection(TEMPLATE_COLLECTION);
+  batchUpdate(db, updates) {
+    const batch = db.batch();
+    const templatesRef = db.collection(TEMPLATE_COLLECTION);
 
     if (!updates || !Object.keys(updates).length) {
       return Promise.resolve();
@@ -150,11 +254,11 @@ module.exports = modelSetup({
 
   /**
    * Lookup all template documents snapshots
-   * @param  {firebaseAdmin.firestore} fs
+   * @param  {admin.firestore} db
    * @return {Promise} - resolves {DocumentSnapshot[]}
    */
-  findAll(fs) {
-    return fs
+  findAll(db) {
+    return db
       .collection(TEMPLATE_COLLECTION)
       .get()
       .then(collectionSnap => {
@@ -173,7 +277,7 @@ module.exports = modelSetup({
    * Firestore templates properties
    * relationships. Removes old and
    * adds new property relationships
-   * @param  {firebaseAdmin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String} propertyId
    * @param  {String[]} beforeTemplates
    * @param  {String[]} afterTemplates
@@ -181,13 +285,13 @@ module.exports = modelSetup({
    * @return {Promise}
    */
   updatePropertyRelationships(
-    fs,
+    db,
     propertyId,
     beforeTemplates,
     afterTemplates,
     parentBatch
   ) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(
       isArray(beforeTemplates) &&
@@ -202,9 +306,9 @@ module.exports = modelSetup({
 
     const added = afterTemplates.filter(t => !beforeTemplates.includes(t));
     const removed = beforeTemplates.filter(t => !afterTemplates.includes(t));
-    const batch = parentBatch || fs.batch();
+    const batch = parentBatch || db.batch();
 
-    const templatesRef = fs.collection(TEMPLATE_COLLECTION);
+    const templatesRef = db.collection(TEMPLATE_COLLECTION);
 
     // Append each new relationship
     // add to batch
@@ -235,22 +339,22 @@ module.exports = modelSetup({
   /**
    * Remove a category from
    * all associated templates
-   * @param  {admin.firestore} fs - Firestore Admin DB instance
+   * @param  {admin.firestore} db - Firestore Admin DB instance
    * @param  {String} categoryId
    * @param  {firestore.batch?} batch
    * @return {Promise}
    */
-  removeCategory(fs, categoryId, batch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  removeCategory(db, categoryId, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(categoryId && typeof categoryId === 'string', 'has category id');
     if (batch) {
       assert(typeof batch.update === 'function', 'has firestore batch');
     }
 
-    return fs
+    return db
       .runTransaction(async transaction => {
         const transOrBatch = batch || transaction;
-        const templateQuery = fs
+        const templateQuery = db
           .collection(TEMPLATE_COLLECTION)
           .where('category', '==', categoryId);
 
@@ -276,4 +380,54 @@ module.exports = modelSetup({
         throw Error(`${PREFIX} removeCategory: transaction failed: ${err}`);
       });
   },
+
+  /**
+   * Batch remove all firestore template
+   * relationships to a deleted category
+   * @param  {admin.firestore} db
+   * @param  {String[]} templateIds
+   * @param  {firestore.batch?} parentBatch
+   * @return {Promise}
+   */
+  batchRemoveCategory(db, templateIds, parentBatch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(
+      templateIds && Array.isArray(templateIds),
+      'has template ids as an array'
+    );
+    assert(
+      templateIds.every(id => id && typeof id === 'string'),
+      'template ids is an array of strings'
+    );
+    if (parentBatch) {
+      assert(
+        typeof parentBatch.update === 'function',
+        'has firestore batch/transaction'
+      );
+    }
+
+    const batch = parentBatch || db.batch();
+    const collection = db.collection(TEMPLATE_COLLECTION);
+
+    // Remove each templates' category
+    templateIds.forEach(id => {
+      const propertyDoc = collection.doc(id);
+      batch.update(propertyDoc, { category: FieldValue.delete() });
+    });
+
+    if (parentBatch) {
+      return Promise.resolve(parentBatch);
+    }
+
+    return batch.commit();
+  },
 });
+
+/**
+ * Determine if an object contains anything
+ * @param  {Object} obj
+ * @return {Boolean}
+ */
+function isObjectEmpty(obj) {
+  return Object.keys(obj).length === 0;
+}

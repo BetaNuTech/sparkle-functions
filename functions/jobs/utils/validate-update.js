@@ -1,6 +1,7 @@
 const assert = require('assert');
 const Schema = require('validate');
 const config = require('../../config');
+const deepClone = require('../../utils/deep-clone');
 
 const jobSchema = new Schema({
   title: {
@@ -34,6 +35,6 @@ const jobSchema = new Schema({
  */
 module.exports = update => {
   assert(update && typeof update, 'has job update');
-  const clone = JSON.parse(JSON.stringify(update));
+  const clone = deepClone(update);
   return jobSchema.validate(clone);
 };

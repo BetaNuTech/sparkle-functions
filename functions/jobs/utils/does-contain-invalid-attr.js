@@ -1,7 +1,7 @@
 const assert = require('assert');
 
 /**
- * // Check if payload contains non-updatable attributes
+ * Check if payload contains non-updatable attributes
  * @param  {Object} update
  * @return {Boolean}
  */

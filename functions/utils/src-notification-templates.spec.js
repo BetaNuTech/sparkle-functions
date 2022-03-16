@@ -166,7 +166,75 @@ describe('Utils | Source Notifications Templates', () => {
           'authorEmail',
         ],
       },
-
+      {
+        template: 'template-creation-summary',
+        values: ['name', 'authorName'],
+      },
+      {
+        template: 'template-creation-markdown-body',
+        values: [
+          'name',
+          'description',
+          'category',
+          'sectionsCount',
+          'itemsCount',
+          'authorName',
+          'authorEmail',
+        ],
+      },
+      {
+        template: 'template-update-summary',
+        values: ['name', 'authorName'],
+      },
+      {
+        template: 'template-update-markdown-body',
+        values: [
+          'previousName',
+          'previousDescription',
+          'previousCategory',
+          'previousSectionsCount',
+          'previousItemsCount',
+          'currentName',
+          'currentDescription',
+          'currentCategory',
+          'currentSectionsCount',
+          'currentItemsCount',
+          'authorName',
+          'authorEmail',
+        ],
+      },
+      {
+        template: 'template-delete-summary',
+        values: ['name', 'authorName'],
+      },
+      {
+        template: 'template-delete-markdown-body',
+        values: ['name', 'authorName', 'authorEmail'],
+      },
+      {
+        template: 'template-category-created-summary',
+        values: ['name', 'authorName'],
+      },
+      {
+        template: 'template-category-created-markdown-body',
+        values: ['name', 'authorName', 'authorEmail'],
+      },
+      {
+        template: 'template-category-delete-summary',
+        values: ['name', 'authorName'],
+      },
+      {
+        template: 'template-category-delete-markdown-body',
+        values: ['name', 'authorName', 'authorEmail'],
+      },
+      {
+        template: 'template-category-update-summary',
+        values: ['previousName', 'name', 'authorName'],
+      },
+      {
+        template: 'template-category-update-markdown-body',
+        values: ['previousName', 'name', 'authorName', 'authorEmail'],
+      },
       {
         template: 'inspection-reassign-summary',
         values: ['currentDate', 'authorName'],

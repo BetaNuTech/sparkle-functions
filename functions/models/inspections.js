@@ -160,7 +160,7 @@ module.exports = modelSetup({
     assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
-      'has deficient item id'
+      'has inspectioin id'
     );
     assert(data && typeof data === 'object', 'has update data');
 

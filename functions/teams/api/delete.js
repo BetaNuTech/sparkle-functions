@@ -35,7 +35,7 @@ module.exports = function createDelete(db) {
 
     // Set content type
     res.set('Content-Type', 'application/vnd.api+json');
-    log.info('Update team requested');
+    log.info(`Delete team: "${teamId}" requested`);
 
     // Optional incognito mode query
     // defaults to false
@@ -145,7 +145,7 @@ module.exports = function createDelete(db) {
 
     if (!incognitoMode) {
       try {
-        // Notify of new inspection report
+        // Notify of deleted team
         await notificationsModel.addRecord(db, {
           title: 'Team Deletion',
           summary: notifyTemplate('team-delete-summary', {
@@ -160,7 +160,7 @@ module.exports = function createDelete(db) {
           creator: req.user ? req.user.id || '' : '',
         });
       } catch (err) {
-        log.error(`${PREFIX} failed to create source notification | ${err}`); // proceed with error
+        log.error(`${PREFIX} failed to create source notification: ${err}`); // proceed with error
       }
     }
 

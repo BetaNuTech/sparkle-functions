@@ -8,14 +8,14 @@ const TEMPLATE_CATEGORIES_COLLECTION = 'templateCategories';
 module.exports = modelSetup({
   /**
    * Lookup Firestore Template Category
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {firebaseAdmin.firestore} db - Firestore DB instance
    * @param  {String} categoryId
    * @return {Promise}
    */
-  findRecord(fs, categoryId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  findRecord(db, categoryId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(categoryId && typeof categoryId === 'string', 'has category id');
-    return fs
+    return db
       .collection(TEMPLATE_CATEGORIES_COLLECTION)
       .doc(categoryId)
       .get();
@@ -23,17 +23,17 @@ module.exports = modelSetup({
 
   /**
    * Create or update a Firestore template category
-   * @param  {firebaseAdmin.firestore} fs
+   * @param  {firebaseAdmin.firestore} db
    * @param  {String}  categoryId
    * @param  {Object}  data
    * @return {Promise} - resolves {DocumentReference}
    */
-  async upsertRecord(fs, categoryId, data) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  async upsertRecord(db, categoryId, data) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(categoryId && typeof categoryId === 'string', 'has category id');
     assert(data && typeof data === 'object', 'has upsert data');
 
-    const colRef = fs
+    const colRef = db
       .collection(TEMPLATE_CATEGORIES_COLLECTION)
       .doc(categoryId);
     let docSnap = null;
@@ -65,17 +65,54 @@ module.exports = modelSetup({
   },
 
   /**
+   * Update firestore template category
+   * @param  {admin.firestore} db - Firestore DB instance
+   * @param  {String} templateCategoryId
+   * @param  {Object} data
+   * @param  {firestore.batch?} batch
+   * @return {Promise<void>}
+   */
+  updateRecord(db, templateCategoryId, data, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(
+      templateCategoryId && typeof templateCategoryId === 'string',
+      'has template category id'
+    );
+    assert(data && typeof data === 'object', 'has update data');
+    const docRef = db
+      .collection(TEMPLATE_CATEGORIES_COLLECTION)
+      .doc(templateCategoryId);
+
+    if (batch) {
+      assert(typeof batch.update === 'function', 'has batch instance');
+      return Promise.resolve(batch.update(docRef, data));
+    }
+
+    return docRef.update(data);
+  },
+
+  /**
+   * Create a firestore document id
+   * @param  {admin.firestore} db
+   * @return {String}
+   */
+  createId(db) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    return db.collection(TEMPLATE_CATEGORIES_COLLECTION).doc().id;
+  },
+
+  /**
    * Create a Firestore template category
-   * @param  {firebaseAdmin.firestore} fs
+   * @param  {firebaseAdmin.firestore} db
    * @param  {String} categoryId
    * @param  {Object} data
    * @return {Promise} - resolves {WriteResult}
    */
-  createRecord(fs, categoryId, data) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  createRecord(db, categoryId, data) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(categoryId && typeof categoryId === 'string', 'has category id');
     assert(data && typeof data === 'object', 'has data');
-    return fs
+    return db
       .collection(TEMPLATE_CATEGORIES_COLLECTION)
       .doc(categoryId)
       .create(data);
@@ -83,29 +120,91 @@ module.exports = modelSetup({
 
   /**
    * Remove Firestore Template Category
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * TODO: replace with delete record
+   * @param  {firebaseAdmin.firestore} db - Firestore DB instance
    * @param  {String} categoryId
    * @return {Promise}
    */
-  async removeRecord(fs, categoryId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  async removeRecord(db, categoryId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(categoryId && typeof categoryId === 'string', 'has category id');
 
-    const batch = fs.batch();
+    const batch = db.batch();
 
     // Delete category from all templates
     try {
-      await templatesModel.removeCategory(fs, categoryId, batch);
+      await templatesModel.removeCategory(db, categoryId, batch);
     } catch (err) {
       throw Error(`${PREFIX}: ${err}`); // wrap
     }
 
     // Delete Template Category
-    const docRef = fs
+    const docRef = db
       .collection(TEMPLATE_CATEGORIES_COLLECTION)
       .doc(categoryId);
     batch.delete(docRef);
 
     return batch.commit();
+  },
+
+  /**
+   * Remove template category
+   * @param  {admin.firestore} db - Firestore DB instance
+   * @param  {String} templateCategoryId
+   * @param  {firestore.batch?} batch
+   * @return {Promise<void>}
+   */
+  deleteRecord(db, templateCategoryId, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(
+      templateCategoryId && typeof templateCategoryId === 'string',
+      'has team id'
+    );
+
+    const doc = db
+      .collection(TEMPLATE_CATEGORIES_COLLECTION)
+      .doc(templateCategoryId);
+
+    if (batch) {
+      assert(typeof batch.delete === 'function', 'has batch instance');
+      batch.delete(doc);
+      return Promise.resolve();
+    }
+
+    return doc.delete();
+  },
+
+  /**
+   * Query all template categories
+   * @param  {admin.firestore} db
+   * @param  {Object} query
+   * @param  {firestore.transaction?} transaction
+   * @return {Promise} - resolves {DataSnapshot}
+   */
+  query(db, query, transaction) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(query && typeof query === 'object', 'has query');
+
+    let dbQuery = db.collection(TEMPLATE_CATEGORIES_COLLECTION);
+
+    // Append each query as where clause
+    Object.keys(query).forEach(attr => {
+      const queryArgs = query[attr];
+      assert(
+        queryArgs && Array.isArray(queryArgs),
+        'has query arguments array'
+      );
+      dbQuery = dbQuery.where(attr, ...queryArgs);
+    });
+
+    if (transaction) {
+      assert(
+        typeof transaction.get === 'function',
+        'has firestore transaction'
+      );
+      return Promise.resolve(transaction.get(dbQuery));
+    }
+
+    return dbQuery.get(query);
   },
 });

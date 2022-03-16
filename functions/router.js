@@ -9,6 +9,8 @@ const trello = require('./trello');
 const deficiencies = require('./deficient-items');
 const properties = require('./properties');
 const inspections = require('./inspections');
+const templates = require('./templates');
+const templateCategories = require('./template-categories');
 const jobs = require('./jobs');
 const users = require('./users');
 const clients = require('./clients');
@@ -126,10 +128,57 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
     inspections.api.getLatestCompletedInspection(fs)
   );
 
+  // Create a template
+  app.post(
+    '/v0/templates',
+    authUser(fs, auth, { admin: true, corporate: true }),
+    templates.api.post(fs)
+  );
+
+  // Update a template
+  app.patch(
+    '/v0/templates/:templateId',
+    authUser(fs, auth, { admin: true, corporate: true }),
+    templates.api.patch(fs)
+  );
+
+  // Delete a template
+  app.delete(
+    '/v0/templates/:templateId',
+    authUser(fs, auth, { admin: true }),
+    templates.api.delete(fs)
+  );
+
+  // Create a template category
+  app.post(
+    '/v0/template-categories',
+    authUser(fs, auth, { admin: true, corporate: true }),
+    templateCategories.api.post(fs)
+  );
+
+  // Update a template category
+  app.patch(
+    '/v0/template-categories/:templateCategoryId',
+    authUser(fs, auth, { admin: true, corporate: true }),
+    templateCategories.api.patch(fs)
+  );
+
+  // Delete a template category
+  app.delete(
+    '/v0/template-categories/:templateCategoryId',
+    authUser(fs, auth, { admin: true, corporate: true }),
+    templateCategories.api.delete(fs)
+  );
+
   // Request Property's residents from Yardi
   app.get(
     '/v0/properties/:propertyId/yardi/residents',
-    authUser(fs, auth),
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
     properties.middleware.propertyCode(fs),
     properties.middleware.yardiIntegration(fs),
     properties.api.getPropertyYardiResidents(fs)
@@ -138,7 +187,12 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
   // Request Property's work orders from Yardi
   app.get(
     '/v0/properties/:propertyId/yardi/work-orders',
-    authUser(fs, auth),
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
     properties.middleware.propertyCode(fs),
     properties.middleware.yardiIntegration(fs),
     properties.api.getPropertyYardiWorkOrders()
@@ -154,10 +208,7 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
   // Update a property
   app.put(
     '/v0/properties/:propertyId',
-    authUser(fs, auth, {
-      admin: true,
-      corporate: true,
-    }),
+    authUser(fs, auth, { admin: true, corporate: true }),
     properties.api.put(fs)
   );
 
@@ -235,7 +286,7 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
   app.post(
     '/v0/deficiencies/:deficiencyId/trello/card',
     // setup property-level auth requirements
-    deficiencies.api.putBatchSetupMiddleware(fs),
+    deficiencies.api.authSetup(fs),
     authUser(fs, auth, {
       admin: true,
       corporate: true,
@@ -253,7 +304,7 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
   app.put(
     '/v0/deficiencies',
     // setup property-level auth requirements
-    deficiencies.api.putBatchSetupMiddleware(fs),
+    deficiencies.api.authSetup(fs),
     // permission auth
     authUser(fs, auth, {
       admin: true,
@@ -267,7 +318,8 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
   // Upload a image to an deficiency
   app.post(
     '/v0/deficiencies/:deficiencyId/image',
-    deficiencies.api.putBatchSetupMiddleware(fs),
+    // setup property-level auth requirements
+    deficiencies.api.authSetup(fs),
     authUser(fs, auth, {
       admin: true,
       corporate: true,
