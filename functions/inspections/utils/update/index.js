@@ -75,8 +75,8 @@ function setUpsertSections(config) {
   const template = current.template || {};
 
   Object.keys(changes.sections || {}).forEach(id => {
-    const isSectionUpserted = Boolean(changes.sections[id]);
-    if (!isSectionUpserted) return;
+    const isSectionRemoved = Boolean(changes.sections[id]) === false;
+    if (isSectionRemoved) return;
 
     const sectionChanges = JSON.parse(JSON.stringify(changes.sections[id]));
     const sectionCurrent = JSON.parse(
@@ -98,8 +98,7 @@ function setUpsertSections(config) {
 }
 
 /**
- * Remove a delete multi-section
- * by adding a Firstore delete value
+ * Remove a deleted multi-section
  * @param  {Object} config
  * @return {Object} - config
  */
@@ -132,8 +131,8 @@ function setUpsertItems(config) {
   const template = current.template || {};
 
   Object.keys(changes.items || {}).forEach(id => {
-    const isItemUpserted = Boolean(changes.items[id]);
-    if (!isItemUpserted) return;
+    const isItemRemoved = Boolean(changes.items[id]) === false;
+    if (isItemRemoved) return;
 
     const itemChanges = JSON.parse(JSON.stringify(changes.items[id]));
     const itemCurrent = JSON.parse(

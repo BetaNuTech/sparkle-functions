@@ -1,6 +1,7 @@
 const assert = require('assert');
 const FieldValue = require('firebase-admin').firestore.FieldValue;
 const modelSetup = require('./utils/model-setup');
+const firestoreUtils = require('../utils/firestore');
 
 const PREFIX = 'models: templates:';
 const TEMPLATE_COLLECTION = 'templates';
@@ -89,6 +90,64 @@ module.exports = modelSetup({
     }
 
     return docRef;
+  },
+
+  /**
+   * Set Firestore Template
+   * @param  {admin.firestore} db
+   * @param  {String} templateId
+   * @param  {Object} data
+   * @param  {firestore.batch?} batch
+   * @param  {Boolean} merge - deep merge record
+   * @return {Promise}
+   */
+  setRecord(db, templateId, data, batch, merge = false) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(templateId && typeof templateId === 'string', 'has template id');
+    assert(data && typeof data === 'object', 'has update data');
+
+    const docRef = db.collection(TEMPLATE_COLLECTION).doc(templateId);
+    const finalData = JSON.parse(JSON.stringify(data)); // clone
+    const deleteWrites = {};
+    const itemDeletes = firestoreUtils.getDeleteWrites(
+      finalData.items || {},
+      'items'
+    );
+    const sectionDeletes = firestoreUtils.getDeleteWrites(
+      finalData.sections || {},
+      'sections'
+    );
+
+    // Merge all delete updates
+    Object.assign(deleteWrites, itemDeletes, sectionDeletes);
+    const hasDeleteWrites = isObjectEmpty(deleteWrites) === false;
+
+    // Remove nested nulls in items and sections
+    firestoreUtils.removeNulls(finalData.items || {});
+    firestoreUtils.removeNulls(finalData.sections || {});
+
+    // Remove empty section/items hashes
+    // which could clear all the items
+    const hasEmptyItems = isObjectEmpty((finalData || {}).items || {});
+    const hasEmptySections = isObjectEmpty((finalData || {}).sections || {});
+    if (hasEmptyItems) delete finalData.items;
+    if (hasEmptySections) delete finalData.sections;
+
+    // Add batched update
+    if (batch) {
+      assert(
+        typeof batch.set === 'function' && typeof batch.update === 'function',
+        'has batch instance'
+      );
+      batch.set(docRef, finalData, { merge });
+      if (hasDeleteWrites) batch.update(docRef, deleteWrites); // add deletes
+      return Promise.resolve();
+    }
+
+    // Normal update
+    return docRef.set(finalData, { merge }).then(
+      () => (hasDeleteWrites ? docRef.update(deleteWrites) : Promise.resolve()) // append any deletes
+    );
   },
 
   /**
@@ -363,3 +422,12 @@ module.exports = modelSetup({
     return batch.commit();
   },
 });
+
+/**
+ * Determine if an object contains anything
+ * @param  {Object} obj
+ * @return {Boolean}
+ */
+function isObjectEmpty(obj) {
+  return Object.keys(obj).length === 0;
+}

@@ -135,6 +135,13 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
     templates.api.post(fs)
   );
 
+  // Update a template
+  app.patch(
+    '/v0/templates/:templateId',
+    authUser(fs, auth, { admin: true, corporate: true }),
+    templates.api.patch(fs)
+  );
+
   // Delete a template
   app.delete(
     '/v0/templates/:templateId',
@@ -166,7 +173,12 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
   // Request Property's residents from Yardi
   app.get(
     '/v0/properties/:propertyId/yardi/residents',
-    authUser(fs, auth),
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
     properties.middleware.propertyCode(fs),
     properties.middleware.yardiIntegration(fs),
     properties.api.getPropertyYardiResidents(fs)
@@ -175,7 +187,12 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
   // Request Property's work orders from Yardi
   app.get(
     '/v0/properties/:propertyId/yardi/work-orders',
-    authUser(fs, auth),
+    authUser(fs, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
     properties.middleware.propertyCode(fs),
     properties.middleware.yardiIntegration(fs),
     properties.api.getPropertyYardiWorkOrders()
@@ -269,7 +286,7 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
   app.post(
     '/v0/deficiencies/:deficiencyId/trello/card',
     // setup property-level auth requirements
-    deficiencies.api.putBatchSetupMiddleware(fs),
+    deficiencies.api.authSetup(fs),
     authUser(fs, auth, {
       admin: true,
       corporate: true,
@@ -287,7 +304,7 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
   app.put(
     '/v0/deficiencies',
     // setup property-level auth requirements
-    deficiencies.api.putBatchSetupMiddleware(fs),
+    deficiencies.api.authSetup(fs),
     // permission auth
     authUser(fs, auth, {
       admin: true,
@@ -301,7 +318,8 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
   // Upload a image to an deficiency
   app.post(
     '/v0/deficiencies/:deficiencyId/image',
-    deficiencies.api.putBatchSetupMiddleware(fs),
+    // setup property-level auth requirements
+    deficiencies.api.authSetup(fs),
     authUser(fs, auth, {
       admin: true,
       corporate: true,

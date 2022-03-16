@@ -24,6 +24,7 @@ module.exports = function createPostTemplate(db) {
    */
   return async (req, res) => {
     let template = {}; // Write result
+    const authorId = req.user ? req.user.id || '' : '';
     const send500Error = create500ErrHandler(PREFIX, res);
 
     // Optional clone template target
@@ -37,7 +38,7 @@ module.exports = function createPostTemplate(db) {
         cloneTemplateId ? 'clone' : 'creation'
       } requested${
         cloneTemplateId ? ` for template: "${cloneTemplateId}"` : ''
-      }`
+      }${authorId ? ` by "${authorId}"` : ''}`
     );
 
     // Lookup template to clone
@@ -83,7 +84,7 @@ module.exports = function createPostTemplate(db) {
       template.name = `New Template - ${nowDateString}`;
     } else {
       // Copy over clone target to payload
-      template = createForkedTemplate(cloneTarget);
+      template = createForkedTemplate(cloneTemplateId, cloneTarget);
       template.name = `Copy: ${cloneTarget.name} - ${nowDateString}`;
     }
 

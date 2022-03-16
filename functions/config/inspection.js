@@ -15,6 +15,17 @@ module.exports = {
     fiveactions_onetofive: [true, true, true, true, false],
   },
 
+  itemTypes: ['main', 'text_input', 'signature'],
+  sectionTypes: ['single', 'multi'],
+  mainItemTypes: [
+    'twoactions_checkmarkx',
+    'twoactions_thumbs',
+    'threeactions_abc',
+    'threeactions_checkmarkexclamationx',
+    'fiveactions_onetofive',
+    'oneaction_notes',
+  ],
+
   // 2:45 seconds
   reportPdfGenerationMaxTimeout: 165,
   reportPdfMemory: '4GB',
