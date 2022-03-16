@@ -67,18 +67,136 @@ describe('Templates | Utils | Validate Template New Entries', () => {
     const template = mocking.createTemplate();
     const result = validate(template, {
       items: {
-        one: { title: 't', index: 0, itemType: 'fake', sectionId: '1' },
+        one: {
+          title: 't',
+          index: 0,
+          itemType: 'fake',
+          sectionId: '1',
+          ...DEFAULT_SCORES,
+        },
       },
     });
     const actual = getResults(result);
     expect(actual).to.deep.equal(expected);
   });
 
+  it('rejects unscored item creation', () => {
+    const missingZeroScores = { ...DEFAULT_SCORES };
+    const missingOneScores = { ...DEFAULT_SCORES };
+    const missingTwoScores = { ...DEFAULT_SCORES };
+    const missingThreeScores = { ...DEFAULT_SCORES };
+    const missingFourScores = { ...DEFAULT_SCORES };
+    delete missingZeroScores.mainInputZeroValue;
+    delete missingOneScores.mainInputOneValue;
+    delete missingTwoScores.mainInputTwoValue;
+    delete missingThreeScores.mainInputThreeValue;
+    delete missingFourScores.mainInputFourValue;
+
+    const tests = [
+      {
+        data: {
+          items: {
+            one: {
+              title: 't',
+              index: 0,
+              itemType: 'main',
+              mainInputType: 'twoactions_checkmarkx',
+              sectionId: '1',
+              photos: true,
+              notes: true,
+              ...missingZeroScores,
+            },
+          },
+        },
+        expected: 'items.one.mainInputZeroValue',
+        msg: 'rejects invalid zero value',
+      },
+      {
+        data: {
+          items: {
+            one: {
+              title: 't',
+              index: 0,
+              itemType: 'text_input',
+              sectionId: '1',
+              ...missingOneScores,
+            },
+          },
+        },
+        expected: 'items.one.mainInputOneValue',
+        msg: 'rejects invalid one value',
+      },
+      {
+        data: {
+          items: {
+            one: {
+              title: 't',
+              index: 0,
+              itemType: 'signature',
+              sectionId: '1',
+              ...missingTwoScores,
+            },
+          },
+        },
+        expected: 'items.one.mainInputTwoValue',
+        msg: 'rejects invalid two value',
+      },
+      {
+        data: {
+          items: {
+            one: {
+              title: 't',
+              index: 0,
+              itemType: 'main',
+              mainInputType: 'twoactions_checkmarkx',
+              sectionId: '1',
+              photos: true,
+              notes: true,
+              ...missingThreeScores,
+            },
+          },
+        },
+        expected: 'items.one.mainInputThreeValue',
+        msg: 'rejects invalid three value',
+      },
+      {
+        data: {
+          items: {
+            one: {
+              title: 't',
+              index: 0,
+              itemType: 'text_input',
+              sectionId: '1',
+              ...missingFourScores,
+            },
+          },
+        },
+        expected: 'items.one.mainInputFourValue',
+        msg: 'rejects invalid four value',
+      },
+    ];
+
+    for (let i = 0; i < tests.length; i++) {
+      const { data, expected, msg } = tests[i];
+      const template = mocking.createTemplate();
+      const result = validate(template, data);
+      const actual = getResults(result).join(',');
+      expect(actual).to.deep.equal(expected, msg);
+    }
+  });
+
   it('rejects invalid text input item creation', () => {
     const tests = [
       {
         data: {
-          items: { one: { index: 0, itemType: 'text_input', sectionId: '1' } },
+          items: {
+            one: {
+              index: 0,
+              itemType: 'text_input',
+              sectionId: '1',
+              ...DEFAULT_SCORES,
+            },
+          },
         },
         expected: 'items.one.title',
         msg: 'rejects untitled item',
@@ -86,7 +204,12 @@ describe('Templates | Utils | Validate Template New Entries', () => {
       {
         data: {
           items: {
-            one: { title: 't', itemType: 'text_input', sectionId: '1' },
+            one: {
+              title: 't',
+              itemType: 'text_input',
+              sectionId: '1',
+              ...DEFAULT_SCORES,
+            },
           },
         },
         expected: 'items.one.index',
@@ -94,7 +217,14 @@ describe('Templates | Utils | Validate Template New Entries', () => {
       },
       {
         data: {
-          items: { one: { title: 't', index: 0, itemType: 'text_input' } },
+          items: {
+            one: {
+              title: 't',
+              index: 0,
+              itemType: 'text_input',
+              ...DEFAULT_SCORES,
+            },
+          },
         },
         expected: 'items.one.sectionId',
         msg: 'rejects unsectioned item',
@@ -114,21 +244,42 @@ describe('Templates | Utils | Validate Template New Entries', () => {
     const tests = [
       {
         data: {
-          items: { one: { index: 0, itemType: 'signature', sectionId: '1' } },
+          items: {
+            one: {
+              index: 0,
+              itemType: 'signature',
+              sectionId: '1',
+              ...DEFAULT_SCORES,
+            },
+          },
         },
         expected: 'items.one.title',
         msg: 'rejects untitled item',
       },
       {
         data: {
-          items: { one: { title: 't', itemType: 'signature', sectionId: '1' } },
+          items: {
+            one: {
+              title: 't',
+              itemType: 'signature',
+              sectionId: '1',
+              ...DEFAULT_SCORES,
+            },
+          },
         },
         expected: 'items.one.index',
         msg: 'rejects unindexed item',
       },
       {
         data: {
-          items: { one: { title: 't', index: 0, itemType: 'signature' } },
+          items: {
+            one: {
+              title: 't',
+              index: 0,
+              itemType: 'signature',
+              ...DEFAULT_SCORES,
+            },
+          },
         },
         expected: 'items.one.sectionId',
         msg: 'rejects unsectioned item',
@@ -145,17 +296,6 @@ describe('Templates | Utils | Validate Template New Entries', () => {
   });
 
   it('rejects invalid main item creation', () => {
-    const missingZeroScores = { ...DEFAULT_SCORES };
-    const missingOneScores = { ...DEFAULT_SCORES };
-    const missingTwoScores = { ...DEFAULT_SCORES };
-    const missingThreeScores = { ...DEFAULT_SCORES };
-    const missingFourScores = { ...DEFAULT_SCORES };
-    delete missingZeroScores.mainInputZeroValue;
-    delete missingOneScores.mainInputOneValue;
-    delete missingTwoScores.mainInputTwoValue;
-    delete missingThreeScores.mainInputThreeValue;
-    delete missingFourScores.mainInputFourValue;
-
     const tests = [
       {
         data: {
@@ -277,96 +417,6 @@ describe('Templates | Utils | Validate Template New Entries', () => {
         expected: 'items.one.photos',
         msg: 'rejects missing photos',
       },
-      {
-        data: {
-          items: {
-            one: {
-              title: 't',
-              index: 0,
-              itemType: 'main',
-              mainInputType: 'twoactions_checkmarkx',
-              sectionId: '1',
-              photos: true,
-              notes: true,
-              ...missingZeroScores,
-            },
-          },
-        },
-        expected: 'items.one.mainInputZeroValue',
-        msg: 'rejects invalid zero value',
-      },
-      {
-        data: {
-          items: {
-            one: {
-              title: 't',
-              index: 0,
-              itemType: 'main',
-              mainInputType: 'twoactions_checkmarkx',
-              sectionId: '1',
-              photos: true,
-              notes: true,
-              ...missingOneScores,
-            },
-          },
-        },
-        expected: 'items.one.mainInputOneValue',
-        msg: 'rejects invalid one value',
-      },
-      {
-        data: {
-          items: {
-            one: {
-              title: 't',
-              index: 0,
-              itemType: 'main',
-              mainInputType: 'twoactions_checkmarkx',
-              sectionId: '1',
-              photos: true,
-              notes: true,
-              ...missingTwoScores,
-            },
-          },
-        },
-        expected: 'items.one.mainInputTwoValue',
-        msg: 'rejects invalid two value',
-      },
-      {
-        data: {
-          items: {
-            one: {
-              title: 't',
-              index: 0,
-              itemType: 'main',
-              mainInputType: 'twoactions_checkmarkx',
-              sectionId: '1',
-              photos: true,
-              notes: true,
-              ...missingThreeScores,
-            },
-          },
-        },
-        expected: 'items.one.mainInputThreeValue',
-        msg: 'rejects invalid three value',
-      },
-      {
-        data: {
-          items: {
-            one: {
-              title: 't',
-              index: 0,
-              itemType: 'main',
-              mainInputType: 'twoactions_checkmarkx',
-              sectionId: '1',
-              photos: true,
-              notes: true,
-              ...missingFourScores,
-            },
-          },
-        },
-        expected: 'items.one.mainInputFourValue',
-        msg: 'rejects invalid four value',
-      },
     ];
 
     for (let i = 0; i < tests.length; i++) {
@@ -405,12 +455,14 @@ describe('Templates | Utils | Validate Template New Entries', () => {
           index: 1,
           itemType: 'text_input',
           sectionId: 'sectionOne',
+          ...DEFAULT_SCORES,
         },
         three: {
           title: 't',
           index: 2,
           itemType: 'signature',
           sectionId: 'sectionOne',
+          ...DEFAULT_SCORES,
         },
       },
     });
@@ -418,7 +470,7 @@ describe('Templates | Utils | Validate Template New Entries', () => {
     expect(actual).to.deep.equal(expected);
   });
 
-  it('ignores item updates', () => {
+  it('ignores updates to existing item', () => {
     const expected = [];
     const template = mocking.createTemplate({
       sections: {

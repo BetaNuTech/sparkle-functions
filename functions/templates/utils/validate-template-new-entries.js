@@ -43,14 +43,6 @@ const newItemSchema = new Schema({
     type: String,
     required: true,
   },
-});
-
-const newMainItemSchema = new Schema({
-  mainInputType: {
-    type: String,
-    required: true,
-    use: { isMainItemType },
-  },
   mainInputZeroValue: {
     type: Number,
     required: true,
@@ -70,6 +62,14 @@ const newMainItemSchema = new Schema({
   mainInputFourValue: {
     type: Number,
     required: true,
+  },
+});
+
+const newMainItemSchema = new Schema({
+  mainInputType: {
+    type: String,
+    required: true,
+    use: { isMainItemType },
   },
   notes: {
     type: Boolean,
