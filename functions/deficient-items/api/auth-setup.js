@@ -11,15 +11,26 @@ const PREFIX = 'deficient-items: api: put batch setup middleware:';
  * @param  {admin.firestore} db
  * @return {Promise} verification & lookup requests
  */
-module.exports = function putBatchSetup(db) {
+module.exports = function upsertAuthSetup(db) {
   assert(db && typeof db.collection === 'function', 'has database instance');
 
   return async function handler(req, res, next) {
     const send500Error = create500ErrHandler(PREFIX, res);
     const srcDeficiencyIds = (req.query || {}).id || '';
-    const deficiencyIds = Array.isArray(srcDeficiencyIds)
+    const { deficiencyId: paramDeficiencyId = '' } = req.params;
+    const deficiencyIds = (Array.isArray(srcDeficiencyIds)
       ? srcDeficiencyIds
-      : [srcDeficiencyIds];
+      : [srcDeficiencyIds]
+    ).filter(Boolean);
+
+    // Add any deficient item identifier
+    // specified in the url path wildard
+    if (paramDeficiencyId) {
+      deficiencyIds.push(paramDeficiencyId);
+    }
+
+    // Chech if any deficienices referenced
+    // in either the query params or URL path
     const hasDeficiencyIds = Boolean(
       Array.isArray(deficiencyIds) &&
         deficiencyIds.length &&

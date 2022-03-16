@@ -7,7 +7,7 @@ const trelloCardClose = require('./pubsub/trello-card-close-v2');
 const trelloCardDueDate = require('./pubsub/trello-card-due-date-v2');
 const putBatch = require('./api/put-batch');
 const postImage = require('./api/post-image');
-const putBatchSetupMiddleware = require('./api/put-batch-setup-middleware');
+const authSetup = require('./api/auth-setup');
 const syncOverdue = require('./pubsub/sync-overdue-v2');
 
 module.exports = {
@@ -15,7 +15,7 @@ module.exports = {
   createOnUpdateArchiveV2,
   onUpdateProgressNoteV2,
   onUpdateCompletedPhotoV2,
-  api: { putBatch, putBatchSetupMiddleware, postImage },
+  api: { putBatch, authSetup, postImage },
   pubsub: {
     trelloCardStateComment,
     trelloCardClose,
