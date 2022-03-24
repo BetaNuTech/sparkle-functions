@@ -17,7 +17,7 @@ describe('Templates | API | PATCH', () => {
     const sectionId = uuid();
     const itemOneId = uuid();
     const itemTwoId = uuid();
-    const team = mocking.createTemplate({
+    const template = mocking.createTemplate({
       completedAt: 1,
       sections: {
         keep: mocking.createSection({ index: 0 }),
@@ -34,7 +34,7 @@ describe('Templates | API | PATCH', () => {
     });
 
     // Setup database
-    await templatesModel.createRecord(db, templateId, team);
+    await templatesModel.createRecord(db, templateId, template);
 
     // Execute
     const app = createApp();
@@ -88,14 +88,14 @@ describe('Templates | API | PATCH', () => {
     const templateId = uuid();
     const sectionId = uuid();
     const itemId = uuid();
-    const team = mocking.createTemplate({
+    const template = mocking.createTemplate({
       sections: {
         [sectionId]: mocking.createSection({ index: 1 }),
       },
     });
 
     // Setup database
-    await templatesModel.createRecord(db, templateId, team);
+    await templatesModel.createRecord(db, templateId, template);
 
     // Execute
     const app = createApp();
@@ -103,7 +103,16 @@ describe('Templates | API | PATCH', () => {
       .patch(`/t/${templateId}?incognitoMode=true`)
       .send({
         items: {
-          [itemId]: mocking.completedTextInputItem({ sectionId, index: 0 }),
+          [itemId]: {
+            index: 0,
+            sectionId,
+            itemType: 'signature',
+            mainInputZeroValue: 3,
+            mainInputOneValue: 0,
+            mainInputTwoValue: 0,
+            mainInputThreeValue: 0,
+            mainInputFourValue: 0,
+          },
         },
       })
       .expect('Content-Type', /json/)

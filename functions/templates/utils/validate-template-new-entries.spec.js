@@ -130,7 +130,6 @@ describe('Templates | Utils | Validate Template New Entries', () => {
         data: {
           items: {
             one: {
-              title: 't',
               index: 0,
               itemType: 'signature',
               sectionId: '1',
@@ -246,21 +245,6 @@ describe('Templates | Utils | Validate Template New Entries', () => {
         data: {
           items: {
             one: {
-              index: 0,
-              itemType: 'signature',
-              sectionId: '1',
-              ...DEFAULT_SCORES,
-            },
-          },
-        },
-        expected: 'items.one.title',
-        msg: 'rejects untitled item',
-      },
-      {
-        data: {
-          items: {
-            one: {
-              title: 't',
               itemType: 'signature',
               sectionId: '1',
               ...DEFAULT_SCORES,
@@ -274,7 +258,6 @@ describe('Templates | Utils | Validate Template New Entries', () => {
         data: {
           items: {
             one: {
-              title: 't',
               index: 0,
               itemType: 'signature',
               ...DEFAULT_SCORES,
@@ -458,7 +441,6 @@ describe('Templates | Utils | Validate Template New Entries', () => {
           ...DEFAULT_SCORES,
         },
         three: {
-          title: 't',
           index: 2,
           itemType: 'signature',
           sectionId: 'sectionOne',
