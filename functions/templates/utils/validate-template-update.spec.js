@@ -65,6 +65,11 @@ describe('Templates | Utils | Validate Template Update', () => {
         msg: 'rejects non-string item main input type',
       },
       {
+        data: { items: { one: { isTextInputItem: 1 } } },
+        expected: 'items.one.isTextInputItem',
+        msg: 'rejects non-boolean is isText input item type',
+      },
+      {
         data: { items: { one: { mainInputZeroValue: '1' } } },
         expected: 'items.one.mainInputZeroValue',
         msg: 'rejects non-number item main input zero value',
