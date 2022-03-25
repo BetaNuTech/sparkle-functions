@@ -70,6 +70,10 @@ const itemSchema = new Schema({
     type: String,
     required: false,
   },
+  isTextInputItem: {
+    type: Boolean,
+    required: false,
+  },
   mainInputZeroValue: {
     type: Number,
     required: false,
