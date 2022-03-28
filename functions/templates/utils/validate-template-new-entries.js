@@ -25,11 +25,6 @@ const newSectionSchema = new Schema({
 });
 
 const newItemSchema = new Schema({
-  title: {
-    type: String,
-    required: true,
-    length: { min: 1 },
-  },
   index: {
     type: Number,
     required: true,
@@ -42,14 +37,6 @@ const newItemSchema = new Schema({
   sectionId: {
     type: String,
     required: true,
-  },
-});
-
-const newMainItemSchema = new Schema({
-  mainInputType: {
-    type: String,
-    required: true,
-    use: { isMainItemType },
   },
   mainInputZeroValue: {
     type: Number,
@@ -71,6 +58,19 @@ const newMainItemSchema = new Schema({
     type: Number,
     required: true,
   },
+});
+
+const newMainItemSchema = new Schema({
+  title: {
+    type: String,
+    required: true,
+    length: { min: 1 },
+  },
+  mainInputType: {
+    type: String,
+    required: true,
+    use: { isMainItemType },
+  },
   notes: {
     type: Boolean,
     required: true,
@@ -78,6 +78,14 @@ const newMainItemSchema = new Schema({
   photos: {
     type: Boolean,
     required: true,
+  },
+});
+
+const newTextItemSchema = new Schema({
+  title: {
+    type: String,
+    required: true,
+    length: { min: 1 },
   },
 });
 
@@ -120,6 +128,7 @@ module.exports = (srcCurrent, srcUpdates) => {
       .forEach(id => {
         const itemClone = deepClone(updates.items[id]);
         const itemResult = newItemSchema.validate(itemClone);
+        const itemType = `${itemClone.itemType || ''}`.toLowerCase();
 
         // General item validation
         result.push(
@@ -130,11 +139,23 @@ module.exports = (srcCurrent, srcUpdates) => {
         );
 
         // Main item validation
-        if (itemClone.itemType === 'main') {
+        if (itemType === 'main') {
           const mainItemClone = deepClone(updates.items[id]);
           const mainItemResult = newMainItemSchema.validate(mainItemClone);
           result.push(
             ...mainItemResult.map(res => ({
+              ...res,
+              path: `items.${id}.${res.path}`, // add full path to validation
+            }))
+          );
+        }
+
+        // Text item validation
+        if (itemType === 'text_input') {
+          const textItemClone = deepClone(updates.items[id]);
+          const texItemResult = newTextItemSchema.validate(textItemClone);
+          result.push(
+            ...texItemResult.map(res => ({
               ...res,
               path: `items.${id}.${res.path}`, // add full path to validation
             }))
