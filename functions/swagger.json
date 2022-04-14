@@ -2269,7 +2269,17 @@
           }
         ],
         "responses": {
-          "500": {
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/USER"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "401": {
             "schema": {
               "$ref": "#/definitions/ERROR"
             }
@@ -2279,14 +2289,9 @@
               "$ref": "#/definitions/ERROR"
             }
           },
-          "400": {
+          "500": {
             "schema": {
-              "$ref": "#/definitions/BADSTATUS400"
-            }
-          },
-          "201": {
-            "schema": {
-              "$ref": "#/definitions/USER"
+              "$ref": "#/definitions/ERROR"
             }
           }
         }
@@ -2309,7 +2314,7 @@
           "type": "string"
         }
       ],
-      "post": {
+      "patch": {
         "tags": ["Users"],
         "consumes": ["application/json"],
         "parameters": [
@@ -2333,12 +2338,30 @@
               "teams": {
                 "type": "object",
                 "properties": {}
+              },
+              "properties": {
+                "type": "object",
+                "properties": {}
+              },
+              "firstName": {
+                "type": "string"
+              },
+              "lastName": {
+                "type": "string"
+              },
+              "pushOptOut": {
+                "type": "boolean"
               }
             }
           }
         ],
         "responses": {
-          "500": {
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/USER"
+            }
+          },
+          "400": {
             "schema": {
               "$ref": "#/definitions/ERROR"
             }
@@ -2348,7 +2371,7 @@
               "$ref": "#/definitions/ERROR"
             }
           },
-          "400": {
+          "403": {
             "schema": {
               "$ref": "#/definitions/ERROR"
             }
@@ -2358,37 +2381,29 @@
               "$ref": "#/definitions/ERROR"
             }
           },
-          "200": {
+          "500": {
             "schema": {
-              "$ref": "#/definitions/USER"
+              "$ref": "#/definitions/ERROR"
             }
           }
         }
-      }
-    },
-    "/v0/users/{userId}/": {
-      "parameters": [
-        {
-          "name": "Authorization",
-          "in": "header",
-          "required": true,
-          "description": "Authorization token.",
-          "type": "string"
-        },
-        {
-          "name": "userId",
-          "in": "path",
-          "required": true,
-          "description": "user id to update a specific user.",
-          "type": "string"
-        }
-      ],
+      },
       "delete": {
         "tags": ["Users"],
         "consumes": ["application/json"],
         "parameters": [],
         "responses": {
-          "500": {
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/DELETEUSER"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "403": {
             "schema": {
               "$ref": "#/definitions/ERROR"
             }
@@ -2398,9 +2413,9 @@
               "$ref": "#/definitions/ERROR"
             }
           },
-          "200": {
+          "500": {
             "schema": {
-              "$ref": "#/definitions/DELETEUSER"
+              "$ref": "#/definitions/ERROR"
             }
           }
         }

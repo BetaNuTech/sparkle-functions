@@ -4,9 +4,11 @@ const { expect } = require('chai');
 const sinon = require('sinon');
 const express = require('express');
 const bodyParser = require('body-parser');
+const uuid = require('../../../test-helpers/uuid');
+const mocking = require('../../../test-helpers/mocking');
 const usersModel = require('../../../models/users');
 const propertiesModel = require('../../../models/properties');
-const createPatchUser = require('../../../users/api/patch-user');
+const handler = require('../../../users/api/patch');
 
 describe('Users | API | PATCH', () => {
   afterEach(() => sinon.restore());
@@ -51,7 +53,7 @@ describe('Users | API | PATCH', () => {
     expect(res.body.errors[0].detail).to.contain('do not have permission');
   });
 
-  it('rejects request from non admin to update another admin', async () => {
+  it('rejects request from non admin to update another users permission level', async () => {
     // Stup auth requests
     sinon.stub(usersModel, 'hasUpdatePermission').resolves(false);
     sinon.stub(usersModel, 'upsertCustomClaims').callsFake(() => {
@@ -60,7 +62,7 @@ describe('Users | API | PATCH', () => {
 
     const res = await request(createApp())
       .patch('/t/1')
-      .send({ admin: true })
+      .send({ corporate: true })
       .expect('Content-Type', /json/)
       .expect(401);
 
@@ -101,7 +103,7 @@ describe('Users | API | PATCH', () => {
     const setDisabled = sinon
       .stub(usersModel, 'setAuthUserDisabled')
       .resolves({});
-    const userUpdate = sinon.stub(usersModel, 'upsertRecord').resolves();
+    const setRecord = sinon.stub(usersModel, 'setRecord').resolves();
 
     await request(createApp())
       .patch('/t/1')
@@ -110,7 +112,7 @@ describe('Users | API | PATCH', () => {
       .expect(200);
 
     expect(setClaims.called).to.equal(true, 'updated custom claim');
-    expect(userUpdate.called).to.equal(false, 'does not update user record');
+    expect(setRecord.called).to.equal(false, 'does not update user record');
     expect(setDisabled.called).to.equal(false, 'did not update auth disabled');
   });
 
@@ -125,7 +127,7 @@ describe('Users | API | PATCH', () => {
     const setDisabled = sinon
       .stub(usersModel, 'setAuthUserDisabled')
       .resolves({});
-    const userUpdate = sinon.stub(usersModel, 'upsertRecord').resolves();
+    const setRecord = sinon.stub(usersModel, 'setRecord').resolves();
 
     await request(createApp())
       .patch('/t/1')
@@ -133,17 +135,8 @@ describe('Users | API | PATCH', () => {
       .expect('Content-Type', /json/)
       .expect(200);
 
-    const userDbUpdates = (userUpdate.args || [[]])[0][2] || {};
-    const actualPropertiesUpdate = userDbUpdates.properties || null;
     expect(setClaims.called).to.equal(true, 'updated custom claim');
-    expect(userUpdate.called).to.equal(true, 'updated user record');
-    if (userUpdate.called) {
-      expect(actualPropertiesUpdate).to.deep.equal(
-        {},
-        'removed admin user properties'
-      );
-    }
-
+    expect(setRecord.called).to.equal(true, 'updated user record');
     expect(setDisabled.called).to.equal(false, 'did not update auth disabled');
   });
 
@@ -158,7 +151,7 @@ describe('Users | API | PATCH', () => {
     const setDisabled = sinon
       .stub(usersModel, 'setAuthUserDisabled')
       .resolves({});
-    const userUpdate = sinon.stub(usersModel, 'upsertRecord').resolves();
+    const setRecord = sinon.stub(usersModel, 'setRecord').resolves();
 
     await request(createApp())
       .patch('/t/1')
@@ -166,16 +159,8 @@ describe('Users | API | PATCH', () => {
       .expect('Content-Type', /json/)
       .expect(200);
 
-    const userDbUpdates = (userUpdate.args || [[]])[0][2] || {};
-    const actualPropertiesUpdate = userDbUpdates.properties || null;
     expect(setClaims.called).to.equal(true, 'updated custom claim');
-    expect(userUpdate.called).to.equal(true, 'updated user record');
-    if (userUpdate.called) {
-      expect(actualPropertiesUpdate).to.deep.equal(
-        {},
-        'removed corporate user properties'
-      );
-    }
+    expect(setRecord.called).to.equal(true, 'updated user record');
     expect(setDisabled.called).to.equal(false, 'did not update auth disabled');
   });
 
@@ -190,7 +175,7 @@ describe('Users | API | PATCH', () => {
     const setDisabled = sinon
       .stub(usersModel, 'setAuthUserDisabled')
       .resolves({});
-    const userUpdate = sinon.stub(usersModel, 'upsertRecord').resolves();
+    const setRecord = sinon.stub(usersModel, 'setRecord').resolves();
 
     await request(createApp())
       .patch('/t/1')
@@ -200,36 +185,43 @@ describe('Users | API | PATCH', () => {
 
     expect(setClaims.called).to.equal(false, 'did not update custom claim');
     expect(setDisabled.called).to.equal(true, 'updated user auth disabled');
-    expect(userUpdate.called).to.equal(true, 'updated user record');
+    expect(setRecord.called).to.equal(true, 'updated user record');
   });
 
-  it('allows removing all users teams', async () => {
+  it('allows removing a team from a user', async () => {
+    const userId = uuid();
+    const teamId = uuid();
+    const user = mocking.createUser({
+      email: 'test',
+      teams: { [teamId]: true },
+    });
+    const expected = null;
+
     // Stup auth requests
     sinon.stub(usersModel, 'hasUpdatePermission').resolves(true);
     sinon.stub(usersModel, 'getAuthUser').resolves({});
     sinon
       .stub(usersModel, 'findRecord')
-      .resolves(createFirestoreSnap('3', { email: 'test' }));
-    const userUpdate = sinon
-      .stub(usersModel, 'upsertRecord')
-      .callsFake((_, id, update) => {
-        expect(update.teams).to.deep.equal({}, 'removing users teams');
-        return Promise.resolve();
-      });
+      .resolves(createFirestoreSnap(userId, user));
+    const setRecord = sinon.stub(usersModel, 'setRecord').resolves();
 
     await request(createApp())
       .patch('/t/1')
-      .send({ teams: null })
+      .send({ teams: { [teamId]: false } })
       .expect('Content-Type', /json/)
       .expect(200);
 
-    expect(userUpdate.called).to.equal(true, 'updated user record');
+    const result = setRecord.firstCall || { args: [] };
+    const actual = ((result.args[2] || {}).teams || {})[teamId];
+    expect(actual).to.equal(expected);
   });
 
-  it('allows setting users teams', async () => {
-    const teamId = '1';
-    const property1Id = '2';
-    const property2Id = '3';
+  it('allows adding a team to a user', async () => {
+    const teamId = uuid();
+    const userId = uuid();
+    const property1Id = uuid();
+    const property2Id = uuid();
+    const user = mocking.createUser();
     const expected = {
       [teamId]: {
         [property1Id]: true,
@@ -242,7 +234,7 @@ describe('Users | API | PATCH', () => {
     sinon.stub(usersModel, 'getAuthUser').resolves({});
     sinon
       .stub(usersModel, 'findRecord')
-      .resolves(createFirestoreSnap('4', { email: 'test' }));
+      .resolves(createFirestoreSnap(userId, user));
     const getPropertyTeams = sinon
       .stub(propertiesModel, 'findAllTeamRelationships')
       .resolves({
@@ -251,8 +243,8 @@ describe('Users | API | PATCH', () => {
           createFirestoreSnap(property2Id, { team: teamId }),
         ],
       });
-    const userUpdate = sinon
-      .stub(usersModel, 'upsertRecord')
+    const setRecord = sinon
+      .stub(usersModel, 'setRecord')
       .callsFake((_, id, update) => {
         expect(update.teams).to.deep.equal(
           expected,
@@ -268,7 +260,39 @@ describe('Users | API | PATCH', () => {
       .expect(200);
 
     expect(getPropertyTeams.called).to.equal(true, 'queried property teams');
-    expect(userUpdate.called).to.equal(true, 'updated user record');
+    expect(setRecord.called).to.equal(true, 'updated user record');
+  });
+
+  it('allows adding and removing a team from a user', async () => {
+    const team1Id = uuid();
+    const team2Id = uuid();
+    const userId = uuid();
+    const user = mocking.createUser({ teams: { [team1Id]: true } });
+    const expected = {
+      [team1Id]: null,
+      [team2Id]: true,
+    };
+
+    // Stup auth requests
+    sinon.stub(usersModel, 'hasUpdatePermission').resolves(true);
+    sinon.stub(usersModel, 'getAuthUser').resolves({});
+    sinon
+      .stub(usersModel, 'findRecord')
+      .resolves(createFirestoreSnap(userId, user));
+    sinon
+      .stub(propertiesModel, 'findAllTeamRelationships')
+      .resolves({ docs: [] });
+    const setRecord = sinon.stub(usersModel, 'setRecord').resolves();
+
+    await request(createApp())
+      .patch('/t/1')
+      .send({ teams: { [team1Id]: false, [team2Id]: true } })
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    const result = setRecord.firstCall || { args: [] };
+    const actual = (result.args[2] || {}).teams || {};
+    expect(actual).to.deep.equal(expected);
   });
 });
 
@@ -278,7 +302,7 @@ function createApp() {
     '/t/:userId',
     bodyParser.json(),
     stubAuth,
-    createPatchUser(
+    handler(
       {
         collection: () => {},
         runTransaction: fn => Promise.resolve(fn()),
