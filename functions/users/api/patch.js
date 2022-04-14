@@ -26,22 +26,44 @@ module.exports = function createPatch(db, auth) {
     const { body = {}, params } = req;
     const reqUserId = req.user.id;
     const { userId: targetUserId } = params;
-    const { superAdmin, admin, corporate, isDisabled, teams } = body;
+    const {
+      superAdmin,
+      admin,
+      corporate,
+      isDisabled,
+      teams,
+      properties,
+    } = body;
     const send500Error = create500ErrHandler(PREFIX, res);
 
     const claimsUpdates = {};
-    if (typeof admin === 'boolean') claimsUpdates.admin = admin;
-    if (typeof corporate === 'boolean') claimsUpdates.corporate = corporate;
-    if (typeof superAdmin === 'boolean') claimsUpdates.superAdmin = superAdmin;
+    const hasAdminUpdate = typeof admin === 'boolean';
+    const hasCorporateUpdate = typeof corporate === 'boolean';
+    const hasSuperAdminUpdate = typeof superAdmin === 'boolean';
+    if (hasAdminUpdate) claimsUpdates.admin = admin;
+    if (hasCorporateUpdate) claimsUpdates.corporate = corporate;
+    if (hasSuperAdminUpdate) claimsUpdates.superAdmin = superAdmin;
     const hasDisabledUpdate = typeof isDisabled === 'boolean';
-    const hasClaimsUpdate = Boolean(Object.keys(claimsUpdates).length);
-    const hasTeamsUpdate = Object.hasOwnProperty.call(body, 'teams');
-    const isRemovingTeams =
-      hasTeamsUpdate && Boolean(Object.keys(teams || {}).length === 0);
-    const isUpsertingTeams = hasTeamsUpdate && !isRemovingTeams;
+    const hasClaimsUpdate = isValidHashUpdate(claimsUpdates);
+    const hasTeamsUpdate = isValidHashUpdate(teams);
+    const hasPropertiesUpdate = isValidHashUpdate(properties);
+    const hasFirstNameUpdate =
+      Boolean(body.firstName) && typeof body.firstName === 'string';
+    const hasLastNameUpdate =
+      Boolean(body.lastName) && typeof body.lastName === 'string';
+    const hasPushOptOutUpdate = typeof body.pushOptOut === 'boolean';
+    const hasUpdates = Boolean(
+      hasDisabledUpdate ||
+        hasClaimsUpdate ||
+        hasTeamsUpdate ||
+        hasPropertiesUpdate ||
+        hasFirstNameUpdate ||
+        hasLastNameUpdate ||
+        hasPushOptOutUpdate
+    );
 
     // Reject invalid request
-    if (!hasDisabledUpdate && !hasClaimsUpdate && !hasTeamsUpdate) {
+    if (!hasUpdates) {
       return res.status(400).send({
         errors: [{ detail: 'Request invalid' }],
       });
@@ -61,7 +83,18 @@ module.exports = function createPatch(db, auth) {
       hasUpdatePermission = await usersModel.hasUpdatePermission(
         auth,
         reqUserId,
-        body
+        targetUserId,
+        {
+          admin: hasAdminUpdate,
+          corporate: hasCorporateUpdate,
+          superAdmin: hasSuperAdminUpdate,
+          isDisabled: hasDisabledUpdate,
+          teams: hasTeamsUpdate,
+          properties: hasPropertiesUpdate,
+          firstName: hasFirstNameUpdate,
+          lastName: hasLastNameUpdate,
+          pushOptOut: hasPushOptOutUpdate,
+        }
       );
     } catch (err) {
       return send500Error(err, 'Failed to lookup requestor update permissions');
@@ -111,61 +144,91 @@ module.exports = function createPatch(db, auth) {
 
     const dbUpdate = { ...claimsUpdates };
 
-    // Remove Corporate / Admin properties
-    if (claimsUpdates.admin || claimsUpdates.corporate) {
-      dbUpdate.properties = {};
-    }
-
     try {
       await db.runTransaction(async transaction => {
-        // Remove all a user's teams associations
-        if (isRemovingTeams) {
-          dbUpdate.teams = {};
-        }
-
         // Update user's teams
-        if (isUpsertingTeams) {
+        if (hasTeamsUpdate) {
           // Collect requested truethy team ids
           // all falsey/existing teams will be removed
           const teamsUpsertIds = Object.keys(teams || {}).filter(teamId =>
             Boolean(teams[teamId])
           );
 
-          let propertyTeamsSnap = null;
-          try {
-            propertyTeamsSnap = await propertiesModel.findAllTeamRelationships(
-              db,
-              transaction
-            );
-          } catch (err) {
-            return send500Error(
-              err,
-              'Properties lookup failed',
-              'failed to complete user record update'
-            );
+          const propertiesOfTeams = [];
+          if (teamsUpsertIds.length) {
+            try {
+              const propertyTeamsSnap = await propertiesModel.findAllTeamRelationships(
+                db,
+                transaction
+              );
+              propertiesOfTeams.push(...propertyTeamsSnap.docs);
+            } catch (err) {
+              return send500Error(
+                err,
+                'Properties lookup failed',
+                'failed to complete user record update'
+              );
+            }
           }
 
           // Nested hash of each team's properties
           // Example: `{ team: { property: true } }`
-          const teamsWithProperties = propertyTeamsSnap.docs.reduce(
-            (acc, doc) => {
-              const propertyId = doc.id;
-              const teamId = doc.data().team;
+          const teamsWithProperties = propertiesOfTeams
+            .map(doc => ({ ...doc.data(), id: doc.id }))
+            .filter(property => Boolean(property.team)) // sanity check
+            .reduce((acc, property) => {
+              const propertyId = property.id;
+              const teamId = property.team;
               acc[teamId] = acc[teamId] || {};
               acc[teamId][propertyId] = true;
               return acc;
-            },
-            {}
-          );
+            }, {});
 
           // Teams update (replaces existing teams)
           // Example: `{ team1: true, team2: { property: true } }`
-          dbUpdate.teams = teamsUpsertIds.reduce((acc, teamId) => {
+          const teamUpsertUpdates = teamsUpsertIds.reduce((acc, teamId) => {
             acc[teamId] = teamsWithProperties[teamId]
               ? { ...teamsWithProperties[teamId] } // Clone all team's properties
               : true; // Just set user's team membership
             return acc;
           }, {});
+
+          // Set removed team associations
+          const teamsRemovalUpdates = Object.keys(teams || {})
+            .filter(teamId => Boolean(teams[teamId]) === false)
+            .reduce((acc, teamId) => {
+              acc[teamId] = null; // must be null for model
+              return acc;
+            }, {});
+
+          // Combine all team updates
+          dbUpdate.teams = { ...teamUpsertUpdates, ...teamsRemovalUpdates };
+        }
+
+        // Update user's properties
+        if (hasPropertiesUpdate) {
+          // Set removed team associations
+          dbUpdate.properties = Object.keys(properties || {})
+            // .filter(teamId => Boolean(teams[teamId]) === false)
+            .reduce((acc, propertyId) => {
+              if (Boolean(properties[propertyId]) === false) {
+                acc[propertyId] = null; // must be null for model
+              } else {
+                acc[propertyId] = true;
+              }
+              return acc;
+            }, {});
+        }
+
+        // Add profile updates
+        if (hasFirstNameUpdate) {
+          dbUpdate.firstName = body.firstName;
+        }
+        if (hasLastNameUpdate) {
+          dbUpdate.lastName = body.lastName;
+        }
+        if (hasPushOptOutUpdate) {
+          dbUpdate.pushOptOut = body.pushOptOut;
         }
 
         // Update target users' Realtime DB record
@@ -176,11 +239,12 @@ module.exports = function createPatch(db, auth) {
         if (Object.keys(dbUpdate).length) {
           try {
             // Update Firestore
-            await usersModel.upsertRecord(
+            await usersModel.setRecord(
               db,
               targetUserId,
               dbUpdate,
-              transaction
+              transaction,
+              true
             );
           } catch (err) {
             return send500Error(
@@ -190,27 +254,6 @@ module.exports = function createPatch(db, auth) {
             );
           }
         }
-
-        let targetUser = null;
-        try {
-          targetUser = await usersModel.findRecord(db, targetUserId);
-          if (!targetUser.exists) throw Error('target user does not exist');
-        } catch (err) {
-          return send500Error(
-            err,
-            'Firestore target user lookup failed',
-            'Unexpected error'
-          );
-        }
-
-        // Success
-        res.status(200).send({
-          data: {
-            type: 'user',
-            id: targetUser.id,
-            attributes: targetUser.data(),
-          },
-        });
       });
     } catch (err) {
       return send500Error(
@@ -219,5 +262,36 @@ module.exports = function createPatch(db, auth) {
         'failed to complete user record update'
       );
     }
+
+    let targetUser = null;
+    try {
+      targetUser = await usersModel.findRecord(db, targetUserId);
+      if (!targetUser.exists) throw Error('target user does not exist');
+    } catch (err) {
+      return send500Error(
+        err,
+        'Firestore target user lookup failed',
+        'Unexpected error'
+      );
+    }
+
+    // Success
+    res.status(200).send({
+      data: {
+        type: 'user',
+        id: targetUser.id,
+        attributes: targetUser.data(),
+      },
+    });
   };
 };
+
+/**
+ * Is a valid hash map update
+ * that contains any content
+ * @param  {Object} hash
+ * @return {Boolean}
+ */
+function isValidHashUpdate(hash = {}) {
+  return hash && typeof hash === 'object' && Object.keys(hash).length > 0;
+}
