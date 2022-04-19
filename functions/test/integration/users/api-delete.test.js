@@ -3,7 +3,7 @@ const { expect } = require('chai');
 const sinon = require('sinon');
 const express = require('express');
 const usersModel = require('../../../models/users');
-const createDeleteUser = require('../../../users/api/delete-user');
+const handler = require('../../../users/api/delete');
 
 describe('Users | API | DELETE', () => {
   afterEach(() => sinon.restore());
@@ -65,11 +65,7 @@ describe('Users | API | DELETE', () => {
 
 function createApp() {
   const app = express();
-  app.delete(
-    '/t/:userId',
-    stubAuth,
-    createDeleteUser({ collection: () => {} }, {})
-  );
+  app.delete('/t/:userId', stubAuth, handler({ collection: () => {} }, {}));
   return app;
 }
 

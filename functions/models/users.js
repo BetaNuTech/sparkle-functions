@@ -1,6 +1,7 @@
 const assert = require('assert');
 const FieldValue = require('firebase-admin').firestore.FieldValue;
 const modelSetup = require('./utils/model-setup');
+const firestoreUtils = require('../utils/firestore');
 
 const PREFIX = 'models: users:';
 const USERS_COLLECTION = 'users';
@@ -15,8 +16,8 @@ module.exports = modelSetup({
    * @param  {firestore.batch?} parentBatch
    * @return {Promise}
    */
-  batchRemoveTeam(fs, userIds, teamId, parentBatch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  batchRemoveTeam(db, userIds, teamId, parentBatch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(userIds && Array.isArray(userIds), 'has user ids is an array');
     assert(
       userIds.every(id => id && typeof id === 'string'),
@@ -30,8 +31,8 @@ module.exports = modelSetup({
       );
     }
 
-    const batch = parentBatch || fs.batch();
-    const collection = fs.collection(USERS_COLLECTION);
+    const batch = parentBatch || db.batch();
+    const collection = db.collection(USERS_COLLECTION);
 
     // Remove each users team
     userIds.forEach(id => {
@@ -48,14 +49,14 @@ module.exports = modelSetup({
 
   /**
    * Lookup Firestore user
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {firebaseAdmin.firestore} db - Firestore DB instance
    * @param  {String} userId
    * @return {Promise}
    */
-  findRecord(fs, userId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  findRecord(db, userId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(userId && typeof userId === 'string', 'has user id');
-    return fs
+    return db
       .collection(USERS_COLLECTION)
       .doc(userId)
       .get();
@@ -149,17 +150,77 @@ module.exports = modelSetup({
   },
 
   /**
+   * Set Firestore User
+   * @param  {admin.firestore} db
+   * @param  {String} templateId
+   * @param  {Object} data
+   * @param  {firestore.batch?} batch
+   * @param  {Boolean} merge - deep merge record
+   * @return {Promise}
+   */
+  setRecord(db, userId, data, batch, merge = false) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(userId && typeof userId === 'string', 'has document id');
+    assert(data && typeof data === 'object', 'has update data');
+
+    const docRef = db.collection(USERS_COLLECTION).doc(userId);
+    const finalData = JSON.parse(JSON.stringify(data)); // clone
+    const deleteWrites = {};
+    const teamDeletes = firestoreUtils.getDeleteWrites(
+      finalData.teams || {},
+      'teams'
+    );
+    const propertyDeletes = firestoreUtils.getDeleteWrites(
+      finalData.properties || {},
+      'properties'
+    );
+
+    // Merge all delete updates
+    Object.assign(deleteWrites, propertyDeletes, teamDeletes);
+    const hasDeleteWrites = isObjectEmpty(deleteWrites) === false;
+
+    // Remove nested nulls in teams and properties
+    firestoreUtils.removeNulls(finalData.teams || {});
+    firestoreUtils.removeNulls(finalData.properties || {});
+
+    // Remove empty properties/teams hashes
+    // which could clear all associations
+    const hasEmptyTeams = isObjectEmpty((finalData || {}).teams || {});
+    const hasEmptyProperties = isObjectEmpty(
+      (finalData || {}).properties || {}
+    );
+    if (hasEmptyTeams) delete finalData.teams;
+    if (hasEmptyProperties) delete finalData.properties;
+
+    // Add batched update
+    if (batch) {
+      assert(
+        typeof batch.set === 'function' && typeof batch.update === 'function',
+        'has batch instance'
+      );
+      batch.set(docRef, finalData, { merge });
+      if (hasDeleteWrites) batch.update(docRef, deleteWrites); // add deletes
+      return Promise.resolve();
+    }
+
+    // Normal update
+    return docRef.set(finalData, { merge }).then(
+      () => (hasDeleteWrites ? docRef.update(deleteWrites) : Promise.resolve()) // append any deletes
+    );
+  },
+
+  /**
    * Create a Firestore user
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String} userId
    * @param  {Object} data
    * @return {Promise} - resolves {WriteResult}
    */
-  createRecord(fs, userId, data) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  createRecord(db, userId, data) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(userId && typeof userId === 'string', 'has user id');
     assert(data && typeof data === 'object', 'has data');
-    return fs
+    return db
       .collection(USERS_COLLECTION)
       .doc(userId)
       .create(data);
@@ -167,14 +228,14 @@ module.exports = modelSetup({
 
   /**
    * Remove Firestore User
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {firebaseAdmin.firestore} db - Firestore DB instance
    * @param  {String} userId
    * @return {Promise}
    */
-  removeRecord(fs, userId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  removeRecord(db, userId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(userId && typeof userId === 'string', 'has user id');
-    return fs
+    return db
       .collection(USERS_COLLECTION)
       .doc(userId)
       .delete();
@@ -182,16 +243,16 @@ module.exports = modelSetup({
   /**
    * Query all users with a team in
    * their `teams` hash
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String} teamId
    * @param  {firestore.transaction?} transaction
    * @return {Promise} - resolves {QuerySnapshot}
    */
-  findByTeam(fs, teamId, transaction) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  findByTeam(db, teamId, transaction) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(teamId && typeof teamId === 'string', 'has team id');
 
-    const query = fs
+    const query = db
       .collection(USERS_COLLECTION)
       .orderBy(`teams.${teamId}`)
       .startAfter(null);
@@ -209,13 +270,13 @@ module.exports = modelSetup({
 
   /**
    * Query all uers
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {Object} query
    * @param  {firestore.transaction?} transaction
    * @return {Promise} - resolves {DataSnapshot}
    */
-  query(fs, query, transaction) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  query(db, query, transaction) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(query && typeof query === 'object', 'has query');
     if (transaction) {
       assert(
@@ -224,7 +285,7 @@ module.exports = modelSetup({
       );
     }
 
-    let fsQuery = fs.collection(USERS_COLLECTION);
+    let fsQuery = db.collection(USERS_COLLECTION);
 
     // Append each query as where clause
     Object.keys(query).forEach(attr => {
@@ -245,12 +306,12 @@ module.exports = modelSetup({
 
   /**
    * Lookup all user documents snapshots
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @return {Promise} - resolves {DocumentSnapshot[]}
    */
-  findAll(fs) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
-    return fs.collection(USERS_COLLECTION).get();
+  findAll(db) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    return db.collection(USERS_COLLECTION).get();
   },
 
   /**
@@ -433,10 +494,11 @@ module.exports = modelSetup({
    * Requestor has permission to perform update
    * @param {admin.auth} auth - Firebase Auth instance
    * @param {String} requestingUserId - user ID
-   * @param {Object} updates
+   * @param {String} targetUserId - user ID
+   * @param {Object} hasUpdates
    * @return {Promise} - resolves {Boolean}
    */
-  async hasUpdatePermission(auth, requestingUserId, updates) {
+  async hasUpdatePermission(auth, requestingUserId, targetUserId, hasUpdates) {
     assert(
       auth && typeof auth.getUser === 'function',
       'has firebase auth instance'
@@ -445,9 +507,30 @@ module.exports = modelSetup({
       requestingUserId && typeof requestingUserId === 'string',
       'has requesting user ID'
     );
-    assert(updates && typeof updates === 'object', 'has updates hash');
+    assert(
+      targetUserId && typeof targetUserId === 'string',
+      'has target user ID'
+    );
+    assert(
+      hasUpdates && typeof hasUpdates === 'object',
+      'has has updates hash'
+    );
+    assert(
+      Object.values(hasUpdates).every(v => typeof v === 'boolean'),
+      'has updates is a flat boolean map'
+    );
 
-    const isUpdatingSuperAdmin = typeof updates.superAdmin === 'boolean';
+    const isSuperUserUpdate = hasUpdates.superAdmin;
+    const isPermissionLevelUpdate = Boolean(
+      hasUpdates.admin ||
+        hasUpdates.coroprate ||
+        hasUpdates.teams ||
+        hasUpdates.properties ||
+        hasUpdates.isDisabled
+    );
+    const isProfileUpdate = Boolean(
+      hasUpdates.firstName || hasUpdates.lastName || hasUpdates.pushOptOut
+    );
 
     // Get requesting user's current custom claim state
     let reqUserClaims = null;
@@ -459,16 +542,34 @@ module.exports = modelSetup({
       );
     }
 
+    const isAdmin = reqUserClaims.admin;
+    const isUpdatingSelf = requestingUserId === targetUserId;
+
     // Non super admins may not set super admins
-    if (isUpdatingSuperAdmin && !reqUserClaims.superAdmin) {
+    if (isSuperUserUpdate && !reqUserClaims.superAdmin) {
       return false;
     }
 
-    // All other updates require admin claim
-    if (!isUpdatingSuperAdmin && !reqUserClaims.admin) {
+    // Non admins may not update permission levels
+    if (isPermissionLevelUpdate && !isAdmin) {
+      return false;
+    }
+
+    // Must be an admin or the target user
+    // to update profile attributes
+    if (isProfileUpdate && !isAdmin && !isUpdatingSelf) {
       return false;
     }
 
     return true;
   },
 });
+
+/**
+ * Determine if an object contains anything
+ * @param  {Object} obj
+ * @return {Boolean}
+ */
+function isObjectEmpty(obj) {
+  return Object.keys(obj).length === 0;
+}
