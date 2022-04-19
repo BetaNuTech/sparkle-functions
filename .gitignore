@@ -68,3 +68,6 @@ auth*.json
 .config
 .gsutil
 .boto
+
+# IDE Files
+*.sublime-workspace

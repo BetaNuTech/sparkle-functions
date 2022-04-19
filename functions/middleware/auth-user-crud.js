@@ -38,7 +38,9 @@ module.exports = function authUserCrud(auth) {
 
       hasCrudPermission = await usersModel.hasCrudPermission(auth, reqUserId);
     } catch (err) {
-      log.error(`${PREFIX} | ${err}`);
+      log.error(
+        `${PREFIX}: authUserCrud: failed to lookup permissions: ${err}`
+      );
       return res.status(500).send({
         errors: [
           {

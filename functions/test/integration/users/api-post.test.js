@@ -4,7 +4,7 @@ const sinon = require('sinon');
 const express = require('express');
 const bodyParser = require('body-parser');
 const usersModel = require('../../../models/users');
-const createPostUser = require('../../../users/api/post-user');
+const handler = require('../../../users/api/post');
 
 describe('Users | API | POST', () => {
   afterEach(() => sinon.restore());
@@ -222,7 +222,7 @@ function createApp() {
     '/t',
     bodyParser.json(),
     stubAuth,
-    createPostUser({ collection: () => {} }, {})
+    handler({ collection: () => {} }, {})
   );
   return app;
 }

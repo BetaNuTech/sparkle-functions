@@ -1,6 +1,6 @@
-const createPatchUser = require('./api/patch-user');
-const createPostUser = require('./api/post-user');
-const createDeleteUser = require('./api/delete-user');
+const createPatchUser = require('./api/patch');
+const createPostUser = require('./api/post');
+const createDeleteUser = require('./api/delete');
 
 module.exports = {
   api: {
