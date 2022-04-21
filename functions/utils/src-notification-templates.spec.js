@@ -289,6 +289,38 @@ describe('Utils | Source Notifications Templates', () => {
           'authorEmail',
         ],
       },
+      {
+        template: 'slack-integration-added-summary',
+        values: ['name', 'authorName'],
+      },
+      {
+        template: 'slack-integration-added-markdown-body',
+        values: ['name', 'authorName', 'authorEmail'],
+      },
+      {
+        template: 'slack-system-channel-update-summary',
+        values: ['name', 'authorName'],
+      },
+      {
+        template: 'slack-system-channel-update-markdown-body',
+        values: ['name', 'authorName', 'authorEmail'],
+      },
+      {
+        template: 'trello-integration-added-summary',
+        values: ['name', 'username', 'authorName'],
+      },
+      {
+        template: 'trello-integration-added-markdown-body',
+        values: ['name', 'username', 'authorName', 'authorEmail'],
+      },
+      {
+        template: 'trello-integration-removal-summary',
+        values: ['name', 'username', 'authorName'],
+      },
+      {
+        template: 'trello-integration-removal-markdown-body',
+        values: ['name', 'username', 'authorName', 'authorEmail'],
+      },
     ];
 
     // Sanity check

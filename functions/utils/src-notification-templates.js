@@ -358,6 +358,52 @@ Name: {{{name}}}
 
   'team-delete-markdown-body': `\`{{{name}}} deleted\`
 *Deleted by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // /////////////////////
+  // Slack App Addition
+  // /////////////////////
+
+  'slack-integration-added-summary':
+    'The Sparkle Slack App added to team {{{name}}}{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'slack-integration-added-markdown-body': `\`\`\`
+Slack Team: {{{name}}}
+\`\`\`
+*Added by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // //////////////////////////////
+  // Slack System Channel Update
+  // //////////////////////////////
+
+  'slack-system-channel-update-summary':
+    'System Channel updated to {{{name}}}{{#if authorName}} by {{{authorName}}}{{/if}}',
+  'slack-system-channel-update-markdown-body': `\`\`\`
+Channel Name: {{{name}}}
+\`\`\`
+*Added by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // //////////////////////////////
+  // Trello Integration Addition
+  // //////////////////////////////
+
+  'trello-integration-added-summary':
+    'The trello account {{{name}}} (@{{{username}}}) added{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'trello-integration-added-markdown-body': `\`\`\`
+{{#if name}}Name: {{{name}}}{{/if}}
+{{#if username}}Username: @{{{username}}}{{/if}}
+\`\`\`
+*Added by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // /////////////////////////////
+  // Trello Integration Removal
+  // ////////////////////////////
+
+  'trello-integration-removal-summary':
+    'The trello account {{{name}}} (@{{{username}}}) removed{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'trello-integration-removal-markdown-body': `\`{{{name}}}{{#if username}} (@{{{username}}}){{/if}} removed\`
+*Removed by*: {{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
 };
 
 /**
