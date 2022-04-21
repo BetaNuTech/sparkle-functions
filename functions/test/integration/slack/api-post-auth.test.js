@@ -7,7 +7,7 @@ const slackService = require('../../../services/slack');
 const globalApiService = require('../../../services/global-api');
 const systemModel = require('../../../models/system');
 const integrationsModel = require('../../../models/integrations');
-const postSlackAuth = require('../../../slack/api/post-auth');
+const handler = require('../../../slack/api/post-auth');
 
 describe('Slack | API | POST Slack Authorization', () => {
   afterEach(() => sinon.restore());
@@ -176,7 +176,7 @@ function createApp() {
     '/t',
     bodyParser.json(),
     stubAuth,
-    postSlackAuth({
+    handler({
       collection: () => {},
       batch: () => ({ commit: () => Promise.resolve() }),
     })

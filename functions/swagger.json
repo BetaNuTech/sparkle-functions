@@ -1045,12 +1045,22 @@
         "responses": {
           "201": {
             "schema": {
-              "$ref": "#/definitions/INTEGRATIONSUCCESS"
+              "$ref": "#/definitions/GENERICJSONAPIDOC"
             }
           },
           "400": {
             "schema": {
               "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
             }
           },
           "500": {
@@ -1059,18 +1069,55 @@
             }
           }
         }
-      }
-    },
-    "/v0/integrations/slack/authorization/": {
-      "parameters": [
-        {
-          "name": "Authorization",
-          "in": "header",
-          "required": true,
-          "description": "Authorization token.",
-          "type": "string"
+      },
+      "patch": {
+        "tags": ["Integrations"],
+        "parameters": [
+          {
+            "name": "integration",
+            "in": "body",
+            "description": "Intregration update payload",
+            "required": ["defaultChannelName"],
+            "properties": {
+              "defaultChannelName": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/GENERICJSONAPIDOC"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
         }
-      ],
+      },
       "delete": {
         "tags": ["Integrations"],
         "parameters": [
@@ -1087,6 +1134,16 @@
           "400": {
             "schema": {
               "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
             }
           },
           "500": {
@@ -1194,24 +1251,18 @@
               "$ref": "#/definitions/ERROR"
             }
           },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
           "500": {
             "schema": {
               "$ref": "#/definitions/ERROR"
             }
           }
         }
-      }
-    },
-    "/v0/integrations/trello/authorization/": {
-      "parameters": [
-        {
-          "name": "Authorization",
-          "in": "header",
-          "required": true,
-          "description": "Authorization token.",
-          "type": "string"
-        }
-      ],
+      },
       "delete": {
         "tags": ["Integrations"],
         "parameters": [
@@ -1226,6 +1277,16 @@
         "responses": {
           "204": {
             "type": "object"
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
           },
           "500": {
             "schema": {
@@ -3635,6 +3696,20 @@
       "properties": {
         "message": {
           "type": "string"
+        }
+      }
+    },
+    "GENERICJSONAPIDOC": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "attributes": {
+          "type": "object"
         }
       }
     }

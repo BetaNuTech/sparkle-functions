@@ -56,7 +56,7 @@ module.exports = modelSetup({
   },
 
   /**
-   * Lookup Slack system credentials
+   * Lookup Slack integration details
    * @param  {admin.firestore} db
    * @return {Promise} - resolves {DocumentSnapshot}
    */
@@ -69,8 +69,8 @@ module.exports = modelSetup({
   },
 
   /**
-   * Lookup Slack system credentials
-   * @param  {admin.firestore} fs
+   * Lookup Slack integration details
+   * @param  {admin.firestore} db
    * @return {Promise} - resolves {DocumentSnapshot}
    */
   findYardi(db) {
@@ -82,8 +82,8 @@ module.exports = modelSetup({
   },
 
   /**
-   * Update Firestore notification
-   * @param  {admin.firestore} fs - Firestore DB instance
+   * Update Firestore slack integration details
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {String} notificationId
    * @param  {Object} data
    * @param  {firestore.batch?} batch

@@ -158,5 +158,29 @@ module.exports = function createPostAuth(db) {
         attributes: integrationDetails,
       },
     });
+
+    // Send global notification for added Slack auth
+    // const name = slackIntegration.teamName || '';
+
+    // try {
+    //   await notificationsModel.addRecord(db, {
+    //     title: 'Slack App Addition',
+    //     summary: notifyTemplate('slack-integration-added-summary', {
+    //       name,
+    //       authorName,
+    //     }),
+    //     markdownBody: notifyTemplate('slack-integration-added-markdown-body', {
+    //       name,
+    //       authorName,
+    //       authorEmail,
+    //     }),
+    //     creator: authorId,
+    //   });
+    //   log.info(
+    //     `${PREFIX} Slack App Addition global notification successfully created`
+    //   );
+    // } catch (err) {
+    //   log.error(`${PREFIX} failed to create source notification: ${err}`); // proceed with error
+    // }
   };
 };
