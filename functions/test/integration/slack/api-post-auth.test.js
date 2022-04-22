@@ -7,6 +7,8 @@ const slackService = require('../../../services/slack');
 const globalApiService = require('../../../services/global-api');
 const systemModel = require('../../../models/system');
 const integrationsModel = require('../../../models/integrations');
+const notificationsModel = require('../../../models/notifications');
+const mocking = require('../../../test-helpers/mocking');
 const handler = require('../../../slack/api/post-auth');
 
 describe('Slack | API | POST Slack Authorization', () => {
@@ -134,14 +136,11 @@ describe('Slack | API | POST Slack Authorization', () => {
       .catch(done);
   });
 
-  it('returns public Slack integration data as successful response', done => {
-    const integrationData = {
-      createdAt: Math.round(Date.now() / 1000),
-      grantedBy: '123',
-      team: '8000',
-      teamName: 'test',
+  it('returns public Slack integration data as successful response', async () => {
+    const integrationData = mocking.createSlackIntegration({
       defaultChannelName: 'test_chan',
-    };
+    });
+    delete integrationData.joinedChannelNames;
     const expected = {
       data: {
         id: 'slack',
@@ -156,17 +155,65 @@ describe('Slack | API | POST Slack Authorization', () => {
     sinon.stub(systemModel, 'upsertSlack').resolves();
     sinon.stub(integrationsModel, 'setSlack').resolves(integrationData);
 
-    request(createApp())
+    const res = await request(createApp())
       .post('/t')
       .send({ slackCode: 'test', redirectUri: '/test' })
       .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(201)
-      .then(res => {
-        const actual = res.body;
-        expect(actual).to.deep.equal(expected);
-        done();
-      })
-      .catch(done);
+      .expect(201);
+
+    const actual = res.body;
+    expect(actual).to.deep.equal(expected);
+  });
+
+  it('sends notification upon success', async () => {
+    const expected = 'Slack App Addition';
+    const integrationData = mocking.createSlackIntegration();
+
+    // Stubs
+    sinon.stub(globalApiService, 'updateSlackTeam').resolves();
+    sinon.stub(slackService, 'authorizeCredentials').resolves({
+      team: { id: '456', name: 'test' },
+    });
+    sinon.stub(systemModel, 'upsertSlack').resolves();
+    sinon.stub(integrationsModel, 'setSlack').resolves(integrationData);
+    const addNotification = sinon
+      .stub(notificationsModel, 'addRecord')
+      .resolves();
+
+    await request(createApp())
+      .post('/t')
+      .send({ slackCode: 'test', redirectUri: '/test' })
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(201);
+
+    const result = addNotification.firstCall || { args: [] };
+    const actual = (result.args[1] || {}).title || '';
+    expect(actual).to.equal(expected);
+  });
+
+  it('does not send notification upon success in incognito mode', async () => {
+    const expected = false;
+    const integrationData = mocking.createSlackIntegration();
+
+    // Stubs
+    sinon.stub(globalApiService, 'updateSlackTeam').resolves();
+    sinon.stub(slackService, 'authorizeCredentials').resolves({
+      team: { id: '456', name: 'test' },
+    });
+    sinon.stub(systemModel, 'upsertSlack').resolves();
+    sinon.stub(integrationsModel, 'setSlack').resolves(integrationData);
+    const addNotification = sinon
+      .stub(notificationsModel, 'addRecord')
+      .resolves();
+
+    await request(createApp())
+      .post('/t?incognitoMode=true')
+      .send({ slackCode: 'test', redirectUri: '/test' })
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(201);
+
+    const actual = addNotification.calledOnce;
+    expect(actual).to.equal(expected);
   });
 });
 

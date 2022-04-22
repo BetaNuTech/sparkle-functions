@@ -16,7 +16,7 @@ describe('Slack | API | PATCH Slack Authorization', () => {
     const expected = 'body';
 
     const res = await request(createApp())
-      .patch('/t')
+      .patch('/t?incognitoMode=true')
       .send({ defaultChannelName: 1 })
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(400);
@@ -33,7 +33,7 @@ describe('Slack | API | PATCH Slack Authorization', () => {
       .resolves(firebase.createDocSnapshot()); // empty
 
     return request(createApp())
-      .patch('/t')
+      .patch('/t?incognitoMode=true')
       .send({ defaultChannelName: 'updated' })
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(404); // Assertion
@@ -51,7 +51,7 @@ describe('Slack | API | PATCH Slack Authorization', () => {
     sinon.stub(notificationsModel, 'addRecord').resolves();
 
     const res = await request(createApp())
-      .patch('/t')
+      .patch('/t?incognitoMode=true')
       .send({ defaultChannelName: 'channel name' })
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(201); // Assertion
@@ -81,6 +81,29 @@ describe('Slack | API | PATCH Slack Authorization', () => {
 
     const result = addNotification.firstCall || { args: [] };
     const actual = (result.args[1] || {}).title || '';
+    expect(actual).to.equal(expected);
+  });
+
+  it('does not send notification on successful Slack details update in incognito mode', async () => {
+    const expected = false;
+    const integration = mocking.createSlackIntegration({});
+
+    // Stubs
+    sinon
+      .stub(integrationsModel, 'findSlack')
+      .resolves(firebase.createDocSnapshot('slack', integration)); // empty
+    sinon.stub(integrationsModel, 'updateSlack').resolves();
+    const addNotification = sinon
+      .stub(notificationsModel, 'addRecord')
+      .resolves();
+
+    await request(createApp())
+      .patch('/t?incognitoMode=true')
+      .send({ defaultChannelName: 'updated' })
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(201); // Assertion
+
+    const actual = addNotification.calledOnce;
     expect(actual).to.equal(expected);
   });
 });
