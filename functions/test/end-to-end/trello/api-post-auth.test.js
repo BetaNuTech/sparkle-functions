@@ -52,7 +52,7 @@ describe('Trello | API | POST Auth', () => {
     // Execute
     const app = createApp();
     await request(app)
-      .post('/t')
+      .post('/t?incognitoMode=true')
       .send({ apikey: result.apikey, authToken: result.authToken })
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(201);

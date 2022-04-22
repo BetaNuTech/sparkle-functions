@@ -1069,6 +1069,14 @@
         "tags": ["Integrations"],
         "parameters": [
           {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          },
+          {
             "name": "integration",
             "in": "body",
             "description": "Intregration payload.",
@@ -1114,6 +1122,14 @@
       "patch": {
         "tags": ["Integrations"],
         "parameters": [
+          {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          },
           {
             "name": "integration",
             "in": "body",
@@ -1261,6 +1277,14 @@
       "post": {
         "tags": ["Integrations"],
         "parameters": [
+          {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          },
           {
             "name": "integration",
             "in": "body",

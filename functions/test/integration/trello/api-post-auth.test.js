@@ -6,7 +6,9 @@ const bodyParser = require('body-parser');
 const trelloService = require('../../../services/trello');
 const systemModel = require('../../../models/system');
 const integrationsModel = require('../../../models/integrations');
+const notificationsModel = require('../../../models/notifications');
 const postAuth = require('../../../trello/api/post-auth');
+const mocking = require('../../../test-helpers/mocking');
 
 describe('Trello | API | POST Authorization', () => {
   afterEach(() => sinon.restore());
@@ -15,7 +17,7 @@ describe('Trello | API | POST Authorization', () => {
     const expected = 'apikey';
 
     request(createApp())
-      .post('/t')
+      .post('/t?incognitoMode=true')
       .send({ authToken: 'token' })
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(400)
@@ -31,7 +33,7 @@ describe('Trello | API | POST Authorization', () => {
     const expected = 'authToken';
 
     request(createApp())
-      .post('/t')
+      .post('/t?incognitoMode=true')
       .send({ apikey: 'key' })
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(400)
@@ -47,7 +49,7 @@ describe('Trello | API | POST Authorization', () => {
     sinon.stub(trelloService, 'fetchToken').rejects(Error('no member id'));
 
     request(createApp())
-      .post('/t')
+      .post('/t?incognitoMode=true')
       .send({ apikey: 'key', authToken: 'token' })
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(401)
@@ -62,7 +64,7 @@ describe('Trello | API | POST Authorization', () => {
       .rejects(Error('no username'));
 
     request(createApp())
-      .post('/t')
+      .post('/t?incognitoMode=true')
       .send({ apikey: 'key', authToken: 'token' })
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(401)
@@ -86,7 +88,7 @@ describe('Trello | API | POST Authorization', () => {
     });
 
     request(createApp())
-      .post('/t')
+      .post('/t?incognitoMode=true')
       .send(expected)
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(500)
@@ -97,14 +99,10 @@ describe('Trello | API | POST Authorization', () => {
       .catch(done);
   });
 
-  it('stores public integration details from successful trello member request', done => {
-    const expected = {
-      member: '123',
-      trelloUsername: 'user',
-      trelloEmail: 'email',
-      trelloFullName: 'test user',
-    };
+  it('stores public integration details from successful trello member request', async () => {
+    const expected = mocking.createTrelloIntegration();
 
+    // Stubs
     sinon
       .stub(trelloService, 'fetchToken')
       .resolves({ idMember: expected.member });
@@ -129,26 +127,18 @@ describe('Trello | API | POST Authorization', () => {
       return Promise.reject(Error('fail'));
     });
 
-    request(createApp())
-      .post('/t')
+    await request(createApp())
+      .post('/t?incognitoMode=true')
       .send({ apikey: 'key', authToken: 'token' })
       .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(500)
-      .then(() => {
-        expect(actual).to.deep.equal(expected);
-        done();
-      })
-      .catch(done);
+      .expect(500);
+
+    delete expected.createdAt;
+    expect(actual).to.deep.equal(expected);
   });
 
   it('returns public Trello integration data as successful response', done => {
-    const integrationData = {
-      createdAt: Math.round(Date.now() / 1000),
-      member: '123',
-      trelloUsername: 'user',
-      trelloEmail: 'email',
-      trelloFullName: 'test user',
-    };
+    const integrationData = mocking.createTrelloIntegration();
     const expected = {
       data: {
         id: 'trello',
@@ -169,7 +159,7 @@ describe('Trello | API | POST Authorization', () => {
     sinon.stub(integrationsModel, 'upsertTrello').resolves(integrationData);
 
     request(createApp())
-      .post('/t')
+      .post('/t?incognitoMode=true')
       .send({ apikey: 'key', authToken: 'token' })
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(201)
@@ -179,6 +169,65 @@ describe('Trello | API | POST Authorization', () => {
         done();
       })
       .catch(done);
+  });
+
+  it('sends notification upon success', async () => {
+    const expected = 'Trello Integration Added';
+    const integrationData = mocking.createTrelloIntegration();
+
+    // Stubs
+    sinon
+      .stub(trelloService, 'fetchToken')
+      .resolves({ idMember: integrationData.member });
+    sinon.stub(trelloService, 'fetchMemberRecord').resolves({
+      username: integrationData.trelloUsername,
+      email: integrationData.trelloEmail,
+      fullName: integrationData.trelloFullName,
+    });
+    sinon.stub(systemModel, 'upsertTrello').resolves();
+    sinon.stub(integrationsModel, 'upsertTrello').resolves(integrationData);
+    const addNotification = sinon
+      .stub(notificationsModel, 'addRecord')
+      .resolves();
+
+    await request(createApp())
+      .post('/t')
+      .send({ apikey: 'key', authToken: 'token' })
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(201);
+
+    const result = addNotification.firstCall || { args: [] };
+    const actual = (result.args[1] || {}).title || '';
+    expect(actual).to.equal(expected);
+  });
+
+  it('does not send notification upon success in incognito mode', async () => {
+    const expected = false;
+    const integrationData = mocking.createTrelloIntegration();
+
+    // Stubs
+    sinon
+      .stub(trelloService, 'fetchToken')
+      .resolves({ idMember: integrationData.member });
+    sinon.stub(trelloService, 'fetchMemberRecord').resolves({
+      username: integrationData.trelloUsername,
+      email: integrationData.trelloEmail,
+      fullName: integrationData.trelloFullName,
+    });
+    sinon.stub(systemModel, 'upsertTrello').resolves();
+    sinon.stub(integrationsModel, 'upsertTrello').resolves(integrationData);
+    const addNotification = sinon
+      .stub(notificationsModel, 'addRecord')
+      .resolves();
+
+    await request(createApp())
+      .post('/t?incognitoMode=true')
+      .send({ apikey: 'key', authToken: 'token' })
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(201);
+
+    const actual = addNotification.calledOnce;
+    expect(actual).to.equal(expected);
   });
 });
 

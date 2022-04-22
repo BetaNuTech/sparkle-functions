@@ -35,6 +35,12 @@ module.exports = function patchAuth(db) {
       updates.defaultChannelName &&
       typeof updates.defaultChannelName === 'string';
 
+    // Optional incognito mode query
+    // defaults to false
+    const incognitoMode = req.query.incognitoMode
+      ? req.query.incognitoMode.search(/true/i) > -1
+      : false;
+
     // Set content type
     res.set('Content-Type', 'application/vnd.api+json');
     log.info(`${PREFIX} Update slack authentication`);
@@ -106,6 +112,11 @@ module.exports = function patchAuth(db) {
         attributes: dbUpdates,
       },
     });
+
+    // Avoid notifications in incognito mode
+    if (incognitoMode) {
+      return;
+    }
 
     // Send global notification for updated Slack system channel
     try {

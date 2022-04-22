@@ -608,6 +608,22 @@ module.exports = {
   },
 
   /**
+   * Create Trello Integration details
+   * @param  {Object} intConfig
+   * @return {Object}
+   */
+  createTrelloIntegration(intConfig = {}) {
+    return {
+      createdAt: Math.round(Date.now() / 1000),
+      member: '123',
+      trelloUsername: 'user',
+      trelloEmail: 'email@g.co',
+      trelloFullName: 'test user',
+      ...intConfig,
+    };
+  },
+
+  /**
    * Create user
    * @param  {Object?} credConfig
    * @return {Object}
