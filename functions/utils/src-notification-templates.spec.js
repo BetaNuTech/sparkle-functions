@@ -321,6 +321,35 @@ describe('Utils | Source Notifications Templates', () => {
         template: 'trello-integration-removal-markdown-body',
         values: ['name', 'username', 'authorName', 'authorEmail'],
       },
+      {
+        template: 'user-disabled-summary',
+        values: ['disabledEmail', 'authorName'],
+      },
+      {
+        template: 'user-disabled-markdown-body',
+        values: ['disabledName', 'disabledEmail', 'authorName', 'authorEmail'],
+      },
+      {
+        template: 'user-update-summary',
+        values: ['userEmail', 'authorName'],
+      },
+      {
+        template: 'user-update-markdown-body',
+        values: [
+          'previousName',
+          'previousAdmin',
+          'previousCorporate',
+          'previousTeamCount',
+          'previousPropertyCount',
+          'currentName',
+          'currentAdmin',
+          'currentCorporate',
+          'currentTeamCount',
+          'currentPropertyCount',
+          'authorName',
+          'authorEmail',
+        ],
+      },
     ];
 
     // Sanity check

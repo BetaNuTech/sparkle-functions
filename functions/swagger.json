@@ -72,6 +72,14 @@
         "summary": "Creating a new team. Only for admin users",
         "parameters": [
           {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          },
+          {
             "name": "team",
             "in": "body",
             "description": "team details",
@@ -113,7 +121,7 @@
         }
       }
     },
-    "/v0/teams/{teamId}/": {
+    "/v0/teams/{teamId}": {
       "parameters": [
         {
           "name": "teamId",
@@ -134,6 +142,14 @@
         "tags": ["Teams"],
         "summary": "Updating a team. Only for admin users",
         "parameters": [
+          {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          },
           {
             "name": "team",
             "in": "body",
@@ -183,7 +199,16 @@
       "delete": {
         "tags": ["Teams"],
         "summary": "Deleting a team. Only for admin users",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful team delete, contains no payload or body"
@@ -716,6 +741,14 @@
         "description": "Creating a new property",
         "parameters": [
           {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          },
+          {
             "name": "property",
             "in": "body",
             "required": ["name"],
@@ -861,6 +894,14 @@
       "put": {
         "tags": ["Property"],
         "parameters": [
+          {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          },
           {
             "name": "property",
             "in": "body",
@@ -1386,6 +1427,14 @@
         "tags": ["Inspection"],
         "parameters": [
           {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          },
+          {
             "name": "integration",
             "in": "body",
             "description": "Change inspection property relationship to reassign inspection to a new property",
@@ -1441,6 +1490,14 @@
       "patch": {
         "tags": ["Inspection"],
         "parameters": [
+          {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          },
           {
             "name": "integration",
             "in": "body",
@@ -1540,6 +1597,14 @@
       "patch": {
         "tags": ["Inspection"],
         "parameters": [
+          {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          },
           {
             "name": "integration",
             "in": "body",
@@ -1744,7 +1809,7 @@
         }
       }
     },
-    "/v0/templates/": {
+    "/v0/templates": {
       "parameters": [
         {
           "name": "Authorization",
@@ -1813,40 +1878,19 @@
           "type": "string"
         }
       ],
-      "delete": {
-        "tags": ["Templates"],
-        "summary": "Deleting a template. Only for admin users",
-        "parameters": [],
-        "responses": {
-          "204": {
-            "description": "Successful template delete, contains no payload or body"
-          },
-          "401": {
-            "schema": {
-              "$ref": "#/definitions/UNAUTH"
-            }
-          },
-          "403": {
-            "schema": {
-              "$ref": "#/definitions/UNAUTH"
-            }
-          },
-          "404": {
-            "schema": {
-              "$ref": "#/definitions/BADSTATUS404"
-            }
-          },
-          "500": {
-            "schema": {
-              "$ref": "#/definitions/ERROR"
-            }
-          }
-        }
-      },
       "patch": {
         "tags": ["Templates"],
         "summary": "Update a template. Only for admin or corporate users",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          }
+        ],
         "responses": {
           "201": {
             "description": "Successful template update, payload contains updates",
@@ -1883,9 +1927,48 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": ["Templates"],
+        "summary": "Deleting a template. Only for admin users",
+        "parameters": [
+          {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful template delete, contains no payload or body"
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
       }
     },
-    "/v0/template-categories/": {
+    "/v0/template-categories": {
       "parameters": [
         {
           "name": "Authorization",
@@ -1899,6 +1982,14 @@
         "tags": ["Template Categories"],
         "summary": "Creating a new template category. Only for admin or corporate users",
         "parameters": [
+          {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          },
           {
             "name": "payload",
             "in": "body",
@@ -1946,7 +2037,7 @@
         }
       }
     },
-    "/v0/teams/{templateCategoryId}/": {
+    "/v0/teams/{templateCategoryId}": {
       "parameters": [
         {
           "name": "templateCategoryId",
@@ -1967,6 +2058,14 @@
         "tags": ["Template Categories"],
         "summary": "Updating a template category. Only for admin or corporate users",
         "parameters": [
+          {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          },
           {
             "name": "payload",
             "in": "body",
@@ -2021,7 +2120,16 @@
       "delete": {
         "tags": ["Template Categories"],
         "summary": "Deleting a template category. Only for admin and corporate users",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          }
+        ],
         "responses": {
           "204": {
             "description": "Successful template category delete, contains no payload or body"
@@ -2073,19 +2181,19 @@
           "description": "Flag requesting API to manage global notifications of update",
           "type": "string",
           "enum": ["true", "false"]
-        },
-        {
-          "name": "incognitoMode",
-          "in": "query",
-          "required": false,
-          "description": "Flag requesting API to manage update silently",
-          "type": "string",
-          "enum": ["true", "false"]
         }
       ],
       "post": {
         "tags": ["Deficiencies"],
         "parameters": [
+          {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          },
           {
             "name": "deficient",
             "in": "body",
@@ -2197,19 +2305,19 @@
           "description": "Flag requesting API to manage global notifications of update",
           "type": "string",
           "enum": ["true", "false"]
-        },
-        {
-          "name": "incognitoMode",
-          "in": "query",
-          "required": false,
-          "description": "Flag requesting API to manage update silently",
-          "type": "string",
-          "enum": ["true", "false"]
         }
       ],
       "put": {
         "tags": ["Deficiencies"],
         "parameters": [
+          {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          },
           {
             "name": "deficient",
             "in": "body",
@@ -2379,6 +2487,14 @@
         "tags": ["Users"],
         "consumes": ["application/json"],
         "parameters": [
+          {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          },
           {
             "name": "user",
             "in": "body",
