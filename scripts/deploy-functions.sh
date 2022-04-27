@@ -1,4 +1,5 @@
 firebase functions:config:set auth.firebase=${FIREBASE_FUNCTIONS_AUTH}
+firebase functions:config:set slack.clientid=${SLACK_CLIENT_ID}
 firebase functions:config:set slack.secret=${SLACK_CLIENT_SECRET}
 firebase functions:config:set aws.id=${AWS_S3_ACCESS_KEY_ID}
 firebase functions:config:set aws.key=${AWS_S3_SECRET_ACCESS_KEY}

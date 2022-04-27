@@ -9,11 +9,11 @@ const PREFIX = 'trello: api: delete-auth:';
 /**
  * Factory for deleting Trello authorizor
  * for the organization and property configs
- * @param  {admin.firestore} fs - Firestore Admin DB instance
+ * @param  {admin.firestore} db - Firestore Admin DB instance
  * @return {Function} - onRequest handler
  */
-module.exports = function createDeleteTrelloAuthHandler(fs) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function createDeleteTrelloAuthHandler(db) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
 
   /**
    * Handle deletion
@@ -29,11 +29,11 @@ module.exports = function createDeleteTrelloAuthHandler(fs) {
     // Configure JSON API response
     res.set('Content-Type', 'application/vnd.api+json');
 
-    const batch = fs.batch();
+    const batch = db.batch();
 
     // Destroy system's private auth token
     try {
-      await systemModel.removeTrello(fs, batch);
+      await systemModel.removeTrello(db, batch);
     } catch (err) {
       return send500Error(
         err,
@@ -43,7 +43,7 @@ module.exports = function createDeleteTrelloAuthHandler(fs) {
     }
 
     try {
-      await systemModel.removeAllTrelloProperties(fs, batch);
+      await systemModel.removeAllTrelloProperties(db, batch);
     } catch (err) {
       return send500Error(
         err,
@@ -54,7 +54,7 @@ module.exports = function createDeleteTrelloAuthHandler(fs) {
 
     // Delete public facing Trello orgnaization
     try {
-      await integrationsModel.removeTrello(fs, batch);
+      await integrationsModel.removeTrello(db, batch);
     } catch (err) {
       return send500Error(
         err,
@@ -65,7 +65,7 @@ module.exports = function createDeleteTrelloAuthHandler(fs) {
 
     // Delete public facing Trello properties
     try {
-      await integrationsModel.removeAllTrelloProperties(fs, batch);
+      await integrationsModel.removeAllTrelloProperties(db, batch);
     } catch (err) {
       return send500Error(
         err,
