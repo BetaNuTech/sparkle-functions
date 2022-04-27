@@ -31,9 +31,7 @@ module.exports = function patchAuth(db) {
     const send500Error = create500ErrHandler(PREFIX, res);
     const updates = JSON.parse(JSON.stringify(body || {}));
     const hasUpdates =
-      updates &&
-      updates.defaultChannelName &&
-      typeof updates.defaultChannelName === 'string';
+      updates && typeof updates.defaultChannelName === 'string';
 
     // Optional incognito mode query
     // defaults to false

@@ -38,6 +38,35 @@ describe('Slack | API | PATCH Auth', () => {
     // Assertions
     expect(actual).to.deep.equal(expected);
   });
+
+  it('successfully removes the Slack integration system channel', async () => {
+    const integration = mocking.createSlackIntegration({
+      defaultChannelName: 'exists',
+      joinedChannelNames: { testing: 1234 },
+    });
+    const expected = {
+      ...integration,
+      defaultChannelName: '',
+    };
+
+    // Setup Database
+    await integrationsModel.setSlack(db, integration);
+
+    // Execute
+    const app = createApp();
+    await request(app)
+      .patch('/t')
+      .send({ defaultChannelName: '' })
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(201);
+
+    // Get Results
+    const snapshot = await integrationsModel.findSlack(db);
+    const actual = snapshot.data() || {};
+
+    // Assertions
+    expect(actual).to.deep.equal(expected);
+  });
 });
 
 function createApp() {
