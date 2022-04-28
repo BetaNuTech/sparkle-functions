@@ -50,7 +50,7 @@ describe('Users | API | PATCH', () => {
     // Execute
     const app = createApp({ admin: true });
     await request(app)
-      .patch(`/t/${userId}`)
+      .patch(`/t/${userId}?incognitoMode=true`)
       .send({
         firstName: 'Testorator9000',
         teams: { [team1Id]: false, [team2Id]: true },
@@ -117,7 +117,7 @@ describe('Users | API | PATCH', () => {
     // Execute
     const app = createApp({ id: userId, admin: false });
     await request(app)
-      .patch(`/t/${userId}`)
+      .patch(`/t/${userId}?incognitoMode=true`)
       .send(payload)
       .expect('Content-Type', /json/)
       .expect(200);

@@ -7,6 +7,7 @@ const bodyParser = require('body-parser');
 const uuid = require('../../../test-helpers/uuid');
 const mocking = require('../../../test-helpers/mocking');
 const usersModel = require('../../../models/users');
+const notificationsModel = require('../../../models/notifications');
 const propertiesModel = require('../../../models/properties');
 const handler = require('../../../users/api/patch');
 
@@ -27,7 +28,7 @@ describe('Users | API | PATCH', () => {
       const { body } = requests[i];
 
       await request(app)
-        .patch('/t/1')
+        .patch('/t/1?incognitoMode=true')
         .send(body)
         .expect('Content-Type', /json/)
         .expect(400)
@@ -45,7 +46,7 @@ describe('Users | API | PATCH', () => {
     });
 
     const res = await request(createApp())
-      .patch('/t/1')
+      .patch('/t/1?incognitoMode=true')
       .send({ superAdmin: true })
       .expect('Content-Type', /json/)
       .expect(401);
@@ -61,7 +62,7 @@ describe('Users | API | PATCH', () => {
     });
 
     const res = await request(createApp())
-      .patch('/t/1')
+      .patch('/t/1?incognitoMode=true')
       .send({ corporate: true })
       .expect('Content-Type', /json/)
       .expect(401);
@@ -71,7 +72,7 @@ describe('Users | API | PATCH', () => {
 
   it('rejects request to create a corporate/admin user', async () => {
     const res = await request(createApp())
-      .patch('/t/1')
+      .patch('/t/1?incognitoMode=true')
       .send({ admin: true, corporate: true })
       .expect('Content-Type', /json/)
       .expect(400);
@@ -84,7 +85,7 @@ describe('Users | API | PATCH', () => {
     sinon.stub(usersModel, 'getAuthUser').resolves(null);
 
     const res = await request(createApp())
-      .patch('/t/1')
+      .patch('/t/1?incognitoMode=true')
       .send({ admin: true })
       .expect('Content-Type', /json/)
       .expect(404);
@@ -106,7 +107,7 @@ describe('Users | API | PATCH', () => {
     const setRecord = sinon.stub(usersModel, 'setRecord').resolves();
 
     await request(createApp())
-      .patch('/t/1')
+      .patch('/t/1?incognitoMode=true')
       .send({ superAdmin: true })
       .expect('Content-Type', /json/)
       .expect(200);
@@ -130,7 +131,7 @@ describe('Users | API | PATCH', () => {
     const setRecord = sinon.stub(usersModel, 'setRecord').resolves();
 
     await request(createApp())
-      .patch('/t/1')
+      .patch('/t/1?incognitoMode=true')
       .send({ admin: true })
       .expect('Content-Type', /json/)
       .expect(200);
@@ -154,7 +155,7 @@ describe('Users | API | PATCH', () => {
     const setRecord = sinon.stub(usersModel, 'setRecord').resolves();
 
     await request(createApp())
-      .patch('/t/1')
+      .patch('/t/1?incognitoMode=true')
       .send({ corporate: true })
       .expect('Content-Type', /json/)
       .expect(200);
@@ -178,7 +179,7 @@ describe('Users | API | PATCH', () => {
     const setRecord = sinon.stub(usersModel, 'setRecord').resolves();
 
     await request(createApp())
-      .patch('/t/1')
+      .patch('/t/1?incognitoMode=true')
       .send({ isDisabled: true })
       .expect('Content-Type', /json/)
       .expect(200);
@@ -206,7 +207,7 @@ describe('Users | API | PATCH', () => {
     const setRecord = sinon.stub(usersModel, 'setRecord').resolves();
 
     await request(createApp())
-      .patch('/t/1')
+      .patch('/t/1?incognitoMode=true')
       .send({ teams: { [teamId]: false } })
       .expect('Content-Type', /json/)
       .expect(200);
@@ -254,7 +255,7 @@ describe('Users | API | PATCH', () => {
       });
 
     await request(createApp())
-      .patch('/t/1')
+      .patch('/t/1?incognitoMode=true')
       .send({ teams: { [teamId]: true } })
       .expect('Content-Type', /json/)
       .expect(200);
@@ -285,7 +286,7 @@ describe('Users | API | PATCH', () => {
     const setRecord = sinon.stub(usersModel, 'setRecord').resolves();
 
     await request(createApp())
-      .patch('/t/1')
+      .patch('/t/1?incognitoMode=true')
       .send({ teams: { [team1Id]: false, [team2Id]: true } })
       .expect('Content-Type', /json/)
       .expect(200);
@@ -293,6 +294,132 @@ describe('Users | API | PATCH', () => {
     const result = setRecord.firstCall || { args: [] };
     const actual = (result.args[2] || {}).teams || {};
     expect(actual).to.deep.equal(expected);
+  });
+
+  it('sends the user disabled global notification', async () => {
+    const expected = 'User Disabled';
+    const user = mocking.createUser();
+
+    // Stup auth requests
+    sinon.stub(usersModel, 'hasUpdatePermission').resolves(true);
+    sinon.stub(usersModel, 'getAuthUser').resolves({});
+    sinon
+      .stub(usersModel, 'findRecord')
+      .onFirstCall()
+      .resolves(createFirestoreSnap('1', { ...user, isDisabled: false }))
+      .onSecondCall()
+      .resolves(createFirestoreSnap('1', { ...user, isDisabled: true }));
+    sinon.stub(usersModel, 'setAuthUserDisabled').resolves({});
+    sinon.stub(usersModel, 'setRecord').resolves();
+    const addNotification = sinon
+      .stub(notificationsModel, 'addRecord')
+      .resolves();
+
+    await request(createApp())
+      .patch('/t/1')
+      .send({ isDisabled: true })
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    expect(addNotification.calledOnce).to.equal(
+      true,
+      'only created one notification'
+    );
+    const result = addNotification.firstCall || { args: [] };
+    const actual = (result.args[1] || {}).title || '';
+    expect(actual).to.equal(expected, 'created expected notification');
+  });
+
+  it('does not send the user disabled global notification in incognito mode', async () => {
+    const expected = false;
+    const user = mocking.createUser();
+
+    // Stup auth requests
+    sinon.stub(usersModel, 'hasUpdatePermission').resolves(true);
+    sinon.stub(usersModel, 'getAuthUser').resolves({});
+    sinon
+      .stub(usersModel, 'findRecord')
+      .onFirstCall()
+      .resolves(createFirestoreSnap('1', { ...user, isDisabled: false }))
+      .onSecondCall()
+      .resolves(createFirestoreSnap('1', { ...user, isDisabled: true }));
+    sinon.stub(usersModel, 'setAuthUserDisabled').resolves({});
+    sinon.stub(usersModel, 'setRecord').resolves();
+    const addNotification = sinon
+      .stub(notificationsModel, 'addRecord')
+      .resolves();
+
+    await request(createApp())
+      .patch('/t/1?incognitoMode=true')
+      .send({ isDisabled: true })
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    const actual = addNotification.calledOnce;
+    expect(actual).to.equal(expected);
+  });
+
+  it('sends the user updated global notification', async () => {
+    const expected = 'User Update';
+    const user = mocking.createUser({ admin: false });
+
+    // Stup auth requests
+    sinon.stub(usersModel, 'hasUpdatePermission').resolves(true);
+    sinon.stub(usersModel, 'getAuthUser').resolves({});
+    sinon
+      .stub(usersModel, 'findRecord')
+      .onFirstCall()
+      .resolves(createFirestoreSnap('1', { ...user }))
+      .onSecondCall()
+      .resolves(createFirestoreSnap('1', { ...user, admin: true }));
+    sinon.stub(usersModel, 'upsertCustomClaims').resolves();
+    sinon.stub(usersModel, 'setRecord').resolves();
+    const addNotification = sinon
+      .stub(notificationsModel, 'addRecord')
+      .resolves();
+
+    await request(createApp())
+      .patch('/t/1')
+      .send({ admin: true })
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    expect(addNotification.calledOnce).to.equal(
+      true,
+      'only created one notification'
+    );
+    const result = addNotification.firstCall || { args: [] };
+    const actual = (result.args[1] || {}).title || '';
+    expect(actual).to.equal(expected, 'created expected notification');
+  });
+
+  it('does not send the user updated global notification in incognito mode', async () => {
+    const expected = false;
+    const user = mocking.createUser({ admin: false });
+
+    // Stup auth requests
+    sinon.stub(usersModel, 'hasUpdatePermission').resolves(true);
+    sinon.stub(usersModel, 'getAuthUser').resolves({});
+    sinon
+      .stub(usersModel, 'findRecord')
+      .onFirstCall()
+      .resolves(createFirestoreSnap('1', { ...user }))
+      .onSecondCall()
+      .resolves(createFirestoreSnap('1', { ...user, admin: true }));
+    sinon.stub(usersModel, 'upsertCustomClaims').resolves();
+    sinon.stub(usersModel, 'setRecord').resolves();
+    const addNotification = sinon
+      .stub(notificationsModel, 'addRecord')
+      .resolves();
+
+    await request(createApp())
+      .patch('/t/1?incognitoMode=true')
+      .send({ admin: true })
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    const actual = addNotification.calledOnce;
+    expect(actual).to.equal(expected);
   });
 });
 

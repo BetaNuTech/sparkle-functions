@@ -36,6 +36,7 @@ jobs:
           AWS_S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET_NAME }}
           FIREBASE_FUNCTIONS_AUTH: ${{ secrets.TEST_FIREBASE_FUNCTIONS_AUTH }}
           FIREBASE_TEST_DB_URL: ${{ secrets.TEST_FIREBASE_TEST_DB_URL }}
+          SLACK_CLIENT_ID: ${{ secrets.PRODUCTION_SLACK_CLIENT_ID }}
           SLACK_CLIENT_SECRET: ${{ secrets.PRODUCTION_SLACK_CLIENT_SECRET }}
 
       - name: Run unit tests
@@ -47,6 +48,7 @@ jobs:
           AWS_S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET_NAME }}
           FIREBASE_FUNCTIONS_AUTH: ${{ secrets.TEST_FIREBASE_FUNCTIONS_AUTH }}
           FIREBASE_TEST_DB_URL: ${{ secrets.TEST_FIREBASE_TEST_DB_URL }}
+          SLACK_CLIENT_ID: ${{ secrets.PRODUCTION_SLACK_CLIENT_ID }}
           SLACK_CLIENT_SECRET: ${{ secrets.PRODUCTION_SLACK_CLIENT_SECRET }}
 
       - name: Run integration tests
@@ -58,6 +60,7 @@ jobs:
           AWS_S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET_NAME }}
           FIREBASE_FUNCTIONS_AUTH: ${{ secrets.TEST_FIREBASE_FUNCTIONS_AUTH }}
           FIREBASE_TEST_DB_URL: ${{ secrets.TEST_FIREBASE_TEST_DB_URL }}
+          SLACK_CLIENT_ID: ${{ secrets.PRODUCTION_SLACK_CLIENT_ID }}
           SLACK_CLIENT_SECRET: ${{ secrets.PRODUCTION_SLACK_CLIENT_SECRET }}
 
       - name: Run End to End Tests
@@ -65,6 +68,7 @@ jobs:
         working-directory: ./functions
         env:
           FIREBASE_FUNCTIONS_AUTH: ${{ secrets.TEST_FIREBASE_FUNCTIONS_AUTH }}
+          SLACK_CLIENT_ID: ${{ secrets.PRODUCTION_SLACK_CLIENT_ID }}
           SLACK_CLIENT_SECRET: ${{ secrets.PRODUCTION_SLACK_CLIENT_SECRET }}
           AWS_S3_ACCESS_KEY_ID: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
           AWS_S3_SECRET_ACCESS_KEY: ${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}

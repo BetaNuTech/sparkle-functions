@@ -2,8 +2,11 @@ const assert = require('assert');
 const slack = require('../../services/slack');
 const systemModel = require('../../models/system');
 const globalApi = require('../../services/global-api');
+const { getFullName } = require('../../utils/user');
 const integrationsModel = require('../../models/integrations');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
+const notificationsModel = require('../../models/notifications');
+const notifyTemplate = require('../../utils/src-notification-templates');
 const log = require('../../utils/logger');
 
 const PREFIX = 'slack: api: post-auth:';
@@ -27,7 +30,16 @@ module.exports = function createPostAuth(db) {
   return async (req, res) => {
     const { user, body = {} } = req;
     const { slackCode, redirectUri } = body;
+    const authorId = req.user ? req.user.id || '' : '';
+    const authorName = getFullName(req.user || {});
+    const authorEmail = req.user ? req.user.email : '';
     const send500Error = create500ErrHandler(PREFIX, res);
+
+    // Optional incognito mode query
+    // defaults to false
+    const incognitoMode = req.query.incognitoMode
+      ? req.query.incognitoMode.search(/true/i) > -1
+      : false;
 
     // Set JSON API formatted response
     res.set('Content-Type', 'application/vnd.api+json');
@@ -105,12 +117,14 @@ module.exports = function createPostAuth(db) {
       );
     }
 
+    let teamName = '';
     let integrationDetails = null;
     try {
+      teamName = slackResponse.team.name;
       const integrationUpdate = {
         grantedBy: user.id,
         team: slackResponse.team.id,
-        teamName: slackResponse.team.name,
+        teamName,
       };
 
       // Add user's channel selected
@@ -158,5 +172,32 @@ module.exports = function createPostAuth(db) {
         attributes: integrationDetails,
       },
     });
+
+    // Avoid notifications in incognito mode
+    if (incognitoMode) {
+      return;
+    }
+
+    // Send global notification for added Slack auth
+    try {
+      await notificationsModel.addRecord(db, {
+        title: 'Slack App Addition',
+        summary: notifyTemplate('slack-integration-added-summary', {
+          name: teamName,
+          authorName,
+        }),
+        markdownBody: notifyTemplate('slack-integration-added-markdown-body', {
+          name: teamName,
+          authorName,
+          authorEmail,
+        }),
+        creator: authorId,
+      });
+      log.info(
+        `${PREFIX} Slack App Addition global notification successfully created`
+      );
+    } catch (err) {
+      log.error(`${PREFIX} failed to create source notification: ${err}`); // proceed with error
+    }
   };
 };
