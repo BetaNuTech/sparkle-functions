@@ -2,18 +2,21 @@ const assert = require('assert');
 const log = require('../../utils/logger');
 const trello = require('../../services/trello');
 const systemModel = require('../../models/system');
+const { getFullName } = require('../../utils/user');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
 const integrationsModel = require('../../models/integrations');
+const notificationsModel = require('../../models/notifications');
+const notifyTemplate = require('../../utils/src-notification-templates');
 
 const PREFIX = 'trello: api: post-auth:';
 
 /**
  * Factory for trello token upsert endpoint
- * @param  {admin.firestore} fs - Firestore DB instance
+ * @param  {admin.firestore} db - Firestore DB instance
  * @return {Function} - onRequest handler
  */
-module.exports = function createPostTrelloAuth(fs) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function createPostTrelloAuth(db) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
 
   /**
    * Write /trelloTokens to integration/trello
@@ -25,7 +28,16 @@ module.exports = function createPostTrelloAuth(fs) {
     const { user, body } = req;
     const apiKey = (body || {}).apikey || '';
     const authToken = (body || {}).authToken || '';
+    const authorId = req.user ? req.user.id || '' : '';
+    const authorName = getFullName(req.user || {});
+    const authorEmail = req.user ? req.user.email : '';
     const send500Error = create500ErrHandler(PREFIX, res);
+
+    // Optional incognito mode query
+    // defaults to false
+    const incognitoMode = req.query.incognitoMode
+      ? req.query.incognitoMode.search(/true/i) > -1
+      : false;
 
     // Set JSON API formatted response
     res.set('Content-Type', 'application/vnd.api+json');
@@ -53,7 +65,7 @@ module.exports = function createPostTrelloAuth(fs) {
       const responseBody = await trello.fetchToken(authToken, apiKey);
       memberId = responseBody.idMember;
     } catch (err) {
-      log.error(`${PREFIX} Error retrieving trello token | ${err}`);
+      log.error(`${PREFIX} Error retrieving trello token: ${err}`);
       return res.status(401).send({
         errors: [{ detail: 'trello token request not authorized' }],
       });
@@ -73,18 +85,18 @@ module.exports = function createPostTrelloAuth(fs) {
       trelloEmail = responseBody.email || ''; // optional
       trelloFullName = responseBody.fullName || ''; // optional
     } catch (err) {
-      log.error(`${PREFIX} Error retrieving trello member | ${err}`);
+      log.error(`${PREFIX} Error retrieving trello member: ${err}`);
       return res.status(401).send({
         errors: [{ detail: 'trello member request not authorized' }],
       });
     }
 
-    const batch = fs.batch();
+    const batch = db.batch();
 
     // Persist Trello credentials to system DB
     try {
       await systemModel.upsertTrello(
-        fs,
+        db,
         {
           authToken,
           apikey: apiKey,
@@ -95,7 +107,7 @@ module.exports = function createPostTrelloAuth(fs) {
     } catch (err) {
       return send500Error(
         err,
-        `Error saving trello system credentials | ${err}`,
+        `Error saving trello system credentials: ${err}`,
         'Error saving trello credentials'
       );
     }
@@ -104,7 +116,7 @@ module.exports = function createPostTrelloAuth(fs) {
     let integrationDetails = null;
     try {
       integrationDetails = await integrationsModel.upsertTrello(
-        fs,
+        db,
         {
           member: memberId,
           trelloUsername,
@@ -116,7 +128,7 @@ module.exports = function createPostTrelloAuth(fs) {
     } catch (err) {
       return send500Error(
         err,
-        `Error saving integration details | ${err}`,
+        `Error saving integration details: ${err}`,
         'Error saving trello details'
       );
     }
@@ -127,7 +139,7 @@ module.exports = function createPostTrelloAuth(fs) {
     } catch (err) {
       return send500Error(
         err,
-        `Error committing database updates | ${err}`,
+        `Error committing database updates: ${err}`,
         'System error'
       );
     }
@@ -140,5 +152,34 @@ module.exports = function createPostTrelloAuth(fs) {
         attributes: integrationDetails,
       },
     });
+
+    // Avoid notifications in incognito mode
+    if (incognitoMode) {
+      return;
+    }
+
+    // Send global notification for updated Slack system channel
+    try {
+      await notificationsModel.addRecord(db, {
+        title: 'Trello Integration Added',
+        summary: notifyTemplate('trello-integration-added-summary', {
+          name: trelloFullName,
+          username: trelloUsername,
+          authorName,
+        }),
+        markdownBody: notifyTemplate('trello-integration-added-markdown-body', {
+          name: trelloFullName,
+          username: trelloUsername,
+          authorName,
+          authorEmail,
+        }),
+        creator: authorId,
+      });
+      log.info(
+        `${PREFIX} Trello Integration Added global notification successfully created`
+      );
+    } catch (err) {
+      log.error(`${PREFIX} failed to create source notification: ${err}`); // proceed with error
+    }
   };
 };

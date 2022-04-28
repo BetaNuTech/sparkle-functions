@@ -1,7 +1,11 @@
 const assert = require('assert');
+const log = require('../../utils/logger');
 const usersModel = require('../../models/users');
 const propertiesModel = require('../../models/properties');
 const create500ErrHandler = require('../../utils/unexpected-api-error');
+const { getFullName } = require('../../utils/user');
+const notificationsModel = require('../../models/notifications');
+const notifyTemplate = require('../../utils/src-notification-templates');
 
 const PREFIX = 'users: api: patch-user:';
 
@@ -35,7 +39,9 @@ module.exports = function createPatch(db, auth) {
       properties,
     } = body;
     const send500Error = create500ErrHandler(PREFIX, res);
-
+    const authorId = req.user ? req.user.id || '' : '';
+    const authorName = getFullName(req.user || {});
+    const authorEmail = req.user ? req.user.email : '';
     const claimsUpdates = {};
     const hasAdminUpdate = typeof admin === 'boolean';
     const hasCorporateUpdate = typeof corporate === 'boolean';
@@ -61,6 +67,12 @@ module.exports = function createPatch(db, auth) {
         hasLastNameUpdate ||
         hasPushOptOutUpdate
     );
+
+    // Optional incognito mode query
+    // defaults to false
+    const incognitoMode = req.query.incognitoMode
+      ? req.query.incognitoMode.search(/true/i) > -1
+      : false;
 
     // Reject invalid request
     if (!hasUpdates) {
@@ -139,6 +151,22 @@ module.exports = function createPatch(db, auth) {
         await usersModel.upsertCustomClaims(auth, targetUserId, claimsUpdates);
       } catch (err) {
         return send500Error(err, '', 'failed custom claims update');
+      }
+    }
+
+    // Get user data before completing
+    // user update for notifications
+    let originalTargetUser = null;
+    if (!incognitoMode) {
+      try {
+        const snapshot = await usersModel.findRecord(db, targetUserId);
+        originalTargetUser = snapshot.data() || {};
+      } catch (err) {
+        return send500Error(
+          err,
+          'Target user lookup failed',
+          'Unexpected error'
+        );
       }
     }
 
@@ -265,24 +293,98 @@ module.exports = function createPatch(db, auth) {
 
     let targetUser = null;
     try {
-      targetUser = await usersModel.findRecord(db, targetUserId);
-      if (!targetUser.exists) throw Error('target user does not exist');
+      const snapshot = await usersModel.findRecord(db, targetUserId);
+      if (!snapshot.exists) throw Error('target user does not exist');
+      targetUser = snapshot.data() || {};
     } catch (err) {
-      return send500Error(
-        err,
-        'Firestore target user lookup failed',
-        'Unexpected error'
-      );
+      return send500Error(err, 'target user lookup failed', 'Unexpected error');
     }
 
     // Success
     res.status(200).send({
       data: {
         type: 'user',
-        id: targetUser.id,
-        attributes: targetUser.data(),
+        id: targetUserId,
+        attributes: targetUser,
       },
     });
+
+    // Return without sending any notifications
+    if (incognitoMode) {
+      return;
+    }
+
+    const userFullName = getFullName(targetUser || {});
+    const userEmail = targetUser.email || '';
+    const previousName = getFullName(originalTargetUser || {});
+    const currentName = userFullName;
+    const previousAdmin = `${Boolean(originalTargetUser.admin)}`; // truethy string
+    const currentAdmin = `${Boolean(targetUser.admin)}`; // truethy string
+    const previousCorporate = `${Boolean(originalTargetUser.corporate)}`; // truethy string
+    const currentCorporate = `${Boolean(targetUser.corporate)}`; // truethy string
+    const previousTeamCount = `${hashCount(originalTargetUser.teams)}`;
+    const currentTeamCount = `${hashCount(targetUser.teams)}`; // truethy string
+    const previousPropertyCount = `${hashCount(originalTargetUser.properties)}`; // truethy string
+    const currentPropertyCount = `${hashCount(targetUser.properties)}`; // truethy string
+    const isPreviouslyDisabled = Boolean(originalTargetUser.isDisabled);
+    const isCurrentlyDisabled = Boolean(targetUser.isDisabled);
+
+    // Determine which of 2 user
+    // notifications should be sent
+    const isSendingUserDisabledNotification =
+      isCurrentlyDisabled && isCurrentlyDisabled !== isPreviouslyDisabled;
+    const isSendingUserUpdateNotification =
+      !isSendingUserDisabledNotification && Object.keys(dbUpdate).length;
+
+    if (isSendingUserDisabledNotification) {
+      log.info(`${PREFIX} sending global User Disabled notification`);
+      try {
+        await notificationsModel.addRecord(db, {
+          title: 'User Disabled',
+          summary: notifyTemplate('user-disabled-summary', {
+            disabledEmail: userEmail,
+            authorName,
+            authorEmail,
+          }),
+          markdownBody: notifyTemplate('user-disabled-markdown-body', {
+            disabledName: userFullName,
+            disabledEmail: userEmail,
+            authorName,
+            authorEmail,
+          }),
+          creator: authorId,
+        });
+      } catch (err) {
+        log.error(`${PREFIX} failed to create source notification: ${err}`); // proceed with error
+      }
+    }
+
+    if (isSendingUserUpdateNotification) {
+      log.info(`${PREFIX} sending global User Update notification`);
+      await notificationsModel.addRecord(db, {
+        title: 'User Update',
+        summary: notifyTemplate('user-update-summary', {
+          userEmail,
+          authorName,
+          authorEmail,
+        }),
+        markdownBody: notifyTemplate('user-update-markdown-body', {
+          previousName,
+          currentName,
+          previousAdmin,
+          currentAdmin,
+          previousCorporate,
+          currentCorporate,
+          previousTeamCount,
+          currentTeamCount,
+          previousPropertyCount,
+          currentPropertyCount,
+          authorName,
+          authorEmail,
+        }),
+        creator: authorId,
+      });
+    }
   };
 };
 
@@ -294,4 +396,17 @@ module.exports = function createPatch(db, auth) {
  */
 function isValidHashUpdate(hash = {}) {
   return hash && typeof hash === 'object' && Object.keys(hash).length > 0;
+}
+
+/**
+ * Count the number of entries in a hash
+ * @param  {Object?} obj
+ * @return {Number}
+ */
+function hashCount(obj = {}) {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+    return 0;
+  }
+
+  return Object.keys(obj).length;
 }

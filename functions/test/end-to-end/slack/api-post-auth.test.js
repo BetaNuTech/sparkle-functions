@@ -62,7 +62,7 @@ describe('Slack | API | POST Auth', () => {
     // Execute
     const app = createApp();
     await request(app)
-      .post('/t')
+      .post('/t?incognitoMode=true')
       .send({ slackCode, redirectUri })
       .expect('Content-Type', /application\/vnd.api\+json/)
       .expect(201);

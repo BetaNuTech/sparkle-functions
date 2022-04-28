@@ -230,6 +230,13 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
     slack.api.postAuth(fs)
   );
 
+  // Update Slack Integration Details
+  app.patch(
+    '/v0/integrations/slack/authorization',
+    authUser(fs, auth, true),
+    slack.api.patchAuth(fs)
+  );
+
   // Delete Slack App from a Slack Workspace
   app.delete(
     '/v0/integrations/slack/authorization',
