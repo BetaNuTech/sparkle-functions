@@ -1,7 +1,7 @@
 ## Property
 
 ```typescript
-interface property {
+interface Property {
   id?: string;
   name: string;
   addr1?: string;
@@ -41,7 +41,7 @@ interface property {
 ## Inspection
 
 ```typescript
-interface inspection {
+interface Inspection {
   id?: string;
   updatedAt: number; // UNIX timestamp (default to now)
   completedAt?: number; // UNIX timestamp when template became complete
@@ -95,7 +95,7 @@ interface Template {
 ## Template Category
 
 ```typescript
-interface templateCategory {
+interface TemplateCategory {
   id: string;
   name: string;
 }
@@ -134,7 +134,7 @@ interface InspectionItem {
 ## Inspection Item Photo Data
 
 ```typescript
-interface inspectionItemPhotoData {
+interface InspectionItemPhotoData {
   title: string;
   downloadURL: string;
   sectionId: string;
@@ -148,7 +148,7 @@ interface inspectionItemPhotoData {
 ## Inspection/Template Section
 
 ```typescript
-interface inspectionSection {
+interface InspectionSection {
   index: number;
   title: string;
   added_multi_section: boolean;
@@ -159,7 +159,7 @@ interface inspectionSection {
 ## Team
 
 ```typescript
-interface team {
+interface Team {
   id?: string;
   name: string;
   properties?: any;
@@ -169,7 +169,7 @@ interface team {
 ## User
 
 ```typescript
-interface user {
+interface User {
   id: string;
   admin: boolean;
   corporate: boolean;
@@ -200,7 +200,7 @@ interface user {
 ## Notification
 
 ```typescript
-interface notification {
+interface Notification {
   title: string;
   summary: string;
   creator?: string; // user id
@@ -233,7 +233,7 @@ interface Job {
 ## Bid
 
 ```typescript
-interface bid {
+interface Bid {
   id?: string;
   attachments: Array<attachment>;
   completeAt?: number; // Unix timestamp
@@ -256,12 +256,29 @@ interface bid {
 ## Attachments
 
 ```typescript
-interface attachment {
+interface Attachment {
   createdAt: number; // Unix timestamp
   name: string;
   type: string;
   url: string;
   storageRef: string;
   size: number;
+}
+```
+
+## Property Trello Integration
+
+```typescript
+interface PropertyTrelloIntegration {
+  closedBoard: string;
+  closedBoardName: string;
+  closedList: string;
+  closedListName: string;
+  openBoard: string;
+  openBoardName: string;
+  openList: string;
+  openListName: string;
+  updatedAt: number; // Unix timestamp
+  createdAt: number; // Unix timestamp
 }
 ```

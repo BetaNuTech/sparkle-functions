@@ -1430,6 +1430,106 @@
         }
       }
     },
+    "/v0/integrations/trello/properties/{propertyId}": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "propertyId",
+          "in": "path",
+          "required": true,
+          "description": "property id.",
+          "type": "string"
+        }
+      ],
+      "put": {
+        "tags": ["Integrations"],
+        "parameters": [
+          {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          },
+          {
+            "name": "integration",
+            "in": "body",
+            "description": "Property integration payload.",
+            "required": [],
+            "properties": {
+              "closedBoard": {
+                "type": "string"
+              },
+              "closedBoardName": {
+                "type": "string"
+              },
+              "closedList": {
+                "type": "string"
+              },
+              "closedListName": {
+                "type": "string"
+              },
+              "openBoard": {
+                "type": "string"
+              },
+              "openBoardName": {
+                "type": "string"
+              },
+              "openList": {
+                "type": "string"
+              },
+              "openListName": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/RESPONSE"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "409": {
+            "schema": {
+              "$ref": "#/definitions/RESPONSE"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
     "/v0/inspections/{inspectionId}": {
       "parameters": [
         {
