@@ -392,6 +392,39 @@ module.exports = modelSetup({
   },
 
   /**
+   * Set (create/update) Firestore Property
+   * Trello Integration
+   * @param  {admin.firestore} db
+   * @param  {String} propertyId
+   * @param  {Object} data
+   * @param  {firestore.batch?} batch
+   * @param  {Boolean?} merge - deep merge record
+   * @return {Promise}
+   */
+  setTrelloPropertyRecord(db, propertyId, data, batch, merge = false) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    assert(data && typeof data === 'object', 'has data payload');
+
+    const docRef = db
+      .collection(INTEGRATIONS_COLLECTION)
+      .doc(`trello-${propertyId}`);
+
+    // Add batched update
+    if (batch) {
+      assert(
+        typeof batch.set === 'function' && typeof batch.update === 'function',
+        'has batch instance'
+      );
+      batch.set(docRef, data, { merge });
+      return Promise.resolve();
+    }
+
+    // Normal update
+    return docRef.set(data, { merge });
+  },
+
+  /**
    * Lookup a property Trello integration
    * @param  {admin.firestore} db
    * @param  {String} propertyId

@@ -4,6 +4,7 @@ const getBoards = require('./api/get-boards');
 const getBoardLists = require('./api/get-board-lists');
 const postDeficiencyCard = require('./api/post-deficiency-card');
 const postJobCard = require('./api/post-job-card');
+const putPropertyIntegration = require('./api/put-property-integration');
 
 module.exports = {
   api: {
@@ -13,5 +14,6 @@ module.exports = {
     getBoardLists,
     postDeficiencyCard,
     postJobCard,
+    putPropertyIntegration,
   },
 };
