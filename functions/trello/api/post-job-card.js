@@ -18,18 +18,18 @@ const JOB_URI = config.clientApps.web.jobURL;
 /**
  * Factory for creating a POST endpoint
  * that creates new Trello card for a job
- * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
+ * @param  {firebaseAdmin.firestore} db - Firestore Admin DB instance
  * @param  {String} jobUri - Job ur
  * @param  {String} default zip code for card due date
  * @return {Function} - onRequest handler
  */
 
 module.exports = function createPostTrelloJob(
-  fs,
+  db,
   jobUri = JOB_URI,
   defaultZip = '10001'
 ) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  assert(db && typeof db.collection === 'function', 'has firestore db');
   assert(jobUri && typeof jobUri === 'string', 'has job uri string');
   assert(defaultZip && typeof defaultZip === 'string', 'has default zip code');
 
@@ -58,7 +58,7 @@ module.exports = function createPostTrelloJob(
     // Property lookup
     let property = null;
     try {
-      const propertySnap = await propertiesModel.findRecord(fs, propertyId);
+      const propertySnap = await propertiesModel.findRecord(db, propertyId);
       property = propertySnap.data() || null;
     } catch (err) {
       return send500Error(err, 'property lookup failed', 'unexpected error');
@@ -80,7 +80,7 @@ module.exports = function createPostTrelloJob(
     // Job lookup
     let job = null;
     try {
-      const jobSnap = await jobsModel.findRecord(fs, jobId);
+      const jobSnap = await jobsModel.findRecord(db, jobId);
       job = jobSnap.data() || null;
     } catch (err) {
       return send500Error(err, 'job lookup failed', 'unexpected error');
@@ -130,7 +130,7 @@ module.exports = function createPostTrelloJob(
     // Lookup Trello integration
     let trelloOrg = null;
     try {
-      const trelloOrgSnap = await integrationsModel.findTrello(fs);
+      const trelloOrgSnap = await integrationsModel.findTrello(db);
       trelloOrg = trelloOrgSnap.data() || null;
     } catch (err) {
       return send500Error(
@@ -157,7 +157,7 @@ module.exports = function createPostTrelloJob(
     let trelloPropertyConfig = null;
     try {
       const trelloIntegrationSnap = await integrationsModel.findTrelloProperty(
-        fs,
+        db,
         propertyId
       );
 
@@ -199,7 +199,7 @@ module.exports = function createPostTrelloJob(
     let approvedBid = null;
     if (job.state === 'authorized') {
       try {
-        const bidsSnap = await jobsModel.findAssociatedBids(fs, jobId);
+        const bidsSnap = await jobsModel.findAssociatedBids(db, jobId);
         bidsSnap.docs.forEach(doc => {
           const bid = doc.data();
           if (bid && bid.state === 'approved') {
@@ -256,12 +256,12 @@ module.exports = function createPostTrelloJob(
       );
     }
 
-    const batch = fs.batch();
+    const batch = db.batch();
 
     // Update system trello/property cards
     try {
       await systemModel.upsertPropertyTrello(
-        fs,
+        db,
         propertyId,
         { cards: { [cardId]: jobId } },
         batch
@@ -278,7 +278,7 @@ module.exports = function createPostTrelloJob(
     const updatedAt = Math.round(Date.now() / 1000);
     const jobUpdate = { updatedAt, trelloCardURL: cardUrl };
     try {
-      await jobsModel.updateRecord(fs, jobId, jobUpdate, batch);
+      await jobsModel.updateRecord(db, jobId, jobUpdate, batch);
     } catch (err) {
       return send500Error(
         err,

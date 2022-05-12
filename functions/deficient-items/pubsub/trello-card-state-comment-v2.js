@@ -21,13 +21,13 @@ const DEFAULT_TIMEZONE = config.deficientItems.defaultTimezone;
 /**
  * Append Deficiency state updates as comments
  * to its' previously created Trello card
- * @param  {admin.firestore} fs
+ * @param  {admin.firestore} db
  * @param  {functions.pubsub} pubsub
  * @param  {String} topic
  * @return {functions.cloudfunction}
  */
-module.exports = function createTrelloCardStateCommentV2(fs, pubsub, topic) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function createTrelloCardStateCommentV2(db, pubsub, topic) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
   assert(pubsub && typeof pubsub.topic === 'function', 'has pubsub client');
   assert(topic && typeof topic === 'string', 'has topic string');
 
@@ -54,7 +54,7 @@ module.exports = function createTrelloCardStateCommentV2(fs, pubsub, topic) {
     let trelloCardId = '';
     try {
       trelloCardId = await systemModel.findTrelloCardId(
-        fs,
+        db,
         propertyId,
         deficiencyId
       );
@@ -73,7 +73,7 @@ module.exports = function createTrelloCardStateCommentV2(fs, pubsub, topic) {
     // Lookup Trello credentials
     let trelloCredentials = null;
     try {
-      const trelloCredentialsSnap = await systemModel.findTrello(fs);
+      const trelloCredentialsSnap = await systemModel.findTrello(db);
       trelloCredentials = trelloCredentialsSnap.data();
       if (!trelloCredentials) {
         throw Error('Organization has not authorized Trello');
@@ -86,7 +86,7 @@ module.exports = function createTrelloCardStateCommentV2(fs, pubsub, topic) {
     // Lookup Deficiency
     let deficiency = null;
     try {
-      const deficiencySnap = await deficiencyModel.findRecord(fs, deficiencyId);
+      const deficiencySnap = await deficiencyModel.findRecord(db, deficiencyId);
       deficiency = deficiencySnap.data() || null;
     } catch (err) {
       log.error(`${PREFIX} deficiency lookup failed | ${err}`);
@@ -145,7 +145,7 @@ module.exports = function createTrelloCardStateCommentV2(fs, pubsub, topic) {
     let stateAuthorsUser = null;
     const stateAuthorsUserId = currentDefStateHistory.user;
     try {
-      const userSnap = await usersModel.findRecord(fs, stateAuthorsUserId);
+      const userSnap = await usersModel.findRecord(db, stateAuthorsUserId);
       stateAuthorsUser = userSnap.data();
       if (!stateAuthorsUser) throw Error('user does not exist');
     } catch (err) {
@@ -188,7 +188,7 @@ module.exports = function createTrelloCardStateCommentV2(fs, pubsub, topic) {
       if (err.code === 'ERR_TRELLO_CARD_DELETED') {
         try {
           await systemModel.cleanupDeletedTrelloCard(
-            fs,
+            db,
             deficiencyId,
             trelloCardId
           );

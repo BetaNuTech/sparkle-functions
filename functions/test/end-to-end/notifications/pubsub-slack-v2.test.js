@@ -8,12 +8,12 @@ const integrationsModel = require('../../../models/integrations');
 const SLACK_API_JOIN_CHAN_RESPONSE = require('../../../test-helpers/mocks/slack-joined-channel.json');
 const SLACK_API_PUB_MSG_RESP = require('../../../test-helpers/mocks/slack-published-message.json');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { fs, test, cloudFunctions } = require('../../setup');
+const { db, test, cloudFunctions } = require('../../setup');
 
 describe('Notifications | Pubsub | Publish Slack V2', () => {
   afterEach(async () => {
     nock.cleanAll();
-    await cleanDb(null, fs);
+    await cleanDb(db);
   });
 
   it("should attempt to join all Slack notification's channels", async () => {
@@ -68,10 +68,10 @@ describe('Notifications | Pubsub | Publish Slack V2', () => {
       .reply(200, SLACK_API_PUB_MSG_RESP);
 
     // Setup Database
-    await systemModel.upsertSlack(fs, credentials);
-    await integrationsModel.setSlack(fs, integration);
-    await notificationsModel.createRecord(fs, notification1Id, notification1);
-    await notificationsModel.createRecord(fs, notification2Id, notification2);
+    await systemModel.upsertSlack(db, credentials);
+    await integrationsModel.setSlack(db, integration);
+    await notificationsModel.createRecord(db, notification1Id, notification1);
+    await notificationsModel.createRecord(db, notification2Id, notification2);
 
     // Execute
     await test.wrap(cloudFunctions.publishSlackNotificationsV2)();
@@ -151,11 +151,11 @@ describe('Notifications | Pubsub | Publish Slack V2', () => {
       .reply(200, SLACK_API_PUB_MSG_RESP);
 
     // Setup Database
-    await systemModel.upsertSlack(fs, credentials);
-    await integrationsModel.setSlack(fs, integration);
-    await notificationsModel.createRecord(fs, notification1Id, notification1);
-    await notificationsModel.createRecord(fs, notification2Id, notification2);
-    await notificationsModel.createRecord(fs, notification3Id, notification3);
+    await systemModel.upsertSlack(db, credentials);
+    await integrationsModel.setSlack(db, integration);
+    await notificationsModel.createRecord(db, notification1Id, notification1);
+    await notificationsModel.createRecord(db, notification2Id, notification2);
+    await notificationsModel.createRecord(db, notification3Id, notification3);
 
     // Execute
     const message = { data: Buffer.from(channel).toString('base64') };
@@ -163,19 +163,19 @@ describe('Notifications | Pubsub | Publish Slack V2', () => {
 
     // Test result
     const notification1Snap = await notificationsModel.findRecord(
-      fs,
+      db,
       notification1Id
     );
     const notification1PubMediums =
       (notification1Snap.data() || {}).publishedMediums || {};
     const notification2Snap = await notificationsModel.findRecord(
-      fs,
+      db,
       notification2Id
     );
     const notification2PubMediums =
       (notification2Snap.data() || {}).publishedMediums || {};
     const notification3Snap = await notificationsModel.findRecord(
-      fs,
+      db,
       notification3Id
     );
     const notification3PubMediums =
@@ -240,15 +240,15 @@ describe('Notifications | Pubsub | Publish Slack V2', () => {
       .reply(200, SLACK_API_PUB_MSG_RESP);
 
     // Setup Database
-    await systemModel.upsertSlack(fs, credentials);
-    await integrationsModel.setSlack(fs, integration);
-    await notificationsModel.createRecord(fs, notificationId, notification);
+    await systemModel.upsertSlack(db, credentials);
+    await integrationsModel.setSlack(db, integration);
+    await notificationsModel.createRecord(db, notificationId, notification);
     // Execute
     const message = { data: Buffer.from(channel).toString('base64') };
     await test.wrap(cloudFunctions.publishSlackNotificationsV2)(message);
 
     // Test result
-    const integrationSnap = await integrationsModel.findSlack(fs);
+    const integrationSnap = await integrationsModel.findSlack(db);
     const actual =
       ((integrationSnap.data() || {}).joinedChannelNames || {})[channel] || 0;
 

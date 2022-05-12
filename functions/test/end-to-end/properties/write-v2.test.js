@@ -5,10 +5,10 @@ const teamsModel = require('../../../models/teams');
 const usersModel = require('../../../models/users');
 const templatesModel = require('../../../models/templates');
 const propertiesModel = require('../../../models/properties');
-const { fs, test, cloudFunctions } = require('../../setup');
+const { db, test, cloudFunctions } = require('../../setup');
 
 describe('Properties | Write | V2', () => {
-  afterEach(() => cleanDb(null, fs));
+  afterEach(() => cleanDb(db));
 
   it("should cleanup team and users removed from the property's team", async () => {
     const propertyId = uuid();
@@ -20,13 +20,13 @@ describe('Properties | Write | V2', () => {
     const userData = createUser({}, [teamId, [propertyId]]);
 
     // Setup Database
-    await propertiesModel.createRecord(fs, propertyId, propData);
-    await teamsModel.createRecord(fs, teamId, teamData);
-    await usersModel.createRecord(fs, user1Id, userData);
-    await usersModel.createRecord(fs, user2Id, userData);
-    const before = await propertiesModel.findRecord(fs, propertyId);
-    await propertiesModel.upsertRecord(fs, propertyId, { team: '' }); // remove team
-    const after = await propertiesModel.findRecord(fs, propertyId);
+    await propertiesModel.createRecord(db, propertyId, propData);
+    await teamsModel.createRecord(db, teamId, teamData);
+    await usersModel.createRecord(db, user1Id, userData);
+    await usersModel.createRecord(db, user2Id, userData);
+    const before = await propertiesModel.findRecord(db, propertyId);
+    await propertiesModel.upsertRecord(db, propertyId, { team: '' }); // remove team
+    const after = await propertiesModel.findRecord(db, propertyId);
 
     // Execute
     const changeSnap = test.makeChange(before, after);
@@ -34,9 +34,9 @@ describe('Properties | Write | V2', () => {
     await wrapped(changeSnap, { params: { propertyId } });
 
     // Test results
-    const teamResult = await teamsModel.findRecord(fs, teamId);
-    const user1Result = await usersModel.findRecord(fs, user1Id);
-    const user2Result = await usersModel.findRecord(fs, user2Id);
+    const teamResult = await teamsModel.findRecord(db, teamId);
+    const user1Result = await usersModel.findRecord(db, user1Id);
+    const user2Result = await usersModel.findRecord(db, user2Id);
 
     // Assertions
     [
@@ -71,13 +71,13 @@ describe('Properties | Write | V2', () => {
     const userData = createUser({}, [teamId]);
 
     // Setup Database
-    await propertiesModel.createRecord(fs, propertyId, propData);
-    await teamsModel.createRecord(fs, teamId, teamData);
-    await usersModel.createRecord(fs, user1Id, userData);
-    await usersModel.createRecord(fs, user2Id, userData);
-    const before = await propertiesModel.findRecord(fs, propertyId);
-    await propertiesModel.upsertRecord(fs, propertyId, propUpdate); // remove team
-    const after = await propertiesModel.findRecord(fs, propertyId);
+    await propertiesModel.createRecord(db, propertyId, propData);
+    await teamsModel.createRecord(db, teamId, teamData);
+    await usersModel.createRecord(db, user1Id, userData);
+    await usersModel.createRecord(db, user2Id, userData);
+    const before = await propertiesModel.findRecord(db, propertyId);
+    await propertiesModel.upsertRecord(db, propertyId, propUpdate); // remove team
+    const after = await propertiesModel.findRecord(db, propertyId);
 
     // Execute
     const changeSnap = test.makeChange(before, after);
@@ -85,9 +85,9 @@ describe('Properties | Write | V2', () => {
     await wrapped(changeSnap, { params: { propertyId } });
 
     // Test results
-    const teamResult = await teamsModel.findRecord(fs, teamId);
-    const user1Result = await usersModel.findRecord(fs, user1Id);
-    const user2Result = await usersModel.findRecord(fs, user2Id);
+    const teamResult = await teamsModel.findRecord(db, teamId);
+    const user1Result = await usersModel.findRecord(db, user1Id);
+    const user2Result = await usersModel.findRecord(db, user2Id);
 
     // Assertions
     [
@@ -125,14 +125,14 @@ describe('Properties | Write | V2', () => {
     const user2Data = createUser({}, [prevTeamId, [propertyId]], [currTeamId]);
 
     // Setup Database
-    await propertiesModel.createRecord(fs, propertyId, propData);
-    await teamsModel.createRecord(fs, prevTeamId, prevTeamData);
-    await teamsModel.createRecord(fs, currTeamId, currTeamData);
-    await usersModel.createRecord(fs, user1Id, user1Data);
-    await usersModel.createRecord(fs, user2Id, user2Data);
-    const before = await propertiesModel.findRecord(fs, propertyId);
-    await propertiesModel.upsertRecord(fs, propertyId, propUpdate); // remove team
-    const after = await propertiesModel.findRecord(fs, propertyId);
+    await propertiesModel.createRecord(db, propertyId, propData);
+    await teamsModel.createRecord(db, prevTeamId, prevTeamData);
+    await teamsModel.createRecord(db, currTeamId, currTeamData);
+    await usersModel.createRecord(db, user1Id, user1Data);
+    await usersModel.createRecord(db, user2Id, user2Data);
+    const before = await propertiesModel.findRecord(db, propertyId);
+    await propertiesModel.upsertRecord(db, propertyId, propUpdate); // remove team
+    const after = await propertiesModel.findRecord(db, propertyId);
 
     // Execute
     const changeSnap = test.makeChange(before, after);
@@ -140,10 +140,10 @@ describe('Properties | Write | V2', () => {
     await wrapped(changeSnap, { params: { propertyId } });
 
     // Test results
-    const prevTeamResult = await teamsModel.findRecord(fs, prevTeamId);
-    const currTeamResult = await teamsModel.findRecord(fs, currTeamId);
-    const user1Result = await usersModel.findRecord(fs, user1Id);
-    const user2Result = await usersModel.findRecord(fs, user2Id);
+    const prevTeamResult = await teamsModel.findRecord(db, prevTeamId);
+    const currTeamResult = await teamsModel.findRecord(db, currTeamId);
+    const user1Result = await usersModel.findRecord(db, user1Id);
+    const user2Result = await usersModel.findRecord(db, user2Id);
 
     // Assertions
     [
@@ -185,12 +185,12 @@ describe('Properties | Write | V2', () => {
     const expected = { ...tmplBefore, properties: [propertyId] };
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, propData);
-    await templatesModel.upsertRecord(fs, tmplOneId, tmplBefore);
-    await templatesModel.upsertRecord(fs, tmplTwoId, tmplBefore);
-    const before = await propertiesModel.findRecord(fs, propertyId);
-    await propertiesModel.upsertRecord(fs, propertyId, propUpdate);
-    const after = await propertiesModel.findRecord(fs, propertyId);
+    await propertiesModel.createRecord(db, propertyId, propData);
+    await templatesModel.upsertRecord(db, tmplOneId, tmplBefore);
+    await templatesModel.upsertRecord(db, tmplTwoId, tmplBefore);
+    const before = await propertiesModel.findRecord(db, propertyId);
+    await propertiesModel.upsertRecord(db, propertyId, propUpdate);
+    const after = await propertiesModel.findRecord(db, propertyId);
 
     // Execute
     const changeSnap = test.makeChange(before, after);
@@ -199,8 +199,8 @@ describe('Properties | Write | V2', () => {
 
     // Test results
     const results = await Promise.all([
-      templatesModel.findRecord(fs, tmplOneId),
-      templatesModel.findRecord(fs, tmplTwoId),
+      templatesModel.findRecord(db, tmplOneId),
+      templatesModel.findRecord(db, tmplTwoId),
     ]);
 
     // Assertions
@@ -226,12 +226,12 @@ describe('Properties | Write | V2', () => {
     const propUpdate = { templates: { [tmplTwoId]: true } }; // replace with #2
     const tmplBefore = { name: 'test' };
 
-    await propertiesModel.createRecord(fs, propertyId, propData);
-    await templatesModel.upsertRecord(fs, tmplOneId, tmplBefore);
-    await templatesModel.upsertRecord(fs, tmplTwoId, tmplBefore);
-    const before = await propertiesModel.findRecord(fs, propertyId);
-    await propertiesModel.upsertRecord(fs, propertyId, propUpdate); // Update
-    const after = await propertiesModel.findRecord(fs, propertyId);
+    await propertiesModel.createRecord(db, propertyId, propData);
+    await templatesModel.upsertRecord(db, tmplOneId, tmplBefore);
+    await templatesModel.upsertRecord(db, tmplTwoId, tmplBefore);
+    const before = await propertiesModel.findRecord(db, propertyId);
+    await propertiesModel.upsertRecord(db, propertyId, propUpdate); // Update
+    const after = await propertiesModel.findRecord(db, propertyId);
 
     // Execute
     const changeSnap = test.makeChange(before, after);
@@ -240,8 +240,8 @@ describe('Properties | Write | V2', () => {
 
     // Test results
     const results = await Promise.all([
-      templatesModel.findRecord(fs, tmplOneId),
-      templatesModel.findRecord(fs, tmplTwoId),
+      templatesModel.findRecord(db, tmplOneId),
+      templatesModel.findRecord(db, tmplTwoId),
     ]);
 
     // Assertions

@@ -6,10 +6,10 @@ const propertiesModel = require('../../../models/properties');
 const inspectionsModel = require('../../../models/inspections');
 const archiveModel = require('../../../models/_internal/archive');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { fs, test, cloudFunctions } = require('../../setup');
+const { db, test, cloudFunctions } = require('../../setup');
 
 describe('Inspections | On Delete | V2', () => {
-  afterEach(() => cleanDb(null, fs));
+  afterEach(() => cleanDb(db));
 
   it('archives inspection', async () => {
     const propertyId = uuid();
@@ -18,10 +18,10 @@ describe('Inspections | On Delete | V2', () => {
     const inspData = mocking.createInspection({ property: propertyId });
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, propData);
-    await inspectionsModel.createRecord(fs, inspectionId, inspData);
-    const snap = await inspectionsModel.findRecord(fs, inspectionId);
-    await inspectionsModel.destroyRecord(fs, inspectionId);
+    await propertiesModel.createRecord(db, propertyId, propData);
+    await inspectionsModel.createRecord(db, inspectionId, inspData);
+    const snap = await inspectionsModel.findRecord(db, inspectionId);
+    await inspectionsModel.destroyRecord(db, inspectionId);
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.inspectionDeleteV2);
@@ -29,10 +29,10 @@ describe('Inspections | On Delete | V2', () => {
 
     // Test result
     const resultArchive = await archiveModel.inspection.findRecord(
-      fs,
+      db,
       inspectionId
     );
-    const resultActive = await inspectionsModel.findRecord(fs, inspectionId);
+    const resultActive = await inspectionsModel.findRecord(db, inspectionId);
 
     // Assertions
     [
@@ -85,18 +85,18 @@ describe('Inspections | On Delete | V2', () => {
     });
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, propData);
-    await inspectionsModel.createRecord(fs, insp1Id, inspectionOne);
-    await inspectionsModel.createRecord(fs, insp2Id, inspectionTwo);
-    const snap = await inspectionsModel.findRecord(fs, insp1Id);
-    await inspectionsModel.destroyRecord(fs, insp1Id);
+    await propertiesModel.createRecord(db, propertyId, propData);
+    await inspectionsModel.createRecord(db, insp1Id, inspectionOne);
+    await inspectionsModel.createRecord(db, insp2Id, inspectionTwo);
+    const snap = await inspectionsModel.findRecord(db, insp1Id);
+    await inspectionsModel.destroyRecord(db, insp1Id);
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.inspectionDeleteV2);
     await wrapped(snap, { params: { inspectionId: insp1Id } });
 
     // Test result
-    const propertyDoc = await propertiesModel.findRecord(fs, propertyId);
+    const propertyDoc = await propertiesModel.findRecord(db, propertyId);
     const result = propertyDoc.data();
 
     // Assertions
@@ -167,20 +167,20 @@ describe('Inspections | On Delete | V2', () => {
     };
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, propData);
-    await inspectionsModel.createRecord(fs, inspectionId, inspData);
-    await diModel.createRecord(fs, deficiencyId, deficiencyData);
-    const snap = await inspectionsModel.findRecord(fs, inspectionId);
-    await inspectionsModel.removeRecord(fs, inspectionId);
+    await propertiesModel.createRecord(db, propertyId, propData);
+    await inspectionsModel.createRecord(db, inspectionId, inspData);
+    await diModel.createRecord(db, deficiencyId, deficiencyData);
+    const snap = await inspectionsModel.findRecord(db, inspectionId);
+    await inspectionsModel.removeRecord(db, inspectionId);
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.inspectionDeleteV2);
     await wrapped(snap, { params: { inspectionId } });
 
     // Test result
-    const activeDeficiencySnap = await diModel.findRecord(fs, deficiencyId);
+    const activeDeficiencySnap = await diModel.findRecord(db, deficiencyId);
     const archiveDeficiencySnap = await archiveModel.deficientItem.findRecord(
-      fs,
+      db,
       deficiencyId
     );
 

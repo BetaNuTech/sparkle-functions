@@ -11,10 +11,10 @@ const storageService = require('../../../services/storage');
 const handler = require('../../../inspections/api/patch-template');
 const { cleanDb, findStorageFile } = require('../../../test-helpers/firebase');
 const stubs = require('../../../test-helpers/stubs');
-const { fs: db, storage } = require('../../setup');
+const { db, storage } = require('../../setup');
 
 describe('Inspections | API | PATCH Template', () => {
-  afterEach(() => cleanDb(null, db));
+  afterEach(() => cleanDb(db));
 
   it('should update a inspection record', async () => {
     const propertyId = uuid();

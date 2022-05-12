@@ -8,17 +8,17 @@ const INSPECTION_COLLECTION = 'inspections';
 module.exports = modelSetup({
   /**
    * Find an archived inspection
-   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {String} inspectionId
    * @return {Promise} - resolve {Document}
    */
-  findRecord(fs, inspectionId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  findRecord(db, inspectionId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has deficient item id'
     );
-    return fs
+    return db
       .collection(ARCHIVE_COLLECTION)
       .doc(inspectionId)
       .get();
@@ -27,14 +27,14 @@ module.exports = modelSetup({
   /**
    * Create a firestore inspection archive
    * or append an update to batch transaction
-   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {String} inspectionId
    * @param  {Object} data
    * @param  {firestore.batch?} batch
    * @return {Promise} - resolve {CollectionReference}
    */
-  createRecord(fs, inspectionId, data, batch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  createRecord(db, inspectionId, data, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has deficient item id'
@@ -42,7 +42,7 @@ module.exports = modelSetup({
     assert(data && typeof data === 'object', 'has data object');
 
     const result = { ...data, _collection: INSPECTION_COLLECTION };
-    const ref = fs.collection(ARCHIVE_COLLECTION).doc(inspectionId);
+    const ref = db.collection(ARCHIVE_COLLECTION).doc(inspectionId);
 
     // Append batch write
     if (batch) {
@@ -58,15 +58,15 @@ module.exports = modelSetup({
   /**
    * Lookup all archived inspections
    * associated with a property
-   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {String} propertyId
    * @param  {firestore.transaction?} transaction
    * @return {Promise} - resolves {QuerySnapshot}
    */
-  queryByProperty(fs, propertyId, transaction) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  queryByProperty(db, propertyId, transaction) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
-    const query = fs
+    const query = db
       .collection(ARCHIVE_COLLECTION)
       .where('property', '==', propertyId)
       .where('_collection', '==', INSPECTION_COLLECTION);

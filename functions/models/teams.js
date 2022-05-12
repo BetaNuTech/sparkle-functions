@@ -8,7 +8,7 @@ const TEAMS_COLLECTION = 'teams';
 module.exports = modelSetup({
   /**
    * Lookup Firestore Team
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {firebaseAdmin.firestore} db - Firestore DB instance
    * @param  {String} teamId
    * @param  {firestore.transaction?} transaction
    * @return {Promise}

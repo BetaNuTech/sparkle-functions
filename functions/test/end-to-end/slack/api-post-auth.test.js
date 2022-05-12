@@ -8,7 +8,7 @@ const { cleanDb } = require('../../../test-helpers/firebase');
 const { slackApp, globalApi } = require('../../../config');
 const systemModel = require('../../../models/system');
 const integrationsModel = require('../../../models/integrations');
-const { fs } = require('../../setup');
+const { db } = require('../../setup');
 
 const SLACK_APP_CLIENT_ID = slackApp.clientId;
 const SLACK_APP_CLIENT_SECRET = slackApp.clientSecret;
@@ -18,7 +18,7 @@ const GLOBAL_API_PATCH_PATH = globalApi.patchSlackTeam;
 describe('Slack | API | POST Auth', () => {
   afterEach(() => {
     nock.cleanAll();
-    return cleanDb(null, fs);
+    return cleanDb(db);
   });
 
   it('successfully creates new Slack integration documents', async () => {
@@ -68,8 +68,8 @@ describe('Slack | API | POST Auth', () => {
       .expect(201);
 
     // Get Results
-    const systemDoc = await systemModel.findSlack(fs);
-    const integrationDoc = await integrationsModel.findSlack(fs);
+    const systemDoc = await systemModel.findSlack(db);
+    const integrationDoc = await integrationsModel.findSlack(db);
 
     // Assertions
     [
@@ -106,7 +106,7 @@ describe('Slack | API | POST Auth', () => {
 
 function createApp() {
   const app = express();
-  app.post('/t', bodyParser.json(), stubAuth, handler(fs));
+  app.post('/t', bodyParser.json(), stubAuth, handler(db));
   return app;
 }
 

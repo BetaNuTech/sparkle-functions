@@ -30,15 +30,18 @@ if (`${testConfig.projectId}`.search('test') === -1) {
 }
 
 admin.initializeApp(testConfig);
-const db = admin.database();
-const fs = admin.firestore();
+const realtimeDb = admin.database();
+const db = admin.firestore();
 const auth = admin.auth();
 const storage = admin.storage();
 const messaging = admin.messaging();
 
 // Stub admin.initializeApp & `database()` to avoid live data access
-sinon.stub(admin, 'initializeApp').returns({ database: () => db });
-Object.defineProperty(admin, 'database', { writable: true, value: () => db });
+sinon.stub(admin, 'initializeApp').returns({ database: () => realtimeDb });
+Object.defineProperty(admin, 'database', {
+  writable: true,
+  value: () => realtimeDb,
+});
 Object.defineProperty(admin, 'storage', {
   writable: true,
   value: () => storage,
@@ -70,7 +73,6 @@ Object.defineProperty(PubSub.prototype, 'topic', {
 
 module.exports = {
   db,
-  fs,
   auth,
   test,
   storage,

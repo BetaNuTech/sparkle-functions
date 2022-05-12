@@ -9,55 +9,55 @@ const PREFIX = 'models: bids:';
 module.exports = modelSetup({
   /**
    * Create a Firestore bid
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String?} bidId
    * @param  {Object} data
    * @return {Promise} - resolves {WriteResult}
    */
-  createRecord(fs, bidId, data) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  createRecord(db, bidId, data) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     if (bidId) assert(typeof bidId === 'string', 'has valid bid id');
     assert(data && typeof data === 'object', 'has data');
     assert(data.job && data.job.id, 'has firestore bid document reference');
-    if (bidId === undefined) bidId = fs.collection(BID_COLLECTION).doc().id;
+    if (bidId === undefined) bidId = db.collection(BID_COLLECTION).doc().id;
 
-    return fs
+    return db
       .collection(BID_COLLECTION)
       .doc(bidId)
       .create(data);
   },
   /**
    * Create a firestore document reference
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String} id
    * @return {firestore.DocumentReference}
    */
-  createJobDocRef(fs, id) {
+  createJobDocRef(db, id) {
     assert(id && typeof id === 'string', 'has document reference id');
-    return fs.collection(JOB_COLLECTION).doc(id);
+    return db.collection(JOB_COLLECTION).doc(id);
   },
 
   /**
    * Create a firestore doc id for collection
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @return {String}
    */
-  createId(fs) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
-    return fs.collection(BID_COLLECTION).doc().id;
+  createId(db) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    return db.collection(BID_COLLECTION).doc().id;
   },
 
   /**
    * Lookup Firestore bid
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {firebaseAdmin.firestore} db - Firestore DB instance
    * @param  {String} bidId
    * @return {Promise}
    */
 
-  findRecord(fs, bidId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  findRecord(db, bidId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(bidId && typeof bidId === 'string', 'has bid id');
-    return fs
+    return db
       .collection(BID_COLLECTION)
       .doc(bidId)
       .get();
@@ -65,21 +65,21 @@ module.exports = modelSetup({
 
   /**
    * Update Firestore Bid
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {firebaseAdmin.firestore} db - Firestore DB instance
    * @param  {String} bidId
    * @param  {Object} data
    * @param  {firestore.batch?}
    * @return {Promise} - resolves {Document}
    */
-  updateRecord(fs, bidId, data, batch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  updateRecord(db, bidId, data, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(bidId && typeof bidId === 'string', 'has bid id');
     assert(data && typeof data === 'object', 'has update data');
     if (batch) {
       assert(typeof batch.update === 'function', 'has firestore batch');
     }
 
-    const doc = fs.collection(BID_COLLECTION).doc(bidId);
+    const doc = db.collection(BID_COLLECTION).doc(bidId);
 
     if (batch) {
       batch.update(doc, data);
@@ -91,14 +91,14 @@ module.exports = modelSetup({
 
   /**
    * Lookup a job's approved bid
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {firebaseAdmin.firestore} db - Firestore DB instance
    * @param  {String} jobId
    * @return {Promise} - resolves {QuerySnapshot}
    */
-  queryJobsApproved(fs, jobId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  queryJobsApproved(db, jobId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(jobId && typeof jobId === 'string', 'has job id');
-    return fs
+    return db
       .collection(BID_COLLECTION)
       .where('job', '==', jobId)
       .where('state', '==', 'approved')
@@ -107,15 +107,15 @@ module.exports = modelSetup({
 
   /**
    * Deleting all the bids linked with the current Job
-   * @param  {firebaseAdmin.firestore} fs Firestore DB instance
+   * @param  {firebaseAdmin.firestore} db Firestore DB instance
    * @param  {string} jobId , job id
    * @param  {firestore.batch?} parentBatch
    * @return {Promise}
    */
-  async deleteLinkedJobsRecord(fs, jobId, parentBatch) {
-    const jobDoc = this.createJobDocRef(fs, jobId);
-    const queryRef = fs.collection(BID_COLLECTION).where('job', '==', jobDoc);
-    const batch = parentBatch || fs.batch();
+  async deleteLinkedJobsRecord(db, jobId, parentBatch) {
+    const jobDoc = this.createJobDocRef(db, jobId);
+    const queryRef = db.collection(BID_COLLECTION).where('job', '==', jobDoc);
+    const batch = parentBatch || db.batch();
 
     let querySnapshot;
     try {

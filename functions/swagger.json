@@ -1449,6 +1449,7 @@
       ],
       "put": {
         "tags": ["Integrations"],
+        "summary": "Create/update a property trello integration. Only for admin users.",
         "parameters": [
           {
             "name": "incognitoMode",
@@ -1520,6 +1521,45 @@
           "409": {
             "schema": {
               "$ref": "#/definitions/RESPONSE"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Integrations"],
+        "summary": "Deleting a property trello integration. Only for admin users.",
+        "parameters": [
+          {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful delete, contains no payload or body"
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
             }
           },
           "500": {

@@ -10,12 +10,12 @@ const systemModel = require('../../../models/system');
 const integrationsModel = require('../../../models/integrations');
 const GET_TRELLO_TOKEN_PAYLOAD = require('../../../test-helpers/mocks/get-trello-token.json');
 const GET_TRELLO_MEMBER_PAYLOAD = require('../../../test-helpers/mocks/get-trello-member.json');
-const { fs } = require('../../setup');
+const { db } = require('../../setup');
 
 describe('Trello | API | POST Auth', () => {
   afterEach(() => {
     nock.cleanAll();
-    return cleanDb(null, fs);
+    return cleanDb(db);
   });
 
   it('successfully creates new Trello integration documents', async () => {
@@ -58,8 +58,8 @@ describe('Trello | API | POST Auth', () => {
       .expect(201);
 
     // Get Results
-    const systemDoc = await systemModel.findTrello(fs);
-    const integrationDoc = await integrationsModel.findTrello(fs);
+    const systemDoc = await systemModel.findTrello(db);
+    const integrationDoc = await integrationsModel.findTrello(db);
 
     // Assertions
     [
@@ -101,7 +101,7 @@ describe('Trello | API | POST Auth', () => {
 
 function createApp() {
   const app = express();
-  app.post('/t', bodyParser.json(), stubAuth, handler(fs));
+  app.post('/t', bodyParser.json(), stubAuth, handler(db));
   return app;
 }
 

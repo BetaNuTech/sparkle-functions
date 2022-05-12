@@ -9,11 +9,11 @@ const PREFIX = 'slack: api: events-webhook:';
 
 /**
  * Creates webhook for responding to Slack API requests
- * @param  {admin.firestore} fs - Firestore Admin DB instance
+ * @param  {admin.firestore} db - Firestore Admin DB instance
  * @return {Function} - onRequest handler
  */
-module.exports = function createDeleteSlackAppHandler(fs) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function createDeleteSlackAppHandler(db) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
 
   /**
    * Handle deletion
@@ -37,7 +37,7 @@ module.exports = function createDeleteSlackAppHandler(fs) {
       let wasAuthorized = false;
       try {
         wasAuthorized = await integrationsModel.isAuthorizedSlackTeam(
-          fs,
+          db,
           teamId
         );
       } catch (err) {
@@ -49,35 +49,35 @@ module.exports = function createDeleteSlackAppHandler(fs) {
         log.info(`${PREFIX} Slack app uninstalled from workspace`);
 
         // Start Firestore DB cleanup
-        const batch = fs.batch();
+        const batch = db.batch();
 
         // Delete system's Slack App credentials
         try {
-          await systemModel.removeSlack(fs, batch);
+          await systemModel.removeSlack(db, batch);
         } catch (err) {
           return send500Error(
             err,
-            `failed to remove slack system credentials | ${err}`,
+            `failed to remove slack system credentials: ${err}`,
             'system failure'
           );
         }
 
         // Delete public facing Slack App's integration details
         try {
-          await integrationsModel.removeSlack(fs, batch);
+          await integrationsModel.removeSlack(db, batch);
         } catch (err) {
           return send500Error(
             err,
-            `failed to remove public integration details | ${err}`,
+            `failed to remove public integration details: ${err}`,
             'system failure'
           );
         }
 
         // Cleanup all lingering Slack notifications
         try {
-          await notificationsModel.removeAllSlack(fs, batch);
+          await notificationsModel.removeAllSlack(db, batch);
         } catch (err) {
-          log.error(`${PREFIX} failed to remove slack notifications | ${err}`);
+          log.error(`${PREFIX} failed to remove slack notifications: ${err}`);
         }
 
         try {
@@ -85,7 +85,7 @@ module.exports = function createDeleteSlackAppHandler(fs) {
         } catch (err) {
           return send500Error(
             err,
-            `failed to commit writes to database | ${err}`,
+            `failed to commit writes to database: ${err}`,
             'system failure'
           );
         }

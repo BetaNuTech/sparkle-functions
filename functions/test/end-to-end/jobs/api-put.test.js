@@ -8,10 +8,10 @@ const jobsModel = require('../../../models/jobs');
 const propertiesModel = require('../../../models/properties');
 const handler = require('../../../jobs/api/put');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { fs } = require('../../setup');
+const { db } = require('../../setup');
 
 describe('Jobs | API | PUT', () => {
-  afterEach(() => cleanDb(null, fs));
+  afterEach(() => cleanDb(db));
 
   it('should update an existing job', async () => {
     const update = {
@@ -23,12 +23,12 @@ describe('Jobs | API | PUT', () => {
     const jobId = uuid();
     const propertyId = uuid();
     const property = mocking.createProperty();
-    const propertyDoc = propertiesModel.createDocRef(fs, propertyId);
+    const propertyDoc = propertiesModel.createDocRef(db, propertyId);
     const job = mocking.createJob({ property: propertyDoc });
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, property);
-    await jobsModel.createRecord(fs, jobId, job);
+    await propertiesModel.createRecord(db, propertyId, property);
+    await jobsModel.createRecord(db, jobId, job);
 
     // Execute
     const app = createApp();
@@ -39,7 +39,7 @@ describe('Jobs | API | PUT', () => {
       .expect(201);
 
     // Setup Expectation
-    const updatedJob = await jobsModel.findRecord(fs, jobId);
+    const updatedJob = await jobsModel.findRecord(db, jobId);
     const updateJobData = { ...updatedJob.data(), ...update };
     delete updateJobData.property;
     const expected = {
@@ -69,7 +69,7 @@ function createApp(user = {}) {
     '/t/:propertyId/:jobId',
     bodyParser.json(),
     stubAuth(user),
-    handler(fs)
+    handler(db)
   );
   return app;
 }

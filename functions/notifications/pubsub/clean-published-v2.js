@@ -7,19 +7,19 @@ const PREFIX = 'notifications: pubsub: publish-push-v2:';
 /**
  * Remove all notifications that
  * have been completedly published
- * @param  {admin.firestore} fs
+ * @param  {admin.firestore} db
  * @param  {functions.pubsub} pubSub
  * @param  {String} topic
  * @param  {Number?} batchSize - how many records to remove per batch
  * @return {functions.CloudFunction}
  */
 module.exports = function publishPushNotification(
-  fs,
+  db,
   pubsub,
   topic = '',
   batchSize = 499
 ) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  assert(db && typeof db.collection === 'function', 'has firestore db');
   assert(pubsub && typeof pubsub.topic === 'function', 'has pubsub reference');
   assert(topic && typeof topic === 'string', 'has pubsub topic');
   assert(
@@ -34,7 +34,7 @@ module.exports = function publishPushNotification(
       // Select all notifications
       // done publishing to both
       // slack and push
-      const notificationsSnap = await notificationsModel.query(fs, {
+      const notificationsSnap = await notificationsModel.query(db, {
         'publishedMediums.slack': ['==', true],
         'publishedMediums.push': ['==', true],
       });
@@ -51,14 +51,14 @@ module.exports = function publishPushNotification(
       const notificationIdsSegment = notificationIds.splice(0, batchSize);
 
       // Batch group notification deletes
-      const batch = fs.batch();
+      const batch = db.batch();
 
       // Add segment delete to batch
       for (let i = 0; i < notificationIdsSegment.length; i++) {
         const notificationId = notificationIdsSegment[i];
 
         try {
-          await notificationsModel.destroyRecord(fs, notificationId, batch);
+          await notificationsModel.destroyRecord(db, notificationId, batch);
         } catch (err) {
           log.error(
             `${PREFIX} failed to delete notification: "${notificationId}" | ${err}`

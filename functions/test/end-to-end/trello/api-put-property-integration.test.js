@@ -8,10 +8,10 @@ const integrationsModel = require('../../../models/integrations');
 const propertiesModel = require('../../../models/properties');
 const handler = require('../../../trello/api/put-property-integration');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { fs: db } = require('../../setup');
+const { db } = require('../../setup');
 
 describe('Integrations | API | PUT Property Inegration', () => {
-  afterEach(() => cleanDb(null, db));
+  afterEach(() => cleanDb(db));
 
   it('should update an existing property trello integration', async () => {
     const update = {

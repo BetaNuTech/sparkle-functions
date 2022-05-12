@@ -12,11 +12,11 @@ const PREFIX = 'property: api: put';
 /**
  * Factory for creating a PUT endpoint
  * that updates Firestore property
- * @param  {admin.firestore} fs
+ * @param  {admin.firestore} db
  * @return {Function} - Express middleware
  */
-module.exports = function createPutProperty(fs) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function createPutProperty(db) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
 
   /**
    * Handle PUT request for updating property
@@ -75,7 +75,7 @@ module.exports = function createPutProperty(fs) {
     // Lookup Firestore Property
     let property;
     try {
-      const propertySnap = await propertiesModel.findRecord(fs, propertyId);
+      const propertySnap = await propertiesModel.findRecord(db, propertyId);
       property = propertySnap.data() || null;
     } catch (err) {
       return send500Error(err, 'property lookup failed', 'unexpected error');
@@ -96,7 +96,7 @@ module.exports = function createPutProperty(fs) {
 
     // Update property
     try {
-      await propertiesModel.updateRecord(fs, propertyId, update);
+      await propertiesModel.updateRecord(db, propertyId, update);
     } catch (err) {
       return send500Error(
         err,
@@ -108,7 +108,7 @@ module.exports = function createPutProperty(fs) {
     if (!incognitoMode) {
       try {
         // Notify of new inspection report
-        await notificationsModel.addRecord(fs, {
+        await notificationsModel.addRecord(db, {
           title: 'Property Update',
           summary: notifyTemplate('property-update-summary', {
             authorName,

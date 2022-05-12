@@ -14,11 +14,11 @@ const PREFIX = 'deficient-items: on-update-progress-note-v2:';
 
 /**
  * Factory for handling a Deficiency's new progress note
- * @param  {admin.firestore} fs - Firestore Admin DB instance
+ * @param  {admin.firestore} db - Firestore Admin DB instance
  * @return {Function} - DI progress note onCreate handler
  */
-module.exports = function createOnUpdateDeficiencyProgNote(fs) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function createOnUpdateDeficiencyProgNote(db) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
 
   // Template for all Progress Note comments
   const progNoteTemplate = hbs.compile(trelloCardDIProgressNoteTemplate);
@@ -71,7 +71,7 @@ module.exports = function createOnUpdateDeficiencyProgNote(fs) {
     let trelloCardId = '';
     try {
       trelloCardId = await systemModel.findTrelloCardId(
-        fs,
+        db,
         propertyId,
         deficiencyId
       );
@@ -89,7 +89,7 @@ module.exports = function createOnUpdateDeficiencyProgNote(fs) {
     // Lookup user that created Progress Note
     let progressNoteAuthor = null;
     try {
-      const userSnap = await usersModel.findRecord(fs, progressNote.user);
+      const userSnap = await usersModel.findRecord(db, progressNote.user);
       progressNoteAuthor = userSnap.data() || null;
       if (!progressNoteAuthor) {
         log.info(
@@ -113,7 +113,7 @@ module.exports = function createOnUpdateDeficiencyProgNote(fs) {
 
     let trelloCredentials = null;
     try {
-      const trelloCredentialsSnap = await systemModel.findTrello(fs);
+      const trelloCredentialsSnap = await systemModel.findTrello(db);
       trelloCredentials = trelloCredentialsSnap.data();
       if (!trelloCredentials) {
         throw Error('Organization has not authorized Trello');
@@ -138,7 +138,7 @@ module.exports = function createOnUpdateDeficiencyProgNote(fs) {
       if (err.code === 'ERR_TRELLO_CARD_DELETED') {
         try {
           await systemModel.cleanupDeletedTrelloCard(
-            fs,
+            db,
             deficiencyId,
             trelloCardId
           );

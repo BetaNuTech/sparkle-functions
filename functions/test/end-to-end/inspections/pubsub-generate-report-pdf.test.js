@@ -8,7 +8,7 @@ const inspectionsModel = require('../../../models/inspections');
 const propertiesModel = require('../../../models/properties');
 const notificationsModel = require('../../../models/notifications');
 const {
-  fs: db,
+  db,
   test,
   cloudFunctions,
   deletePDFInspection,
@@ -36,7 +36,7 @@ describe('Inspections | Pubsub | Generate Report PDF', function() {
     }
 
     sinon.restore();
-    await cleanDb(null, db);
+    await cleanDb(db);
   });
 
   it("should generate a completed inspection's report PDF", async function() {

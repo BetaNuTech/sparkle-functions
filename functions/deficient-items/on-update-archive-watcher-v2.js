@@ -9,12 +9,12 @@ const DEFICIENT_COLLECTION = config.deficientItems.collection;
 /**
  * Factory for client requested Deficiency
  * archiving on DI state updates
- * @param  {admin.firestore} fs
+ * @param  {admin.firestore} db
  * @return {Function} - property onWrite handler
  */
-module.exports = function createOnDiToggleArchiveUpdateHandler(fs) {
+module.exports = function createOnDiToggleArchiveUpdateHandler(db) {
   assert(
-    fs && typeof fs.collection === 'function',
+    db && typeof db.collection === 'function',
     'has firestore DB instance'
   );
 
@@ -42,9 +42,9 @@ module.exports = function createOnDiToggleArchiveUpdateHandler(fs) {
 
     try {
       if (isArchived) {
-        archiveUpdates = await model.activateRecord(fs, deficiencyId);
+        archiveUpdates = await model.activateRecord(db, deficiencyId);
       } else {
-        archiveUpdates = await model.deactivateRecord(fs, deficiencyId);
+        archiveUpdates = await model.deactivateRecord(db, deficiencyId);
       }
     } catch (err) {
       if (err.code === 'ERR_TRELLO_CARD_DELETED') {

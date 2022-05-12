@@ -9,7 +9,7 @@ const { slackApp } = require('../../../config');
 const systemModel = require('../../../models/system');
 const integrationsModel = require('../../../models/integrations');
 const notificationsModel = require('../../../models/notifications');
-const { fs } = require('../../setup');
+const { db } = require('../../setup');
 
 const SLACK_APP_CLIENT_ID = slackApp.clientId;
 const SLACK_APP_CLIENT_SECRET = slackApp.clientSecret;
@@ -17,7 +17,7 @@ const SLACK_APP_CLIENT_SECRET = slackApp.clientSecret;
 describe('Slack | API | DELETE Auth', () => {
   afterEach(() => {
     nock.cleanAll();
-    return cleanDb(null, fs);
+    return cleanDb(db);
   });
 
   it('uses stored access token to request to uninstall Slack App', async () => {
@@ -39,7 +39,7 @@ describe('Slack | API | DELETE Auth', () => {
       });
 
     // setup database
-    await systemModel.upsertSlack(fs, {
+    await systemModel.upsertSlack(db, {
       token: result.accessToken,
       scope: result.scope,
     });
@@ -77,7 +77,7 @@ describe('Slack | API | DELETE Auth', () => {
       });
 
     // setup database
-    await systemModel.upsertSlack(fs, {
+    await systemModel.upsertSlack(db, {
       token: credentials.accessToken,
       scope: credentials.scope,
     });
@@ -90,7 +90,7 @@ describe('Slack | API | DELETE Auth', () => {
       .expect(204);
 
     // Get Results
-    const result = await systemModel.findSlack(fs);
+    const result = await systemModel.findSlack(db);
     const actual = result.exists;
 
     // Assertions
@@ -116,11 +116,11 @@ describe('Slack | API | DELETE Auth', () => {
       });
 
     // setup database
-    await systemModel.upsertSlack(fs, {
+    await systemModel.upsertSlack(db, {
       token: credentials.accessToken,
       scope: credentials.scope,
     });
-    await integrationsModel.setSlack(fs, {
+    await integrationsModel.setSlack(db, {
       grantedBy: '123',
       team: '456',
       teamName: 'testers',
@@ -134,7 +134,7 @@ describe('Slack | API | DELETE Auth', () => {
       .expect(204);
 
     // Get Results
-    const result = await integrationsModel.findSlack(fs);
+    const result = await integrationsModel.findSlack(db);
     const actual = result.exists;
 
     // Assertions
@@ -160,11 +160,11 @@ describe('Slack | API | DELETE Auth', () => {
       });
 
     // setup database
-    await systemModel.upsertSlack(fs, {
+    await systemModel.upsertSlack(db, {
       token: credentials.accessToken,
       scope: credentials.scope,
     });
-    await notificationsModel.addRecord(fs, {
+    await notificationsModel.addRecord(db, {
       medium: 'slack',
       channel: 'test',
       title: 'test',
@@ -180,7 +180,7 @@ describe('Slack | API | DELETE Auth', () => {
       .expect(204);
 
     // Get Results
-    const result = await notificationsModel.findAllSlack(fs);
+    const result = await notificationsModel.findAllSlack(db);
     const actual = result.size;
 
     // Assertions
@@ -190,7 +190,7 @@ describe('Slack | API | DELETE Auth', () => {
 
 function createApp() {
   const app = express();
-  app.delete('/t', bodyParser.json(), stubAuth, handler(fs));
+  app.delete('/t', bodyParser.json(), stubAuth, handler(db));
   return app;
 }
 
