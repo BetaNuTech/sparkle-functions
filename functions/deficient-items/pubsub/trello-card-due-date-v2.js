@@ -13,13 +13,13 @@ const PREFIX = 'deficiency: pubsub: trello-card-due-date-v2:';
 /**
  * Update due dates of previously created
  * Trello cards of deficiencies
- * @param  {admin.firestore} fs
+ * @param  {admin.firestore} db
  * @param  {functions.pubsub} pubsub
  * @param  {string} topic
  * @return {functions.cloudfunction}
  */
-module.exports = function createTrelloDueDate(fs, pubsub, topic) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function createTrelloDueDate(db, pubsub, topic) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
   assert(pubsub && typeof pubsub.topic === 'function', 'has pubsub client');
   assert(topic && typeof topic === 'string', 'has topic string');
 
@@ -42,7 +42,7 @@ module.exports = function createTrelloDueDate(fs, pubsub, topic) {
     let trelloCardId = '';
     try {
       trelloCardId = await systemModel.findTrelloCardId(
-        fs,
+        db,
         propertyId,
         deficiencyId
       );
@@ -56,7 +56,7 @@ module.exports = function createTrelloDueDate(fs, pubsub, topic) {
     // Lookup Trello credentials
     let trelloCredentials = null;
     try {
-      const trelloCredentialsSnap = await systemModel.findTrello(fs);
+      const trelloCredentialsSnap = await systemModel.findTrello(db);
       trelloCredentials = trelloCredentialsSnap.data();
       if (!trelloCredentials) {
         throw Error('Organization has not authorized Trello');
@@ -74,7 +74,7 @@ module.exports = function createTrelloDueDate(fs, pubsub, topic) {
     // Lookup Property
     let property = null;
     try {
-      const propertySnap = await propertiesModel.findRecord(fs, propertyId);
+      const propertySnap = await propertiesModel.findRecord(db, propertyId);
       property = propertySnap.data();
     } catch (err) {
       throw Error(`${PREFIX} property lookup failed | ${err}`);
@@ -88,7 +88,7 @@ module.exports = function createTrelloDueDate(fs, pubsub, topic) {
     // Lookup Deficient Item
     let deficiency = null;
     try {
-      const deficiencySnap = await deficiencyModel.findRecord(fs, deficiencyId);
+      const deficiencySnap = await deficiencyModel.findRecord(db, deficiencyId);
       deficiency = deficiencySnap.data() || null;
     } catch (err) {
       log.error(`${PREFIX} deficiency lookup failed | ${err}`);
@@ -188,7 +188,7 @@ module.exports = function createTrelloDueDate(fs, pubsub, topic) {
     if (trelloApiErr && trelloApiErr.code === 'ERR_TRELLO_CARD_DELETED') {
       try {
         await systemModel.cleanupDeletedTrelloCard(
-          fs,
+          db,
           deficiencyId,
           trelloCardId
         );

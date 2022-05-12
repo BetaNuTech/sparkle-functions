@@ -7,10 +7,10 @@ const mocking = require('../../../test-helpers/mocking');
 const { cleanDb } = require('../../../test-helpers/firebase');
 const systemModel = require('../../../models/system');
 const integrationsModel = require('../../../models/integrations');
-const { fs } = require('../../setup');
+const { db } = require('../../setup');
 
 describe('Trello | API | DELETE Auth', () => {
-  afterEach(() => cleanDb(null, fs));
+  afterEach(() => cleanDb(db));
 
   it('successfully deletes Trello system credentials', async () => {
     const expected = false;
@@ -21,7 +21,7 @@ describe('Trello | API | DELETE Auth', () => {
     };
 
     // Setup Database
-    await systemModel.upsertTrello(fs, trelloCredentials);
+    await systemModel.upsertTrello(db, trelloCredentials);
 
     // Execute
     const app = createApp();
@@ -31,7 +31,7 @@ describe('Trello | API | DELETE Auth', () => {
       .expect(204);
 
     // Get Results
-    const systemDoc = await systemModel.findTrello(fs);
+    const systemDoc = await systemModel.findTrello(db);
     const actual = systemDoc.exists;
 
     // Assertions
@@ -49,8 +49,8 @@ describe('Trello | API | DELETE Auth', () => {
     };
 
     // Setup Database
-    await systemModel.upsertTrello(fs, trelloCredentials);
-    await systemModel.createTrelloProperty(fs, propertyId, trelloProperty);
+    await systemModel.upsertTrello(db, trelloCredentials);
+    await systemModel.createTrelloProperty(db, propertyId, trelloProperty);
 
     // Execute
     const app = createApp();
@@ -60,7 +60,7 @@ describe('Trello | API | DELETE Auth', () => {
       .expect(204);
 
     // Get Results
-    const systemDoc = await systemModel.findTrelloProperty(fs, propertyId);
+    const systemDoc = await systemModel.findTrelloProperty(db, propertyId);
     const actual = systemDoc.exists;
 
     // Assertions
@@ -84,12 +84,12 @@ describe('Trello | API | DELETE Auth', () => {
 
     // Setup Database
     await integrationsModel.createTrelloProperty(
-      fs,
+      db,
       uuid(),
       propertyTrelloIntegration
     );
     await integrationsModel.createTrelloProperty(
-      fs,
+      db,
       uuid(),
       propertyTrelloIntegration
     );
@@ -103,7 +103,7 @@ describe('Trello | API | DELETE Auth', () => {
 
     // Get Results
     const propertyTrelloIntegrations = await integrationsModel.findAllTrelloProperties(
-      fs
+      db
     );
     const actual = propertyTrelloIntegrations.length;
 
@@ -121,7 +121,7 @@ describe('Trello | API | DELETE Auth', () => {
     };
 
     // Setup Database
-    await integrationsModel.createTrello(fs, trelloOrg);
+    await integrationsModel.createTrello(db, trelloOrg);
 
     // Execute
     const app = createApp();
@@ -131,7 +131,7 @@ describe('Trello | API | DELETE Auth', () => {
       .expect(204);
 
     // Get Results
-    const orgDoc = await integrationsModel.findTrello(fs);
+    const orgDoc = await integrationsModel.findTrello(db);
     const actual = orgDoc.exists;
 
     // Assertions
@@ -141,7 +141,7 @@ describe('Trello | API | DELETE Auth', () => {
 
 function createApp() {
   const app = express();
-  app.delete('/t', stubAuth, handler(fs));
+  app.delete('/t', stubAuth, handler(db));
   return app;
 }
 

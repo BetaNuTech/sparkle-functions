@@ -11,20 +11,20 @@ const PREFIX = 'notifications: pubsub: publish-slack-v2:';
  * Publish a slack nofication to its'
  * Slack Channel and update the source
  * notification as published to slack
- * @param  {admin.firestore} fs
+ * @param  {admin.firestore} db
  * @param  {functions.pubsub} pubsub
  * @param  {String} topic
  * @return {functions.CloudFunction}
  */
-module.exports = function publishSlackNotification(fs, pubsub, topic) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function publishSlackNotification(db, pubsub, topic) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
   assert(pubsub && typeof pubsub.topic === 'function', 'has pubsub reference');
   assert(topic && typeof topic === 'string', 'has pubsub topic');
 
   return pubsub.topic(topic).onPublish(async message => {
     let accessToken = '';
     try {
-      const credentialsSnap = await systemModel.findSlack(fs);
+      const credentialsSnap = await systemModel.findSlack(db);
       const slackCredentials = credentialsSnap.data() || null;
       accessToken = slackCredentials ? slackCredentials.accessToken : '';
 
@@ -62,7 +62,7 @@ module.exports = function publishSlackNotification(fs, pubsub, topic) {
           `${PREFIX} publishing slack notifications for channel: "${channelTarget}"`
         );
 
-        notificationsSnap = await notificationsModel.query(fs, {
+        notificationsSnap = await notificationsModel.query(db, {
           'slack.channel': ['==', channelTarget],
         });
 
@@ -77,7 +77,7 @@ module.exports = function publishSlackNotification(fs, pubsub, topic) {
         });
       } else {
         // Select all slack notifications
-        notificationsSnap = await notificationsModel.query(fs, {
+        notificationsSnap = await notificationsModel.query(db, {
           'slack.createdAt': ['>', 0],
         });
 
@@ -95,7 +95,7 @@ module.exports = function publishSlackNotification(fs, pubsub, topic) {
       throw Error(`${PREFIX} error retrieving notifications | ${err}`);
     }
 
-    const batch = fs.batch();
+    const batch = db.batch();
     const allChannels = Object.keys(notifications);
     const joinedChannels = [];
 
@@ -131,7 +131,7 @@ module.exports = function publishSlackNotification(fs, pubsub, topic) {
       );
 
       try {
-        await integrationsModel.updateSlack(fs, slackIntegrationUpdate, batch);
+        await integrationsModel.updateSlack(db, slackIntegrationUpdate, batch);
       } catch (err) {
         // Allow failure
         log.error(
@@ -168,7 +168,7 @@ module.exports = function publishSlackNotification(fs, pubsub, topic) {
         // Mark notification as published to Slack
         try {
           await notificationsModel.updateRecord(
-            fs,
+            db,
             notificationId,
             {
               'publishedMediums.slack': true,

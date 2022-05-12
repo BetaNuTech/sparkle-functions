@@ -11,11 +11,11 @@ const INSP_PATH = config.clientApps.web.inspectionURL;
 /**
  * Factory for getting the latest completed
  * inspection according to provided parameters
- * @param  {admin.firestore} fs
+ * @param  {admin.firestore} db
  * @return {Function} - Express handler
  */
-module.exports = function createGetLatestCompleted(fs) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function createGetLatestCompleted(db) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
 
   /**
    * Lookup the latest completed inspection
@@ -57,7 +57,7 @@ module.exports = function createGetLatestCompleted(fs) {
     let property = null;
     if (propertyCode) {
       try {
-        const snap = await propertiesModel.query(fs, {
+        const snap = await propertiesModel.query(db, {
           code: ['==', `${propertyCode}`],
         });
         if (snap.size === 0) {
@@ -93,7 +93,7 @@ module.exports = function createGetLatestCompleted(fs) {
     let inspection = null;
     try {
       const snap = await inspectionsModel.latestCompletedQuery(
-        fs,
+        db,
         beforeQuery,
         inspQuery
       );
@@ -115,7 +115,7 @@ module.exports = function createGetLatestCompleted(fs) {
     if (inspection && !property) {
       try {
         const propertySnap = await propertiesModel.findRecord(
-          fs,
+          db,
           inspection.property
         );
         property = { id: propertySnap.id, ...propertySnap.data() };

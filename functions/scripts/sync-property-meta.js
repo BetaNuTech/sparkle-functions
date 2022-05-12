@@ -1,12 +1,12 @@
 const log = require('../utils/logger');
-const { fs } = require('./setup'); // eslint-disable-line
+const { db } = require('./setup'); // eslint-disable-line
 const propertiesModel = require('../models/properties');
 
 (async () => {
   let propertiesSnap = null;
 
   try {
-    propertiesSnap = await propertiesModel.findAll(fs);
+    propertiesSnap = await propertiesModel.findAll(db);
   } catch (err) {
     console.error(`Failed to lookup all properties | ${err}`); // eslint-disable-line
     throw err;
@@ -16,7 +16,7 @@ const propertiesModel = require('../models/properties');
     const propertySnap = propertiesSnap.docs[i];
 
     try {
-      await propertiesModel.updateMetaData(fs, propertySnap.id);
+      await propertiesModel.updateMetaData(db, propertySnap.id);
       console.log(`successfully synced property: "${propertySnap.id}"`); // eslint-disable-line
       console.log(`${i + 1} of ${propertiesSnap.docs.length} done`); // eslint-disable-line
     } catch (err) {

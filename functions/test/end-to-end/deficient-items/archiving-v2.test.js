@@ -12,7 +12,7 @@ const inspectionsModel = require('../../../models/inspections');
 const integrationsModel = require('../../../models/integrations');
 const systemModel = require('../../../models/system');
 const TRELLO_API_CARD_PAYLOAD = require('../../../test-helpers/mocks/get-trello-card.json');
-const { fs, test, cloudFunctions } = require('../../setup');
+const { db, test, cloudFunctions } = require('../../setup');
 
 const PROPERTY_ID = uuid();
 const DEFICIENT_ITEM_ID = uuid();
@@ -42,7 +42,7 @@ const INTEGRATIONS_DATA = {
 };
 
 describe('Deficient Items | Archiving | V2', () => {
-  afterEach(() => cleanDb(null, fs));
+  afterEach(() => cleanDb(db));
 
   it("should not archive a deficient item when its' archive is set to false", async () => {
     const expected = null;
@@ -75,12 +75,12 @@ describe('Deficient Items | Archiving | V2', () => {
     };
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, propertyData);
-    await inspectionsModel.createRecord(fs, inspectionId, inspectionData);
-    await diModel.createRecord(fs, deficiencyId, deficiencyData);
-    const beforeSnap = await diModel.findRecord(fs, deficiencyId);
-    await diModel.updateRecord(fs, deficiencyId, { archive: false });
-    const afterSnap = await diModel.findRecord(fs, deficiencyId);
+    await propertiesModel.createRecord(db, propertyId, propertyData);
+    await inspectionsModel.createRecord(db, inspectionId, inspectionData);
+    await diModel.createRecord(db, deficiencyId, deficiencyData);
+    const beforeSnap = await diModel.findRecord(db, deficiencyId);
+    await diModel.updateRecord(db, deficiencyId, { archive: false });
+    const afterSnap = await diModel.findRecord(db, deficiencyId);
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -91,7 +91,7 @@ describe('Deficient Items | Archiving | V2', () => {
 
     // Test result
     const result = await archiveModel.deficientItem.findRecord(
-      fs,
+      db,
       deficiencyId
     );
     const actual = result.data() || null;
@@ -135,12 +135,12 @@ describe('Deficient Items | Archiving | V2', () => {
     };
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, propertyData);
-    await inspectionsModel.createRecord(fs, inspectionId, inspectionData);
-    await diModel.createRecord(fs, deficiencyId, deficiencyData);
-    const beforeSnap = await diModel.findRecord(fs, deficiencyId);
-    await diModel.updateRecord(fs, deficiencyId, { archive: true });
-    const afterSnap = await diModel.findRecord(fs, deficiencyId);
+    await propertiesModel.createRecord(db, propertyId, propertyData);
+    await inspectionsModel.createRecord(db, inspectionId, inspectionData);
+    await diModel.createRecord(db, deficiencyId, deficiencyData);
+    const beforeSnap = await diModel.findRecord(db, deficiencyId);
+    await diModel.updateRecord(db, deficiencyId, { archive: true });
+    const afterSnap = await diModel.findRecord(db, deficiencyId);
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -151,7 +151,7 @@ describe('Deficient Items | Archiving | V2', () => {
 
     // Test result
     const result = await archiveModel.deficientItem.findRecord(
-      fs,
+      db,
       deficiencyId
     );
     const actual = result.data() || null;
@@ -204,13 +204,13 @@ describe('Deficient Items | Archiving | V2', () => {
     };
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, propertyData);
-    await inspectionsModel.createRecord(fs, inspectionId, inspectionData);
-    await diModel.createRecord(fs, deficiencyId, deficiencyData);
+    await propertiesModel.createRecord(db, propertyId, propertyData);
+    await inspectionsModel.createRecord(db, inspectionId, inspectionData);
+    await diModel.createRecord(db, deficiencyId, deficiencyData);
     await createTrelloCardDiSystemRecord();
-    const beforeSnap = await diModel.findRecord(fs, deficiencyId);
-    await diModel.updateRecord(fs, deficiencyId, { archive: true });
-    const afterSnap = await diModel.findRecord(fs, deficiencyId);
+    const beforeSnap = await diModel.findRecord(db, deficiencyId);
+    await diModel.updateRecord(db, deficiencyId, { archive: true });
+    const afterSnap = await diModel.findRecord(db, deficiencyId);
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -264,13 +264,13 @@ describe('Deficient Items | Archiving | V2', () => {
       .reply(404);
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, propertyData);
-    await inspectionsModel.createRecord(fs, inspectionId, inspectionData);
-    await diModel.createRecord(fs, deficiencyId, deficiencyData);
+    await propertiesModel.createRecord(db, propertyId, propertyData);
+    await inspectionsModel.createRecord(db, inspectionId, inspectionData);
+    await diModel.createRecord(db, deficiencyId, deficiencyData);
     await createTrelloCardDiSystemRecord();
-    const beforeSnap = await diModel.findRecord(fs, deficiencyId);
-    await diModel.updateRecord(fs, deficiencyId, { archive: true });
-    const afterSnap = await diModel.findRecord(fs, deficiencyId);
+    const beforeSnap = await diModel.findRecord(db, deficiencyId);
+    await diModel.updateRecord(db, deficiencyId, { archive: true });
+    const afterSnap = await diModel.findRecord(db, deficiencyId);
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -279,7 +279,7 @@ describe('Deficient Items | Archiving | V2', () => {
 
     // Assertions
     return trelloTest.hasRemovedDeficiencyCardReferences(
-      fs,
+      db,
       PROPERTY_ID,
       DEFICIENT_ITEM_ID,
       TRELLO_CARD_ID
@@ -288,7 +288,7 @@ describe('Deficient Items | Archiving | V2', () => {
 });
 
 describe('Deficiency | Unarchiving | V2', () => {
-  afterEach(() => cleanDb(null, fs));
+  afterEach(() => cleanDb(db));
 
   it('should not unarchive a deficient item when archival requested', async () => {
     const expected = null;
@@ -320,22 +320,22 @@ describe('Deficiency | Unarchiving | V2', () => {
     };
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, propertyData);
-    await inspectionsModel.createRecord(fs, inspectionId, inspectionData);
+    await propertiesModel.createRecord(db, propertyId, propertyData);
+    await inspectionsModel.createRecord(db, inspectionId, inspectionData);
     await archiveModel.deficientItem.createRecord(
-      fs,
+      db,
       deficiencyId,
       deficiencyData
     );
     const beforeSnap = await archiveModel.deficientItem.findRecord(
-      fs,
+      db,
       deficiencyId
     );
-    await archiveModel.deficientItem.updateRecord(fs, deficiencyId, {
+    await archiveModel.deficientItem.updateRecord(db, deficiencyId, {
       archive: true,
     });
     const afterSnap = await archiveModel.deficientItem.findRecord(
-      fs,
+      db,
       deficiencyId
     );
 
@@ -347,7 +347,7 @@ describe('Deficiency | Unarchiving | V2', () => {
     });
 
     // Test result
-    const result = await diModel.findRecord(fs, deficiencyId);
+    const result = await diModel.findRecord(db, deficiencyId);
     const actual = result.data() || null;
 
     // Assertions
@@ -387,22 +387,22 @@ describe('Deficiency | Unarchiving | V2', () => {
     };
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, propertyData);
-    await inspectionsModel.createRecord(fs, inspectionId, inspectionData);
+    await propertiesModel.createRecord(db, propertyId, propertyData);
+    await inspectionsModel.createRecord(db, inspectionId, inspectionData);
     await archiveModel.deficientItem.createRecord(
-      fs,
+      db,
       deficiencyId,
       deficiencyData
     );
     const beforeSnap = await archiveModel.deficientItem.findRecord(
-      fs,
+      db,
       deficiencyId
     );
-    await archiveModel.deficientItem.updateRecord(fs, deficiencyId, {
+    await archiveModel.deficientItem.updateRecord(db, deficiencyId, {
       archive: false,
     });
     const afterSnap = await archiveModel.deficientItem.findRecord(
-      fs,
+      db,
       deficiencyId
     );
 
@@ -412,7 +412,7 @@ describe('Deficiency | Unarchiving | V2', () => {
     await wrapped(changeSnap, { params: { deficiencyId } });
 
     // Test result
-    const result = await diModel.findRecord(fs, deficiencyId);
+    const result = await diModel.findRecord(db, deficiencyId);
     const actual = result.data() || null;
 
     // Assertions
@@ -461,23 +461,23 @@ describe('Deficiency | Unarchiving | V2', () => {
     };
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, propertyData);
-    await inspectionsModel.createRecord(fs, inspectionId, inspectionData);
+    await propertiesModel.createRecord(db, propertyId, propertyData);
+    await inspectionsModel.createRecord(db, inspectionId, inspectionData);
     await archiveModel.deficientItem.createRecord(
-      fs,
+      db,
       deficiencyId,
       deficiencyData
     );
     await createTrelloCardDiSystemRecord();
     const beforeSnap = await archiveModel.deficientItem.findRecord(
-      fs,
+      db,
       deficiencyId
     );
-    await archiveModel.deficientItem.updateRecord(fs, deficiencyId, {
+    await archiveModel.deficientItem.updateRecord(db, deficiencyId, {
       archive: false,
     });
     const afterSnap = await archiveModel.deficientItem.findRecord(
-      fs,
+      db,
       deficiencyId
     );
 
@@ -530,23 +530,23 @@ describe('Deficiency | Unarchiving | V2', () => {
       .reply(404);
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, propertyData);
-    await inspectionsModel.createRecord(fs, inspectionId, inspectionData);
+    await propertiesModel.createRecord(db, propertyId, propertyData);
+    await inspectionsModel.createRecord(db, inspectionId, inspectionData);
     await archiveModel.deficientItem.createRecord(
-      fs,
+      db,
       deficiencyId,
       deficiencyData
     );
     await createTrelloCardDiSystemRecord();
     const beforeSnap = await archiveModel.deficientItem.findRecord(
-      fs,
+      db,
       deficiencyId
     );
-    await archiveModel.deficientItem.updateRecord(fs, deficiencyId, {
+    await archiveModel.deficientItem.updateRecord(db, deficiencyId, {
       archive: false,
     });
     const afterSnap = await archiveModel.deficientItem.findRecord(
-      fs,
+      db,
       deficiencyId
     );
 
@@ -557,7 +557,7 @@ describe('Deficiency | Unarchiving | V2', () => {
 
     // Assertions
     return trelloTest.hasRemovedDeficiencyCardReferences(
-      fs,
+      db,
       PROPERTY_ID,
       DEFICIENT_ITEM_ID,
       TRELLO_CARD_ID
@@ -566,12 +566,12 @@ describe('Deficiency | Unarchiving | V2', () => {
 });
 
 async function createTrelloCardDiSystemRecord() {
-  await systemModel.upsertTrello(fs, TRELLO_SYSTEM_INTEGRATION_DATA);
-  await systemModel.createTrelloProperty(fs, PROPERTY_ID, {
+  await systemModel.upsertTrello(db, TRELLO_SYSTEM_INTEGRATION_DATA);
+  await systemModel.createTrelloProperty(db, PROPERTY_ID, {
     cards: TRELLO_SYSTEM_PROPERTY_CARDS_DATA,
   });
   await integrationsModel.createTrelloProperty(
-    fs,
+    db,
     PROPERTY_ID,
     INTEGRATIONS_DATA
   );

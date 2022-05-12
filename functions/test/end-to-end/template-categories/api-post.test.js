@@ -5,10 +5,10 @@ const bodyParser = require('body-parser');
 const templateCategoriesModel = require('../../../models/template-categories');
 const handler = require('../../../template-categories/api/post');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { fs: db } = require('../../setup');
+const { db } = require('../../setup');
 
 describe('Template Categories | API | POST', () => {
-  afterEach(() => cleanDb(null, db));
+  afterEach(() => cleanDb(db));
 
   it('should create a new template category', async () => {
     const expected = 'New Template Category';

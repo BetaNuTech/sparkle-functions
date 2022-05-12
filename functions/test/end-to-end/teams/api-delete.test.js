@@ -6,13 +6,13 @@ const handler = require('../../../teams/api/delete');
 const uuid = require('../../../test-helpers/uuid');
 const { cleanDb } = require('../../../test-helpers/firebase');
 const mocking = require('../../../test-helpers/mocking');
-const { fs: db } = require('../../setup');
+const { db } = require('../../setup');
 const propertiesModel = require('../../../models/properties');
 const teamsModel = require('../../../models/teams');
 const usersModel = require('../../../models/users');
 
 describe('Teams | API | DELETE', () => {
-  afterEach(() => cleanDb(null, db));
+  afterEach(() => cleanDb(db));
 
   it("should disassociate all team's associated properties", async () => {
     const team1Id = uuid();

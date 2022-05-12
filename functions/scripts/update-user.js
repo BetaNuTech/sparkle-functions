@@ -1,5 +1,5 @@
 const log = require('../utils/logger');
-const { fs: db, auth } = require('./setup'); // eslint-disable-line
+const { db, auth } = require('./setup'); // eslint-disable-line
 const usersModel = require('../models/users');
 
 const [, , userId] = process.argv; // eslint-disable-line

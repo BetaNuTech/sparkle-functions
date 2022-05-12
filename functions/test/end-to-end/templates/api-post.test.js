@@ -5,10 +5,10 @@ const bodyParser = require('body-parser');
 const templatesModel = require('../../../models/templates');
 const handler = require('../../../templates/api/post');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { fs: db } = require('../../setup');
+const { db } = require('../../setup');
 
 describe('Templates | API | POST', () => {
-  afterEach(() => cleanDb(null, db));
+  afterEach(() => cleanDb(db));
 
   it('should create a new template', async () => {
     const expected = 'New Template -';

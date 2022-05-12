@@ -13,7 +13,7 @@ const createRouter = require('./router');
 
 const { firebase: firebaseConfig } = config;
 admin.initializeApp(firebaseConfig);
-const fs = admin.firestore();
+const db = admin.firestore();
 const auth = admin.auth();
 const storage = admin.storage();
 const messaging = admin.messaging();
@@ -26,7 +26,7 @@ exports.deficientItemsPropertyMetaSyncV2 = functions
   .firestore.document('deficiencies/{deficiencyId}')
   .onUpdate(
     deficiency.createOnUpdateStateV2(
-      fs,
+      db,
       pubsubClient,
       'deficient-item-status-update'
     )
@@ -34,50 +34,50 @@ exports.deficientItemsPropertyMetaSyncV2 = functions
 
 exports.deficientItemsArchivingV2 = functions.firestore
   .document('deficiencies/{deficiencyId}')
-  .onUpdate(deficiency.createOnUpdateArchiveV2(fs));
+  .onUpdate(deficiency.createOnUpdateArchiveV2(db));
 
 exports.deficientItemsUnarchivingV2 = functions.firestore
   .document('archives/{deficiencyId}')
-  .onUpdate(deficiency.createOnUpdateArchiveV2(fs));
+  .onUpdate(deficiency.createOnUpdateArchiveV2(db));
 
 exports.deficientItemsProgressNotesSyncV2 = functions.firestore
   .document('deficiencies/{deficiencyId}')
-  .onUpdate(deficiency.onUpdateProgressNoteV2(fs));
+  .onUpdate(deficiency.onUpdateProgressNoteV2(db));
 
 exports.deficiencyUpdateCompletedPhotos = functions.firestore
   .document('deficiencies/{deficiencyId}')
-  .onUpdate(deficiency.onUpdateCompletedPhotoV2(fs));
+  .onUpdate(deficiency.onUpdateCompletedPhotoV2(db));
 
 exports.templateCategoryDelete = functions.firestore
   .document('/templateCategories/{categoryId}')
-  .onDelete(templateCategories.watchers.onDelete(fs));
+  .onDelete(templateCategories.watchers.onDelete(db));
 
 exports.propertyDeleteV2 = functions.firestore
   .document('/properties/{propertyId}')
-  .onDelete(properties.onDeleteWatcherV2(fs, storage));
+  .onDelete(properties.onDeleteWatcherV2(db, storage));
 
 exports.propertyWriteV2 = functions.firestore
   .document('/properties/{propertyId}')
-  .onWrite(properties.onWriteV2(fs));
+  .onWrite(properties.onWriteV2(db));
 
 exports.inspectionDeleteV2 = functions.firestore
   .document('/inspections/{inspectionId}')
-  .onDelete(inspections.onDeleteV2(fs));
+  .onDelete(inspections.onDeleteV2(db));
 
 exports.inspectionWriteV2 = functions
   .runWith({ memory: '1GB' })
   .firestore.document('/inspections/{inspectionId}')
-  .onWrite(inspections.onWriteV2(fs));
+  .onWrite(inspections.onWriteV2(db));
 
 exports.teamDeleteV2 = functions.firestore
   .document('/teams/{teamId}')
-  .onDelete(teams.onDeleteV2(fs));
+  .onDelete(teams.onDeleteV2(db));
 
 exports.createNotification = functions.firestore
   .document('/notifications/{notificationId}')
   .onCreate(
     notifications.onCreate(
-      fs,
+      db,
       pubsubClient,
       'notifications-slack-sync',
       'push-messages-sync'
@@ -87,56 +87,56 @@ exports.createNotification = functions.firestore
 // Message Subscribers
 
 exports.regTokensSync = regTokens.pubsub.createSyncOutdated(
-  fs,
+  db,
   functions.pubsub,
   'registration-tokens-sync'
 );
 
 exports.deficiencyTrelloCardStateComments = deficiency.pubsub.trelloCardStateComment(
-  fs,
+  db,
   functions.pubsub,
   'deficient-item-status-update'
 );
 
 exports.deficiencyTrelloCardClose = deficiency.pubsub.trelloCardClose(
-  fs,
+  db,
   functions.pubsub,
   'deficient-item-status-update'
 );
 
 exports.deficiencyTrelloCardDueDates = deficiency.pubsub.trelloCardDueDate(
-  fs,
+  db,
   functions.pubsub,
   'deficient-item-status-update'
 );
 
 exports.deficiencySyncOverdue = deficiency.pubsub.syncOverdue(
-  fs,
+  db,
   functions.pubsub,
   'deficient-items-sync'
 );
 
 exports.publishSlackNotificationsV2 = notifications.pubsub.publishSlack(
-  fs,
+  db,
   functions.pubsub,
   'notifications-slack-sync'
 );
 
 exports.publishPushNotificationsV2 = notifications.pubsub.publishPush(
-  fs,
+  db,
   functions.pubsub,
   'push-messages-sync',
   messaging
 );
 
 exports.cleanupNotificationsV2 = notifications.pubsub.cleanPublished(
-  fs,
+  db,
   functions.pubsub,
   'notifications-sync'
 );
 
 exports.generateReportPdf = inspections.pubsub.generateReportPdf(
-  fs,
+  db,
   functions.runWith({
     timeoutSeconds: config.inspection.reportPdfGenerationMaxTimeout,
     memory: config.inspection.reportPdfMemory,
@@ -146,7 +146,7 @@ exports.generateReportPdf = inspections.pubsub.generateReportPdf(
 );
 
 exports.reportPdfSync = inspections.pubsub.reportPdfSync(
-  fs,
+  db,
   functions.pubsub,
   'inspection-report-pdf-sync'
 );
@@ -157,7 +157,7 @@ exports.api = functions
   .runWith({ timeoutSeconds: 540, memory: '1GB' })
   .https.onRequest(
     createRouter(
-      fs,
+      db,
       auth,
       {
         inspectionUrl: config.clientApps.web.inspectionURL,

@@ -5,12 +5,12 @@ const mocking = require('../../../test-helpers/mocking');
 const { cleanDb } = require('../../../test-helpers/firebase');
 const inspectionsModel = require('../../../models/inspections');
 const errorsService = require('../../../services/errors');
-const { fs: db, test, cloudFunctions } = require('../../setup');
+const { db, test, cloudFunctions } = require('../../setup');
 
 describe('Inspections | Pubsub | Report PDF Sync', function() {
   afterEach(() => {
     sinon.restore();
-    return cleanDb(null, db);
+    return cleanDb(db);
   });
 
   it("should transition all stalled inspection's report PDFs to completed with failure", async function() {

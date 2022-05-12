@@ -8,10 +8,10 @@ const templatesModel = require('../../../models/templates');
 const propertiesModel = require('../../../models/properties');
 const handler = require('../../../properties/api/post');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { fs } = require('../../setup');
+const { db } = require('../../setup');
 
 describe('Properties | API | POST', () => {
-  afterEach(() => cleanDb(null, fs));
+  afterEach(() => cleanDb(db));
 
   it('should create a new property', async () => {
     const templateId = uuid();
@@ -24,7 +24,7 @@ describe('Properties | API | POST', () => {
     const template = mocking.createTemplate();
 
     // Setup Database
-    await templatesModel.createRecord(fs, templateId, template);
+    await templatesModel.createRecord(db, templateId, template);
 
     // Execute
     const app = createApp();
@@ -38,7 +38,7 @@ describe('Properties | API | POST', () => {
     const body = res ? res.body : {};
     const propDoc = body ? body.data : {};
     const propertyId = propDoc.id || 'na';
-    const propertyDoc = await propertiesModel.findRecord(fs, propertyId);
+    const propertyDoc = await propertiesModel.findRecord(db, propertyId);
     const actual = propertyDoc.data() || {};
 
     // Assertions
@@ -48,7 +48,7 @@ describe('Properties | API | POST', () => {
 
 function createApp() {
   const app = express();
-  app.post('/t', bodyParser.json(), stubAuth, handler(fs));
+  app.post('/t', bodyParser.json(), stubAuth, handler(db));
   return app;
 }
 

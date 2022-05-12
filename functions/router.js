@@ -285,6 +285,14 @@ module.exports = (db, auth, settings, storage, pubsubClient) => {
     trello.api.putPropertyIntegration(db)
   );
 
+  // Delete a property's trello integration
+  app.delete(
+    '/v0/integrations/trello/properties/:propertyId',
+    authUser(db, auth, true),
+    authTrelloReq(db),
+    trello.api.deletePropertyIntegration(db)
+  );
+
   app.post(
     '/v0/properties/:propertyId/jobs/:jobId/trello',
     authUser(db, auth, {

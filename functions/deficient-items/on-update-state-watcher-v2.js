@@ -10,18 +10,18 @@ const FOLLOW_UP_ACTION_VALUES = config.deficientItems.followUpActionStates;
 
 /**
  * Factory for Deficient Items sync on DI state updates
- * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
+ * @param  {firebaseAdmin.firestore} db - Firestore Admin DB instance
  * @param  {functions.pubsub} pubsubClient
  * @param  {String} statusUpdateTopic
  * @return {Function} - property onWrite handler
  */
 module.exports = function createOnDiStateUpdateHandler(
-  fs,
+  db,
   pubsubClient,
   statusUpdateTopic
 ) {
   assert(
-    fs && typeof fs.collection === 'function',
+    db && typeof db.collection === 'function',
     'has firestore DB instance'
   );
   assert(
@@ -46,7 +46,7 @@ module.exports = function createOnDiStateUpdateHandler(
     // Lookup parent record
     let deficiency = null;
     try {
-      const diSnap = await diModel.findRecord(fs, deficiencyId);
+      const diSnap = await diModel.findRecord(db, deficiencyId);
       deficiency = diSnap.data() || {};
       if (!deficiency.property) {
         throw Error('invalid deficiency missing property');
@@ -73,7 +73,7 @@ module.exports = function createOnDiStateUpdateHandler(
       beforeState !== afterState
     ) {
       try {
-        await propertiesModel.updateMetaData(fs, deficiency.property);
+        await propertiesModel.updateMetaData(db, deficiency.property);
         log.info(`${PREFIX} updated property's deficient item metadata`);
       } catch (err) {
         log.error(`${PREFIX} property metadata update failed | ${err}`);

@@ -14,11 +14,11 @@ const PREFIX = 'jobs: api: put bid:';
 /**
  * Factory for creating a PUT endpoint
  * that updates Firestore bid
- * @param  {admin.firestore} fs
+ * @param  {admin.firestore} db
  * @return {Function} - Express middleware
  */
-module.exports = function createPutJobsBid(fs) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function createPutJobsBid(db) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
 
   /**
    * Handle PUT request for updating job's bid
@@ -89,7 +89,7 @@ module.exports = function createPutJobsBid(fs) {
     // Lookup Property
     let property = null;
     try {
-      const propertySnap = await propertiesModel.findRecord(fs, propertyId);
+      const propertySnap = await propertiesModel.findRecord(db, propertyId);
       property = propertySnap.data() || null;
     } catch (err) {
       return send500Error(err, 'property lookup failed', 'unexpected error');
@@ -111,7 +111,7 @@ module.exports = function createPutJobsBid(fs) {
     // Lookup Job
     let job = null;
     try {
-      const jobSnap = await jobsModel.findRecord(fs, jobId);
+      const jobSnap = await jobsModel.findRecord(db, jobId);
       job = jobSnap.data() || null;
     } catch (err) {
       return send500Error(err, 'job lookup failed', err);
@@ -133,7 +133,7 @@ module.exports = function createPutJobsBid(fs) {
     // Bid lookup
     let bid;
     try {
-      const bidSnap = await bidsModel.findRecord(fs, bidId);
+      const bidSnap = await bidsModel.findRecord(db, bidId);
       bid = bidSnap.data() || null;
     } catch (err) {
       return send500Error(err, 'bid lookup failed', 'unexpected error');
@@ -157,7 +157,7 @@ module.exports = function createPutJobsBid(fs) {
     if (isUpdatingToApproved) {
       try {
         const approvedBidsSnap = await bidsModel.queryJobsApproved(
-          fs,
+          db,
           bid.job.id
         );
         areOtherApprovedBids = approvedBidsSnap.size > 0;
@@ -229,7 +229,7 @@ module.exports = function createPutJobsBid(fs) {
     }
 
     // Update batch
-    const batch = fs.batch();
+    const batch = db.batch();
     const jobUpdates = {};
     const isJobAuthorized = job.state === 'authorized';
     const isUpdatingToIncomplete = update.state === 'incomplete';
@@ -256,7 +256,7 @@ module.exports = function createPutJobsBid(fs) {
     // Add job updatest to batch
     if (hasJobUpdates) {
       try {
-        await jobsModel.updateRecord(fs, jobId, jobUpdates, batch);
+        await jobsModel.updateRecord(db, jobId, jobUpdates, batch);
       } catch (err) {
         return send500Error(
           err,
@@ -268,7 +268,7 @@ module.exports = function createPutJobsBid(fs) {
 
     // Update bid
     try {
-      await bidsModel.updateRecord(fs, bidId, update, batch);
+      await bidsModel.updateRecord(db, bidId, update, batch);
     } catch (err) {
       return send500Error(
         err,

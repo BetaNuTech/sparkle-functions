@@ -6,7 +6,7 @@ const inspectionsModel = require('../../../models/inspections');
 const handler = require('../../../inspections/api/get-latest-completed');
 const uuid = require('../../../test-helpers/uuid');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { fs } = require('../../setup');
+const { db } = require('../../setup');
 
 const UNIX_DAY = 86400;
 const TODAY_UNIX = Math.round(Date.now() / 1000) - 1000;
@@ -17,7 +17,7 @@ const FOUR_DAYS_AGO_UNIX = TODAY_UNIX - UNIX_DAY * 4;
 const FIVE_DAYS_AGO_UNIX = TODAY_UNIX - UNIX_DAY * 5;
 
 describe('Inspections | API | GET Latest Completed', () => {
-  afterEach(() => cleanDb(null, fs));
+  afterEach(() => cleanDb(db));
 
   it('returns latest completed inspection', async () => {
     const expected = uuid();
@@ -32,9 +32,9 @@ describe('Inspections | API | GET Latest Completed', () => {
     });
 
     // Setup database
-    await inspectionsModel.createRecord(fs, uuid(), insp2Data);
-    await inspectionsModel.createRecord(fs, uuid(), insp3Data);
-    await inspectionsModel.createRecord(fs, expected, insp1Data);
+    await inspectionsModel.createRecord(db, uuid(), insp2Data);
+    await inspectionsModel.createRecord(db, uuid(), insp3Data);
+    await inspectionsModel.createRecord(db, expected, insp1Data);
 
     // Execute
     const app = createApp();
@@ -67,10 +67,10 @@ describe('Inspections | API | GET Latest Completed', () => {
     });
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, propertyData);
-    await inspectionsModel.createRecord(fs, uuid(), insp1Data);
-    await inspectionsModel.createRecord(fs, expected, insp2Data);
-    await inspectionsModel.createRecord(fs, uuid(), insp3Data);
+    await propertiesModel.createRecord(db, propertyId, propertyData);
+    await inspectionsModel.createRecord(db, uuid(), insp1Data);
+    await inspectionsModel.createRecord(db, expected, insp2Data);
+    await inspectionsModel.createRecord(db, uuid(), insp3Data);
 
     // Execute
     const app = createApp();
@@ -100,9 +100,9 @@ describe('Inspections | API | GET Latest Completed', () => {
     });
 
     // Setup database
-    await inspectionsModel.createRecord(fs, uuid(), insp1Data);
-    await inspectionsModel.createRecord(fs, expected, insp2Data);
-    await inspectionsModel.createRecord(fs, uuid(), insp3Data);
+    await inspectionsModel.createRecord(db, uuid(), insp1Data);
+    await inspectionsModel.createRecord(db, expected, insp2Data);
+    await inspectionsModel.createRecord(db, uuid(), insp3Data);
 
     // Execute
     const app = createApp();
@@ -129,9 +129,9 @@ describe('Inspections | API | GET Latest Completed', () => {
     });
 
     // Setup database
-    await inspectionsModel.createRecord(fs, uuid(), insp1Data);
-    await inspectionsModel.createRecord(fs, expected, insp2Data);
-    await inspectionsModel.createRecord(fs, uuid(), insp3Data);
+    await inspectionsModel.createRecord(db, uuid(), insp1Data);
+    await inspectionsModel.createRecord(db, expected, insp2Data);
+    await inspectionsModel.createRecord(db, uuid(), insp3Data);
 
     // Execute
     const app = createApp();
@@ -175,12 +175,12 @@ describe('Inspections | API | GET Latest Completed', () => {
     });
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, propertyData);
-    await inspectionsModel.createRecord(fs, uuid(), insp1Data);
-    await inspectionsModel.createRecord(fs, expected, insp2Data);
-    await inspectionsModel.createRecord(fs, uuid(), insp3Data);
-    await inspectionsModel.createRecord(fs, uuid(), insp4Data);
-    await inspectionsModel.createRecord(fs, uuid(), insp5Data);
+    await propertiesModel.createRecord(db, propertyId, propertyData);
+    await inspectionsModel.createRecord(db, uuid(), insp1Data);
+    await inspectionsModel.createRecord(db, expected, insp2Data);
+    await inspectionsModel.createRecord(db, uuid(), insp3Data);
+    await inspectionsModel.createRecord(db, uuid(), insp4Data);
+    await inspectionsModel.createRecord(db, uuid(), insp5Data);
 
     // Execute
     const app = createApp();
@@ -228,12 +228,12 @@ describe('Inspections | API | GET Latest Completed', () => {
     });
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, propertyData);
-    await inspectionsModel.createRecord(fs, uuid(), insp1Data);
-    await inspectionsModel.createRecord(fs, expected, insp2Data);
-    await inspectionsModel.createRecord(fs, uuid(), insp3Data);
-    await inspectionsModel.createRecord(fs, uuid(), insp4Data);
-    await inspectionsModel.createRecord(fs, uuid(), insp5Data);
+    await propertiesModel.createRecord(db, propertyId, propertyData);
+    await inspectionsModel.createRecord(db, uuid(), insp1Data);
+    await inspectionsModel.createRecord(db, expected, insp2Data);
+    await inspectionsModel.createRecord(db, uuid(), insp3Data);
+    await inspectionsModel.createRecord(db, uuid(), insp4Data);
+    await inspectionsModel.createRecord(db, uuid(), insp5Data);
 
     // Execute
     const app = createApp();
@@ -254,7 +254,7 @@ describe('Inspections | API | GET Latest Completed', () => {
 
 function createApp() {
   const app = express();
-  app.get('/t', handler(fs));
+  app.get('/t', handler(db));
   return app;
 }
 

@@ -8,11 +8,11 @@ const uuid = require('../../../test-helpers/uuid');
 const systemModel = require('../../../models/system');
 const integrationsModel = require('../../../models/integrations');
 const notificationsModel = require('../../../models/notifications');
-const { fs } = require('../../setup');
+const { db } = require('../../setup');
 
 describe('Slack | API | POST events webhook', () => {
   afterEach(() => {
-    return cleanDb(null, fs);
+    return cleanDb(db);
   });
 
   it('should remove systems slack app credentials after successful uninstall', async () => {
@@ -20,11 +20,11 @@ describe('Slack | API | POST events webhook', () => {
     const teamId = uuid();
 
     // setup database
-    await systemModel.upsertSlack(fs, {
+    await systemModel.upsertSlack(db, {
       token: 'abc-123',
       scope: 'scope',
     });
-    await integrationsModel.setSlack(fs, {
+    await integrationsModel.setSlack(db, {
       grantedBy: '123',
       team: teamId,
       teamName: 'testers',
@@ -38,7 +38,7 @@ describe('Slack | API | POST events webhook', () => {
       .expect(200);
 
     // Get Results
-    const result = await systemModel.findSlack(fs);
+    const result = await systemModel.findSlack(db);
     const actual = result.exists;
 
     // Assertions
@@ -50,11 +50,11 @@ describe('Slack | API | POST events webhook', () => {
     const teamId = uuid();
 
     // setup database
-    await systemModel.upsertSlack(fs, {
+    await systemModel.upsertSlack(db, {
       token: 'abc-123',
       scope: 'scope',
     });
-    await integrationsModel.setSlack(fs, {
+    await integrationsModel.setSlack(db, {
       grantedBy: '123',
       team: teamId,
       teamName: 'testers',
@@ -68,7 +68,7 @@ describe('Slack | API | POST events webhook', () => {
       .expect(200);
 
     // Get Results
-    const result = await integrationsModel.findSlack(fs);
+    const result = await integrationsModel.findSlack(db);
     const actual = result.exists;
 
     // Assertions
@@ -80,16 +80,16 @@ describe('Slack | API | POST events webhook', () => {
     const teamId = uuid();
 
     // setup database
-    await systemModel.upsertSlack(fs, {
+    await systemModel.upsertSlack(db, {
       token: 'abc-123',
       scope: 'scope',
     });
-    await integrationsModel.setSlack(fs, {
+    await integrationsModel.setSlack(db, {
       grantedBy: '123',
       team: teamId,
       teamName: 'testers',
     });
-    await notificationsModel.addRecord(fs, {
+    await notificationsModel.addRecord(db, {
       medium: 'slack',
       channel: 'test',
       title: 'test',
@@ -105,7 +105,7 @@ describe('Slack | API | POST events webhook', () => {
       .expect(200);
 
     // Get Results
-    const result = await notificationsModel.findAllSlack(fs);
+    const result = await notificationsModel.findAllSlack(db);
     const actual = result.size;
 
     // Assertions
@@ -115,6 +115,6 @@ describe('Slack | API | POST events webhook', () => {
 
 function createApp() {
   const app = express();
-  app.post('/t', bodyParser.json(), handler(fs));
+  app.post('/t', bodyParser.json(), handler(db));
   return app;
 }

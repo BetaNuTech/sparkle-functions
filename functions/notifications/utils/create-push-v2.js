@@ -7,13 +7,13 @@ const PREFIX = 'notifications: utils: create-push-v2:';
 
 /**
  * Create a push notification
- * @param  {admin.firestore} fs
+ * @param  {admin.firestore} db
  * @param  {String}  notificationId
  * @param  {Object}  notification
  * @return {Promise} - resolves {Object}
  */
-module.exports = async (fs, notificationId, notification) => {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = async (db, notificationId, notification) => {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
   assert(
     notificationId && typeof notificationId === 'string',
     'has notification ID'
@@ -43,7 +43,7 @@ module.exports = async (fs, notificationId, notification) => {
   // Lookup all users
   const users = [];
   try {
-    const userDocs = await usersModel.findAll(fs);
+    const userDocs = await usersModel.findAll(db);
     userDocs.docs
       .filter(({ id }) => id !== creatorId) // remove notification creator
       .filter(doc => !(doc.data() || {}).pushOptOut)
@@ -72,7 +72,7 @@ module.exports = async (fs, notificationId, notification) => {
   // notification without any recipients
   if (!recipientUserIds.length) {
     try {
-      await notificationsModel.updateRecord(fs, notificationId, {
+      await notificationsModel.updateRecord(db, notificationId, {
         unpublishedPush: 0,
         'publishedMediums.push': true,
       });
@@ -98,7 +98,7 @@ module.exports = async (fs, notificationId, notification) => {
   // Update notification record
   // with data for all push notifications
   try {
-    await notificationsModel.updateRecord(fs, notificationId, {
+    await notificationsModel.updateRecord(db, notificationId, {
       push: result,
       unpublishedPush: Object.keys(result).length,
       'publishedMediums.push': false,

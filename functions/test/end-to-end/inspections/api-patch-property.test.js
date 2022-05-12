@@ -5,7 +5,7 @@ const bodyParser = require('body-parser');
 const handler = require('../../../inspections/api/patch-property');
 const uuid = require('../../../test-helpers/uuid');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { fs } = require('../../setup');
+const { db } = require('../../setup');
 const mocking = require('../../../test-helpers/mocking');
 const archiveModel = require('../../../models/_internal/archive');
 const deficientItemsModel = require('../../../models/deficient-items');
@@ -67,17 +67,17 @@ const RAND_DEF_ITEM_DATA = mocking.createDeficientItem(
 );
 
 describe('Inspections | API | Patch Property', () => {
-  afterEach(() => cleanDb(null, fs));
+  afterEach(() => cleanDb(db));
 
   it('successfully reassigns an inspection to a new property', async () => {
     // Setup database
-    await propertiesModel.createRecord(fs, PROPERTY_ID, PROPERTY_DATA);
+    await propertiesModel.createRecord(db, PROPERTY_ID, PROPERTY_DATA);
     await propertiesModel.createRecord(
-      fs,
+      db,
       DEST_PROPERTY_ID,
       DEST_PROPERTY_DATA
     );
-    await inspectionsModel.createRecord(fs, INSPECTION_ID, INSPECTION_DATA);
+    await inspectionsModel.createRecord(db, INSPECTION_ID, INSPECTION_DATA);
 
     // Execute
     const app = createApp();
@@ -88,14 +88,14 @@ describe('Inspections | API | Patch Property', () => {
       .expect(201);
 
     // Get Results
-    const inspectionSnap = await inspectionsModel.findRecord(fs, INSPECTION_ID);
+    const inspectionSnap = await inspectionsModel.findRecord(db, INSPECTION_ID);
     const archivedInsp = await archiveModel.inspection.findRecord(
-      fs,
+      db,
       INSPECTION_ID
     );
-    const srcPropertySnap = await propertiesModel.findRecord(fs, PROPERTY_ID);
+    const srcPropertySnap = await propertiesModel.findRecord(db, PROPERTY_ID);
     const destPropertySnap = await propertiesModel.findRecord(
-      fs,
+      db,
       DEST_PROPERTY_ID
     );
 
@@ -147,23 +147,23 @@ describe('Inspections | API | Patch Property', () => {
     };
 
     // Setup database
-    await propertiesModel.upsertRecord(fs, PROPERTY_ID, srcPropertyData);
+    await propertiesModel.upsertRecord(db, PROPERTY_ID, srcPropertyData);
     await propertiesModel.upsertRecord(
-      fs,
+      db,
       DEST_PROPERTY_ID,
       DEST_PROPERTY_DATA
     );
-    await inspectionsModel.upsertRecord(fs, INSPECTION_ID, INSPECTION_DATA);
+    await inspectionsModel.upsertRecord(db, INSPECTION_ID, INSPECTION_DATA);
     await inspectionsModel.upsertRecord(
-      fs,
+      db,
       INSPECTION_TWO_ID,
       INSPECTION_TWO_DATA
     );
-    await deficientItemsModel.createRecord(fs, diOneId, {
+    await deficientItemsModel.createRecord(db, diOneId, {
       ...DEFICIENT_ITEM_ONE_DATA,
       property: PROPERTY_ID,
     });
-    await deficientItemsModel.createRecord(fs, diTwoId, {
+    await deficientItemsModel.createRecord(db, diTwoId, {
       ...DEFICIENT_ITEM_TWO_DATA,
       property: PROPERTY_ID,
     });
@@ -177,9 +177,9 @@ describe('Inspections | API | Patch Property', () => {
       .expect(201);
 
     // Test results
-    const srcPropertyDoc = await propertiesModel.findRecord(fs, PROPERTY_ID);
+    const srcPropertyDoc = await propertiesModel.findRecord(db, PROPERTY_ID);
     const destPropertyDoc = await propertiesModel.findRecord(
-      fs,
+      db,
       DEST_PROPERTY_ID
     );
     const srcProp = srcPropertyDoc.data();
@@ -238,24 +238,24 @@ describe('Inspections | API | Patch Property', () => {
     const diThreeId = uuid();
 
     // setup database
-    await propertiesModel.upsertRecord(fs, PROPERTY_ID, PROPERTY_DATA);
+    await propertiesModel.upsertRecord(db, PROPERTY_ID, PROPERTY_DATA);
     await propertiesModel.upsertRecord(
-      fs,
+      db,
       DEST_PROPERTY_ID,
       DEST_PROPERTY_DATA
     );
-    await inspectionsModel.upsertRecord(fs, INSPECTION_ID, INSPECTION_DATA);
+    await inspectionsModel.upsertRecord(db, INSPECTION_ID, INSPECTION_DATA);
 
     // Stup active DI database
-    await deficientItemsModel.createRecord(fs, diOneId, {
+    await deficientItemsModel.createRecord(db, diOneId, {
       ...DEFICIENT_ITEM_ONE_DATA,
       property: PROPERTY_ID,
     });
-    await deficientItemsModel.createRecord(fs, diTwoId, {
+    await deficientItemsModel.createRecord(db, diTwoId, {
       ...DEFICIENT_ITEM_TWO_DATA,
       property: PROPERTY_ID,
     });
-    await deficientItemsModel.createRecord(fs, diThreeId, {
+    await deficientItemsModel.createRecord(db, diThreeId, {
       ...RAND_DEF_ITEM_DATA,
       property: RAND_PROP_ID,
     });
@@ -269,11 +269,11 @@ describe('Inspections | API | Patch Property', () => {
       .expect(201);
 
     // Get Results
-    const srcPropDoc = await propertiesModel.findRecord(fs, PROPERTY_ID);
-    const destPropDoc = await propertiesModel.findRecord(fs, DEST_PROPERTY_ID);
-    const diOneDoc = await deficientItemsModel.findRecord(fs, diOneId);
-    const diTwoDoc = await deficientItemsModel.findRecord(fs, diTwoId);
-    const diThreeDoc = await deficientItemsModel.findRecord(fs, diThreeId);
+    const srcPropDoc = await propertiesModel.findRecord(db, PROPERTY_ID);
+    const destPropDoc = await propertiesModel.findRecord(db, DEST_PROPERTY_ID);
+    const diOneDoc = await deficientItemsModel.findRecord(db, diOneId);
+    const diTwoDoc = await deficientItemsModel.findRecord(db, diTwoId);
+    const diThreeDoc = await deficientItemsModel.findRecord(db, diThreeId);
 
     // Assertions
     [
@@ -317,24 +317,24 @@ describe('Inspections | API | Patch Property', () => {
     const diThreeId = uuid();
 
     // setup database
-    await propertiesModel.createRecord(fs, PROPERTY_ID, PROPERTY_DATA);
+    await propertiesModel.createRecord(db, PROPERTY_ID, PROPERTY_DATA);
     await propertiesModel.createRecord(
-      fs,
+      db,
       DEST_PROPERTY_ID,
       DEST_PROPERTY_DATA
     );
-    await inspectionsModel.createRecord(fs, INSPECTION_ID, INSPECTION_DATA);
+    await inspectionsModel.createRecord(db, INSPECTION_ID, INSPECTION_DATA);
 
     // Stup archive DI database
-    await archiveModel.deficientItem.createRecord(fs, diOneId, {
+    await archiveModel.deficientItem.createRecord(db, diOneId, {
       ...DEFICIENT_ITEM_ONE_DATA,
       property: PROPERTY_ID,
     });
-    await archiveModel.deficientItem.createRecord(fs, diTwoId, {
+    await archiveModel.deficientItem.createRecord(db, diTwoId, {
       ...DEFICIENT_ITEM_TWO_DATA,
       property: PROPERTY_ID,
     });
-    await archiveModel.deficientItem.createRecord(fs, diThreeId, {
+    await archiveModel.deficientItem.createRecord(db, diThreeId, {
       ...RAND_DEF_ITEM_DATA,
       property: RAND_PROP_ID,
     });
@@ -348,10 +348,10 @@ describe('Inspections | API | Patch Property', () => {
       .expect(201);
 
     // Get Results
-    const diOneDoc = await archiveModel.deficientItem.findRecord(fs, diOneId);
-    const diTwoDoc = await archiveModel.deficientItem.findRecord(fs, diTwoId);
+    const diOneDoc = await archiveModel.deficientItem.findRecord(db, diOneId);
+    const diTwoDoc = await archiveModel.deficientItem.findRecord(db, diTwoId);
     const diThreeDoc = await archiveModel.deficientItem.findRecord(
-      fs,
+      db,
       diThreeId
     );
 
@@ -386,6 +386,6 @@ describe('Inspections | API | Patch Property', () => {
 
 function createApp() {
   const app = express();
-  app.patch('/t/:inspectionId', bodyParser.json(), handler(fs));
+  app.patch('/t/:inspectionId', bodyParser.json(), handler(db));
   return app;
 }

@@ -11,22 +11,22 @@ const PREFIX = 'models: jobs:';
 module.exports = modelSetup({
   /**
    * Create a Firestore job
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String?} jobId
    * @param  {Object} data
    * @return {Promise} - resolves {WriteResult}
    */
-  createRecord(fs, jobId, data) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  createRecord(db, jobId, data) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     if (jobId) assert(typeof jobId === 'string', 'has valid job id');
     assert(data && typeof data === 'object', 'has data');
     assert(
       data.property && data.property.id,
       'has firestore property document reference'
     );
-    if (jobId === undefined) jobId = fs.collection(JOB_COLLECTION).doc().id;
+    if (jobId === undefined) jobId = db.collection(JOB_COLLECTION).doc().id;
 
-    return fs
+    return db
       .collection(JOB_COLLECTION)
       .doc(jobId)
       .create(data);
@@ -34,14 +34,14 @@ module.exports = modelSetup({
 
   /**
    * Lookup Firestore Job
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {firebaseAdmin.firestore} db - Firestore DB instance
    * @param  {String} jobId
    * @return {Promise}
    */
-  findRecord(fs, jobId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  findRecord(db, jobId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(jobId && typeof jobId === 'string', 'has job id');
-    return fs
+    return db
       .collection(JOB_COLLECTION)
       .doc(jobId)
       .get();
@@ -49,46 +49,46 @@ module.exports = modelSetup({
 
   /**
    * Create a firestore document reference
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String} id
    * @return {firestore.DocumentReference}
    */
-  createDocRef(fs, id) {
+  createDocRef(db, id) {
     assert(id && typeof id === 'string', 'has document reference id');
-    return fs.collection(JOB_COLLECTION).doc(id);
+    return db.collection(JOB_COLLECTION).doc(id);
   },
 
   /**
    * Create a firestore document reference for property
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String} id
    * @return {firestore.DocumentReference}
    */
-  createPropertyDocRef(fs, id) {
+  createPropertyDocRef(db, id) {
     assert(id && typeof id === 'string', 'has document reference id');
-    return fs.collection(PROPERTY_COLLECTION).doc(id);
+    return db.collection(PROPERTY_COLLECTION).doc(id);
   },
 
   /**
    * Create a firestore doc id for collection
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @return {string}
    */
-  createId(fs) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
-    return fs.collection(JOB_COLLECTION).doc().id;
+  createId(db) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    return db.collection(JOB_COLLECTION).doc().id;
   },
 
   /**
    * Lookup associated bids
-   * @param  {firebaseAdmin.firestore} fs
+   * @param  {firebaseAdmin.firestore} db
    * @param  {firestore.DocumentReference} jobRef
    * @return {Promise} - resolves {QuerySnapshot}
    */
-  findAssociatedBids(fs, jobRef) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  findAssociatedBids(db, jobRef) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(jobRef && typeof jobRef === 'object', 'has job document refrence');
-    return fs
+    return db
       .collection(BID_COLLECTION)
       .where('job', '==', jobRef)
       .get();
@@ -96,21 +96,21 @@ module.exports = modelSetup({
 
   /**
    * Update Firestore Job
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {firebaseAdmin.firestore} db - Firestore DB instance
    * @param  {String} jobId
    * @param  {Object} data
    * @param  {firestore.batch?}
    * @return {Promise} - resolves {Document}
    */
-  updateRecord(fs, jobId, data, batch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  updateRecord(db, jobId, data, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(jobId && typeof jobId === 'string', 'has job id');
     assert(data && typeof data === 'object', 'has update data');
     if (batch) {
       assert(typeof batch.update === 'function', 'has firestore batch');
     }
 
-    const doc = fs.collection(JOB_COLLECTION).doc(jobId);
+    const doc = db.collection(JOB_COLLECTION).doc(jobId);
 
     if (batch) {
       batch.update(doc, data);
@@ -122,18 +122,18 @@ module.exports = modelSetup({
 
   /**
    * Removing Job linked with the property and internally calling another function to remove bids linked witht the job.
-   * @param   {firebaseAdmin.firestore} fs Firestore DB instance
+   * @param   {firebaseAdmin.firestore} db Firestore DB instance
    * @param   {String} propertyId
    * @param   {firestore.batch?} parentBatch
    * @returns {Promise}
    */
-  async deletePropertyJobAndBids(fs, propertyId, parentBatch) {
-    const propertyDoc = this.createPropertyDocRef(fs, propertyId);
+  async deletePropertyJobAndBids(db, propertyId, parentBatch) {
+    const propertyDoc = this.createPropertyDocRef(db, propertyId);
 
     // Lookup all property's jobs
     let linkedJobs;
     try {
-      linkedJobs = await fs
+      linkedJobs = await db
         .collection(JOB_COLLECTION)
         .where('property', '==', propertyDoc)
         .get();
@@ -143,7 +143,7 @@ module.exports = modelSetup({
       );
     }
 
-    const batch = parentBatch || fs.batch();
+    const batch = parentBatch || db.batch();
     const jobIds = linkedJobs.docs.map(jobDoc => {
       batch.delete(jobDoc.ref); // add job delete to batch
       return jobDoc.id;
@@ -152,7 +152,7 @@ module.exports = modelSetup({
     // Delete each jobs bids
     try {
       await Promise.all(
-        jobIds.map(jobId => bidsModel.deleteLinkedJobsRecord(fs, jobId, batch))
+        jobIds.map(jobId => bidsModel.deleteLinkedJobsRecord(db, jobId, batch))
       );
     } catch (err) {
       throw Error(

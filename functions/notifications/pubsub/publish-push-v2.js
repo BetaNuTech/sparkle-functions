@@ -11,19 +11,19 @@ const PREFIX = 'notifications: pubsub: publish-push-v2:';
  * Publish all push nofication to their
  * user's registration token and remove the
  * push notification's configuration on success
- * @param  {admin.firestore} fs
+ * @param  {admin.firestore} db
  * @param  {functions.pubsub} pubSub
  * @param  {String} topic
  * @param  {admin.messaging} messaging
  * @return {functions.CloudFunction}
  */
 module.exports = function publishPushNotification(
-  fs,
+  db,
   pubsub,
   topic = '',
   messaging
 ) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  assert(db && typeof db.collection === 'function', 'has firestore db');
   assert(pubsub && typeof pubsub.topic === 'function', 'has pubsub reference');
   assert(topic && typeof topic === 'string', 'has pubsub topic');
   assert(
@@ -54,7 +54,7 @@ module.exports = function publishPushNotification(
     if (srcTarget !== '*') {
       try {
         const notificationSnap = await notificationsModel.findRecord(
-          fs,
+          db,
           srcTarget
         );
         const notificationData = notificationSnap.data() || {};
@@ -79,7 +79,7 @@ module.exports = function publishPushNotification(
       try {
         // Select all notifications with
         // any unpublished push messages
-        const notificationsSnap = await notificationsModel.query(fs, {
+        const notificationsSnap = await notificationsModel.query(db, {
           unpublishedPush: ['>', 0],
         });
 
@@ -103,7 +103,7 @@ module.exports = function publishPushNotification(
       }
     }
 
-    const batch = fs.batch();
+    const batch = db.batch();
     const notificationIds = Object.keys(notifications);
     const registrationTokenCache = {};
 
@@ -123,7 +123,7 @@ module.exports = function publishPushNotification(
         if (!registrationTokens) {
           try {
             const registrationTokensSnap = await regTokensModel.findRecord(
-              fs,
+              db,
               userId
             );
             registrationTokens = Object.keys(
@@ -177,7 +177,7 @@ module.exports = function publishPushNotification(
       // Add notification's update to batch
       try {
         await notificationsModel.updateRecord(
-          fs,
+          db,
           notificationId,
           notificationUpdate,
           batch

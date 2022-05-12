@@ -6,10 +6,10 @@ const handler = require('../../../slack/api/patch-auth');
 const { cleanDb } = require('../../../test-helpers/firebase');
 const integrationsModel = require('../../../models/integrations');
 const mocking = require('../../../test-helpers/mocking');
-const { fs: db } = require('../../setup');
+const { db } = require('../../setup');
 
 describe('Slack | API | PATCH Auth', () => {
-  afterEach(() => cleanDb(null, db));
+  afterEach(() => cleanDb(db));
 
   it('successfully updates the Slack integration system channel', async () => {
     const integration = mocking.createSlackIntegration({

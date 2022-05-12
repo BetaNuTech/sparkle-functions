@@ -8,13 +8,13 @@ const inspectionModel = require('../../../models/inspections');
 const deficiencyModel = require('../../../models/deficient-items');
 const notificationsModel = require('../../../models/notifications');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { fs, test, cloudFunctions } = require('../../setup');
+const { db, test, cloudFunctions } = require('../../setup');
 
 const DEF_ITEM_URI = config.clientApps.web.deficientItemURL;
 const OVERDUE_ELIGIBLE_STATES = config.deficientItems.overdueEligibleStates;
 
 describe('Deficient Items | Pubsub | Overdue Sync V2', () => {
-  afterEach(() => cleanDb(null, fs));
+  afterEach(() => cleanDb(db));
 
   it('should set all eligible, past due, deficiencies to overdue', async () => {
     const propertyId = uuid();
@@ -65,22 +65,22 @@ describe('Deficient Items | Pubsub | Overdue Sync V2', () => {
     // Setup Database
     for (let i = 0; i < deficiencies.length; i++) {
       const deficiency = deficiencies[i];
-      await deficiencyModel.createRecord(fs, uuid(), deficiency);
+      await deficiencyModel.createRecord(db, uuid(), deficiency);
     }
     for (let i = 0; i < inspections.length; i++) {
       const inspection = inspections[i];
       const inspectionId = inspection.id;
       delete inspection.id;
-      await inspectionModel.createRecord(fs, inspectionId, inspection);
+      await inspectionModel.createRecord(db, inspectionId, inspection);
     }
-    await propertyModel.createRecord(fs, propertyId, property);
+    await propertyModel.createRecord(db, propertyId, property);
 
     // Execute
     await test.wrap(cloudFunctions.deficiencySyncOverdue)();
 
     // Test result
-    const propertySnap = await propertyModel.findRecord(fs, propertyId);
-    const deficienciesSnap = await deficiencyModel.query(fs, {
+    const propertySnap = await propertyModel.findRecord(db, propertyId);
+    const deficienciesSnap = await deficiencyModel.query(db, {
       property: ['==', propertyId],
     });
     const propertyData = propertySnap.data() || {};
@@ -173,15 +173,15 @@ describe('Deficient Items | Pubsub | Overdue Sync V2', () => {
     );
 
     // Setup database
-    await deficiencyModel.createRecord(fs, deficiencyId, deficiency);
-    await inspectionModel.createRecord(fs, inspectionId, inspection);
-    await propertyModel.createRecord(fs, propertyId, property);
+    await deficiencyModel.createRecord(db, deficiencyId, deficiency);
+    await inspectionModel.createRecord(db, inspectionId, inspection);
+    await propertyModel.createRecord(db, propertyId, property);
 
     // Execute
     await test.wrap(cloudFunctions.deficiencySyncOverdue)();
 
     // Test Result
-    const deficiencySnap = await deficiencyModel.findRecord(fs, deficiencyId);
+    const deficiencySnap = await deficiencyModel.findRecord(db, deficiencyId);
     const actual = (deficiencySnap.data() || {}).state;
 
     // Assertions
@@ -250,15 +250,15 @@ describe('Deficient Items | Pubsub | Overdue Sync V2', () => {
     };
 
     // Setup database
-    await deficiencyModel.createRecord(fs, deficiencyId, deficiency);
-    await inspectionModel.createRecord(fs, inspectionId, inspection);
-    await propertyModel.createRecord(fs, propertyId, property);
+    await deficiencyModel.createRecord(db, deficiencyId, deficiency);
+    await inspectionModel.createRecord(db, inspectionId, inspection);
+    await propertyModel.createRecord(db, propertyId, property);
 
     // Execute
     await test.wrap(cloudFunctions.deficiencySyncOverdue)();
 
     // Test Result
-    const resultsSnap = await notificationsModel.query(fs, {
+    const resultsSnap = await notificationsModel.query(db, {
       property: ['==', propertyId],
     });
     const actual = resultsSnap.docs[0] ? resultsSnap.docs[0].data() || {} : {};

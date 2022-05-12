@@ -153,7 +153,7 @@ module.exports = modelSetup({
   /**
    * Create or update an organization's Trello
    * public details of Sparkle/Trello integration
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {Object} details
    * @param  {firestore.batch?} batch
    * @return {Promise} - resolves {Object} integration details
@@ -274,7 +274,7 @@ module.exports = modelSetup({
 
   /**
    * Remove Firestore Trello integration
-   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {firstore.batch?} batch
    * @return {Promise} - resolves {Document}
    */
@@ -389,6 +389,21 @@ module.exports = modelSetup({
       .collection(INTEGRATIONS_COLLECTION)
       .doc(`trello-${propertyId}`)
       .create(data);
+  },
+
+  /**
+   * Remove Firestore Property Trello Integration
+   * @param  {admin.firestore} db - Firestore DB instance
+   * @param  {String} propertyId
+   * @return {Promise}
+   */
+  removeTrelloProperty(db, propertyId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    return db
+      .collection(INTEGRATIONS_COLLECTION)
+      .doc(`trello-${propertyId}`)
+      .delete();
   },
 
   /**

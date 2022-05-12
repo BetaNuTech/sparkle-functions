@@ -9,10 +9,10 @@ const jobsModel = require('../../../models/jobs');
 const propertiesModel = require('../../../models/properties');
 const handler = require('../../../jobs/api/post');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { fs } = require('../../setup');
+const { db } = require('../../setup');
 
 describe('Jobs | API | POST', () => {
-  afterEach(() => cleanDb(null, fs));
+  afterEach(() => cleanDb(db));
 
   it('should create a new job for a property', async () => {
     const expected = {
@@ -25,7 +25,7 @@ describe('Jobs | API | POST', () => {
     const property = mocking.createProperty();
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, property);
+    await propertiesModel.createRecord(db, propertyId, property);
 
     // Execute
     const app = createApp();
@@ -39,7 +39,7 @@ describe('Jobs | API | POST', () => {
     const body = res ? res.body : {};
     const jobDoc = body ? body.data : {};
     const jobId = jobDoc.id || 'na';
-    const job = await jobsModel.findRecord(fs, jobId);
+    const job = await jobsModel.findRecord(db, jobId);
     const result = job.data() || {};
     const attrs = Object.keys(expected);
     const actual = attrs.reduce((acc, attr) => {
@@ -53,6 +53,6 @@ describe('Jobs | API | POST', () => {
 
 function createApp() {
   const app = express();
-  app.post('/t/:propertyId', bodyParser.json(), handler(fs));
+  app.post('/t/:propertyId', bodyParser.json(), handler(db));
   return app;
 }

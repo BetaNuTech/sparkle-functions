@@ -12,14 +12,14 @@ const SYSTEM_COLLECTION = 'system';
 module.exports = modelSetup({
   /**
    * Create or update a property trello object
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String} propertyId
    * @param  {Object} details
    * @param  {firestore.batch?} batch
    * @return {Promise}
    */
-  upsertPropertyTrello(fs, propertyId, details, batch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  upsertPropertyTrello(db, propertyId, details, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(details && typeof details === 'object', 'has upsert object');
     assert(
@@ -35,8 +35,8 @@ module.exports = modelSetup({
       );
     }
 
-    return fs.runTransaction(async transaction => {
-      const doc = fs.collection(SYSTEM_COLLECTION).doc(`trello-${propertyId}`);
+    return db.runTransaction(async transaction => {
+      const doc = db.collection(SYSTEM_COLLECTION).doc(`trello-${propertyId}`);
 
       let propertyTrelloRef = null;
       try {
@@ -74,13 +74,13 @@ module.exports = modelSetup({
   /**
    * Find any Trello Card ID associated with
    * a Deficient Item
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String} propertyId
    * @param  {String} deficiencyId
    * @return {Promise} - resolves {String} Trello card ID
    */
-  async findTrelloCardId(fs, propertyId, deficiencyId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  async findTrelloCardId(db, propertyId, deficiencyId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(
       deficiencyId && typeof deficiencyId === 'string',
@@ -90,7 +90,7 @@ module.exports = modelSetup({
     // Lookup system credentials
     let propertyTrelloCards = null;
     try {
-      const propertyTrelloCardsSnap = await fs
+      const propertyTrelloCardsSnap = await db
         .collection(SYSTEM_COLLECTION)
         .doc(`trello-${propertyId}`)
         .get();
@@ -112,14 +112,14 @@ module.exports = modelSetup({
   /**
    * Check trello for deficient item card
    * and archive if exists
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String} propertyId
    * @param  {String} deficientItemId
    * @param  {Boolean} archiving
    * @return {Promise} - resolves {Object} Trello API response
    */
-  async archiveTrelloCard(fs, propertyId, deficiencyId, archiving) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  async archiveTrelloCard(db, propertyId, deficiencyId, archiving) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(
       deficiencyId && typeof deficiencyId === 'string',
@@ -129,7 +129,7 @@ module.exports = modelSetup({
 
     let trelloCardId = '';
     try {
-      trelloCardId = await this.findTrelloCardId(fs, propertyId, deficiencyId);
+      trelloCardId = await this.findTrelloCardId(db, propertyId, deficiencyId);
     } catch (err) {
       throw Error(
         `${PREFIX} archiveTrelloCard: trello card lookup failed: ${err}`
@@ -145,7 +145,7 @@ module.exports = modelSetup({
     let apiKey = '';
     let authToken = '';
     try {
-      const trelloCredentialsSnap = await this.findTrello(fs);
+      const trelloCredentialsSnap = await this.findTrello(db);
       const trelloCredentials = trelloCredentialsSnap.data();
       if (!trelloCredentials) {
         throw Error('Organization has not authorized Trello');
@@ -174,7 +174,7 @@ module.exports = modelSetup({
       // Handle Deleted Trello card
       if (err.code === 'ERR_TRELLO_CARD_DELETED') {
         try {
-          await this.cleanupDeletedTrelloCard(fs, deficiencyId, trelloCardId);
+          await this.cleanupDeletedTrelloCard(db, deficiencyId, trelloCardId);
         } catch (cleanUpErr) {
           err.message += ` ${cleanUpErr}`; // append to primary error
         }
@@ -189,13 +189,13 @@ module.exports = modelSetup({
   /**
    * Cleanup Trello Attributes of
    * Deficient Item or Archived Record
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {firebaseAdmin.firestore} db - Firestore DB instance
    * @param  {String} deficientItemId
    * @param  {String} cardId
    * @return {Promise}
    */
-  async cleanupDeletedTrelloCard(fs, deficiencyId, cardId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  async cleanupDeletedTrelloCard(db, deficiencyId, cardId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(
       deficiencyId && typeof deficiencyId === 'string',
       'has deficient item ID'
@@ -208,7 +208,7 @@ module.exports = modelSetup({
     let isArchived = false;
 
     try {
-      const diDoc = await fs
+      const diDoc = await db
         .collection(DEFICIENT_COLLECTION)
         .doc(deficiencyId)
         .get();
@@ -223,7 +223,7 @@ module.exports = modelSetup({
     // Lookup Archived Record
     if (!isActive) {
       try {
-        const diDoc = await archive.deficientItem.findRecord(fs, deficiencyId);
+        const diDoc = await archive.deficientItem.findRecord(db, deficiencyId);
         isArchived = Boolean(diDoc && diDoc.exists);
         if (isArchived) deficiency = diDoc.data();
       } catch (err) {
@@ -238,7 +238,7 @@ module.exports = modelSetup({
       return;
     }
 
-    const batch = fs.batch();
+    const batch = db.batch();
     const propertyId = deficiency.property;
     assert(
       propertyId && typeof propertyId === 'string',
@@ -247,7 +247,7 @@ module.exports = modelSetup({
 
     // Remove the Trello card reference from property integration
     try {
-      const propertyTrelloCardsDoc = await fs
+      const propertyTrelloCardsDoc = await db
         .collection(SYSTEM_COLLECTION)
         .doc(`trello-${propertyId}`);
       batch.update(propertyTrelloCardsDoc, {
@@ -278,7 +278,7 @@ module.exports = modelSetup({
     });
 
     if (isActive) {
-      const activeDeficiencyDoc = fs
+      const activeDeficiencyDoc = db
         .collection(DEFICIENT_COLLECTION)
         .doc(deficiencyId);
       batch.update(activeDeficiencyDoc, { ...updates });
@@ -287,7 +287,7 @@ module.exports = modelSetup({
     if (isArchived) {
       try {
         await archive.deficientItem.updateRecord(
-          fs,
+          db,
           deficiencyId,
           { ...updates },
           batch
@@ -311,13 +311,13 @@ module.exports = modelSetup({
   /**
    * Create or update an organization's Slack
    * API credentials for Sparkle/Slack integrations
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {Object} credentials
    * @param  {firestore.batch?} batch
    * @return {Promise}
    */
-  upsertSlack(fs, credentials, batch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  upsertSlack(db, credentials, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(
       credentials && typeof credentials === 'object',
       'has credentials object'
@@ -345,8 +345,8 @@ module.exports = modelSetup({
       );
     }
 
-    return fs.runTransaction(async transaction => {
-      const slackCredentialsDoc = fs.collection(SYSTEM_COLLECTION).doc('slack');
+    return db.runTransaction(async transaction => {
+      const slackCredentialsDoc = db.collection(SYSTEM_COLLECTION).doc('slack');
 
       let slackCredentialsRef = null;
       try {
@@ -380,12 +380,12 @@ module.exports = modelSetup({
 
   /**
    * Lookup Slack system credentials
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @return {Promise} - resolves {DocumentSnapshot}
    */
-  findSlack(fs) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
-    return fs
+  findSlack(db) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    return db
       .collection(SYSTEM_COLLECTION)
       .doc('slack')
       .get();
@@ -393,13 +393,13 @@ module.exports = modelSetup({
 
   /**
    * Remove system's slack credentials
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {firstore.batch?} batch
    * @return {Promise}
    */
-  removeSlack(fs, batch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
-    const doc = fs.collection(SYSTEM_COLLECTION).doc('slack');
+  removeSlack(db, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    const doc = db.collection(SYSTEM_COLLECTION).doc('slack');
 
     if (batch) {
       batch.delete(doc);
@@ -412,13 +412,13 @@ module.exports = modelSetup({
   /**
    * Create or update an organization's Trello
    * API credentials for Sparkle/Trello integrations
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {Object} credentials
    * @param  {firestore.batch?} batch
    * @return {Promise} - resolves {DocumentSnapshot}
    */
-  upsertTrello(fs, credentials, batch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  upsertTrello(db, credentials, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(
       credentials && typeof credentials === 'object',
       'has credentials object'
@@ -443,8 +443,8 @@ module.exports = modelSetup({
       );
     }
 
-    return fs.runTransaction(async transaction => {
-      const trelloCredentialsDoc = fs
+    return db.runTransaction(async transaction => {
+      const trelloCredentialsDoc = db
         .collection(SYSTEM_COLLECTION)
         .doc('trello');
 
@@ -479,17 +479,17 @@ module.exports = modelSetup({
 
   /**
    * Remove Firestore Trello credentials
-   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {firstore.batch?} batch
    * @return {Promise} - resolves {Document}
    */
-  removeTrello(fs, batch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  removeTrello(db, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     if (batch) {
       assert(typeof batch.delete === 'function', 'has firestore batch');
     }
 
-    const doc = fs.collection(SYSTEM_COLLECTION).doc('trello');
+    const doc = db.collection(SYSTEM_COLLECTION).doc('trello');
 
     if (batch) {
       batch.delete(doc);
@@ -501,16 +501,16 @@ module.exports = modelSetup({
 
   /**
    * Create a property's Trello integration record
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String} propertyId
    * @param  {Object} credentials
    * @return {Promise} - resolves {DocumentSnapshot}
    */
-  createTrelloProperty(fs, propertyId, data) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  createTrelloProperty(db, propertyId, data) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
     assert(data && typeof data === 'object', 'has data');
-    return fs
+    return db
       .collection(SYSTEM_COLLECTION)
       .doc(`trello-${propertyId}`)
       .create(data);
@@ -518,14 +518,14 @@ module.exports = modelSetup({
 
   /**
    * Lookup a Property's Trello cards
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String} propertyId
    * @return {Promise} - resolves {DocumentSnapshot}
    */
-  findTrelloProperty(fs, propertyId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  findTrelloProperty(db, propertyId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
-    return fs
+    return db
       .collection(SYSTEM_COLLECTION)
       .doc(`trello-${propertyId}`)
       .get();
@@ -533,12 +533,12 @@ module.exports = modelSetup({
 
   /**
    * Lookup Trello system credentials
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @return {Promise} - resolves {DocumentSnapshot}
    */
-  findTrello(fs) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
-    return fs
+  findTrello(db) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    return db
       .collection(SYSTEM_COLLECTION)
       .doc('trello')
       .get();
@@ -546,18 +546,18 @@ module.exports = modelSetup({
 
   /**
    * Lookup all Property Trello Integrations
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {firestore.transaction?} transaction
    * @return {Promise} - resolves {Documents[]}
    */
-  async findAllTrelloProperties(fs, transaction) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  async findAllTrelloProperties(db, transaction) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     if (transaction) {
       assert(typeof transaction.get === 'function', 'has firestore batch');
     }
 
     const trelloPropertyDocs = [];
-    const integrationDocs = fs.collection(SYSTEM_COLLECTION);
+    const integrationDocs = db.collection(SYSTEM_COLLECTION);
 
     try {
       const request = transaction
@@ -581,23 +581,23 @@ module.exports = modelSetup({
 
   /**
    * Remove all Property/Trello integrations
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {firestore.batch?} batch
    * @return {Promise} - resolves {Document[]}
    */
-  removeAllTrelloProperties(fs, batch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  removeAllTrelloProperties(db, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     if (batch) {
       assert(typeof batch.delete === 'function', 'has firestore batch');
     }
 
-    return fs.runTransaction(async transaction => {
-      const integrationDocs = fs.collection(SYSTEM_COLLECTION);
+    return db.runTransaction(async transaction => {
+      const integrationDocs = db.collection(SYSTEM_COLLECTION);
 
       let trelloPropertyDocs = null;
       try {
         trelloPropertyDocs = await this.findAllTrelloProperties(
-          fs,
+          db,
           transaction
         );
       } catch (err) {
@@ -615,14 +615,14 @@ module.exports = modelSetup({
 
   /**
    * Create Firestore Yardi Credentials
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {Object} data
    * @return {Promise} - resolves {WriteResult}
    */
-  createYardi(fs, data) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  createYardi(db, data) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(data && typeof data === 'object', 'has data');
-    return fs
+    return db
       .collection(SYSTEM_COLLECTION)
       .doc('yardi')
       .create(data);
@@ -630,14 +630,14 @@ module.exports = modelSetup({
 
   /**
    * Create Firestore Cobalt Credentials
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {Object} data
    * @return {Promise} - resolves {WriteResult}
    */
-  createCobalt(fs, data) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  createCobalt(db, data) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(data && typeof data === 'object', 'has data');
-    return fs
+    return db
       .collection(SYSTEM_COLLECTION)
       .doc('cobalt')
       .create(data);
@@ -645,12 +645,12 @@ module.exports = modelSetup({
 
   /**
    * Lookup Yardi system credentials
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @return {Promise} - resolves {DocumentSnapshot}
    */
-  findYardi(fs) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
-    return fs
+  findYardi(db) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    return db
       .collection(SYSTEM_COLLECTION)
       .doc('yardi')
       .get();
@@ -658,12 +658,12 @@ module.exports = modelSetup({
 
   /**
    * Lookup Cobalt system credentials
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @return {Promise} - resolves {DocumentSnapshot}
    */
-  findCobalt(fs) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
-    return fs
+  findCobalt(db) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    return db
       .collection(SYSTEM_COLLECTION)
       .doc('cobalt')
       .get();

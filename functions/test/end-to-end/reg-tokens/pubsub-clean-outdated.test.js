@@ -2,14 +2,14 @@ const { expect } = require('chai');
 const uuid = require('../../../test-helpers/uuid');
 const tokensModel = require('../../../models/registration-tokens');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { fs, test, cloudFunctions } = require('../../setup');
+const { db, test, cloudFunctions } = require('../../setup');
 
 const ONE_MONTHS_SEC = 2629805;
 const SIX_MONTHS_SEC = 15778800;
 const TWENTY_SEVEN_DAYS_SEC = 2332800;
 
 describe('Reg Token | Pubsub | Sync Outdated', () => {
-  afterEach(() => cleanDb(null, fs));
+  afterEach(() => cleanDb(db));
 
   it('should remove registration tokens older than 1 month', async () => {
     const nowUnix = Math.round(Date.now() / 1000);
@@ -19,7 +19,7 @@ describe('Reg Token | Pubsub | Sync Outdated', () => {
     const unchangedTokenId = uuid();
 
     // Setup database
-    await tokensModel.createRecord(fs, userId, {
+    await tokensModel.createRecord(db, userId, {
       [deletedTokenId]: nowUnix - ONE_MONTHS_SEC,
       [deletedTokenId2]: nowUnix - SIX_MONTHS_SEC,
       [unchangedTokenId]: nowUnix - TWENTY_SEVEN_DAYS_SEC,
@@ -29,7 +29,7 @@ describe('Reg Token | Pubsub | Sync Outdated', () => {
     await test.wrap(cloudFunctions.regTokensSync)();
 
     // Results
-    const resultSnap = await tokensModel.findRecord(fs, userId);
+    const resultSnap = await tokensModel.findRecord(db, userId);
     const results = resultSnap.data();
 
     // Assertions

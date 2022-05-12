@@ -9,12 +9,12 @@ const PREFIX = 'services: cobalt:';
 module.exports = {
   /**
    * Request all Cobalt Tenant data for a property
-   * @param  {admin.firestore} fs - Firestore Admin DB instance
+   * @param  {admin.firestore} db - Firestore Admin DB instance
    * @param  {String} propertyCode
    * @returns {Promise} - resolves {Object}
    */
-  async getPropertyTenants(fs, propertyCode) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  async getPropertyTenants(db, propertyCode) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(
       propertyCode && typeof propertyCode === 'string',
       'has property code'
@@ -29,7 +29,7 @@ module.exports = {
     // Lookup Cobalt credentials
     // TODO: move to parent scopes
     try {
-      const credentialsSnap = await systemModel.findCobalt(fs);
+      const credentialsSnap = await systemModel.findCobalt(db);
       const credentials = credentialsSnap.data() || null;
 
       if (!credentials || !credentials.token) {

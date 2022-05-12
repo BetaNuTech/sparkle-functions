@@ -6,12 +6,12 @@ const { cleanDb } = require('../../../test-helpers/firebase');
 const systemModel = require('../../../models/system');
 const usersModel = require('../../../models/users');
 const deficiencyModel = require('../../../models/deficient-items');
-const { fs, test, cloudFunctions } = require('../../setup');
+const { db, test, cloudFunctions } = require('../../setup');
 
 describe('Deficient Items | Pubsub | Trello Card State Comment', () => {
   afterEach(async () => {
     nock.cleanAll();
-    await cleanDb(null, fs);
+    await cleanDb(db);
   });
 
   it("should append state transition comment to a deficient items' Trello card", async () => {
@@ -52,10 +52,10 @@ describe('Deficient Items | Pubsub | Trello Card State Comment', () => {
     };
 
     // Setup database
-    await systemModel.upsertTrello(fs, credentials);
-    await systemModel.createTrelloProperty(fs, propertyId, trelloProperty);
-    await deficiencyModel.createRecord(fs, deficiencyId, deficiency);
-    await usersModel.createRecord(fs, userId, user);
+    await systemModel.upsertTrello(db, credentials);
+    await systemModel.createTrelloProperty(db, propertyId, trelloProperty);
+    await deficiencyModel.createRecord(db, deficiencyId, deficiency);
+    await usersModel.createRecord(db, userId, user);
 
     // Stub Requests
     let commentTxt = '';
@@ -155,10 +155,10 @@ describe('Deficient Items | Pubsub | Trello Card State Comment', () => {
       .reply(201, {});
 
     // Setup database
-    await systemModel.upsertTrello(fs, credentials);
-    await systemModel.createTrelloProperty(fs, propertyId, trelloProperty);
-    await deficiencyModel.createRecord(fs, deficiencyId, deficiency);
-    await usersModel.createRecord(fs, userId, user);
+    await systemModel.upsertTrello(db, credentials);
+    await systemModel.createTrelloProperty(db, propertyId, trelloProperty);
+    await deficiencyModel.createRecord(db, deficiencyId, deficiency);
+    await usersModel.createRecord(db, userId, user);
 
     // Execute
     await test.wrap(cloudFunctions.deficiencyTrelloCardStateComments)(
@@ -205,10 +205,10 @@ describe('Deficient Items | Pubsub | Trello Card State Comment', () => {
     };
 
     // Setup database
-    await systemModel.upsertTrello(fs, credentials);
-    await systemModel.createTrelloProperty(fs, propertyId, trelloProperty);
-    await deficiencyModel.createRecord(fs, deficiencyId, deficiency);
-    await usersModel.createRecord(fs, userId, user);
+    await systemModel.upsertTrello(db, credentials);
+    await systemModel.createTrelloProperty(db, propertyId, trelloProperty);
+    await deficiencyModel.createRecord(db, deficiencyId, deficiency);
+    await usersModel.createRecord(db, userId, user);
 
     // Stub Requests
     nock('https://api.trello.com')
@@ -225,10 +225,10 @@ describe('Deficient Items | Pubsub | Trello Card State Comment', () => {
 
     // Test Results
     const trelloPropertySnap = await systemModel.findTrelloProperty(
-      fs,
+      db,
       propertyId
     );
-    const deficiencySnap = await deficiencyModel.findRecord(fs, deficiencyId);
+    const deficiencySnap = await deficiencyModel.findRecord(db, deficiencyId);
     const deficiencyResults = deficiencySnap.data() || {
       trelloCardURL: 'test',
     };

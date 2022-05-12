@@ -195,7 +195,7 @@ module.exports = modelSetup({
       );
     }
 
-    let fsQuery = db.collection(NOTIFICATIONS_COLLECTION);
+    let dbQuery = db.collection(NOTIFICATIONS_COLLECTION);
 
     // Append each query as where clause
     Object.keys(query).forEach(attr => {
@@ -204,14 +204,14 @@ module.exports = modelSetup({
         queryArgs && Array.isArray(queryArgs),
         'has query arguments array'
       );
-      fsQuery = fsQuery.where(attr, ...queryArgs);
+      dbQuery = dbQuery.where(attr, ...queryArgs);
     });
 
     if (transaction) {
-      return Promise.resolve(transaction.get(fsQuery));
+      return Promise.resolve(transaction.get(dbQuery));
     }
 
-    return fsQuery.get(query);
+    return dbQuery.get(query);
   },
 
   /**
