@@ -11,11 +11,11 @@ const PREFIX = 'template-categories: on-delete-v2:';
  * Disassociates any Templates connected to deleted
  * Template Category record
  *
- * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
+ * @param  {firebaseAdmin.firestore} db - Firestore Admin DB instance
  * @return {function}
  */
-module.exports = function createOnDeleteHandler(fs) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function createOnDeleteHandler(db) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
 
   /**
    * Handler for the deletion of a Template Category
@@ -32,7 +32,7 @@ module.exports = function createOnDeleteHandler(fs) {
 
     // Remove Firestore template category
     try {
-      await templatesModel.removeCategory(fs, categoryId);
+      await templatesModel.removeCategory(db, categoryId);
     } catch (err) {
       log.error(`${PREFIX} Failed to remove category from templates: ${err}`);
     }

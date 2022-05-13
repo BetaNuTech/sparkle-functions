@@ -9,14 +9,14 @@ const DEFICIENT_COLLECTION = config.deficientItems.collection;
 module.exports = modelSetup({
   /**
    * Recover any Firestore deficiency from archive
-   * @param  {firebaseadmin.firestore} fs
+   * @param  {firebaseadmin.firestore} db
    * @param  {String}  propertyId
    * @param  {String}  inspectionId
    * @param  {String}  itemId
    * @return {Promise} - resolve {Document|Object}
    */
-  async findRecord(fs, query) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  async findRecord(db, query) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(Boolean(query), 'has string/object query');
     let propertyId = '';
     let inspectionId = '';
@@ -41,7 +41,7 @@ module.exports = modelSetup({
       assert(itemId && typeof itemId === 'string', 'has item reference');
     }
 
-    const deficienciesRef = fs.collection(ARCHIVE_COLLECTION);
+    const deficienciesRef = db.collection(ARCHIVE_COLLECTION);
 
     let deficiency = null;
     try {
@@ -65,19 +65,19 @@ module.exports = modelSetup({
 
   /**
    * Remove Firestore Inspection
-   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {String} deficientItemId
    * @param  {firestore.batch?} batch
    * @return {Promise}
    */
-  removeRecord(fs, deficientItemId, batch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  removeRecord(db, deficientItemId, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
       'has deficient item id'
     );
 
-    const doc = fs.collection(ARCHIVE_COLLECTION).doc(deficientItemId);
+    const doc = db.collection(ARCHIVE_COLLECTION).doc(deficientItemId);
 
     if (batch) {
       batch.delete(doc);
@@ -89,14 +89,14 @@ module.exports = modelSetup({
 
   /**
    * Create Firestore Inspection
-   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {String} deficientItemId
    * @param  {Object} data,
    * @param  {firestore.batch?} batch
    * @return {Promise}
    */
-  createRecord(fs, deficientItemId, data, batch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  createRecord(db, deficientItemId, data, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
       'has deficient item id'
@@ -118,7 +118,7 @@ module.exports = modelSetup({
       _collection: DEFICIENT_COLLECTION,
       archive: true,
     };
-    const doc = fs.collection(ARCHIVE_COLLECTION).doc(deficientItemId);
+    const doc = db.collection(ARCHIVE_COLLECTION).doc(deficientItemId);
 
     // Add create to batch write
     if (batch) {
@@ -131,14 +131,14 @@ module.exports = modelSetup({
 
   /**
    * Update Archived Firestore Deficient Item
-   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {String} deficientItemId
    * @param  {Object} data
    * @param  {firestore.batch?} batch
    * @return {Promise}
    */
-  updateRecord(fs, deficientItemId, data, batch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  updateRecord(db, deficientItemId, data, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
       'has deficient item id'
@@ -148,7 +148,7 @@ module.exports = modelSetup({
       assert(typeof batch.update === 'function', 'has firestore batch');
     }
 
-    const doc = fs.collection(ARCHIVE_COLLECTION).doc(deficientItemId);
+    const doc = db.collection(ARCHIVE_COLLECTION).doc(deficientItemId);
 
     if (batch) {
       batch.update(doc, data);
@@ -161,17 +161,17 @@ module.exports = modelSetup({
   /**
    * Lookup all archived inspections
    * belonging to an inspection
-   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {String} inspectionId
    * @return {Promise} - resolve {Document|Object}
    */
-  queryByInspection(fs, inspectionId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  queryByInspection(db, inspectionId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(
       inspectionId && typeof inspectionId === 'string',
       'has deficient item id'
     );
-    const colRef = fs.collection(ARCHIVE_COLLECTION);
+    const colRef = db.collection(ARCHIVE_COLLECTION);
     return colRef
       .where('_collection', '==', DEFICIENT_COLLECTION)
       .where('inspection', '==', inspectionId)
@@ -181,15 +181,15 @@ module.exports = modelSetup({
   /**
    * Lookup all archived deficiencies
    * associated with a property
-   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {String} propertyId
    * @param  {firestore.transaction?} transaction
    * @return {Promise} - resolves {QuerySnapshot}
    */
-  queryByProperty(fs, propertyId, transaction) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  queryByProperty(db, propertyId, transaction) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
-    const query = fs
+    const query = db
       .collection(ARCHIVE_COLLECTION)
       .where('property', '==', propertyId)
       .where('_collection', '==', DEFICIENT_COLLECTION);

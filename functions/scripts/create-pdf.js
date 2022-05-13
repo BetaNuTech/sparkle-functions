@@ -1,6 +1,6 @@
 const fs = require('fs');
 const log = require('../utils/logger');
-const { fs: db } = require('./setup'); // eslint-disable-line
+const { db } = require('./setup'); // eslint-disable-line
 const createReportPdf = require('../inspections/report-pdf/create');
 const propertiesModel = require('../models/properties');
 const inspectionsModel = require('../models/inspections');

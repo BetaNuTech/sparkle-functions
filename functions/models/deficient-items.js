@@ -13,19 +13,19 @@ const STORAGE_PATH_TEMPLATE = config.deficientItems.storagePathTemplate;
 module.exports = modelSetup({
   /**
    * Lookup each deficiency by id
-   * @param  {firebaseAdmin.firestore} fs
+   * @param  {firebaseAdmin.firestore} db
    * @param  {String[]} ids
    * @return {Promise} - resolves {DocumentSnapshot[]}
    */
-  findMany(fs, ...ids) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  findMany(db, ...ids) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(Array.isArray(ids) && ids.length, 'has 1 or more lookup ids');
     assert(
       ids.every(id => typeof id === 'string'),
       'has array of string ids'
     );
 
-    return fs
+    return db
       .collection(DEFICIENT_COLLECTION)
       .where(FieldPath.documentId(), 'in', ids)
       .get();
@@ -34,7 +34,7 @@ module.exports = modelSetup({
   /**
    * Update a deficiency's completed photo
    * trello card attachment identifier
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String} deficiencyId
    * @param  {String} completedPhotoId
    * @param  {String} trelloAttachmentId
@@ -42,13 +42,13 @@ module.exports = modelSetup({
    * @return {Promise} - resolves {Document}
    */
   async updateCompletedPhotoTrelloCardAttachment(
-    fs,
+    db,
     deficiencyId,
     completedPhotoId,
     trelloAttachmentId,
     batch
   ) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(
       deficiencyId && typeof deficiencyId === 'string',
       'has deficiency id'
@@ -66,7 +66,7 @@ module.exports = modelSetup({
     let doc = null;
     try {
       doc = await this.updateRecord(
-        fs,
+        db,
         deficiencyId,
         {
           updatedAt,
@@ -85,14 +85,14 @@ module.exports = modelSetup({
 
   /**
    * Create a Firestore Deficient Item
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String} deficientItemId
    * @param  {Object} data
    * @param  {firestore.batch?} batch
    * @return {Promise} - resolves {WriteResult}
    */
-  createRecord(fs, deficientItemId, data, batch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  createRecord(db, deficientItemId, data, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
       'has deficient item id'
@@ -108,7 +108,7 @@ module.exports = modelSetup({
     );
     assert(data.item && typeof data.item === 'string', 'data has item id');
 
-    const doc = fs.collection(DEFICIENT_COLLECTION).doc(deficientItemId);
+    const doc = db.collection(DEFICIENT_COLLECTION).doc(deficientItemId);
 
     if (batch) {
       batch.create(doc, data);
@@ -122,13 +122,13 @@ module.exports = modelSetup({
    * Create a deficiency ensuring that
    * it is not a duplicate for a matching
    * proeprty/inspection/item combination
-   * @param  {admin.firestore} fs - Firestore Admin DB instance
+   * @param  {admin.firestore} db - Firestore Admin DB instance
    * @param  {String} deficiencyId
    * @param  {Object} data
    * @return {Promise}
    */
-  async safelyCreateRecord(fs, deficiencyId, data) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  async safelyCreateRecord(db, deficiencyId, data) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(
       deficiencyId && typeof deficiencyId === 'string',
       'has deficiency id'
@@ -155,7 +155,7 @@ module.exports = modelSetup({
     // Recover any previously
     // archived firestore deficiency
     try {
-      const archivedDoc = await archive.deficientItem.findRecord(fs, query);
+      const archivedDoc = await archive.deficientItem.findRecord(db, query);
       archived = archivedDoc ? archivedDoc.data() : null;
       if (archived) {
         archivedId = archivedDoc.id;
@@ -168,8 +168,8 @@ module.exports = modelSetup({
     }
 
     try {
-      await fs.runTransaction(async transaction => {
-        const existingQuery = fs
+      await db.runTransaction(async transaction => {
+        const existingQuery = db
           .collection(DEFICIENT_COLLECTION)
           .where('property', '==', data.property)
           .where('inspection', '==', data.inspection)
@@ -178,7 +178,7 @@ module.exports = modelSetup({
 
         if (existingDeficiencies.size === 0) {
           this.createRecord(
-            fs,
+            db,
             archivedId || deficiencyId,
             { ...data, ...archived },
             transaction
@@ -186,7 +186,7 @@ module.exports = modelSetup({
 
           if (archived) {
             // Cleanup firestore archive
-            archive.deficientItem.removeRecord(fs, archivedId, transaction);
+            archive.deficientItem.removeRecord(db, archivedId, transaction);
           }
         }
       });
@@ -197,17 +197,17 @@ module.exports = modelSetup({
 
   /**
    * Lookup Firestore Deficiency
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {firebaseAdmin.firestore} db - Firestore DB instance
    * @param  {String} deficientItemId
    * @return {Promise}
    */
-  findRecord(fs, deficientItemId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  findRecord(db, deficientItemId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
       'has deficient item id'
     );
-    return fs
+    return db
       .collection(DEFICIENT_COLLECTION)
       .doc(deficientItemId)
       .get();
@@ -215,12 +215,12 @@ module.exports = modelSetup({
 
   /**
    * Lookup Firestore Deficiency
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {firebaseAdmin.firestore} db - Firestore DB instance
    * @param  {String} deficientItemId
    * @return {Promise} - resolves {DataSnapshot}
    */
-  queryRecords(fs, query) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  queryRecords(db, query) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(query && typeof query === 'object', 'has query object');
 
     const { property, inspection, item } = query;
@@ -228,7 +228,7 @@ module.exports = modelSetup({
     assert(inspection && typeof inspection === 'string', 'has inspection id');
     assert(item && typeof item === 'string', 'has item id');
 
-    return fs
+    return db
       .collection(DEFICIENT_COLLECTION)
       .where('property', '==', property)
       .where('inspection', '==', inspection)
@@ -239,46 +239,46 @@ module.exports = modelSetup({
   /**
    * Lookup Firestore Deficiency Item's
    * belonging to a single property
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {firebaseAdmin.firestore} db - Firestore DB instance
    * @param  {String} propertyId
    * @return {Promise} - resolves {DocumentSnapshot[]}
    */
-  queryByProperty(fs, propertyId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  queryByProperty(db, propertyId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
-    const colRef = fs.collection(DEFICIENT_COLLECTION);
+    const colRef = db.collection(DEFICIENT_COLLECTION);
     return colRef.where('property', '==', propertyId).get();
   },
 
   /**
    * Lookup Firestore Deficiency Item's
    * belonging to a single inspection
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {firebaseAdmin.firestore} db - Firestore DB instance
    * @param  {String} inspectionId
    * @return {Promise} - resolves {DocumentSnapshot[]}
    */
-  queryByInspection(fs, inspectionId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  queryByInspection(db, inspectionId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(inspectionId && typeof inspectionId === 'string', 'has property id');
-    const colRef = fs.collection(DEFICIENT_COLLECTION);
+    const colRef = db.collection(DEFICIENT_COLLECTION);
     return colRef.where('inspection', '==', inspectionId).get();
   },
 
   /**
    * Lookup Firestore Deficiency query
-   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {Object} query
    * @param  {firestore.batch?} batch
    * @return {Promise} - resolves {DocumentSnapshot[]}
    */
-  query(fs, query, batch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  query(db, query, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(query && typeof query === 'object', 'has query');
     if (batch) {
       assert(typeof batch.get === 'function', 'has firestore batch');
     }
 
-    let fsQuery = fs.collection(DEFICIENT_COLLECTION);
+    let dbQuery = db.collection(DEFICIENT_COLLECTION);
 
     // Append each query as where clause
     Object.keys(query).forEach(attr => {
@@ -287,30 +287,30 @@ module.exports = modelSetup({
         queryArgs && Array.isArray(queryArgs),
         'has query arguments array'
       );
-      fsQuery = fsQuery.where(attr, ...queryArgs);
+      dbQuery = dbQuery.where(attr, ...queryArgs);
     });
 
     if (batch) {
-      return Promise.resolve(batch.get(fsQuery));
+      return Promise.resolve(batch.get(dbQuery));
     }
 
-    return fsQuery.get(query);
+    return dbQuery.get(query);
   },
 
   /**
    * Remove Firestore Deficient Item
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {firebaseAdmin.firestore} db - Firestore DB instance
    * @param  {String} deficientItemId
    * @param  {firestore.batch?} batch
    * @return {Promise}
    */
-  removeRecord(fs, deficientItemId, batch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  removeRecord(db, deficientItemId, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
       'has deficient item id'
     );
-    const doc = fs.collection(DEFICIENT_COLLECTION).doc(deficientItemId);
+    const doc = db.collection(DEFICIENT_COLLECTION).doc(deficientItemId);
 
     if (batch) {
       batch.delete(doc);
@@ -322,14 +322,14 @@ module.exports = modelSetup({
 
   /**
    * Update Firestore Deficient Item
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {firebaseAdmin.firestore} db - Firestore DB instance
    * @param  {String} deficiencyId
    * @param  {Object} data
    * @param  {firestore.batch?}
    * @return {Promise} - resolves {Document}
    */
-  updateRecord(fs, deficiencyId, data, batch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  updateRecord(db, deficiencyId, data, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(
       deficiencyId && typeof deficiencyId === 'string',
       'has deficiency id'
@@ -339,7 +339,7 @@ module.exports = modelSetup({
       assert(typeof batch.update === 'function', 'has firestore batch');
     }
 
-    const doc = fs.collection(DEFICIENT_COLLECTION).doc(deficiencyId);
+    const doc = db.collection(DEFICIENT_COLLECTION).doc(deficiencyId);
 
     if (batch) {
       batch.update(doc, data);
@@ -351,20 +351,20 @@ module.exports = modelSetup({
 
   /**
    * Create/Update Firestore Deficient Item
-   * @param  {firebaseAdmin.firestore} fs - Firestore DB instance
+   * @param  {firebaseAdmin.firestore} db - Firestore DB instance
    * @param  {String} deficientItemId
    * @param  {Object} data
    * @return {Promise}
    */
-  async upsertRecord(fs, deficientItemId, data) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  async upsertRecord(db, deficientItemId, data) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(
       deficientItemId && typeof deficientItemId === 'string',
       'has deficient item id'
     );
     assert(data && typeof data === 'object', 'has update data');
 
-    const docRef = fs.collection(DEFICIENT_COLLECTION).doc(deficientItemId);
+    const docRef = db.collection(DEFICIENT_COLLECTION).doc(deficientItemId);
     let docSnap = null;
 
     try {
@@ -377,9 +377,9 @@ module.exports = modelSetup({
 
     try {
       if (exists) {
-        await this.updateRecord(fs, deficientItemId, data);
+        await this.updateRecord(db, deficientItemId, data);
       } else {
-        await this.createRecord(fs, deficientItemId, data);
+        await this.createRecord(db, deficientItemId, data);
       }
     } catch (err) {
       throw Error(
@@ -395,12 +395,12 @@ module.exports = modelSetup({
   /**
    * Archive a deficiency and
    * any associated Trello card
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String}  deficiencyId
    * @return {Promise}
    */
-  async deactivateRecord(fs, deficiencyId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  async deactivateRecord(db, deficiencyId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(
       deficiencyId && typeof deficiencyId === 'string',
       'has deficiency id'
@@ -410,7 +410,7 @@ module.exports = modelSetup({
     const updates = {};
 
     try {
-      diDoc = await this.findRecord(fs, deficiencyId);
+      diDoc = await this.findRecord(db, deficiencyId);
     } catch (err) {
       throw Error(
         `${PREFIX} deactivateRecord: DI "${deficiencyId}" lookup failed: ${err}`
@@ -421,13 +421,13 @@ module.exports = modelSetup({
       return updates;
     }
 
-    const batch = fs.batch();
+    const batch = db.batch();
     const deficientItem = diDoc.data();
     deficientItem.archive = true;
 
     try {
       await archive.deficientItem.createRecord(
-        fs,
+        db,
         deficiencyId,
         deficientItem,
         batch
@@ -439,7 +439,7 @@ module.exports = modelSetup({
     }
 
     try {
-      await this.removeRecord(fs, deficiencyId, batch);
+      await this.removeRecord(db, deficiencyId, batch);
     } catch (err) {
       throw Error(
         `${PREFIX} deactivateRecord: DI "${deficiencyId}" remove failed: ${err}`
@@ -456,7 +456,7 @@ module.exports = modelSetup({
     // Archive Trello Card
     try {
       const trelloResponse = await systemModel.archiveTrelloCard(
-        fs,
+        db,
         deficientItem.property,
         deficiencyId,
         false
@@ -478,12 +478,12 @@ module.exports = modelSetup({
   /**
    * Unarchive a previously
    * archived Firestore deficiency
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String} deficiencyId
    * @return {Promise}
    */
-  async activateRecord(fs, deficiencyId) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  async activateRecord(db, deficiencyId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(
       deficiencyId && typeof deficiencyId === 'string',
       'has deficiency id'
@@ -493,7 +493,7 @@ module.exports = modelSetup({
     const updates = {};
 
     try {
-      diDoc = await archive.deficientItem.findRecord(fs, deficiencyId);
+      diDoc = await archive.deficientItem.findRecord(db, deficiencyId);
     } catch (err) {
       throw Error(
         `${PREFIX} activateRecord:  DI "${deficiencyId}" lookup failed: ${err}`
@@ -504,13 +504,13 @@ module.exports = modelSetup({
       return updates;
     }
 
-    const batch = fs.batch();
+    const batch = db.batch();
     const deficientItem = diDoc.data();
     delete deficientItem._collection; // Remove archive only attribute
     deficientItem.archive = false;
 
     try {
-      await this.createRecord(fs, deficiencyId, deficientItem, batch);
+      await this.createRecord(db, deficiencyId, deficientItem, batch);
     } catch (err) {
       throw Error(
         `${PREFIX} activateRecord: DI "${deficiencyId}" create failed: ${err}`
@@ -518,7 +518,7 @@ module.exports = modelSetup({
     }
 
     try {
-      await archive.deficientItem.removeRecord(fs, deficiencyId, batch);
+      await archive.deficientItem.removeRecord(db, deficiencyId, batch);
     } catch (err) {
       throw Error(
         `${PREFIX} activateRecord: DI "${deficiencyId}" create failed: ${err}`
@@ -535,7 +535,7 @@ module.exports = modelSetup({
     // Archive Trello Card
     try {
       const trelloResponse = await systemModel.archiveTrelloCard(
-        fs,
+        db,
         deficientItem.property,
         deficiencyId,
         true
@@ -560,18 +560,18 @@ module.exports = modelSetup({
    * Delete all inspections active
    * and archived, associated with
    * a property
-   * @param  {admin.firestore} fs - Firestore DB instance
+   * @param  {admin.firestore} db - Firestore DB instance
    * @param  {String} propertyId
    * @param  {firestore.batch} batch
    * @return {Promise} - resolves {QuerySnapshot[]}
    */
-  removeForProperty(fs, propertyId, batch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  removeForProperty(db, propertyId, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
 
-    return fs
+    return db
       .runTransaction(async transaction => {
-        const queryActive = fs
+        const queryActive = db
           .collection(DEFICIENT_COLLECTION)
           .where('property', '==', propertyId);
 
@@ -584,7 +584,7 @@ module.exports = modelSetup({
         try {
           [activeDiSnap, archivedDiSnap] = await Promise.all([
             transaction.get(queryActive),
-            archive.deficientItem.queryByProperty(fs, propertyId, transaction),
+            archive.deficientItem.queryByProperty(db, propertyId, transaction),
           ]);
           activeDiSnap.forEach(({ ref }) => inspectionRefs.push(ref));
           archivedDiSnap.forEach(({ ref }) => inspectionRefs.push(ref));
@@ -643,11 +643,11 @@ module.exports = modelSetup({
 
   /**
    * Generate a Firestore ID for deficiency collection
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @return {String} - id
    */
-  uuid(fs) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
-    return fs.collection(DEFICIENT_COLLECTION).doc().id;
+  uuid(db) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    return db.collection(DEFICIENT_COLLECTION).doc().id;
   },
 });

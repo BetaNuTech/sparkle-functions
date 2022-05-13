@@ -8,18 +8,18 @@ const PREFIX = 'inspections: on-delete-v2:';
 
 /**
  * Factory for inspection onDelete handler
- * @param  {admin.firestore} fs - Firestore Admin DB instance
+ * @param  {admin.firestore} db - Firestore Admin DB instance
  * @return {Function} - inspection onDelete handler
  */
-module.exports = function createOnDeleteHandler(fs) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function createOnDeleteHandler(db) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
 
   return async (inspectionSnap, event) => {
     const { inspectionId } = event.params;
     const inspection = inspectionSnap.data() || {};
     const propertyId = inspection.property;
     const isCompleted = Boolean(inspection.inspectionCompleted);
-    const batch = fs.batch();
+    const batch = db.batch();
 
     if (!propertyId || !inspection) {
       throw Error(
@@ -29,7 +29,7 @@ module.exports = function createOnDeleteHandler(fs) {
 
     try {
       // Archives deleted inspection
-      await inspectionsModel.removeRecord(fs, inspectionId, inspection, batch);
+      await inspectionsModel.removeRecord(db, inspectionId, inspection, batch);
     } catch (err) {
       throw Error(
         `${PREFIX} archiving inspection "${inspectionId}" failed | ${err}`
@@ -40,7 +40,7 @@ module.exports = function createOnDeleteHandler(fs) {
     // to completed inspection meta data
     if (isCompleted) {
       try {
-        await propertiesModel.updateMetaData(fs, propertyId, batch);
+        await propertiesModel.updateMetaData(db, propertyId, batch);
       } catch (err) {
         log.error(
           `${PREFIX} failed to update property "${propertyId}" meta data | ${err}`
@@ -51,7 +51,7 @@ module.exports = function createOnDeleteHandler(fs) {
     // Lookup all an inspection's deficiencies
     let deficiencyRefs;
     try {
-      deficiencyRefs = await diModel.queryByInspection(fs, inspectionId);
+      deficiencyRefs = await diModel.queryByInspection(db, inspectionId);
     } catch (err) {
       log.error(`${PREFIX} failed to lookup inspection deficiencies | ${err}`);
     }
@@ -62,7 +62,7 @@ module.exports = function createOnDeleteHandler(fs) {
       const deficiencyId = deficiencyRefs.docs[i].id;
 
       try {
-        await diModel.deactivateRecord(fs, deficiencyId);
+        await diModel.deactivateRecord(db, deficiencyId);
       } catch (err) {
         log.error(
           `${PREFIX} failed to deactivate deficiency: "${deficiencyId}" | ${err}`

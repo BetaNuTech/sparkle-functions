@@ -8,13 +8,13 @@ const OUTDATED_OFFSET = 2629800; // seconds in 1 month
 /**
  * Sync registration tokens with booleans
  * to timestamps and remove old unused tokens
- * @param  {admin.firestore} fs
+ * @param  {admin.firestore} db
  * @param  {functions.pubsub} pubSub
  * @param  {String} topic
  * @return {functions.CloudFunction}
  */
-module.exports = function createSyncOudated(fs, pubsub, topic) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function createSyncOudated(db, pubsub, topic) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
   assert(pubsub && typeof pubsub.topic === 'function', 'has pubsub reference');
   assert(topic && typeof topic === 'string', 'has pubsub topic');
 
@@ -23,7 +23,7 @@ module.exports = function createSyncOudated(fs, pubsub, topic) {
     const maxTimestamp = now - OUTDATED_OFFSET;
 
     try {
-      await tokensModel.removeOutdated(fs, maxTimestamp);
+      await tokensModel.removeOutdated(db, maxTimestamp);
     } catch (err) {
       log.error(`${PREFIX} failed to remove outdated failed | ${err}`);
     }

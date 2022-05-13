@@ -13,11 +13,11 @@ const DEFICIENT_ITEM_PROXY_ATTRS = Object.keys(
 
 /**
  * Factory for inspection onWrite handler
- * @param  {admin.firestore} fs - Firestore Admin DB instance
+ * @param  {admin.firestore} db - Firestore Admin DB instance
  * @return {Function} - inspection onWrite handler
  */
-module.exports = function createOnWriteHandler(fs) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function createOnWriteHandler(db) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
 
   return async function onWriteHandler(change, event) {
     const { inspectionId } = event.params;
@@ -55,7 +55,7 @@ module.exports = function createOnWriteHandler(fs) {
         // Calculate expected and lookup current DI's
         const expectedDeficientItems = diUtils.createDeficientItems(inspection);
         const currentDeficientItemRefs = await diModel.queryByInspection(
-          fs,
+          db,
           inspectionId
         );
         const currentDeficientItems = currentDeficientItemRefs.docs.reduce(
@@ -75,7 +75,7 @@ module.exports = function createOnWriteHandler(fs) {
 
         for (let i = 0; i < removeDeficiencyIds.length; i++) {
           const removeDeficiencyId = removeDeficiencyIds[i];
-          await diModel.deactivateRecord(fs, removeDeficiencyId);
+          await diModel.deactivateRecord(db, removeDeficiencyId);
           log.info(`${PREFIX} deactivated deficiency "${removeDeficiencyId}"`);
         }
 
@@ -109,7 +109,7 @@ module.exports = function createOnWriteHandler(fs) {
           // Write, log, and set in memory w/ any updates
           if (Object.keys(itemUpdates).length) {
             itemUpdates.updatedAt = Math.round(Date.now() / 1000); // modify updatedAt
-            await diModel.updateRecord(fs, updateDeficiencyId, {
+            await diModel.updateRecord(db, updateDeficiencyId, {
               ...deficientItem,
               ...itemUpdates,
             });
@@ -135,8 +135,8 @@ module.exports = function createOnWriteHandler(fs) {
           const inspectionItemId = addInspectionItemIds[i];
           const deficiencyData = expectedDeficientItems[inspectionItemId];
           deficiencyData.property = propertyId;
-          const newDeficiencyId = diModel.uuid(fs);
-          await diModel.safelyCreateRecord(fs, newDeficiencyId, deficiencyData);
+          const newDeficiencyId = diModel.uuid(db);
+          await diModel.safelyCreateRecord(db, newDeficiencyId, deficiencyData);
           log.info(`${PREFIX} added new deficiency "${newDeficiencyId}"`);
         }
       } catch (err) {
@@ -155,7 +155,7 @@ module.exports = function createOnWriteHandler(fs) {
     // NOTE: Must update after deficiency creation/update
     if (hasUpdatedLastDate || hasUpdatedMigration) {
       try {
-        await propertiesModel.updateMetaData(fs, propertyId);
+        await propertiesModel.updateMetaData(db, propertyId);
       } catch (err) {
         log.error(`${PREFIX} property meta data update failed | ${err}`);
       }

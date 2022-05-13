@@ -7,11 +7,11 @@ const PREFIX = 'trello: api: get-board-lists:';
 
 /**
  * Factory for getting all trello board lists
- * @param  {admin.firestore} fs - Firebase Admin DB instance
+ * @param  {admin.firestore} db - Firebase Admin DB instance
  * @return {Function} - onRequest handler
  */
-module.exports = function createOnGetAllTrelloBoardListsHandler(fs) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function createOnGetAllTrelloBoardListsHandler(db) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
 
   /**
    * get all trello board lists for the user requesting

@@ -24,14 +24,14 @@ const config = require('./config');
 /**
  * Configure Express app with
  * all API endpoints
- * @param  {admin.firestore} fs - Firestore Admin DB instance
+ * @param  {admin.firestore} db - Firestore Admin DB instance
  * @param  {admin.auth} auth - Firebase Admin auth instance
  * @param  {Object} settings
  * @param  {Object} storage
  * @return {Express}
  */
-module.exports = (fs, auth, settings, storage, pubsubClient) => {
-  assert(Boolean(fs), 'has firestore database instance');
+module.exports = (db, auth, settings, storage, pubsubClient) => {
+  assert(Boolean(db), 'has firestore database instance');
   assert(Boolean(auth), 'has firebase auth instance');
 
   const app = express();
@@ -47,75 +47,75 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
 
   // Return latest published
   // client app versions
-  app.get('/v0/versions', authUser(fs, auth), clients.api.getAppVersions(fs));
+  app.get('/v0/versions', authUser(db, auth), clients.api.getAppVersions(db));
   app.get(
     '/v0/clients/versions',
-    authUser(fs, auth),
-    clients.api.getAppVersions(fs)
+    authUser(db, auth),
+    clients.api.getAppVersions(db)
   );
 
   // Create client error report
-  app.post('/v0/clients/errors', authUser(fs, auth), clients.api.postError());
+  app.post('/v0/clients/errors', authUser(db, auth), clients.api.postError());
 
   // Inspection creation end point
   app.post(
     '/v0/properties/:propertyId/inspections',
-    authUser(fs, auth, {
+    authUser(db, auth, {
       admin: true,
       corporate: true,
       team: true,
       property: true,
     }),
-    inspections.api.post(fs)
+    inspections.api.post(db)
   );
 
   // Update Inspection Items
   app.patch(
     '/v0/inspections/:inspectionId/template',
-    inspections.api.propertyAuthSetupMiddleware(fs),
-    authUser(fs, auth, {
+    inspections.api.propertyAuthSetupMiddleware(db),
+    authUser(db, auth, {
       admin: true,
       corporate: true,
       team: true,
       property: true,
     }),
-    inspections.api.patchTemplate(fs, storage, completeInspUpdatePublisher)
+    inspections.api.patchTemplate(db, storage, completeInspUpdatePublisher)
   );
 
   // Upload a image to an inspection item
   app.post(
     '/v0/inspections/:inspectionId/template/items/:itemId/image',
-    inspections.api.propertyAuthSetupMiddleware(fs),
-    authUser(fs, auth, {
+    inspections.api.propertyAuthSetupMiddleware(db),
+    authUser(db, auth, {
       admin: true,
       corporate: true,
       team: true,
       property: true,
     }),
     fileParser,
-    inspections.api.postTemplateItemImage(fs, storage)
+    inspections.api.postTemplateItemImage(db, storage)
   );
 
   // Inspection property
   // reassignment endpoint
   app.patch(
     '/v0/inspections/:inspectionId',
-    authUser(fs, auth, true), // admin only
-    inspections.api.createPatchProperty(fs)
+    authUser(db, auth, true), // admin only
+    inspections.api.createPatchProperty(db)
   );
 
   // Generate Inspection PDF report
   app.patch(
     '/v0/inspections/:inspectionId/report-pdf',
-    inspections.api.propertyAuthSetupMiddleware(fs),
-    authUser(fs, auth, {
+    inspections.api.propertyAuthSetupMiddleware(db),
+    authUser(db, auth, {
       admin: true,
       corporate: true,
       team: true,
       property: true,
     }),
     inspections.api.createPatchReportPDF(
-      fs,
+      db,
       storage,
       completeInspUpdatePublisher
     )
@@ -125,183 +125,199 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
   app.get(
     '/v0/inspections/latest-completed',
     // TODO: auth?
-    inspections.api.getLatestCompletedInspection(fs)
+    inspections.api.getLatestCompletedInspection(db)
   );
 
   // Create a template
   app.post(
     '/v0/templates',
-    authUser(fs, auth, { admin: true, corporate: true }),
-    templates.api.post(fs)
+    authUser(db, auth, { admin: true, corporate: true }),
+    templates.api.post(db)
   );
 
   // Update a template
   app.patch(
     '/v0/templates/:templateId',
-    authUser(fs, auth, { admin: true, corporate: true }),
-    templates.api.patch(fs)
+    authUser(db, auth, { admin: true, corporate: true }),
+    templates.api.patch(db)
   );
 
   // Delete a template
   app.delete(
     '/v0/templates/:templateId',
-    authUser(fs, auth, { admin: true }),
-    templates.api.delete(fs)
+    authUser(db, auth, { admin: true }),
+    templates.api.delete(db)
   );
 
   // Create a template category
   app.post(
     '/v0/template-categories',
-    authUser(fs, auth, { admin: true, corporate: true }),
-    templateCategories.api.post(fs)
+    authUser(db, auth, { admin: true, corporate: true }),
+    templateCategories.api.post(db)
   );
 
   // Update a template category
   app.patch(
     '/v0/template-categories/:templateCategoryId',
-    authUser(fs, auth, { admin: true, corporate: true }),
-    templateCategories.api.patch(fs)
+    authUser(db, auth, { admin: true, corporate: true }),
+    templateCategories.api.patch(db)
   );
 
   // Delete a template category
   app.delete(
     '/v0/template-categories/:templateCategoryId',
-    authUser(fs, auth, { admin: true, corporate: true }),
-    templateCategories.api.delete(fs)
+    authUser(db, auth, { admin: true, corporate: true }),
+    templateCategories.api.delete(db)
   );
 
   // Request Property's residents from Yardi
   app.get(
     '/v0/properties/:propertyId/yardi/residents',
-    authUser(fs, auth, {
+    authUser(db, auth, {
       admin: true,
       corporate: true,
       team: true,
       property: true,
     }),
-    properties.middleware.propertyCode(fs),
-    properties.middleware.yardiIntegration(fs),
-    properties.api.getPropertyYardiResidents(fs)
+    properties.middleware.propertyCode(db),
+    properties.middleware.yardiIntegration(db),
+    properties.api.getPropertyYardiResidents(db)
   );
 
   // Request Property's work orders from Yardi
   app.get(
     '/v0/properties/:propertyId/yardi/work-orders',
-    authUser(fs, auth, {
+    authUser(db, auth, {
       admin: true,
       corporate: true,
       team: true,
       property: true,
     }),
-    properties.middleware.propertyCode(fs),
-    properties.middleware.yardiIntegration(fs),
+    properties.middleware.propertyCode(db),
+    properties.middleware.yardiIntegration(db),
     properties.api.getPropertyYardiWorkOrders()
   );
 
   // Create a property
   app.post(
     '/v0/properties',
-    authUser(fs, auth, true), // admin only
-    properties.api.post(fs)
+    authUser(db, auth, true), // admin only
+    properties.api.post(db)
   );
 
   // Update a property
   app.put(
     '/v0/properties/:propertyId',
-    authUser(fs, auth, { admin: true, corporate: true }),
-    properties.api.put(fs)
+    authUser(db, auth, { admin: true, corporate: true }),
+    properties.api.put(db)
   );
 
   // Upload an image/logo to property
   app.post(
     '/v0/properties/:propertyId/image',
-    authUser(fs, auth, {
+    authUser(db, auth, {
       admin: true,
       corporate: true,
     }),
     fileParser,
-    properties.api.postImage(fs, storage)
+    properties.api.postImage(db, storage)
   );
 
   // Authorize Slack API credentials
   app.post(
     '/v0/integrations/slack/authorization',
-    authUser(fs, auth, true),
-    slack.api.postAuth(fs)
+    authUser(db, auth, true),
+    slack.api.postAuth(db)
   );
 
   // Update Slack Integration Details
   app.patch(
     '/v0/integrations/slack/authorization',
-    authUser(fs, auth, true),
-    slack.api.patchAuth(fs)
+    authUser(db, auth, true),
+    slack.api.patchAuth(db)
   );
 
   // Delete Slack App from a Slack Workspace
   app.delete(
     '/v0/integrations/slack/authorization',
-    authUser(fs, auth, true),
-    slack.api.deleteAuth(fs)
+    authUser(db, auth, true),
+    slack.api.deleteAuth(db)
   );
 
   // Slack POST events webook
-  app.post('/v0/integrations/slack/events', slack.api.postEventsWebhook(fs));
+  app.post('/v0/integrations/slack/events', slack.api.postEventsWebhook(db));
 
   // Authorize Trello API credentials
   app.post(
     '/v0/integrations/trello/authorization',
-    authUser(fs, auth, true),
-    trello.api.postAuth(fs)
+    authUser(db, auth, true),
+    trello.api.postAuth(db)
   );
 
   // Remove Trello API credentials & integrations
   app.delete(
     '/v0/integrations/trello/authorization',
-    authUser(fs, auth, true),
-    trello.api.deleteAuth(fs)
+    authUser(db, auth, true),
+    trello.api.deleteAuth(db)
   );
 
   // Fetch all Trello boards
   app.get(
     '/v0/integrations/trello/boards',
-    authUser(fs, auth, true),
-    authTrelloReq(fs),
-    trello.api.getBoards(fs)
+    authUser(db, auth, true),
+    authTrelloReq(db),
+    trello.api.getBoards(db)
   );
 
   // Fetch all Trello board's lists
   app.get(
     '/v0/integrations/trello/boards/:boardId/lists',
-    authUser(fs, auth, true),
-    authTrelloReq(fs),
-    trello.api.getBoardLists(fs)
+    authUser(db, auth, true),
+    authTrelloReq(db),
+    trello.api.getBoardLists(db)
+  );
+
+  // Create/update a property's trello integration
+  app.put(
+    '/v0/integrations/trello/properties/:propertyId',
+    authUser(db, auth, true),
+    authTrelloReq(db),
+    trello.api.putPropertyIntegration(db)
+  );
+
+  // Delete a property's trello integration
+  app.delete(
+    '/v0/integrations/trello/properties/:propertyId',
+    authUser(db, auth, true),
+    authTrelloReq(db),
+    trello.api.deletePropertyIntegration(db)
   );
 
   app.post(
     '/v0/properties/:propertyId/jobs/:jobId/trello',
-    authUser(fs, auth, {
+    authUser(db, auth, {
       admin: true,
       corporate: true,
       team: true,
       property: true,
     }),
-    authTrelloReq(fs),
-    trello.api.postJobCard(fs)
+    authTrelloReq(db),
+    trello.api.postJobCard(db)
   );
 
   // Create Trello Card for deficiency
   app.post(
     '/v0/deficiencies/:deficiencyId/trello/card',
     // setup property-level auth requirements
-    deficiencies.api.authSetup(fs),
-    authUser(fs, auth, {
+    deficiencies.api.authSetup(db),
+    authUser(db, auth, {
       admin: true,
       corporate: true,
       team: true,
       property: true,
     }),
-    authTrelloReq(fs),
-    trello.api.postDeficiencyCard(fs)
+    authTrelloReq(db),
+    trello.api.postDeficiencyCard(db)
   );
 
   // Update 1 or more deficiencies
@@ -311,114 +327,114 @@ module.exports = (fs, auth, settings, storage, pubsubClient) => {
   app.put(
     '/v0/deficiencies',
     // setup property-level auth requirements
-    deficiencies.api.authSetup(fs),
+    deficiencies.api.authSetup(db),
     // permission auth
-    authUser(fs, auth, {
+    authUser(db, auth, {
       admin: true,
       corporate: true,
       team: true,
       property: true,
     }),
-    deficiencies.api.putBatch(fs, enableProgressNoteNotifications)
+    deficiencies.api.putBatch(db, enableProgressNoteNotifications)
   );
 
   // Upload a image to an deficiency
   app.post(
     '/v0/deficiencies/:deficiencyId/image',
     // setup property-level auth requirements
-    deficiencies.api.authSetup(fs),
-    authUser(fs, auth, {
+    deficiencies.api.authSetup(db),
+    authUser(db, auth, {
       admin: true,
       corporate: true,
       team: true,
       property: true,
     }),
     fileParser,
-    deficiencies.api.postImage(fs, storage)
+    deficiencies.api.postImage(db, storage)
   );
 
   // Create new user
   app.post(
     '/v0/users',
-    authUser(fs, auth),
+    authUser(db, auth),
     authUserCrud(auth),
-    users.api.createPostUser(fs, auth)
+    users.api.createPostUser(db, auth)
   );
 
   // Update User
   app.patch(
     '/v0/users/:userId',
-    authUser(fs, auth),
-    users.api.createPatchUser(fs, auth)
+    authUser(db, auth),
+    users.api.createPatchUser(db, auth)
   );
 
   // Delete User
   app.delete(
     '/v0/users/:userId',
-    authUser(fs, auth),
+    authUser(db, auth),
     authUserCrud(auth),
-    users.api.createDeleteUser(fs, auth)
+    users.api.createDeleteUser(db, auth)
   );
 
   // Create job
   app.post(
     '/v0/properties/:propertyId/jobs',
-    authUser(fs, auth, {
+    authUser(db, auth, {
       admin: true,
       corporate: true,
       team: true,
       property: true,
     }),
-    jobs.api.post(fs)
+    jobs.api.post(db)
   );
 
   // Update a job
   app.put(
     '/v0/properties/:propertyId/jobs/:jobId',
-    authUser(fs, auth, {
+    authUser(db, auth, {
       admin: true,
       corporate: true,
       team: true,
       property: true,
     }),
-    jobs.api.put(fs)
+    jobs.api.put(db)
   );
 
   // Update a bid
   app.put(
     '/v0/properties/:propertyId/jobs/:jobId/bids/:bidId',
-    authUser(fs, auth, {
+    authUser(db, auth, {
       admin: true,
       corporate: true,
       team: true,
       property: true,
     }),
-    jobs.api.putBid(fs)
+    jobs.api.putBid(db)
   );
 
   // Create bid
   app.post(
     '/v0/properties/:propertyId/jobs/:jobId/bids',
-    authUser(fs, auth, {
+    authUser(db, auth, {
       admin: true,
       corporate: true,
       team: true,
       property: true,
     }),
-    jobs.api.postBid(fs)
+    jobs.api.postBid(db)
   );
 
   // Create Team
-  app.post('/v0/teams', authUser(fs, auth, true), teams.api.post(fs));
+  app.post('/v0/teams', authUser(db, auth, true), teams.api.post(db));
 
   // Update Team
-  app.patch('/v0/teams/:teamId', authUser(fs, auth, true), teams.api.patch(fs));
+  app.patch('/v0/teams/:teamId', authUser(db, auth, true), teams.api.patch(db));
 
   // Delete Team
   app.delete(
     '/v0/teams/:teamId',
-    authUser(fs, auth, true),
-    teams.api.delete(fs)
+    authUser(db, auth, true),
+    teams.api.delete(db)
   );
 
   return app;

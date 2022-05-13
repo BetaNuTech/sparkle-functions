@@ -6,25 +6,25 @@ module.exports = {
   /**
    * Has removed all references to a
    * Deficient Item's Trello card
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String}  propertyTrelloCardsPath - ie /system/integrations/<uid>/trello/properties/<property-id>/cards/<card-id>
    * @param  {String}  deficientItemPath       - ie /propertyInspectionDeficientItems/<property-id>/<def-item-id>
    * @return {Promise}
    */
   async hasRemovedDeficiencyCardReferences(
-    fs,
+    db,
     propertyId,
     deficiencyId,
     cardId
   ) {
     const trelloCardDetailsSnap = await systemModel.findTrelloProperty(
-      fs,
+      db,
       propertyId
     );
     const actualTrelloCardDetails = Boolean(
       ((trelloCardDetailsSnap.data() || {}).cards || {})[cardId]
     );
-    const deficiencySnap = await deficiencyModel.findRecord(fs, deficiencyId);
+    const deficiencySnap = await deficiencyModel.findRecord(db, deficiencyId);
     const actualTrelloCardUrl = Boolean(
       (deficiencySnap.data() || {}).trelloCardURL
     );

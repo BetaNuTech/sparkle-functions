@@ -118,60 +118,34 @@ module.exports = {
   /**
    * Remove all records from
    * Realtime and Firebase database
-   * @param  {firebaseAdmin.database} db
-   * @param  {firebaseAdmin.firestore?} fs
+   * @param  {firebaseAdmin.firestore} db
    * @return {Promise}
    */
-  cleanDb(db, fs) {
-    const realtimeDbReq = [];
-    if (db) {
-      realtimeDbReq.push(
-        db.ref().update({
-          '/archive': null,
-          '/completedInspectionsList': null,
-          '/inspections': null,
-          '/properties': null,
-          '/propertyInspectionDeficientItems': null,
-          '/propertyInspectionsList': null,
-          '/propertyTemplatesList': null,
-          '/registrationTokens': null,
-          '/teams': null,
-          '/templateCategories': null,
-          '/templates': null,
-          '/templatesList': null,
-          '/users': null,
-          '/sendMessages': null,
-          '/integrations': null,
-          '/notifications': null,
-        })
-      );
-    }
-
+  cleanDb(db) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     const firestoreDbReq = [];
 
     // Optionally remove all Firestore collections
-    if (fs) {
-      firestoreDbReq.push(
-        ...[
-          'templates',
-          'properties',
-          'inspections',
-          'deficiencies',
-          'templateCategories',
-          'archives',
-          'users',
-          'teams',
-          'system',
-          'integrations',
-          'notifications',
-          'registrationTokens',
-          'jobs',
-          'bids',
-        ].map(col => deleteFirestoreCollection(fs, col))
-      );
-    }
+    firestoreDbReq.push(
+      ...[
+        'templates',
+        'properties',
+        'inspections',
+        'deficiencies',
+        'templateCategories',
+        'archives',
+        'users',
+        'teams',
+        'system',
+        'integrations',
+        'notifications',
+        'registrationTokens',
+        'jobs',
+        'bids',
+      ].map(col => deleteFirestoreCollection(db, col))
+    );
 
-    return Promise.all([...realtimeDbReq, ...firestoreDbReq]);
+    return Promise.all([...firestoreDbReq]);
   },
 
   /**
@@ -182,12 +156,9 @@ module.exports = {
    * @return {Promise} - resolves {Object} file reference
    */
   findStorageFile(bucket, prefix, fileName) {
-    assert('has storage bucket', bucket);
-    assert(
-      'has test directory prefix',
-      prefix && `${prefix}`.search(/Test$/) !== -1
-    );
-    assert('has filename', fileName && typeof fileName === 'string');
+    assert(Boolean(bucket), 'has storage bucket');
+    assert(prefix && typeof prefix === 'string', 'has directory prefix');
+    assert(fileName && typeof fileName === 'string', 'has filename');
 
     return bucket
       .getFiles({ prefix })
@@ -212,16 +183,16 @@ module.exports = {
 /**
  * Remove all documents from a Firestore
  * collectoin
- * @param  {firebaseAdmin.firestore} fs
+ * @param  {firebaseAdmin.firestore} db
  * @param  {String} collection
  * @return {Promise}
  */
-async function deleteFirestoreCollection(fs, collection) {
-  const snapshot = await fs.collection(collection).get();
+async function deleteFirestoreCollection(db, collection) {
+  const snapshot = await db.collection(collection).get();
   if (snapshot.size === 0) return;
 
   // Delete documents in a batch
-  const batch = fs.batch();
+  const batch = db.batch();
   snapshot.docs.forEach(doc => {
     batch.delete(doc.ref);
   });

@@ -350,6 +350,25 @@ describe('Utils | Source Notifications Templates', () => {
           'authorEmail',
         ],
       },
+      {
+        template: 'property-trello-integration-update-summary',
+        values: ['authorName'],
+      },
+      {
+        template: 'property-trello-integration-update-markdown-body',
+        values: [
+          'previousOpenBoard',
+          'previousOpenList',
+          'previousClosedBoard',
+          'previousClosedList',
+          'currentOpenBoard',
+          'currentOpenList',
+          'currentClosedBoard',
+          'currentClosedList',
+          'authorName',
+          'authorEmail',
+        ],
+      },
     ];
 
     // Sanity check

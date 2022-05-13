@@ -10,22 +10,22 @@ module.exports = modelSetup({
   /**
    * Remove a property from a team
    * and all team's associated users
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String} teamId
    * @param  {String} propertyId
    * @param  {firestore.batch?} batch
    * @return {Promise}
    */
-  removeProperty(fs, teamId, propertyId, batch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  removeProperty(db, teamId, propertyId, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(teamId && typeof teamId === 'string', 'has team id');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
 
-    return fs
+    return db
       .runTransaction(async transaction => {
         const queries = Promise.all([
-          teamsModel.findRecord(fs, teamId, transaction),
-          usersModel.findByTeam(fs, teamId, transaction),
+          teamsModel.findRecord(db, teamId, transaction),
+          usersModel.findByTeam(db, teamId, transaction),
         ]);
 
         let team = null;
@@ -72,22 +72,22 @@ module.exports = modelSetup({
   /**
    * Add a property to a team
    * and all team's associated users
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String} teamId
    * @param  {String} propertyId
    * @param  {firestore.batch?} batch
    * @return {Promise}
    */
-  addProperty(fs, teamId, propertyId, batch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  addProperty(db, teamId, propertyId, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(teamId && typeof teamId === 'string', 'has team id');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
 
-    return fs
+    return db
       .runTransaction(async transaction => {
         const queries = Promise.all([
-          teamsModel.findRecord(fs, teamId, transaction),
-          usersModel.findByTeam(fs, teamId, transaction),
+          teamsModel.findRecord(db, teamId, transaction),
+          usersModel.findByTeam(db, teamId, transaction),
         ]);
 
         let teamDocSnap = null;
@@ -126,23 +126,23 @@ module.exports = modelSetup({
   /**
    * Update property's old/new
    * teams and users
-   * @param  {admin.firestore} fs
+   * @param  {admin.firestore} db
    * @param  {String} oldTeamId
    * @param  {String} newTeamId
    * @param  {String} propertyId
    * @param  {firestore.batch?} parentBatch
    * @return {Promise}
    */
-  async updateProperty(fs, oldTeamId, newTeamId, propertyId, parentBatch) {
-    assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  async updateProperty(db, oldTeamId, newTeamId, propertyId, parentBatch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
     assert(oldTeamId && typeof oldTeamId === 'string', 'has old team id');
     assert(newTeamId && typeof newTeamId === 'string', 'has new team id');
     assert(propertyId && typeof propertyId === 'string', 'has property id');
-    const batch = parentBatch || fs.batch();
+    const batch = parentBatch || db.batch();
 
     // Remove property from old team/users
     try {
-      await this.removeProperty(fs, oldTeamId, propertyId, batch);
+      await this.removeProperty(db, oldTeamId, propertyId, batch);
     } catch (err) {
       throw Error(
         `${PREFIX} updateProperty: remove property batch failed: ${err}`
@@ -151,7 +151,7 @@ module.exports = modelSetup({
 
     // Add property to new team/users
     try {
-      await this.addProperty(fs, newTeamId, propertyId, batch);
+      await this.addProperty(db, newTeamId, propertyId, batch);
     } catch (err) {
       throw Error(
         `${PREFIX} updateProperty: add property batch failed: ${err}`

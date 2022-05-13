@@ -5,10 +5,10 @@ const bodyParser = require('body-parser');
 const teamsModel = require('../../../models/teams');
 const handler = require('../../../teams/api/post');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { fs: db } = require('../../setup');
+const { db } = require('../../setup');
 
 describe('Teams | API | POST', () => {
-  afterEach(() => cleanDb(null, db));
+  afterEach(() => cleanDb(db));
 
   it('should create a new team', async () => {
     const expected = 'New Team';

@@ -7,10 +7,10 @@ const mocking = require('../../../test-helpers/mocking');
 const deficiencyModel = require('../../../models/deficient-items');
 const handler = require('../../../deficient-items/api/put-batch');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { fs: db } = require('../../setup');
+const { db } = require('../../setup');
 
 describe('Deficient Items | API | PUT Batch', () => {
-  afterEach(() => cleanDb(null, db));
+  afterEach(() => cleanDb(db));
 
   it('transitions a group of deficient items to new state', async () => {
     const expected = ['closed', 'closed'];

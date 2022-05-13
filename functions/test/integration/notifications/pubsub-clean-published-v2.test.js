@@ -23,13 +23,13 @@ describe('Notifications | Pubsub | Clean Published V2', function() {
       .resolves(stubs.wrapSnapshot(notifications));
 
     sinon.stub(notificationsModel, 'destroyRecord').resolves();
-    const fs = createFirestore();
+    const db = createFirestore();
     const commit = { commit: () => Promise.resolve() };
     const commitStub = sinon.spy(commit, 'commit');
-    sinon.stub(fs, 'batch').returns(commit);
+    sinon.stub(db, 'batch').returns(commit);
 
     await createHandler(
-      fs,
+      db,
       createPubSubHandler(),
       'topic',
       5 // 5 notifications per batch

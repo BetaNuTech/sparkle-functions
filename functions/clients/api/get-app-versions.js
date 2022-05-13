@@ -7,11 +7,11 @@ const PREFIX = 'clients: api: get-app-versions:';
 /**
  * Factory for creating a GET endpoint
  * that returns the client app versions
- * @param {admin.firebase} fs
+ * @param {admin.firebase} db
  * @return {Function} - onRequest handler
  */
-module.exports = function createGetClientApps(fs) {
-  assert(Boolean(fs), 'has firestore database');
+module.exports = function createGetClientApps(db) {
+  assert(Boolean(db), 'has firestore database');
 
   /**
    * Handle GET request
@@ -26,7 +26,7 @@ module.exports = function createGetClientApps(fs) {
 
     // Load client app data
     try {
-      const clientAppSnaps = await integrationsModel.getClientApps(fs);
+      const clientAppSnaps = await integrationsModel.getClientApps(db);
 
       if (clientAppSnaps && clientAppSnaps.docs) {
         clientAppSnaps.docs.forEach(clientAppDoc => {

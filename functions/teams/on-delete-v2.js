@@ -7,11 +7,11 @@ const PREFIX = 'teams: team-delete:';
 
 /**
  * Factory team delete handlers
- * @param  {admin.firestore} fs - Firestore Admin DB instance
+ * @param  {admin.firestore} db - Firestore Admin DB instance
  * @return {Function} - team delete handler
  */
-module.exports = function teamDeleteV2(fs) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function teamDeleteV2(db) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
 
   return async (teamSnap, context) => {
     const { teamId } = context.params;
@@ -21,12 +21,12 @@ module.exports = function teamDeleteV2(fs) {
     }
 
     try {
-      await fs.runTransaction(async transaction => {
+      await db.runTransaction(async transaction => {
         // Lookup team's properties
         const propertiesOfTeamIds = [];
         try {
           const propertiesOfTeamSnap = await propertiesModel.query(
-            fs,
+            db,
             {
               team: ['==', teamId],
             },
@@ -45,7 +45,7 @@ module.exports = function teamDeleteV2(fs) {
         const usersOfTeamIds = [];
         try {
           const usersInRemovedTeamSnap = await usersModel.findByTeam(
-            fs,
+            db,
             teamId,
             transaction
           );
@@ -62,7 +62,7 @@ module.exports = function teamDeleteV2(fs) {
         if (propertiesOfTeamIds.length) {
           try {
             await propertiesModel.batchRemoveTeam(
-              fs,
+              db,
               propertiesOfTeamIds,
               transaction
             );
@@ -74,7 +74,7 @@ module.exports = function teamDeleteV2(fs) {
         // Cleanup team's users
         if (usersOfTeamIds.length) {
           try {
-            usersModel.batchRemoveTeam(fs, usersOfTeamIds, teamId, transaction);
+            usersModel.batchRemoveTeam(db, usersOfTeamIds, teamId, transaction);
           } catch (err) {
             log.error(`${PREFIX} error removing team from users | ${err}`);
           }

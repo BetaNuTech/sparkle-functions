@@ -8,7 +8,7 @@ const propertiesModel = require('../../../models/properties');
 const handler = require('../../../inspections/api/patch-report-pdf');
 const { cleanDb } = require('../../../test-helpers/firebase');
 const stubs = require('../../../test-helpers/stubs');
-const { fs: db, storage } = require('../../setup');
+const { db, storage } = require('../../setup');
 
 // Avoid creating lots of PDF's
 const INSP_ID = uuid();
@@ -34,7 +34,7 @@ const PROPERTY_DATA = {
 };
 
 describe('Inspections | API | PATCH PDF Report', () => {
-  afterEach(() => cleanDb(null, db));
+  afterEach(() => cleanDb(db));
 
   it('should queue an inspection for PDF report generation on success', async function() {
     // Setup database

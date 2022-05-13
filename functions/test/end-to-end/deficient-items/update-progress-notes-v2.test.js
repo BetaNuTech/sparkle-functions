@@ -10,12 +10,12 @@ const { cleanDb } = require('../../../test-helpers/firebase');
 const userModel = require('../../../models/users');
 const deficiencyModel = require('../../../models/deficient-items');
 const systemModel = require('../../../models/system');
-const { fs, test, cloudFunctions } = require('../../setup');
+const { db, test, cloudFunctions } = require('../../setup');
 
 describe('Deficient Items | Update Progress Notes V2', () => {
   afterEach(async () => {
     nock.cleanAll();
-    await cleanDb(null, fs);
+    await cleanDb(db);
   });
 
   it("publishes a progress note comment to a Deficiency's Trello Card", async () => {
@@ -69,13 +69,13 @@ describe('Deficient Items | Update Progress Notes V2', () => {
       .reply(200, {});
 
     // Setup database
-    await deficiencyModel.createRecord(fs, deficiencyId, deficiencyData);
-    await systemModel.upsertTrello(fs, trelloCredentials);
-    await systemModel.createTrelloProperty(fs, propertyId, trelloPropertyData);
-    await userModel.createRecord(fs, userId, userData);
-    const beforeSnap = await deficiencyModel.findRecord(fs, deficiencyId);
-    await deficiencyModel.updateRecord(fs, deficiencyId, defUpdate);
-    const afterSnap = await deficiencyModel.findRecord(fs, deficiencyId);
+    await deficiencyModel.createRecord(db, deficiencyId, deficiencyData);
+    await systemModel.upsertTrello(db, trelloCredentials);
+    await systemModel.createTrelloProperty(db, propertyId, trelloPropertyData);
+    await userModel.createRecord(db, userId, userData);
+    const beforeSnap = await deficiencyModel.findRecord(db, deficiencyId);
+    await deficiencyModel.updateRecord(db, deficiencyId, defUpdate);
+    const afterSnap = await deficiencyModel.findRecord(db, deficiencyId);
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
 
     // Execute
@@ -144,13 +144,13 @@ describe('Deficient Items | Update Progress Notes V2', () => {
       .reply(404, {});
 
     // Setup database
-    await deficiencyModel.createRecord(fs, deficiencyId, deficiencyData);
-    await systemModel.upsertTrello(fs, trelloCredentials);
-    await systemModel.createTrelloProperty(fs, propertyId, trelloPropertyData);
-    await userModel.createRecord(fs, userId, userData);
-    const beforeSnap = await deficiencyModel.findRecord(fs, deficiencyId);
-    await deficiencyModel.updateRecord(fs, deficiencyId, defUpdate);
-    const afterSnap = await deficiencyModel.findRecord(fs, deficiencyId);
+    await deficiencyModel.createRecord(db, deficiencyId, deficiencyData);
+    await systemModel.upsertTrello(db, trelloCredentials);
+    await systemModel.createTrelloProperty(db, propertyId, trelloPropertyData);
+    await userModel.createRecord(db, userId, userData);
+    const beforeSnap = await deficiencyModel.findRecord(db, deficiencyId);
+    await deficiencyModel.updateRecord(db, deficiencyId, defUpdate);
+    const afterSnap = await deficiencyModel.findRecord(db, deficiencyId);
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
 
     // Execute
@@ -159,10 +159,10 @@ describe('Deficient Items | Update Progress Notes V2', () => {
 
     // Test Results
     const trelloPropertySnap = await systemModel.findTrelloProperty(
-      fs,
+      db,
       propertyId
     );
-    const deficiencySnap = await deficiencyModel.findRecord(fs, deficiencyId);
+    const deficiencySnap = await deficiencyModel.findRecord(db, deficiencyId);
     const deficiency = deficiencySnap.data() || { trelloCardURL: 'test' };
     const completedPhoto = (deficiency.completedPhotos || {})[
       completedPhotoId

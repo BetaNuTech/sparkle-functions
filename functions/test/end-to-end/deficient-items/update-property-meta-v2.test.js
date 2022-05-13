@@ -6,13 +6,13 @@ const diModel = require('../../../models/deficient-items');
 const propertiesModel = require('../../../models/properties');
 const inspectionsModel = require('../../../models/inspections');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { fs, test, pubsub, cloudFunctions } = require('../../setup');
+const { db, test, pubsub, cloudFunctions } = require('../../setup');
 
 const REQUIRED_ACTIONS_VALUES = config.deficientItems.requiredActionStates;
 const FOLLOW_UP_ACTION_VALUES = config.deficientItems.followUpActionStates;
 
 describe('Deficient Items | Property Meta Sync', () => {
-  afterEach(() => cleanDb(null, fs));
+  afterEach(() => cleanDb(db));
 
   it("should not update property meta when an item's required action status does not change", async () => {
     const expected = false;
@@ -39,8 +39,8 @@ describe('Deficient Items | Property Meta Sync', () => {
     const propertyData = { name: 'test' };
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, propertyData);
-    await inspectionsModel.createRecord(fs, inspectionId, inspData); // Add inspection
+    await propertiesModel.createRecord(db, propertyId, propertyData);
+    await inspectionsModel.createRecord(db, inspectionId, inspData); // Add inspection
 
     // Test updates between all required action states
     for (let i = 0; i < REQUIRED_ACTIONS_VALUES.length; i++) {
@@ -58,10 +58,10 @@ describe('Deficient Items | Property Meta Sync', () => {
       };
 
       // Setup database
-      await diModel.upsertRecord(fs, deficiencyId, beforeData);
-      const beforeSnap = await diModel.findRecord(fs, deficiencyId); // Create before
-      await diModel.updateRecord(fs, deficiencyId, afterData);
-      const afterSnap = await diModel.findRecord(fs, deficiencyId); // Create after
+      await diModel.upsertRecord(db, deficiencyId, beforeData);
+      const beforeSnap = await diModel.findRecord(db, deficiencyId); // Create before
+      await diModel.updateRecord(db, deficiencyId, afterData);
+      const afterSnap = await diModel.findRecord(db, deficiencyId); // Create after
 
       // Execute
       const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -71,7 +71,7 @@ describe('Deficient Items | Property Meta Sync', () => {
       await wrapped(changeSnap, { params: { deficiencyId } });
 
       // Test result
-      const result = await propertiesModel.findRecord(fs, propertyId);
+      const result = await propertiesModel.findRecord(db, propertyId);
       const actual = Boolean(
         result.data().numOfRequiredActionsForDeficientItems
       );
@@ -108,8 +108,8 @@ describe('Deficient Items | Property Meta Sync', () => {
     const propertyData = { name: 'test' };
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, propertyData);
-    await inspectionsModel.createRecord(fs, inspectionId, inspData); // Add inspection
+    await propertiesModel.createRecord(db, propertyId, propertyData);
+    await inspectionsModel.createRecord(db, inspectionId, inspData); // Add inspection
 
     // Test updates between all required action states
     for (let i = 0; i < FOLLOW_UP_ACTION_VALUES.length; i++) {
@@ -127,10 +127,10 @@ describe('Deficient Items | Property Meta Sync', () => {
       };
 
       // Setup database
-      await diModel.upsertRecord(fs, deficiencyId, beforeData);
-      const beforeSnap = await diModel.findRecord(fs, deficiencyId); // Create before
-      await diModel.updateRecord(fs, deficiencyId, afterData);
-      const afterSnap = await diModel.findRecord(fs, deficiencyId); // Create after
+      await diModel.upsertRecord(db, deficiencyId, beforeData);
+      const beforeSnap = await diModel.findRecord(db, deficiencyId); // Create before
+      await diModel.updateRecord(db, deficiencyId, afterData);
+      const afterSnap = await diModel.findRecord(db, deficiencyId); // Create after
 
       // Execute
       const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -140,7 +140,7 @@ describe('Deficient Items | Property Meta Sync', () => {
       await wrapped(changeSnap, { params: { deficiencyId } });
 
       // Test result
-      const result = await propertiesModel.findRecord(fs, propertyId);
+      const result = await propertiesModel.findRecord(db, propertyId);
       const actual = Boolean(
         result.data().numOfFollowUpActionsForDeficientItems
       );
@@ -186,12 +186,12 @@ describe('Deficient Items | Property Meta Sync', () => {
     };
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, propertyData);
-    await inspectionsModel.createRecord(fs, inspectionId, inspData); // Add inspection
-    await diModel.createRecord(fs, deficiencyId, beforeData);
-    const beforeSnap = await diModel.findRecord(fs, deficiencyId); // Create before
-    await diModel.updateRecord(fs, deficiencyId, afterData);
-    const afterSnap = await diModel.findRecord(fs, deficiencyId); // Create after
+    await propertiesModel.createRecord(db, propertyId, propertyData);
+    await inspectionsModel.createRecord(db, inspectionId, inspData); // Add inspection
+    await diModel.createRecord(db, deficiencyId, beforeData);
+    const beforeSnap = await diModel.findRecord(db, deficiencyId); // Create before
+    await diModel.updateRecord(db, deficiencyId, afterData);
+    const afterSnap = await diModel.findRecord(db, deficiencyId); // Create after
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -199,7 +199,7 @@ describe('Deficient Items | Property Meta Sync', () => {
     await wrapped(changeSnap, { params: { deficiencyId } });
 
     // Test result
-    const result = await propertiesModel.findRecord(fs, propertyId);
+    const result = await propertiesModel.findRecord(db, propertyId);
     const actual = result.data().numOfRequiredActionsForDeficientItems;
 
     // Assertions
@@ -242,12 +242,12 @@ describe('Deficient Items | Property Meta Sync', () => {
     };
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, propertyData);
-    await inspectionsModel.createRecord(fs, inspectionId, inspData); // Add inspection
-    await diModel.createRecord(fs, deficiencyId, beforeData);
-    const beforeSnap = await diModel.findRecord(fs, deficiencyId); // Create before
-    await diModel.updateRecord(fs, deficiencyId, afterData);
-    const afterSnap = await diModel.findRecord(fs, deficiencyId); // Create after
+    await propertiesModel.createRecord(db, propertyId, propertyData);
+    await inspectionsModel.createRecord(db, inspectionId, inspData); // Add inspection
+    await diModel.createRecord(db, deficiencyId, beforeData);
+    const beforeSnap = await diModel.findRecord(db, deficiencyId); // Create before
+    await diModel.updateRecord(db, deficiencyId, afterData);
+    const afterSnap = await diModel.findRecord(db, deficiencyId); // Create after
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -255,7 +255,7 @@ describe('Deficient Items | Property Meta Sync', () => {
     await wrapped(changeSnap, { params: { deficiencyId } });
 
     // Test result
-    const result = await propertiesModel.findRecord(fs, propertyId);
+    const result = await propertiesModel.findRecord(db, propertyId);
     const actual = result.data().numOfFollowUpActionsForDeficientItems;
 
     // Assertions
@@ -296,12 +296,12 @@ describe('Deficient Items | Property Meta Sync', () => {
     const afterData = { state: 'closed' };
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, propertyData);
-    await inspectionsModel.createRecord(fs, inspectionId, inspData); // Add inspection
-    await diModel.createRecord(fs, deficiencyId, beforeData);
-    const beforeSnap = await diModel.findRecord(fs, deficiencyId); // Create before
-    await diModel.updateRecord(fs, deficiencyId, afterData);
-    const afterSnap = await diModel.findRecord(fs, deficiencyId); // Create after
+    await propertiesModel.createRecord(db, propertyId, propertyData);
+    await inspectionsModel.createRecord(db, inspectionId, inspData); // Add inspection
+    await diModel.createRecord(db, deficiencyId, beforeData);
+    const beforeSnap = await diModel.findRecord(db, deficiencyId); // Create before
+    await diModel.updateRecord(db, deficiencyId, afterData);
+    const afterSnap = await diModel.findRecord(db, deficiencyId); // Create after
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -309,7 +309,7 @@ describe('Deficient Items | Property Meta Sync', () => {
     await wrapped(changeSnap, { params: { deficiencyId } });
 
     // Test result
-    const result = await propertiesModel.findRecord(fs, propertyId);
+    const result = await propertiesModel.findRecord(db, propertyId);
     const actual = result.data().numOfDeficientItems;
 
     // Assertions
@@ -355,12 +355,12 @@ describe('Deficient Items | Property Meta Sync', () => {
     const afterData = { state: newState };
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, propertyData);
-    await inspectionsModel.createRecord(fs, inspectionId, inspData); // Add inspection
-    await diModel.createRecord(fs, deficiencyId, beforeData);
-    const beforeSnap = await diModel.findRecord(fs, deficiencyId); // Create before
-    await diModel.updateRecord(fs, deficiencyId, afterData);
-    const afterSnap = await diModel.findRecord(fs, deficiencyId); // Create after
+    await propertiesModel.createRecord(db, propertyId, propertyData);
+    await inspectionsModel.createRecord(db, inspectionId, inspData); // Add inspection
+    await diModel.createRecord(db, deficiencyId, beforeData);
+    const beforeSnap = await diModel.findRecord(db, deficiencyId); // Create before
+    await diModel.updateRecord(db, deficiencyId, afterData);
+    const afterSnap = await diModel.findRecord(db, deficiencyId); // Create after
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);

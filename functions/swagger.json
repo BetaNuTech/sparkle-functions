@@ -1430,6 +1430,146 @@
         }
       }
     },
+    "/v0/integrations/trello/properties/{propertyId}": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "propertyId",
+          "in": "path",
+          "required": true,
+          "description": "property id.",
+          "type": "string"
+        }
+      ],
+      "put": {
+        "tags": ["Integrations"],
+        "summary": "Create/update a property trello integration. Only for admin users.",
+        "parameters": [
+          {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          },
+          {
+            "name": "integration",
+            "in": "body",
+            "description": "Property integration payload.",
+            "required": [],
+            "properties": {
+              "closedBoard": {
+                "type": "string"
+              },
+              "closedBoardName": {
+                "type": "string"
+              },
+              "closedList": {
+                "type": "string"
+              },
+              "closedListName": {
+                "type": "string"
+              },
+              "openBoard": {
+                "type": "string"
+              },
+              "openBoardName": {
+                "type": "string"
+              },
+              "openList": {
+                "type": "string"
+              },
+              "openListName": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/RESPONSE"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "409": {
+            "schema": {
+              "$ref": "#/definitions/RESPONSE"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Integrations"],
+        "summary": "Deleting a property trello integration. Only for admin users.",
+        "parameters": [
+          {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful delete, contains no payload or body"
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
     "/v0/inspections/{inspectionId}": {
       "parameters": [
         {

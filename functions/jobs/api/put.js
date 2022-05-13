@@ -16,11 +16,11 @@ const PREFIX = 'jobs: api: put:';
 /**
  * Factory for creating a PUT endpoint
  * to update a job
- * @param  {admin.firestore} fs
+ * @param  {admin.firestore} db
  * @return {Function} - Express middleware
  */
-module.exports = function createPutJob(fs) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function createPutJob(db) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
 
   /**
    * Handle PUT request for updating job
@@ -86,7 +86,7 @@ module.exports = function createPutJob(fs) {
     // Lookup Property
     let property = null;
     try {
-      const propertySnap = await propertiesModel.findRecord(fs, propertyId);
+      const propertySnap = await propertiesModel.findRecord(db, propertyId);
       property = propertySnap.data() || null;
     } catch (err) {
       return send500Error(err, 'property lookup failed', 'unexpected error');
@@ -108,7 +108,7 @@ module.exports = function createPutJob(fs) {
     // Lookup Job
     let job = null;
     try {
-      const jobSnap = await jobsModel.findRecord(fs, jobId);
+      const jobSnap = await jobsModel.findRecord(db, jobId);
       job = jobSnap.data() || null;
     } catch (err) {
       return send500Error(err, 'job lookup failed', 'unexpected error');
@@ -164,8 +164,8 @@ module.exports = function createPutJob(fs) {
     // Lookup for associated bids
     const bids = [];
     try {
-      const jobsReference = jobsModel.createDocRef(fs, jobId);
-      const bidsSnap = await jobsModel.findAssociatedBids(fs, jobsReference);
+      const jobsReference = jobsModel.createDocRef(db, jobId);
+      const bidsSnap = await jobsModel.findAssociatedBids(db, jobsReference);
       bidsSnap.docs
         .filter(doc => Boolean(doc.data()))
         .forEach(doc => bids.push({ ...doc.data(), id: doc.id }));
@@ -200,7 +200,7 @@ module.exports = function createPutJob(fs) {
 
     // Persist job udates
     try {
-      await jobsModel.updateRecord(fs, jobId, update);
+      await jobsModel.updateRecord(db, jobId, update);
     } catch (err) {
       return send500Error(
         err,

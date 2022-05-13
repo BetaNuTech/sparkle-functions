@@ -7,12 +7,12 @@ const systemModel = require('../../../models/system');
 const integrationModel = require('../../../models/integrations');
 const deficiencyModel = require('../../../models/deficient-items');
 const TRELLO_PUT_CARD_RESPONSE = require('../../../test-helpers/mocks/put-trello-card.json');
-const { fs, test, cloudFunctions } = require('../../setup');
+const { db, test, cloudFunctions } = require('../../setup');
 
 describe('Deficient Items | Pubsub | Trello Card Close V2', function() {
   afterEach(async () => {
     nock.cleanAll();
-    await cleanDb(null, fs);
+    await cleanDb(db);
   });
 
   it("moves a closed deficiency's trello card to the property's trello close list", async () => {
@@ -50,18 +50,18 @@ describe('Deficient Items | Pubsub | Trello Card Close V2', function() {
     };
 
     // Setup database
-    await systemModel.upsertTrello(fs, credentials);
+    await systemModel.upsertTrello(db, credentials);
     await systemModel.createTrelloProperty(
-      fs,
+      db,
       propertyId,
       systemTrelloProperty
     );
     await integrationModel.createTrelloProperty(
-      fs,
+      db,
       propertyId,
       intTrelloProperty
     );
-    await deficiencyModel.createRecord(fs, deficiencyId, deficiency);
+    await deficiencyModel.createRecord(db, deficiencyId, deficiency);
 
     // Stub Requests
     const cardUpdate = nock('https://api.trello.com')
@@ -117,18 +117,18 @@ describe('Deficient Items | Pubsub | Trello Card Close V2', function() {
     };
 
     // Setup database
-    await systemModel.upsertTrello(fs, credentials);
+    await systemModel.upsertTrello(db, credentials);
     await systemModel.createTrelloProperty(
-      fs,
+      db,
       propertyId,
       systemTrelloProperty
     );
     await integrationModel.createTrelloProperty(
-      fs,
+      db,
       propertyId,
       intTrelloProperty
     );
-    await deficiencyModel.createRecord(fs, deficiencyId, deficiency);
+    await deficiencyModel.createRecord(db, deficiencyId, deficiency);
 
     // Stub Requests
     nock('https://api.trello.com')
@@ -147,10 +147,10 @@ describe('Deficient Items | Pubsub | Trello Card Close V2', function() {
 
     // Test Results
     const trelloPropertySnap = await systemModel.findTrelloProperty(
-      fs,
+      db,
       propertyId
     );
-    const deficiencySnap = await deficiencyModel.findRecord(fs, deficiencyId);
+    const deficiencySnap = await deficiencyModel.findRecord(db, deficiencyId);
     const deficiencyResults = deficiencySnap.data() || {
       trelloCardURL: 'test',
     };

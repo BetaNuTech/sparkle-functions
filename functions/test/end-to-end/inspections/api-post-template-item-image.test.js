@@ -9,7 +9,7 @@ const inspectionsModel = require('../../../models/inspections');
 const storageService = require('../../../services/storage');
 const handler = require('../../../inspections/api/post-template-item-image');
 const { cleanDb, findStorageFile } = require('../../../test-helpers/firebase');
-const { fs: db, storage } = require('../../setup');
+const { db, storage } = require('../../setup');
 
 let fileName = '';
 const INSPECTION_ID = uuid();
@@ -17,7 +17,7 @@ const ITEM_ID = uuid();
 
 describe('Inspections | API | POST Template Item Image', () => {
   afterEach(async () => {
-    await cleanDb(null, db);
+    await cleanDb(db);
 
     if (fileName) {
       await storageService.deleteInspectionItemPhotoEntry(

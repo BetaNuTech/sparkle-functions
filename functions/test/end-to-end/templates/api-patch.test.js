@@ -7,10 +7,10 @@ const mocking = require('../../../test-helpers/mocking');
 const templatesModel = require('../../../models/templates');
 const handler = require('../../../templates/api/patch');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { fs: db } = require('../../setup');
+const { db } = require('../../setup');
 
 describe('Templates | API | PATCH', () => {
-  afterEach(() => cleanDb(null, db));
+  afterEach(() => cleanDb(db));
 
   it("should remove a templates section and all it's items", async () => {
     const templateId = uuid();

@@ -3,10 +3,10 @@ const uuid = require('../../../test-helpers/uuid');
 const mocking = require('../../../test-helpers/mocking');
 const { cleanDb } = require('../../../test-helpers/firebase');
 const notificationsModel = require('../../../models/notifications');
-const { fs, test, cloudFunctions } = require('../../setup');
+const { db, test, cloudFunctions } = require('../../setup');
 
 describe('Notifications | Pubsub | Clean Published V2', () => {
-  afterEach(() => cleanDb(null, fs));
+  afterEach(() => cleanDb(db));
 
   it('should remove all notifications that have been published to all mediums', async () => {
     const notification1Id = uuid();
@@ -22,17 +22,17 @@ describe('Notifications | Pubsub | Clean Published V2', () => {
     notification3.publishedMediums.push = true; // only published to push
 
     // Setup database
-    await notificationsModel.createRecord(fs, notification1Id, notification1);
-    await notificationsModel.createRecord(fs, notification2Id, notification2);
-    await notificationsModel.createRecord(fs, notification3Id, notification3);
+    await notificationsModel.createRecord(db, notification1Id, notification1);
+    await notificationsModel.createRecord(db, notification2Id, notification2);
+    await notificationsModel.createRecord(db, notification3Id, notification3);
 
     // Execute
     await test.wrap(cloudFunctions.cleanupNotificationsV2)();
 
     // Test results
-    const note1Snap = await notificationsModel.findRecord(fs, notification1Id);
-    const note2Snap = await notificationsModel.findRecord(fs, notification2Id);
-    const note3Snap = await notificationsModel.findRecord(fs, notification3Id);
+    const note1Snap = await notificationsModel.findRecord(db, notification1Id);
+    const note2Snap = await notificationsModel.findRecord(db, notification2Id);
+    const note3Snap = await notificationsModel.findRecord(db, notification3Id);
 
     // Assertions
     [
