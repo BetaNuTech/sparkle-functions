@@ -362,7 +362,7 @@ describe('Notifications | On Create V2', function() {
       let actual;
       const { data, expected, msg } = tests[i];
       queryUsers.resolves(createCollection(createSnapshot(userId, data)));
-      updateNotification.callsFake((fs, id, update) => {
+      updateNotification.callsFake((db, id, update) => {
         actual = Boolean((update.push || {})[userId]);
         return Promise.resolve();
       });
@@ -453,7 +453,7 @@ describe('Notifications | On Create V2', function() {
       let actual;
       const { data, expected, msg } = tests[i];
       queryUsers.resolves(createCollection(createSnapshot(userId, data)));
-      updateNotification.callsFake((fs, id, update) => {
+      updateNotification.callsFake((db, id, update) => {
         actual = Boolean((update.push || {})[userId]);
         return Promise.resolve();
       });
@@ -532,7 +532,7 @@ describe('Notifications | On Create V2', function() {
     let actual = '';
     sinon
       .stub(notificationsModel, 'updateRecord')
-      .callsFake((fs, id, update) => {
+      .callsFake((db, id, update) => {
         actual = Object.keys(update.push || {}).join(',');
         return Promise.resolve();
       });

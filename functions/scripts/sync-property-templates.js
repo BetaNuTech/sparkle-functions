@@ -1,5 +1,5 @@
 const log = require('../utils/logger');
-const { fs } = require('./setup'); // eslint-disable-line
+const { db } = require('./setup'); // eslint-disable-line
 const propertiesModel = require('../models/properties');
 const templatesModel = require('../models/templates');
 
@@ -9,7 +9,7 @@ const templatesModel = require('../models/templates');
   let propertiesSnap = null;
 
   try {
-    propertiesSnap = await propertiesModel.findAll(fs);
+    propertiesSnap = await propertiesModel.findAll(db);
   } catch (err) {
     console.error(`Failed to lookup all properties | ${err}`); // eslint-disable-line
     throw err;
@@ -33,7 +33,7 @@ const templatesModel = require('../models/templates');
 
     try {
       await templatesModel.updatePropertyRelationships(
-        fs,
+        db,
         update.id,
         [], // Before no templates
         update.templates
@@ -46,7 +46,7 @@ const templatesModel = require('../models/templates');
   let templatesSnap = null;
 
   try {
-    templatesSnap = await templatesModel.findAll(fs);
+    templatesSnap = await templatesModel.findAll(db);
   } catch (err) {
     console.error(`Failed to lookup all templates | ${err}`); // eslint-disable-line
     throw err;
@@ -72,7 +72,7 @@ const templatesModel = require('../models/templates');
 
     try {
       await templatesModel.updatePropertyRelationships(
-        fs,
+        db,
         update.id,
         update.templates,
         [] // After no templates

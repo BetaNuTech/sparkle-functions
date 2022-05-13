@@ -5,12 +5,12 @@ const handler = require('../../../template-categories/api/delete');
 const uuid = require('../../../test-helpers/uuid');
 const { cleanDb } = require('../../../test-helpers/firebase');
 const mocking = require('../../../test-helpers/mocking');
-const { fs: db } = require('../../setup');
+const { db } = require('../../setup');
 const templatesModel = require('../../../models/templates');
 const templatesCategoryModel = require('../../../models/template-categories');
 
 describe('Template Categories | API | DELETE', () => {
-  afterEach(() => cleanDb(null, db));
+  afterEach(() => cleanDb(db));
 
   it("should disassociate all deleted template category's associated templates", async () => {
     const tmplCat1Id = uuid();

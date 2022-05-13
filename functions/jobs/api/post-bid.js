@@ -13,11 +13,11 @@ const now = Math.round(Date.now() / 1000);
 /**
  * Factory for creating a POST endpoint
  * that creates Firestore bid
- * @param  {admin.firestore} fs
+ * @param  {admin.firestore} db
  * @return {Function} - Express middleware
  */
-module.exports = function createPostJobsBid(fs) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function createPostJobsBid(db) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
 
   /**
    * Handle POST request for creating job's bid
@@ -53,7 +53,7 @@ module.exports = function createPostJobsBid(fs) {
     // Lookup Firestore Property
     let property;
     try {
-      const propertySnap = await propertiesModel.findRecord(fs, propertyId);
+      const propertySnap = await propertiesModel.findRecord(db, propertyId);
       property = propertySnap.data() || null;
     } catch (err) {
       return send500Error(err, 'property lookup failed', 'unexpected error');
@@ -75,7 +75,7 @@ module.exports = function createPostJobsBid(fs) {
     // Lookup Job
     let job = null;
     try {
-      const jobSnap = await jobsModel.findRecord(fs, jobId);
+      const jobSnap = await jobsModel.findRecord(db, jobId);
       job = jobSnap.data() || null;
     } catch (err) {
       return send500Error(err, 'job lookup failed', 'unexpected error');
@@ -110,17 +110,17 @@ module.exports = function createPostJobsBid(fs) {
       vendorLicense: false,
       ...bid,
       state: config.bids.stateTypes[0],
-      job: jobsModel.createDocRef(fs, jobId),
+      job: jobsModel.createDocRef(db, jobId),
       createdAt: now,
       updatedAt: now,
     };
 
     // Generate bid ID
-    const bidId = bidsModel.createId(fs);
+    const bidId = bidsModel.createId(db);
 
     // create firestore record
     try {
-      await bidsModel.createRecord(fs, bidId, newBid);
+      await bidsModel.createRecord(db, bidId, newBid);
     } catch (err) {
       return send500Error(err, 'bid creation failed', err.message);
     }

@@ -7,10 +7,10 @@ const mocking = require('../../../test-helpers/mocking');
 const teamsModel = require('../../../models/teams');
 const handler = require('../../../teams/api/patch');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { fs: db } = require('../../setup');
+const { db } = require('../../setup');
 
 describe('Teams | API | PATCH', () => {
-  afterEach(() => cleanDb(null, db));
+  afterEach(() => cleanDb(db));
 
   it('should update an existing team', async () => {
     const expected = 'Updated Team';

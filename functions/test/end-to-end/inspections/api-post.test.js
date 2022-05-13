@@ -9,10 +9,10 @@ const templatesModel = require('../../../models/templates');
 const inspectionsModel = require('../../../models/inspections');
 const handler = require('../../../inspections/api/post');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { fs: db } = require('../../setup');
+const { db } = require('../../setup');
 
 describe('Inspections | API | POST', () => {
-  afterEach(() => cleanDb(null, db));
+  afterEach(() => cleanDb(db));
 
   it('should create a new inspection', async () => {
     const expected = true;

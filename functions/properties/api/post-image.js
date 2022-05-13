@@ -11,12 +11,12 @@ const PREFIX = 'property: api: image: post:';
 /**
  * Factory for uploading an image POST endpoint
  * that creates Firestore inspection
- * @param  {admin.firestore} fs - Firestore Admin DB instance
+ * @param  {admin.firestore} db - Firestore Admin DB instance
  * @param  {admin.storage} stg instance
  * @return {Function} - onRequest handler
  */
-module.exports = function uploadImage(fs, stg) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function uploadImage(db, stg) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
   assert(
     stg && typeof stg.bucket === 'function',
     'has firebase storage instance'
@@ -85,7 +85,7 @@ module.exports = function uploadImage(fs, stg) {
     // Lookup Property
     let property = null;
     try {
-      const propertySnap = await propertiesModel.findRecord(fs, propertyId);
+      const propertySnap = await propertiesModel.findRecord(db, propertyId);
       property = propertySnap.data() || null;
     } catch (err) {
       return send500Error(err, 'property lookup failed', 'unexpected error');
@@ -160,7 +160,7 @@ module.exports = function uploadImage(fs, stg) {
 
     // Update property
     try {
-      await propertiesModel.updateRecord(fs, propertyId, updatedData);
+      await propertiesModel.updateRecord(db, propertyId, updatedData);
     } catch (err) {
       return send500Error(
         err,

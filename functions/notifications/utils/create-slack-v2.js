@@ -7,13 +7,13 @@ const PREFIX = 'notifications: utils: create-slack-v2';
 
 /**
  * Create a Slack notification
- * @param  {admin.firestore} fs
+ * @param  {admin.firestore} db
  * @param  {String}  notificationId
  * @param  {Object}  notification
  * @return {Promise} - resolves {SlackNotificationResult}
  */
-module.exports = async (fs, notificationId, notification) => {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = async (db, notificationId, notification) => {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
   assert(
     notificationId && typeof notificationId === 'string',
     'has notification ID'
@@ -77,7 +77,7 @@ _${userAgent}_`; // Add Slack indent formatting
   if (propertyId) {
     let property = null;
     try {
-      const propertySnap = await propertiesModel.findRecord(fs, propertyId);
+      const propertySnap = await propertiesModel.findRecord(db, propertyId);
       property = propertySnap.data();
       if (property) channel = property.slackChannel; // Set channel from property
     } catch (err) {
@@ -88,7 +88,7 @@ _${userAgent}_`; // Add Slack indent formatting
   // Admin notification
   if (!channel) {
     try {
-      const slackOrgSnap = await integrationsModel.findSlack(fs);
+      const slackOrgSnap = await integrationsModel.findSlack(db);
       const adminChannelName = (slackOrgSnap.data() || {}).defaultChannelName;
       if (adminChannelName) channel = adminChannelName;
     } catch (err) {
@@ -102,7 +102,7 @@ _${userAgent}_`; // Add Slack indent formatting
   // marking slack medium as done publishing
   if (!channel) {
     try {
-      await notificationsModel.updateRecord(fs, notificationId, {
+      await notificationsModel.updateRecord(db, notificationId, {
         'publishedMediums.slack': true,
       });
     } catch (err) {
@@ -118,7 +118,7 @@ _${userAgent}_`; // Add Slack indent formatting
   // Update notification record
   // with data to publish Slack message
   try {
-    await notificationsModel.updateRecord(fs, notificationId, {
+    await notificationsModel.updateRecord(db, notificationId, {
       slack: result,
       'publishedMediums.slack': false,
     });

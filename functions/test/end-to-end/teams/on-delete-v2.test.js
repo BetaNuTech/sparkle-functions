@@ -2,13 +2,13 @@ const { expect } = require('chai');
 const uuid = require('../../../test-helpers/uuid');
 const { cleanDb } = require('../../../test-helpers/firebase');
 const mocking = require('../../../test-helpers/mocking');
-const { fs, test, cloudFunctions } = require('../../setup');
+const { db, test, cloudFunctions } = require('../../setup');
 const propertiesModel = require('../../../models/properties');
 const teamsModel = require('../../../models/teams');
 const usersModel = require('../../../models/users');
 
 describe('Teams | On Delete | V2', () => {
-  afterEach(() => cleanDb(null, fs));
+  afterEach(() => cleanDb(db));
 
   it("should disassociate all team's associated properties", async () => {
     const team1Id = uuid();
@@ -27,22 +27,22 @@ describe('Teams | On Delete | V2', () => {
     });
 
     // Setup database
-    await propertiesModel.upsertRecord(fs, property1Id, property1Data);
-    await propertiesModel.upsertRecord(fs, property2Id, property2Data);
-    await teamsModel.upsertRecord(fs, team1Id, team1Data); // Add team
-    await teamsModel.upsertRecord(fs, team2Id, team2Data); // Add team
+    await propertiesModel.upsertRecord(db, property1Id, property1Data);
+    await propertiesModel.upsertRecord(db, property2Id, property2Data);
+    await teamsModel.upsertRecord(db, team1Id, team1Data); // Add team
+    await teamsModel.upsertRecord(db, team2Id, team2Data); // Add team
 
-    const teamSnap = await teamsModel.findRecord(fs, team1Id); // Get team snap before removal
-    await teamsModel.removeRecord(fs, team1Id); // remove team
+    const teamSnap = await teamsModel.findRecord(db, team1Id); // Get team snap before removal
+    await teamsModel.removeRecord(db, team1Id); // remove team
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.teamDeleteV2);
     await wrapped(teamSnap, { params: { teamId: team1Id } });
 
     // Test result
-    const team2Snap = await teamsModel.findRecord(fs, team2Id);
-    const prop1Snap = await propertiesModel.findRecord(fs, property1Id);
-    const prop2Snap = await propertiesModel.findRecord(fs, property2Id);
+    const team2Snap = await teamsModel.findRecord(db, team2Id);
+    const prop1Snap = await propertiesModel.findRecord(db, property1Id);
+    const prop2Snap = await propertiesModel.findRecord(db, property2Id);
     delete property1Data.team;
     delete property2Data.team;
 
@@ -96,21 +96,21 @@ describe('Teams | On Delete | V2', () => {
     };
 
     // Setup database
-    await teamsModel.upsertRecord(fs, team1Id, team1Data); // Add team
-    await teamsModel.upsertRecord(fs, team2Id, team2Data); // Add team
-    await usersModel.upsertRecord(fs, user1Id, user1Data); // Add user 1 with teamID
-    await usersModel.upsertRecord(fs, user2Id, user2Data); // Add user 2 with teamID
+    await teamsModel.upsertRecord(db, team1Id, team1Data); // Add team
+    await teamsModel.upsertRecord(db, team2Id, team2Data); // Add team
+    await usersModel.upsertRecord(db, user1Id, user1Data); // Add user 1 with teamID
+    await usersModel.upsertRecord(db, user2Id, user2Data); // Add user 2 with teamID
 
-    const teamSnap = await teamsModel.findRecord(fs, team1Id); // Get team snap before removal
+    const teamSnap = await teamsModel.findRecord(db, team1Id); // Get team snap before removal
 
     // Execute
     const wrapped = test.wrap(cloudFunctions.teamDeleteV2);
     await wrapped(teamSnap, { params: { teamId: team1Id } });
 
     // Test result
-    const team2Snap = await teamsModel.findRecord(fs, team2Id);
-    const user1Snap = await usersModel.findRecord(fs, user1Id);
-    const user2Snap = await usersModel.findRecord(fs, user2Id);
+    const team2Snap = await teamsModel.findRecord(db, team2Id);
+    const user1Snap = await usersModel.findRecord(db, user1Id);
+    const user2Snap = await usersModel.findRecord(db, user2Id);
 
     // Assertions
     [

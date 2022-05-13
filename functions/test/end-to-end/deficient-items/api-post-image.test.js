@@ -9,7 +9,7 @@ const deficiencyModel = require('../../../models/deficient-items');
 const storageService = require('../../../services/storage');
 const handler = require('../../../deficient-items/api/post-image');
 const { cleanDb, findStorageFile } = require('../../../test-helpers/firebase');
-const { fs: db, storage } = require('../../setup');
+const { db, storage } = require('../../setup');
 
 let fileName = '';
 const PROPERTY_ID = uuid();
@@ -17,7 +17,7 @@ const DEF_ITEM_ID = uuid();
 
 describe('Deficient Items | API | POST Image', () => {
   afterEach(async () => {
-    await cleanDb(null, db);
+    await cleanDb(db);
 
     if (fileName) {
       await storageService.deleteDeficientItemPhoto(

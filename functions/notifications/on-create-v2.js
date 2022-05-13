@@ -7,19 +7,19 @@ const PREFIX = 'notifications: on-create-v2:';
 
 /**
  * Factory for on createnotification handler
- * @param  {admin.firestore} fs - Firestore Admin DB instance
+ * @param  {admin.firestore} db - Firestore Admin DB instance
  * @param  {functions.pubsub} pubsubClient
  * @param  {String} slackPublishTopic
  * @param  {String} pushPublishTopic
  * @return {Function} - notifications source onCreate handler
  */
 module.exports = function createOnCreatekNotification(
-  fs,
+  db,
   pubsubClient,
   slackPublishTopic,
   pushPublishTopic
 ) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  assert(db && typeof db.collection === 'function', 'has firestore db');
   assert(
     pubsubClient && typeof pubsubClient.topic === 'function',
     'has pubsub client'
@@ -44,7 +44,7 @@ module.exports = function createOnCreatekNotification(
     let slackNotification = null;
     try {
       slackNotification = await createSlackNotification(
-        fs,
+        db,
         notificationId,
         notification
       );
@@ -66,7 +66,7 @@ module.exports = function createOnCreatekNotification(
     let pushNotifications = null;
     try {
       pushNotifications = await createPushNotifications(
-        fs,
+        db,
         notificationId,
         notification
       );

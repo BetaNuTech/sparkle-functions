@@ -4,28 +4,28 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const handler = require('../../../jobs/api/post-bid');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { fs } = require('../../setup');
+const { db } = require('../../setup');
 const uuid = require('../../../test-helpers/uuid');
 const mocking = require('../../../test-helpers/mocking');
 const propertiesModel = require('../../../models/properties');
 const jobsModel = require('../../../models/jobs');
 
 describe('Jobs | API | POST Bid', () => {
-  afterEach(() => cleanDb(null, fs));
+  afterEach(() => cleanDb(db));
 
   it('returns the bid document on successful creation', async () => {
     const expected = 'bid';
     const propertyId = uuid();
     const jobId = uuid();
     const property = mocking.createProperty();
-    const propertyDoc = propertiesModel.createDocRef(fs, propertyId);
+    const propertyDoc = propertiesModel.createDocRef(db, propertyId);
     const job = mocking.createJob({ property: propertyDoc });
-    const jobDoc = jobsModel.createDocRef(fs, jobId);
+    const jobDoc = jobsModel.createDocRef(db, jobId);
     const bid = mocking.createBid({ job: jobDoc });
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, property);
-    await jobsModel.createRecord(fs, jobId, job);
+    await propertiesModel.createRecord(db, propertyId, property);
+    await jobsModel.createRecord(db, jobId, job);
 
     // Execute
     const res = await request(createApp())
@@ -42,6 +42,6 @@ describe('Jobs | API | POST Bid', () => {
 
 function createApp() {
   const app = express();
-  app.post('/t/:propertyId/:jobId/', bodyParser.json(), handler(fs));
+  app.post('/t/:propertyId/:jobId/', bodyParser.json(), handler(db));
   return app;
 }

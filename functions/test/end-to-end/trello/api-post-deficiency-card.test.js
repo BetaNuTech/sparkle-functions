@@ -11,12 +11,12 @@ const propertiesModel = require('../../../models/properties');
 const inspectionsModel = require('../../../models/inspections');
 const integrationsModel = require('../../../models/integrations');
 const handler = require('../../../trello/api/post-deficiency-card');
-const { fs } = require('../../setup');
+const { db } = require('../../setup');
 
 describe('Trello | API | POST Deficiency Card', () => {
   afterEach(() => {
     nock.cleanAll();
-    return cleanDb(null, fs);
+    return cleanDb(db);
   });
 
   it('successfully update system property trello card and deficiency with created Trello card details', async () => {
@@ -60,12 +60,12 @@ describe('Trello | API | POST Deficiency Card', () => {
       });
 
     // Setup Database
-    await deficiencyModel.createRecord(fs, deficiencyId, deficiency);
-    await propertiesModel.createRecord(fs, propertyId, property);
-    await inspectionsModel.createRecord(fs, inspectionId, inspection);
-    await integrationsModel.upsertTrello(fs, trelloIntegration);
+    await deficiencyModel.createRecord(db, deficiencyId, deficiency);
+    await propertiesModel.createRecord(db, propertyId, property);
+    await inspectionsModel.createRecord(db, inspectionId, inspection);
+    await integrationsModel.upsertTrello(db, trelloIntegration);
     await integrationsModel.createTrelloProperty(
-      fs,
+      db,
       propertyId,
       trelloPropIntegration
     );
@@ -79,8 +79,8 @@ describe('Trello | API | POST Deficiency Card', () => {
       .expect(201);
 
     // Get Results
-    const systemDoc = await systemModel.findTrelloProperty(fs, propertyId);
-    const deficiencyDoc = await deficiencyModel.findRecord(fs, deficiencyId);
+    const systemDoc = await systemModel.findTrelloProperty(db, propertyId);
+    const deficiencyDoc = await deficiencyModel.findRecord(db, deficiencyId);
 
     // Assertions
     [
@@ -102,7 +102,7 @@ describe('Trello | API | POST Deficiency Card', () => {
 
 function createApp() {
   const app = express();
-  app.post(`/t/:deficiencyId`, stubAuth, stubTrelloReq, handler(fs));
+  app.post(`/t/:deficiencyId`, stubAuth, stubTrelloReq, handler(db));
   return app;
 }
 

@@ -5,12 +5,12 @@ const handler = require('../../../templates/api/delete');
 const uuid = require('../../../test-helpers/uuid');
 const { cleanDb } = require('../../../test-helpers/firebase');
 const mocking = require('../../../test-helpers/mocking');
-const { fs: db } = require('../../setup');
+const { db } = require('../../setup');
 const propertiesModel = require('../../../models/properties');
 const templatesModel = require('../../../models/templates');
 
 describe('Templates | API | DELETE', () => {
-  afterEach(() => cleanDb(null, db));
+  afterEach(() => cleanDb(db));
 
   it("should remove template with all it's property associations", async () => {
     const template1Id = uuid();

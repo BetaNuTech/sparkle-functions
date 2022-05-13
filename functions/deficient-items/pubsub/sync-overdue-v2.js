@@ -17,19 +17,19 @@ const DEF_ITEM_URI = config.clientApps.web.deficientItemURL;
 /**
  * Sync all eligible deficiencies to
  * "overdue" and update the property's metadata
- * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
+ * @param  {firebaseAdmin.firestore} db - Firestore Admin DB instance
  * @param  {functions.pubsub} pubsub
  * @param  {String} topic
  * @param  {String?} deficiencyUrl
  * @return {functions.cloudfunction}
  */
 module.exports = function createSyncOverdueDeficientItems(
-  fs,
+  db,
   pubsub,
   topic = '',
   deficiencyUrl = DEF_ITEM_URI
 ) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+  assert(db && typeof db.collection === 'function', 'has firestore db');
   assert(pubsub && typeof pubsub.topic === 'function', 'has pubsub client');
   assert(topic && typeof topic === 'string', 'has topic string');
   assert(
@@ -42,14 +42,14 @@ module.exports = function createSyncOverdueDeficientItems(
     .onPublish(async function syncOverdueDeficienciesHandler() {
       const propertyCache = {};
       const propertyMetaUpdates = [];
-      const batch = fs.batch();
-      const propertyBatch = fs.batch();
+      const batch = db.batch();
+      const propertyBatch = db.batch();
 
       // Lookup all deficiencies that
       // may be eligible for overdue status
       let deficiencies = null;
       try {
-        const collectionSnap = await deficiencyModel.query(fs, {
+        const collectionSnap = await deficiencyModel.query(db, {
           state: ['in', OVERDUE_ELIGIBLE_STATES],
         });
 
@@ -80,7 +80,7 @@ module.exports = function createSyncOverdueDeficientItems(
 
           try {
             await deficiencyModel.updateRecord(
-              fs,
+              db,
               deficiencyId,
               updates,
               batch
@@ -112,7 +112,7 @@ module.exports = function createSyncOverdueDeficientItems(
           if (!property) {
             try {
               const propertySnap = await propertyModel.findRecord(
-                fs,
+                db,
                 propertyId
               );
               property = propertySnap.data();
@@ -164,7 +164,7 @@ module.exports = function createSyncOverdueDeficientItems(
 
           try {
             await notificationsModel.createRecord(
-              fs,
+              db,
               undefined, // auto generate ID
               {
                 title: property.name,
@@ -219,7 +219,7 @@ module.exports = function createSyncOverdueDeficientItems(
         const propertyId = propertyMetaUpdates[i];
 
         try {
-          await propertyModel.updateMetaData(fs, propertyId, propertyBatch);
+          await propertyModel.updateMetaData(db, propertyId, propertyBatch);
         } catch (err) {
           log.error(
             `${PREFIX} failed to upate property: "${propertyId}" meta data for overdue | ${err}`

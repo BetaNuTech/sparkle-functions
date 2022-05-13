@@ -8,12 +8,12 @@ const mocking = require('../../../test-helpers/mocking');
 const propertiesModel = require('../../../models/properties');
 const handler = require('../../../properties/api/post-image');
 const { cleanDb, findStorageFile } = require('../../../test-helpers/firebase');
-const { fs, storage } = require('../../setup');
+const { db, storage } = require('../../setup');
 
 let uploadUrl = '';
 describe('Properties | API | POST Image', () => {
   afterEach(async () => {
-    await cleanDb(null, fs);
+    await cleanDb(db);
 
     if (uploadUrl) {
       await propertiesModel.deleteUpload(storage, uploadUrl);
@@ -26,7 +26,7 @@ describe('Properties | API | POST Image', () => {
     const propertyData = mocking.createProperty();
 
     // Setup
-    await propertiesModel.createRecord(fs, propertyId, propertyData);
+    await propertiesModel.createRecord(db, propertyId, propertyData);
 
     // Execute
     await request(createApp())
@@ -35,7 +35,7 @@ describe('Properties | API | POST Image', () => {
       .expect(201);
 
     // Test results
-    const propertySnap = await propertiesModel.findRecord(fs, propertyId);
+    const propertySnap = await propertiesModel.findRecord(db, propertyId);
     const property = propertySnap.data() || {};
     expect(property.photoURL).to.be.ok;
     expect(property.photoName).to.be.ok;
@@ -51,7 +51,7 @@ describe('Properties | API | POST Image', () => {
 
 function createApp() {
   const app = express();
-  app.post('/t/:propertyId', stubAuth, fileParser, handler(fs, storage));
+  app.post('/t/:propertyId', stubAuth, fileParser, handler(db, storage));
   return app;
 }
 

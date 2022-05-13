@@ -7,11 +7,11 @@ const PREFIX = 'properties: on-write-v2:';
 
 /**
  * Factory for property on write handler
- * @param  {admin.firestore} fs - Firebase Admin DB instance
+ * @param  {admin.firestore} db - Firebase Admin DB instance
  * @return {Function} - property onWrite handler
  */
-module.exports = function createOnWriteV2Handler(fs) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function createOnWriteV2Handler(db) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
 
   return async (change, event) => {
     const { propertyId } = event.params;
@@ -19,7 +19,7 @@ module.exports = function createOnWriteV2Handler(fs) {
       throw Error(`${PREFIX} missing parameter "propertyId"`);
     }
 
-    const batch = fs.batch();
+    const batch = db.batch();
     const beforeData = change.before.data() || {};
     const afterData = change.after.data() || {};
     const beforeTeam = beforeData.team || '';
@@ -37,7 +37,7 @@ module.exports = function createOnWriteV2Handler(fs) {
 
     if (isTeamRemoved) {
       try {
-        await teamUsersModel.removeProperty(fs, beforeTeam, propertyId, batch);
+        await teamUsersModel.removeProperty(db, beforeTeam, propertyId, batch);
         log.info(
           `${PREFIX} property: "${propertyId}" removed team: "${beforeTeam}"`
         );
@@ -48,7 +48,7 @@ module.exports = function createOnWriteV2Handler(fs) {
 
     if (isTeamAdded) {
       try {
-        await teamUsersModel.addProperty(fs, afterTeam, propertyId, batch);
+        await teamUsersModel.addProperty(db, afterTeam, propertyId, batch);
         log.info(
           `${PREFIX} property: "${propertyId}" added team: "${beforeTeam}"`
         );
@@ -60,7 +60,7 @@ module.exports = function createOnWriteV2Handler(fs) {
     if (isTeamUpdated) {
       try {
         await teamUsersModel.updateProperty(
-          fs,
+          db,
           beforeTeam,
           afterTeam,
           propertyId,
@@ -79,7 +79,7 @@ module.exports = function createOnWriteV2Handler(fs) {
     if (hasUpdatedTemplates) {
       try {
         await templatesModel.updatePropertyRelationships(
-          fs,
+          db,
           propertyId,
           beforeData ? Object.keys(beforeData.templates || {}) : [],
           afterData ? Object.keys(afterData.templates || {}) : [],

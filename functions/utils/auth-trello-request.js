@@ -7,7 +7,7 @@ const PREFIX = 'utils: auth-trello-request:';
 /**
  * Creates a middleware instance to handle
  * lookup of Trello credentials and making sure
- * that requesting user has permission to acces them
+ * that requesting user has permission to access them
  * before setting `req.trelloCredentials`
  * @param  {admin.firestore} db - Firestore Admin DB instance
  * @return {Function} - Express middleware

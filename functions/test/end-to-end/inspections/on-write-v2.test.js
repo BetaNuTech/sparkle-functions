@@ -7,7 +7,7 @@ const diModel = require('../../../models/deficient-items');
 const archiveModel = require('../../../models/_internal/archive');
 const propertiesModel = require('../../../models/properties');
 const inspectionsModel = require('../../../models/inspections');
-const { fs, test, cloudFunctions } = require('../../setup');
+const { db, test, cloudFunctions } = require('../../setup');
 
 const DEFICIENT_ITEM_PROXY_ATTRS =
   config.deficientItems.inspectionItemProxyAttrsV2;
@@ -15,7 +15,7 @@ const DEFICIENT_ITEM_ELIGIBLE = config.inspectionItems.deficientListEligible;
 const ITEM_VALUE_NAMES = config.inspectionItems.valueNames;
 
 describe('Inspections | On Write | V2', () => {
-  afterEach(() => cleanDb(null, fs));
+  afterEach(() => cleanDb(db));
 
   it('should not update property meta when non-whitelist attribute changed', async () => {
     const insp1Id = uuid();
@@ -50,12 +50,12 @@ describe('Inspections | On Write | V2', () => {
     };
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, propData); // Required
-    await inspectionsModel.createRecord(fs, insp1Id, inspOne); // Add inspection #1
-    await inspectionsModel.createRecord(fs, insp2Id, inspTwo); // Add inspection #2
-    const beforeSnap = await inspectionsModel.findRecord(fs, insp1Id);
-    await inspectionsModel.updateRecord(fs, insp2Id, inspUpdate);
-    const afterSnap = await inspectionsModel.findRecord(fs, insp1Id);
+    await propertiesModel.createRecord(db, propertyId, propData); // Required
+    await inspectionsModel.createRecord(db, insp1Id, inspOne); // Add inspection #1
+    await inspectionsModel.createRecord(db, insp2Id, inspTwo); // Add inspection #2
+    const beforeSnap = await inspectionsModel.findRecord(db, insp1Id);
+    await inspectionsModel.updateRecord(db, insp2Id, inspUpdate);
+    const afterSnap = await inspectionsModel.findRecord(db, insp1Id);
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -63,7 +63,7 @@ describe('Inspections | On Write | V2', () => {
     await wrapped(changeSnap, { params: { inspectionId: insp1Id } });
 
     // Test results
-    const propertyDoc = await propertiesModel.findRecord(fs, propertyId);
+    const propertyDoc = await propertiesModel.findRecord(db, propertyId);
     const result = propertyDoc.data();
 
     // Assertions
@@ -121,12 +121,12 @@ describe('Inspections | On Write | V2', () => {
     };
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, propData); // Required
-    await inspectionsModel.createRecord(fs, insp1Id, inspOne); // Add inspection #1
-    await inspectionsModel.createRecord(fs, insp2Id, inspTwo); // Add inspection #2
-    const beforeSnap = await inspectionsModel.findRecord(fs, insp1Id);
-    await inspectionsModel.updateRecord(fs, insp1Id, inspUpdate);
-    const afterSnap = await inspectionsModel.findRecord(fs, insp1Id);
+    await propertiesModel.createRecord(db, propertyId, propData); // Required
+    await inspectionsModel.createRecord(db, insp1Id, inspOne); // Add inspection #1
+    await inspectionsModel.createRecord(db, insp2Id, inspTwo); // Add inspection #2
+    const beforeSnap = await inspectionsModel.findRecord(db, insp1Id);
+    await inspectionsModel.updateRecord(db, insp1Id, inspUpdate);
+    const afterSnap = await inspectionsModel.findRecord(db, insp1Id);
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -134,7 +134,7 @@ describe('Inspections | On Write | V2', () => {
     await wrapped(changeSnap, { params: { inspectionId: insp1Id } });
 
     // Test results
-    const propertyDoc = await propertiesModel.findRecord(fs, propertyId);
+    const propertyDoc = await propertiesModel.findRecord(db, propertyId);
     const result = propertyDoc.data();
 
     // Assertions
@@ -192,12 +192,12 @@ describe('Inspections | On Write | V2', () => {
     };
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, propData); // Required
-    await inspectionsModel.createRecord(fs, insp1Id, inspOne); // Add inspection #1
-    await inspectionsModel.createRecord(fs, insp2Id, inspTwo); // Add inspection #2
-    const beforeSnap = await inspectionsModel.findRecord(fs, insp1Id);
-    await inspectionsModel.updateRecord(fs, insp1Id, inspUpdate);
-    const afterSnap = await inspectionsModel.findRecord(fs, insp1Id);
+    await propertiesModel.createRecord(db, propertyId, propData); // Required
+    await inspectionsModel.createRecord(db, insp1Id, inspOne); // Add inspection #1
+    await inspectionsModel.createRecord(db, insp2Id, inspTwo); // Add inspection #2
+    const beforeSnap = await inspectionsModel.findRecord(db, insp1Id);
+    await inspectionsModel.updateRecord(db, insp1Id, inspUpdate);
+    const afterSnap = await inspectionsModel.findRecord(db, insp1Id);
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -205,7 +205,7 @@ describe('Inspections | On Write | V2', () => {
     await wrapped(changeSnap, { params: { inspectionId: insp1Id } });
 
     // Test results
-    const propertyDoc = await propertiesModel.findRecord(fs, propertyId);
+    const propertyDoc = await propertiesModel.findRecord(db, propertyId);
     const result = propertyDoc.data();
 
     // Assertions
@@ -288,12 +288,12 @@ describe('Inspections | On Write | V2', () => {
     };
 
     // Setup database
-    await diModel.createRecord(fs, def1Id, unchangedDeficiency);
-    await diModel.createRecord(fs, def2Id, archivedDeficiency);
-    await inspectionsModel.createRecord(fs, inspectionId, inspData);
-    const beforeSnap = await inspectionsModel.findRecord(fs, inspectionId);
-    await inspectionsModel.updateRecord(fs, inspectionId, inspUpdate);
-    const afterSnap = await inspectionsModel.findRecord(fs, inspectionId);
+    await diModel.createRecord(db, def1Id, unchangedDeficiency);
+    await diModel.createRecord(db, def2Id, archivedDeficiency);
+    await inspectionsModel.createRecord(db, inspectionId, inspData);
+    const beforeSnap = await inspectionsModel.findRecord(db, inspectionId);
+    await inspectionsModel.updateRecord(db, inspectionId, inspUpdate);
+    const afterSnap = await inspectionsModel.findRecord(db, inspectionId);
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -301,9 +301,9 @@ describe('Inspections | On Write | V2', () => {
     await wrapped(changeSnap, { params: { inspectionId } });
 
     // Test result
-    const propertyDefSnap = await diModel.queryByProperty(fs, propertyId);
+    const propertyDefSnap = await diModel.queryByProperty(db, propertyId);
     const archiveDefSnap = await archiveModel.deficientItem.findRecord(
-      fs,
+      db,
       def2Id
     );
     const archiveData = archiveDefSnap.data() || {};
@@ -377,10 +377,10 @@ describe('Inspections | On Write | V2', () => {
     };
 
     // Setup database
-    await inspectionsModel.createRecord(fs, inspectionId, inspData);
-    const beforeSnap = await inspectionsModel.findRecord(fs, inspectionId);
-    await inspectionsModel.updateRecord(fs, inspectionId, inspUpdate);
-    const afterSnap = await inspectionsModel.findRecord(fs, inspectionId);
+    await inspectionsModel.createRecord(db, inspectionId, inspData);
+    const beforeSnap = await inspectionsModel.findRecord(db, inspectionId);
+    await inspectionsModel.updateRecord(db, inspectionId, inspUpdate);
+    const afterSnap = await inspectionsModel.findRecord(db, inspectionId);
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -388,7 +388,7 @@ describe('Inspections | On Write | V2', () => {
     await wrapped(changeSnap, { params: { inspectionId } });
 
     // Test result
-    const result = await diModel.queryByProperty(fs, propertyId);
+    const result = await diModel.queryByProperty(db, propertyId);
 
     // Assertions
     [
@@ -463,11 +463,11 @@ describe('Inspections | On Write | V2', () => {
     };
 
     // Setup database
-    await archiveModel.deficientItem.createRecord(fs, defId, defData);
-    await inspectionsModel.createRecord(fs, inspectionId, inspData);
-    const beforeSnap = await inspectionsModel.findRecord(fs, inspectionId);
-    await inspectionsModel.updateRecord(fs, inspectionId, inspUpdate);
-    const afterSnap = await inspectionsModel.findRecord(fs, inspectionId);
+    await archiveModel.deficientItem.createRecord(db, defId, defData);
+    await inspectionsModel.createRecord(db, inspectionId, inspData);
+    const beforeSnap = await inspectionsModel.findRecord(db, inspectionId);
+    await inspectionsModel.updateRecord(db, inspectionId, inspUpdate);
+    const afterSnap = await inspectionsModel.findRecord(db, inspectionId);
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -475,8 +475,8 @@ describe('Inspections | On Write | V2', () => {
     await wrapped(changeSnap, { params: { inspectionId } });
 
     // Test result
-    const archivedDoc = await archiveModel.deficientItem.findRecord(fs, defId);
-    const propertyDeficiencies = await diModel.queryByProperty(fs, propertyId);
+    const archivedDoc = await archiveModel.deficientItem.findRecord(db, defId);
+    const propertyDeficiencies = await diModel.queryByProperty(db, propertyId);
     const [restoredDeficiencyDoc] = propertyDeficiencies.docs.filter(
       ({ id }) => id === defId
     );
@@ -563,9 +563,9 @@ describe('Inspections | On Write | V2', () => {
     const diAttrNames = Object.keys(DEFICIENT_ITEM_PROXY_ATTRS);
 
     // Setup database
-    await inspectionsModel.createRecord(fs, inspectionId, inspData);
-    const beforeSnap = await inspectionsModel.findRecord(fs, inspectionId);
-    const afterSnap = await inspectionsModel.findRecord(fs, inspectionId);
+    await inspectionsModel.createRecord(db, inspectionId, inspData);
+    const beforeSnap = await inspectionsModel.findRecord(db, inspectionId);
+    const afterSnap = await inspectionsModel.findRecord(db, inspectionId);
 
     // Execute to add deficiency
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -573,7 +573,7 @@ describe('Inspections | On Write | V2', () => {
     await wrapped(changeSnap, { params: { inspectionId } });
 
     // Lookup created deficiency id
-    const deficienciesSnap = await diModel.query(fs, {
+    const deficienciesSnap = await diModel.query(db, {
       property: ['==', propertyId],
       inspection: ['==', inspectionId],
       item: ['==', itemId],
@@ -608,12 +608,12 @@ describe('Inspections | On Write | V2', () => {
       }
 
       const beforeUpdateSnap = await inspectionsModel.findRecord(
-        fs,
+        db,
         inspectionId
       );
-      await inspectionsModel.updateRecord(fs, inspectionId, inspUpdate);
+      await inspectionsModel.updateRecord(db, inspectionId, inspUpdate);
       const afterUpdateSnap = await inspectionsModel.findRecord(
-        fs,
+        db,
         inspectionId
       );
 
@@ -626,7 +626,7 @@ describe('Inspections | On Write | V2', () => {
       await wrappedUpdate(updateChangeSnap, { params: { inspectionId } });
 
       // Test result
-      const updatedSnap = await diModel.findRecord(fs, deficiencyId);
+      const updatedSnap = await diModel.findRecord(db, deficiencyId);
       const actual = (updatedSnap.data() || {})[diAttr];
       const newUpdatedAt = (updatedSnap.data() || {}).updatedAt || 0;
 
@@ -675,10 +675,10 @@ describe('Inspections | On Write | V2', () => {
     };
 
     // Setup database
-    await inspectionsModel.createRecord(fs, inspectionId, inspData);
-    const beforeSnap = await inspectionsModel.findRecord(fs, inspectionId);
-    await inspectionsModel.updateRecord(fs, inspectionId, inspUpdate);
-    const afterSnap = await inspectionsModel.findRecord(fs, inspectionId);
+    await inspectionsModel.createRecord(db, inspectionId, inspData);
+    const beforeSnap = await inspectionsModel.findRecord(db, inspectionId);
+    await inspectionsModel.updateRecord(db, inspectionId, inspUpdate);
+    const afterSnap = await inspectionsModel.findRecord(db, inspectionId);
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -686,7 +686,7 @@ describe('Inspections | On Write | V2', () => {
     await wrapped(changeSnap, { params: { inspectionId } });
 
     // Test result
-    const deficientDocs = await diModel.query(fs, {
+    const deficientDocs = await diModel.query(db, {
       property: ['==', propertyId],
     });
     const [deficientDoc] = deficientDocs.docs.filter(Boolean);
@@ -740,11 +740,11 @@ describe('Inspections | On Write | V2', () => {
     };
 
     // Setup database
-    await inspectionsModel.createRecord(fs, inspectionId, inspData);
-    await diModel.createRecord(fs, deficiencyId, deficientData);
-    const beforeSnap = await inspectionsModel.findRecord(fs, inspectionId);
-    await inspectionsModel.updateRecord(fs, inspectionId, inspUpdate);
-    const afterSnap = await inspectionsModel.findRecord(fs, inspectionId);
+    await inspectionsModel.createRecord(db, inspectionId, inspData);
+    await diModel.createRecord(db, deficiencyId, deficientData);
+    const beforeSnap = await inspectionsModel.findRecord(db, inspectionId);
+    await inspectionsModel.updateRecord(db, inspectionId, inspUpdate);
+    const afterSnap = await inspectionsModel.findRecord(db, inspectionId);
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -752,7 +752,7 @@ describe('Inspections | On Write | V2', () => {
     await wrapped(changeSnap, { params: { inspectionId } });
 
     // Test result
-    const resultDoc = await diModel.findRecord(fs, deficiencyId);
+    const resultDoc = await diModel.findRecord(db, deficiencyId);
     const actual = (resultDoc.data() || {}).itemScore || 0;
 
     // Assertions
@@ -799,11 +799,11 @@ describe('Inspections | On Write | V2', () => {
     };
 
     // Setup database
-    await inspectionsModel.createRecord(fs, inspectionId, inspData);
-    await diModel.createRecord(fs, deficiencyId, deficientData);
-    const beforeSnap = await inspectionsModel.findRecord(fs, inspectionId);
-    await inspectionsModel.updateRecord(fs, inspectionId, inspUpdate);
-    const afterSnap = await inspectionsModel.findRecord(fs, inspectionId);
+    await inspectionsModel.createRecord(db, inspectionId, inspData);
+    await diModel.createRecord(db, deficiencyId, deficientData);
+    const beforeSnap = await inspectionsModel.findRecord(db, inspectionId);
+    await inspectionsModel.updateRecord(db, inspectionId, inspUpdate);
+    const afterSnap = await inspectionsModel.findRecord(db, inspectionId);
 
     // Execute
     const changeSnap = test.makeChange(beforeSnap, afterSnap);
@@ -811,7 +811,7 @@ describe('Inspections | On Write | V2', () => {
     await wrapped(changeSnap, { params: { inspectionId } });
 
     // Test result
-    const inspDeficiencyDocs = await diModel.query(fs, {
+    const inspDeficiencyDocs = await diModel.query(db, {
       inspection: ['==', inspectionId],
     });
     const actual = inspDeficiencyDocs.size;

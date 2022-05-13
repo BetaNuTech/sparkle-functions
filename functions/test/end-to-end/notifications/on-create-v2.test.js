@@ -6,10 +6,10 @@ const usersModel = require('../../../models/users');
 const propertiesModel = require('../../../models/properties');
 const notificationsModel = require('../../../models/notifications');
 const integrationsModel = require('../../../models/integrations');
-const { fs, test, cloudFunctions } = require('../../setup');
+const { db, test, cloudFunctions } = require('../../setup');
 
 describe('Notifications | On Create V2', () => {
-  afterEach(() => cleanDb(null, fs));
+  afterEach(() => cleanDb(db));
 
   it('should configure notification for an admin slack channel message', async () => {
     const creator = uuid();
@@ -40,10 +40,10 @@ describe('Notifications | On Create V2', () => {
     });
 
     // Setup database
-    await integrationsModel.setSlack(fs, slackIntegration);
-    await notificationsModel.createRecord(fs, notificationId, notification);
+    await integrationsModel.setSlack(db, slackIntegration);
+    await notificationsModel.createRecord(db, notificationId, notification);
     const notificationsSnap = await notificationsModel.findRecord(
-      fs,
+      db,
       notificationId
     );
 
@@ -54,7 +54,7 @@ describe('Notifications | On Create V2', () => {
     });
 
     // Assertions
-    const snap = await notificationsModel.findRecord(fs, notificationId);
+    const snap = await notificationsModel.findRecord(db, notificationId);
     const actual = snap.data();
     if (actual && actual.slack && actual.slack.createdAt) {
       delete actual.slack.createdAt;
@@ -92,11 +92,11 @@ describe('Notifications | On Create V2', () => {
     });
 
     // Setup database
-    await propertiesModel.createRecord(fs, propertyId, property);
-    await integrationsModel.setSlack(fs, slackIntegration);
-    await notificationsModel.createRecord(fs, notificationId, notification);
+    await propertiesModel.createRecord(db, propertyId, property);
+    await integrationsModel.setSlack(db, slackIntegration);
+    await notificationsModel.createRecord(db, notificationId, notification);
     const notificationsSnap = await notificationsModel.findRecord(
-      fs,
+      db,
       notificationId
     );
 
@@ -107,7 +107,7 @@ describe('Notifications | On Create V2', () => {
     });
 
     // Assertions
-    const snap = await notificationsModel.findRecord(fs, notificationId);
+    const snap = await notificationsModel.findRecord(db, notificationId);
     const actual = snap.data();
     if (actual && actual.slack && actual.slack.createdAt) {
       delete actual.slack.createdAt;
@@ -136,10 +136,10 @@ describe('Notifications | On Create V2', () => {
     });
 
     // Setup database
-    await integrationsModel.setSlack(fs, slackIntegration);
-    await notificationsModel.createRecord(fs, notificationId, notification);
+    await integrationsModel.setSlack(db, slackIntegration);
+    await notificationsModel.createRecord(db, notificationId, notification);
     const notificationsSnap = await notificationsModel.findRecord(
-      fs,
+      db,
       notificationId
     );
 
@@ -150,7 +150,7 @@ describe('Notifications | On Create V2', () => {
     });
 
     // Assertions
-    const snap = await notificationsModel.findRecord(fs, notificationId);
+    const snap = await notificationsModel.findRecord(db, notificationId);
     const actual = ((snap.data() || {}).slack || {}).message || '';
 
     expect(actual).to.equal(expected);
@@ -182,12 +182,12 @@ describe('Notifications | On Create V2', () => {
     expected.publishedMediums.slack = true; // gets ignored
 
     // Setup database
-    await usersModel.createRecord(fs, user1Id, adminUser);
-    await usersModel.createRecord(fs, user2Id, adminUser);
-    await integrationsModel.setSlack(fs, slackIntegration);
-    await notificationsModel.createRecord(fs, notificationId, notification);
+    await usersModel.createRecord(db, user1Id, adminUser);
+    await usersModel.createRecord(db, user2Id, adminUser);
+    await integrationsModel.setSlack(db, slackIntegration);
+    await notificationsModel.createRecord(db, notificationId, notification);
     const notificationsSnap = await notificationsModel.findRecord(
-      fs,
+      db,
       notificationId
     );
 
@@ -198,7 +198,7 @@ describe('Notifications | On Create V2', () => {
     });
 
     // Assertions
-    const snap = await notificationsModel.findRecord(fs, notificationId);
+    const snap = await notificationsModel.findRecord(db, notificationId);
     const actual = snap.data() || {};
 
     // Remove dynamic timestamps
@@ -237,12 +237,12 @@ describe('Notifications | On Create V2', () => {
     expected.publishedMediums.slack = true; // gets ignored
 
     // Setup database
-    await usersModel.createRecord(fs, user1Id, adminUser);
-    await usersModel.createRecord(fs, user2Id, adminUserOptOut);
-    await integrationsModel.setSlack(fs, slackIntegration);
-    await notificationsModel.createRecord(fs, notificationId, notification);
+    await usersModel.createRecord(db, user1Id, adminUser);
+    await usersModel.createRecord(db, user2Id, adminUserOptOut);
+    await integrationsModel.setSlack(db, slackIntegration);
+    await notificationsModel.createRecord(db, notificationId, notification);
     const notificationsSnap = await notificationsModel.findRecord(
-      fs,
+      db,
       notificationId
     );
 
@@ -253,7 +253,7 @@ describe('Notifications | On Create V2', () => {
     });
 
     // Assertions
-    const snap = await notificationsModel.findRecord(fs, notificationId);
+    const snap = await notificationsModel.findRecord(db, notificationId);
     const actual = snap.data() || {};
 
     // Remove dynamic timestamps

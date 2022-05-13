@@ -12,11 +12,11 @@ const PREFIX = 'property: api: post:';
 /**
  * Factory for creating a POST endpoint
  * that creates Firestore inspection
- * @param  {firebaseAdmin.firestore} fs - Firestore Admin DB instance
+ * @param  {firebaseAdmin.firestore} db - Firestore Admin DB instance
  * @return {Function} - onRequest handler
  */
-module.exports = function createPost(fs) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function createPost(db) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
 
   /**
    * Handle POST request
@@ -55,11 +55,11 @@ module.exports = function createPost(fs) {
     }
 
     // Generate property ID
-    const propertyId = propertiesModel.createId(fs);
+    const propertyId = propertiesModel.createId(db);
 
     // Create new property record
     try {
-      await propertiesModel.createRecord(fs, propertyId, property);
+      await propertiesModel.createRecord(db, propertyId, property);
     } catch (err) {
       return send500Error(err, 'property creation failed', 'unexpected error');
     }
@@ -67,7 +67,7 @@ module.exports = function createPost(fs) {
     if (!incognitoMode) {
       try {
         // Notify of new inspection report
-        await notificationsModel.addRecord(fs, {
+        await notificationsModel.addRecord(db, {
           title: 'Property Creation',
           summary: notifyTemplate('property-creation-summary', {
             authorName,

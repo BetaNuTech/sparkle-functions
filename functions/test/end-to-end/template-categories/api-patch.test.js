@@ -8,10 +8,10 @@ const templateCategoriesModel = require('../../../models/template-categories');
 const templatesCategoryModel = require('../../../models/template-categories');
 const handler = require('../../../template-categories/api/patch');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { fs: db } = require('../../setup');
+const { db } = require('../../setup');
 
 describe('Template Categories | API | PATCH', () => {
-  afterEach(() => cleanDb(null, db));
+  afterEach(() => cleanDb(db));
 
   it('should update an existing template category', async () => {
     const expected = 'New Name';

@@ -666,7 +666,7 @@ module.exports = {
    */
   createPropertyTrelloIntegration(intConfig = {}) {
     return {
-      grantedBy: uuid(),
+      createdAt: nowUnix(), // UNIX timestamp
       updatedAt: nowUnix(), // UNIX timestamp
       openBoard: uuid(),
       openBoardName: 'open board',

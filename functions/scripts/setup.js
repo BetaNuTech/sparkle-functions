@@ -15,7 +15,7 @@ const config = require('../config'); // eslint-disable-line
 const { firebase: fbConfig } = config;
 const admin = require('firebase-admin'); // eslint-disable-line
 const defaultApp = admin.initializeApp(fbConfig, 'script');
-const fs = defaultApp.firestore();
+const db = defaultApp.firestore();
 const test = require('firebase-functions-test')(fbConfig); // eslint-disable-line
 const cloudFunctions = require('../index'); // eslint-disable-line
 const auth = admin.auth();
@@ -24,7 +24,7 @@ const storage = admin.storage();
 module.exports = {
   admin,
   auth,
-  fs,
+  db,
   test,
   cloudFunctions,
   config,

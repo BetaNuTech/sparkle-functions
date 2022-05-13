@@ -10,12 +10,12 @@ const properiesModel = require('../../../models/properties');
 const teamsModel = require('../../../models/teams');
 const handler = require('../../../users/api/patch');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { fs: db, auth } = require('../../setup');
+const { db, auth } = require('../../setup');
 
 describe('Users | API | PATCH', () => {
   afterEach(() => {
     sinon.restore();
-    return cleanDb(null, db);
+    return cleanDb(db);
   });
 
   it('should allow admin to update a target user permission level', async () => {

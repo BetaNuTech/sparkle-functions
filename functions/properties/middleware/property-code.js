@@ -8,11 +8,11 @@ const PREFIX = 'properties: middleware: property-code:';
  * Factory for middleware to lookup
  * a property and verify that it has
  * a usable code
- * @param {admin.firestore} fs
+ * @param {admin.firestore} db
  * @return {Function} - onRequest handler
  */
-module.exports = fs => {
-  assert(Boolean(fs), 'has Firestore DB instance');
+module.exports = db => {
+  assert(Boolean(db), 'has Firestore DB instance');
 
   return async (req, res, next) => {
     const { params } = req;
@@ -22,7 +22,7 @@ module.exports = fs => {
     // Lookup requested property
     try {
       if (!propertyId) throw Error('no property ID provided');
-      const propertyDoc = await propertiesModel.findRecord(fs, propertyId);
+      const propertyDoc = await propertiesModel.findRecord(db, propertyId);
       if (!propertyDoc.exists) throw Error('property does not exist');
       property = propertyDoc.data();
     } catch (err) {

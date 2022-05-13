@@ -10,7 +10,7 @@ const jobsModel = require('../../../models/jobs');
 const propertiesModel = require('../../../models/properties');
 const integrationsModel = require('../../../models/integrations');
 const handler = require('../../../trello/api/post-job-card');
-const { fs } = require('../../setup');
+const { db } = require('../../setup');
 
 const CLIENT_API_DOMAIN =
   'test-app.com/properties/{{propertyId}}/jobs/edit/{{jobId}}';
@@ -19,7 +19,7 @@ const DEFAULT_ZIP = '10001';
 describe('Trello | API | POST Job Card', () => {
   afterEach(() => {
     nock.cleanAll();
-    return cleanDb(null, fs);
+    return cleanDb(db);
   });
 
   it('successfully update system property trello card and job with created Trello card details', async () => {
@@ -28,7 +28,7 @@ describe('Trello | API | POST Job Card', () => {
     const jobId = uuid();
     const propertyId = uuid();
     const property = mocking.createProperty();
-    const propertyDoc = propertiesModel.createDocRef(fs, propertyId);
+    const propertyDoc = propertiesModel.createDocRef(db, propertyId);
     const job = mocking.createJob({ property: propertyDoc, trelloCardURL: '' });
     const trelloIntegration = { member: uuid(), trelloUsername: 'user' };
     const trelloPropIntegration = mocking.createPropertyTrelloIntegration();
@@ -44,11 +44,11 @@ describe('Trello | API | POST Job Card', () => {
       });
 
     // Setup Database
-    await propertiesModel.createRecord(fs, propertyId, property);
-    await jobsModel.createRecord(fs, jobId, job);
-    await integrationsModel.upsertTrello(fs, trelloIntegration);
+    await propertiesModel.createRecord(db, propertyId, property);
+    await jobsModel.createRecord(db, jobId, job);
+    await integrationsModel.upsertTrello(db, trelloIntegration);
     await integrationsModel.createTrelloProperty(
-      fs,
+      db,
       propertyId,
       trelloPropIntegration
     );
@@ -62,8 +62,8 @@ describe('Trello | API | POST Job Card', () => {
       .expect(201);
 
     // Get Results
-    const systemDoc = await systemModel.findTrelloProperty(fs, propertyId);
-    const jobDoc = await jobsModel.findRecord(fs, jobId);
+    const systemDoc = await systemModel.findTrelloProperty(db, propertyId);
+    const jobDoc = await jobsModel.findRecord(db, jobId);
     const resAttrs = ((res.body || {}).data || {}).attributes || {};
     const expectedResponse = JSON.stringify({
       id: jobId,
@@ -103,7 +103,7 @@ function createApp() {
     '/t/:propertyId/:jobId',
     stubAuth,
     stubTrelloReq,
-    handler(fs, CLIENT_API_DOMAIN, DEFAULT_ZIP)
+    handler(db, CLIENT_API_DOMAIN, DEFAULT_ZIP)
   );
   return app;
 }

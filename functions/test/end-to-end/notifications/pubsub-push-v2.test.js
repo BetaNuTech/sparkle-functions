@@ -5,12 +5,12 @@ const mocking = require('../../../test-helpers/mocking');
 const regTokenModel = require('../../../models/registration-tokens');
 const notificationsModel = require('../../../models/notifications');
 const { cleanDb } = require('../../../test-helpers/firebase');
-const { fs, test, cloudFunctions, messaging } = require('../../setup');
+const { db, test, cloudFunctions, messaging } = require('../../setup');
 
 describe('Notifications | Pubsub | Publish Push V2', () => {
   afterEach(async () => {
     sinon.restore();
-    await cleanDb(null, fs);
+    await cleanDb(db);
   });
 
   it("marks a notification's push messages as completely published", async () => {
@@ -37,16 +37,16 @@ describe('Notifications | Pubsub | Publish Push V2', () => {
     sinon.stub(messaging, 'sendToDevice').resolves(sendtoDevicePayload);
 
     // Setup Database
-    await regTokenModel.createRecord(fs, user1Id, regTokens);
-    await regTokenModel.createRecord(fs, user2Id, regTokens);
-    await notificationsModel.createRecord(fs, notificationId, notification);
+    await regTokenModel.createRecord(db, user1Id, regTokens);
+    await regTokenModel.createRecord(db, user2Id, regTokens);
+    await notificationsModel.createRecord(db, notificationId, notification);
 
     // Execute
     const message = { data: Buffer.from(notificationId) };
     await test.wrap(cloudFunctions.publishPushNotificationsV2)(message);
 
     // Test Results
-    const resultSnap = await notificationsModel.findRecord(fs, notificationId);
+    const resultSnap = await notificationsModel.findRecord(db, notificationId);
     const result = resultSnap.data() || {};
 
     // Assertions
@@ -94,14 +94,14 @@ describe('Notifications | Pubsub | Publish Push V2', () => {
     sinon.stub(messaging, 'sendToDevice').resolves(sendtoDevicePayload);
 
     // Setup Database
-    await notificationsModel.createRecord(fs, notificationId, notification);
+    await notificationsModel.createRecord(db, notificationId, notification);
 
     // Execute
     const message = { data: Buffer.from(notificationId) };
     await test.wrap(cloudFunctions.publishPushNotificationsV2)(message);
 
     // Test Results
-    const resultSnap = await notificationsModel.findRecord(fs, notificationId);
+    const resultSnap = await notificationsModel.findRecord(db, notificationId);
     const result = resultSnap.data() || {};
     const actual = (result.push || {})[userId];
 

@@ -11,11 +11,11 @@ const PREFIX = 'trello: on-update-completed-photo-v2:';
 /**
  * Factory for creating Trello image comments from
  * a Deficient Item's completed photos
- * @param  {admin.firestore} firestore - Firebase Admin DB instance
+ * @param  {admin.firestore} db - Firebase Admin DB instance
  * @return {Function} - DI completed photo onCreate handler
  */
-module.exports = function createOnUpdateCompletedPhoto(fs) {
-  assert(fs && typeof fs.collection === 'function', 'has firestore db');
+module.exports = function createOnUpdateCompletedPhoto(db) {
+  assert(db && typeof db.collection === 'function', 'has firestore db');
 
   return async (change, event) => {
     const { deficiencyId } = event.params;
@@ -71,7 +71,7 @@ module.exports = function createOnUpdateCompletedPhoto(fs) {
     let trelloCardId = '';
     try {
       trelloCardId = await systemModel.findTrelloCardId(
-        fs,
+        db,
         propertyId,
         deficiencyId
       );
@@ -87,7 +87,7 @@ module.exports = function createOnUpdateCompletedPhoto(fs) {
     // Lookup Trello credentials
     let trelloCredentials = null;
     try {
-      const trelloCredentialsSnap = await systemModel.findTrello(fs);
+      const trelloCredentialsSnap = await systemModel.findTrello(db);
       trelloCredentials = trelloCredentialsSnap.data() || null;
     } catch (err) {
       throw Error(`${PREFIX} failed lookup trello credentials | ${err}`); // wrap error
@@ -130,7 +130,7 @@ module.exports = function createOnUpdateCompletedPhoto(fs) {
       if (err.code === 'ERR_TRELLO_CARD_DELETED') {
         try {
           await systemModel.cleanupDeletedTrelloCard(
-            fs,
+            db,
             deficiencyId,
             trelloCardId
           );
@@ -151,7 +151,7 @@ module.exports = function createOnUpdateCompletedPhoto(fs) {
     // Trello attachement reference
     try {
       await deficiencyModel.updateCompletedPhotoTrelloCardAttachment(
-        fs,
+        db,
         deficiencyId,
         completedPhotoId,
         attachmentId
