@@ -2,7 +2,9 @@ version: "3.7"
 
 services:
   yarn:
-    image: "node:10.15-alpine"
+    build: 
+      context: .
+      dockerfile: yarn-Dockerfile
     working_dir: /src
     entrypoint: yarn
     volumes:
