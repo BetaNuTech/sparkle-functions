@@ -2,7 +2,9 @@ version: "3.7"
 
 services:
   yarn:
-    image: "node:10.15-alpine"
+    build: 
+      context: .
+      dockerfile: yarn-Dockerfile
     working_dir: /src
     entrypoint: yarn
     volumes:
@@ -26,7 +28,9 @@ services:
       - ./functions:/src/functions
 
   test-unit-fn:
-    image: "node:10-alpine"
+    build: 
+      context: .
+      dockerfile: yarn-Dockerfile
     working_dir: /src/functions
     env_file: .env.test
     command: [sh, -c, "yarn test-unit"]
