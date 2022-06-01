@@ -71,3 +71,5 @@ auth*.json
 
 # IDE Files
 *.sublime-workspace
+*.swp
+yarn.lock

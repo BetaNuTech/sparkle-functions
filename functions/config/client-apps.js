@@ -11,10 +11,10 @@ const CLIENT_DOMAIN =
 const config = {
   web: {
     deficientItemPath:
-      'beta/properties/{{propertyId}}/deficient-items/edit/{{deficientItemId}}/',
+      'properties/{{propertyId}}/deficient-items/edit/{{deficientItemId}}/',
 
     inspectionPath:
-      'beta/properties/{{propertyId}}/inspections/edit/{{inspectionId}}/',
+      'properties/{{propertyId}}/inspections/edit/{{inspectionId}}/',
 
     jobPath: 'properties/{{propertyId}}/jobs/edit/{{jobId}}',
 
