@@ -13,8 +13,7 @@ const config = {
     deficientItemPath:
       'properties/{{propertyId}}/deficient-items/edit/{{deficientItemId}}/',
 
-    deficientItemsPath:
-      'properties/{{propertyId}}/deficient-items/',
+    deficientItemsPath: 'properties/{{propertyId}}/deficient-items/',
 
     inspectionPath:
       'properties/{{propertyId}}/inspections/edit/{{inspectionId}}/',

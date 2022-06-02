@@ -156,7 +156,7 @@ function createInspectionUrl(propertyId, inspectionId) {
  * @param  {String} propertyId
  * @return {String}
  */
- function createDeficientItemsUrl(propertyId) {
+function createDeficientItemsUrl(propertyId) {
   assert(propertyId && typeof propertyId === 'string', 'has property id');
   return DEFICIENT_ITEMS_PATH.replace('{{propertyId}}', propertyId);
 }
@@ -184,7 +184,7 @@ function createJsonApiInspection(data) {
       templateName: data.templateName || '',
       inspectionReportURL: data.inspectionReportURL || '',
       inspectionURL: createInspectionUrl(data.property, data.id),
-      deficientItemsURL: createDeficientItemsUrl(data.property)
+      deficientItemsURL: createDeficientItemsUrl(data.property),
     },
   };
 }
