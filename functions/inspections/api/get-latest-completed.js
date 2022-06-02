@@ -7,6 +7,7 @@ const create500ErrHandler = require('../../utils/unexpected-api-error');
 
 const PREFIX = 'inspections: api: get-latest-completed:';
 const INSP_PATH = config.clientApps.web.inspectionURL;
+const DEFICIENT_ITEMS_PATH = config.clientApps.web.deficientItemsURL;
 
 /**
  * Factory for getting the latest completed
@@ -151,6 +152,16 @@ function createInspectionUrl(propertyId, inspectionId) {
 }
 
 /**
+ * Create a url to the web client's deficient items view
+ * @param  {String} propertyId
+ * @return {String}
+ */
+ function createDeficientItemsUrl(propertyId) {
+  assert(propertyId && typeof propertyId === 'string', 'has property id');
+  return DEFICIENT_ITEMS_PATH.replace('{{propertyId}}', propertyId);
+}
+
+/**
  * Create a JSON API inspection document
  * @param  {Object} data
  * @return {Object}
@@ -173,6 +184,7 @@ function createJsonApiInspection(data) {
       templateName: data.templateName || '',
       inspectionReportURL: data.inspectionReportURL || '',
       inspectionURL: createInspectionUrl(data.property, data.id),
+      deficientItemsURL: createDeficientItemsUrl(data.property)
     },
   };
 }
