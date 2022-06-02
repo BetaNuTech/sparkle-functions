@@ -13,6 +13,8 @@ const config = {
     deficientItemPath:
       'properties/{{propertyId}}/deficient-items/edit/{{deficientItemId}}/',
 
+    deficientItemsPath: 'properties/{{propertyId}}/deficient-items/',
+
     inspectionPath:
       'properties/{{propertyId}}/inspections/edit/{{inspectionId}}/',
 
@@ -20,6 +22,10 @@ const config = {
 
     get deficientItemURL() {
       return `${CLIENT_DOMAIN}/${this.deficientItemPath}`;
+    },
+
+    get deficientItemsURL() {
+      return `${CLIENT_DOMAIN}/${this.deficientItemsPath}`;
     },
 
     get inspectionURL() {
