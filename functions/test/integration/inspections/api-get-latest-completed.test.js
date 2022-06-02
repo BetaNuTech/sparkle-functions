@@ -174,7 +174,10 @@ describe('Inspections | API | GET Latest Completed', () => {
           templateName: inspection.templateName,
           inspectionReportURL: inspection.inspectionReportURL,
           inspectionURL: createInspectionUrl(inspection.property, 'expected'),
-          deficientItemsURL: createDeficientItemsUrl(inspection.property, 'expected'),
+          deficientItemsURL: createDeficientItemsUrl(
+            inspection.property,
+            'expected'
+          ),
         },
       },
     };
@@ -337,4 +340,3 @@ function createInspectionUrl(propertyId, inspId) {
 function createDeficientItemsUrl(propertyId) {
   return DEFICIENT_ITEMS_URL_PATH.replace('{{propertyId}}', propertyId);
 }
-
