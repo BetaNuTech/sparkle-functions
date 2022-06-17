@@ -116,16 +116,6 @@ describe('Inspections | On Delete | V2', () => {
         actual: result.lastInspectionDate,
         msg: "updated property's last inspection date",
       },
-      {
-        expected: 1,
-        actual: result.numOfDeficientItems,
-        msg: "updated property's number of deficient items",
-      },
-      {
-        expected: 1,
-        actual: result.numOfRequiredActionsForDeficientItems,
-        msg: "updated property's number of required actions",
-      },
     ].forEach(({ actual, expected, msg }) => {
       expect(actual).to.equal(expected, msg);
     });
