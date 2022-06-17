@@ -100,7 +100,10 @@ function mergeExistingDiState(createdDefItems, existingDefItems) {
       ({ item, inspection }) => item === itemId && inspection === inspId
     );
     // merge existingDefItem state.  If not found, assume state is closed
-    Object.assign(createdDefItems[id], existingDefItem || [{ state: 'closed' }]);
+    Object.assign(
+      createdDefItems[id],
+      existingDefItem || [{ state: 'closed' }]
+    );
   });
 
   return createdDefItems;
