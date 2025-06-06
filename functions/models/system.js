@@ -668,4 +668,287 @@ module.exports = modelSetup({
       .doc('cobalt')
       .get();
   },
+
+  /**
+   * Create or update an organization's ClickUp
+   * API credentials for Sparkle/ClickUp integrations
+   * @param  {admin.firestore} db
+   * @param  {Object} credentials
+   * @param  {firestore.batch?} batch
+   * @return {Promise} - resolves {DocumentSnapshot}
+   */
+  upsertClickUp(db, credentials, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(
+      credentials && typeof credentials === 'object',
+      'has credentials object'
+    );
+    assert(
+      credentials.apiToken && typeof credentials.apiToken === 'string',
+      'has API token'
+    );
+    assert(
+      credentials.user && typeof credentials.user === 'string',
+      'has firebase user ID'
+    );
+    if (batch) {
+      assert(
+        typeof batch.update === 'function' &&
+          typeof batch.create === 'function',
+        'has firestore batch'
+      );
+    }
+
+    return db.runTransaction(async transaction => {
+      const clickupCredentialsDoc = db
+        .collection(SYSTEM_COLLECTION)
+        .doc('clickup');
+
+      let clickupCredentialsRef = null;
+      try {
+        clickupCredentialsRef = await transaction.get(clickupCredentialsDoc);
+      } catch (err) {
+        throw Error(
+          `${PREFIX} upsertClickUpCredentials: failed to lookup existing ClickUp credentials`
+        );
+      }
+
+      const batchOrTrans = batch || transaction;
+      const now = Math.round(Date.now() / 1000);
+      const data = {
+        user: credentials.user,
+        apiToken: credentials.apiToken,
+        workspaceId: credentials.workspaceId || null,
+        workspaceName: credentials.workspaceName || null,
+        updatedAt: now,
+      };
+
+      if (clickupCredentialsRef.exists) {
+        batchOrTrans.update(clickupCredentialsDoc, data);
+      } else {
+        data.createdAt = now;
+        batchOrTrans.create(clickupCredentialsDoc, data);
+      }
+
+      return clickupCredentialsDoc;
+    });
+  },
+
+  /**
+   * Remove Firestore ClickUp credentials
+   * @param  {admin.firestore} db - Firestore DB instance
+   * @param  {firstore.batch?} batch
+   * @return {Promise} - resolves {Document}
+   */
+  removeClickUp(db, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    if (batch) {
+      assert(typeof batch.delete === 'function', 'has firestore batch');
+    }
+
+    const doc = db.collection(SYSTEM_COLLECTION).doc('clickup');
+
+    if (batch) {
+      batch.delete(doc);
+      return Promise.resolve(doc);
+    }
+
+    return doc.delete();
+  },
+
+  /**
+   * Lookup ClickUp system credentials
+   * @param  {admin.firestore} db
+   * @return {Promise} - resolves {DocumentSnapshot}
+   */
+  findClickUp(db) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    return db
+      .collection(SYSTEM_COLLECTION)
+      .doc('clickup')
+      .get();
+  },
+
+  /**
+   * Create or update a property ClickUp object
+   * @param  {admin.firestore} db
+   * @param  {String} propertyId
+   * @param  {Object} details
+   * @param  {firestore.batch?} batch
+   * @return {Promise}
+   */
+  upsertPropertyClickUp(db, propertyId, details, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    assert(details && typeof details === 'object', 'has upsert object');
+    assert(
+      typeof details.tasks === 'object',
+      'has upsert object must contains a "tasks" object'
+    );
+
+    if (batch) {
+      assert(
+        typeof batch.update === 'function' &&
+          typeof batch.create === 'function',
+        'has firestore batch'
+      );
+    }
+
+    return db.runTransaction(async transaction => {
+      const doc = db.collection(SYSTEM_COLLECTION).doc(`clickup-${propertyId}`);
+
+      let propertyClickUpRef = null;
+      try {
+        propertyClickUpRef = await transaction.get(doc);
+      } catch (err) {
+        throw Error(
+          `${PREFIX} upsertPropertyClickUp: failed to lookup existing property ClickUp details: ${err}`
+        );
+      }
+
+      const batchOrTrans = batch || transaction;
+      const existingData = propertyClickUpRef.data() || {};
+      const data = {
+        ...existingData,
+        ...{
+          tasks: {
+            ...(existingData.tasks || {}),
+            ...details.tasks,
+          },
+        },
+      };
+
+      if (propertyClickUpRef.exists) {
+        batchOrTrans.update(doc, data);
+      } else {
+        batchOrTrans.create(doc, data);
+      }
+
+      if (batch) {
+        return batch;
+      }
+    });
+  },
+
+  /**
+   * Find any ClickUp Task ID associated with
+   * a Deficient Item
+   * @param  {admin.firestore} db
+   * @param  {String} propertyId
+   * @param  {String} deficiencyId
+   * @return {Promise} - resolves {String} ClickUp task ID
+   */
+  async findClickUpTaskId(db, propertyId, deficiencyId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    assert(
+      deficiencyId && typeof deficiencyId === 'string',
+      'has deficiency id'
+    );
+
+    // Lookup system credentials
+    let propertyClickUpTasks = null;
+    try {
+      const propertyClickUpTasksSnap = await db
+        .collection(SYSTEM_COLLECTION)
+        .doc(`clickup-${propertyId}`)
+        .get();
+      propertyClickUpTasks = (propertyClickUpTasksSnap.data() || {}).tasks || {};
+    } catch (err) {
+      throw Error(
+        `${PREFIX}: findClickUpTaskId: failed to lookup property ClickUp: ${err}`
+      );
+    }
+
+    // Find any task reference stored for DI
+    return (
+      Object.keys(propertyClickUpTasks).filter(
+        id => propertyClickUpTasks[id] === deficiencyId
+      )[0] || ''
+    );
+  },
+
+  /**
+   * Lookup a Property's ClickUp tasks
+   * @param  {admin.firestore} db
+   * @param  {String} propertyId
+   * @return {Promise} - resolves {DocumentSnapshot}
+   */
+  findClickUpProperty(db, propertyId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    return db
+      .collection(SYSTEM_COLLECTION)
+      .doc(`clickup-${propertyId}`)
+      .get();
+  },
+
+  /**
+   * Lookup all Property ClickUp Integrations
+   * @param  {admin.firestore} db
+   * @param  {firestore.transaction?} transaction
+   * @return {Promise} - resolves {Documents[]}
+   */
+  async findAllClickUpProperties(db, transaction) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    if (transaction) {
+      assert(typeof transaction.get === 'function', 'has firestore batch');
+    }
+
+    const clickupPropertyDocs = [];
+    const integrationDocs = db.collection(SYSTEM_COLLECTION);
+
+    try {
+      const request = transaction
+        ? transaction.get(integrationDocs)
+        : integrationDocs.get();
+      const integrationsSnap = await request;
+
+      // Push ClickUp property
+      // integrations to array
+      integrationsSnap.docs
+        .filter(({ id }) => id.search(/^clickup-/) === 0)
+        .forEach(docSnap => clickupPropertyDocs.push(docSnap));
+    } catch (err) {
+      throw Error(
+        `${PREFIX} findAllClickUpProperties: failed to lookup all integration properties: ${err}`
+      );
+    }
+
+    return clickupPropertyDocs;
+  },
+
+  /**
+   * Remove all Property/ClickUp integrations
+   * @param  {admin.firestore} db
+   * @param  {firestore.batch?} batch
+   * @return {Promise} - resolves {Document[]}
+   */
+  removeAllClickUpProperties(db, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    if (batch) {
+      assert(typeof batch.delete === 'function', 'has firestore batch');
+    }
+
+    return db.runTransaction(async transaction => {
+      const integrationDocs = db.collection(SYSTEM_COLLECTION);
+
+      let clickupPropertyDocs = null;
+      try {
+        clickupPropertyDocs = await this.findAllClickUpProperties(
+          db,
+          transaction
+        );
+      } catch (err) {
+        throw Error(
+          `${PREFIX} removeAllClickUpProperties: failed lookup: ${err}`
+        );
+      }
+
+      const batchOrTrans = batch || transaction;
+      clickupPropertyDocs.forEach(doc => batchOrTrans.delete(doc.ref));
+
+      return integrationDocs;
+    });
+  },
 });

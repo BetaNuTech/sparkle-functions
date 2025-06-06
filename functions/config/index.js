@@ -11,6 +11,7 @@ const jobs = require('./jobs');
 const bids = require('./bids');
 const models = require('./models');
 const inspection = require('./inspection');
+const clickup = require('./clickup');
 
 const env = process.env.NODE_ENV || 'production';
 
@@ -36,5 +37,6 @@ module.exports = Object.assign(
   { jobs },
   { bids },
   { models },
-  { inspection }
+  { inspection },
+  { clickup }
 );
