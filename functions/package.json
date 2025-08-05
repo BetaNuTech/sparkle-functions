@@ -16,7 +16,7 @@
     "lint": "npx eslint --ignore-pattern '*/node_modules/*' --ext js,ts ."
   },
   "engines": {
-    "node": "16"
+    "node": "20"
   },
   "dependencies": {
     "@google-cloud/error-reporting": "^2.0.1",
