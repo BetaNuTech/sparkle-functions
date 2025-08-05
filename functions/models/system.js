@@ -853,7 +853,8 @@ module.exports = modelSetup({
         .collection(SYSTEM_COLLECTION)
         .doc(`clickup-${propertyId}`)
         .get();
-      propertyClickUpTasks = (propertyClickUpTasksSnap.data() || {}).tasks || {};
+      propertyClickUpTasks =
+        (propertyClickUpTasksSnap.data() || {}).tasks || {};
     } catch (err) {
       throw Error(
         `${PREFIX}: findClickUpTaskId: failed to lookup property ClickUp: ${err}`

@@ -10,6 +10,10 @@ const postImage = require('./api/post-image');
 const authSetup = require('./api/auth-setup');
 const syncOverdue = require('./pubsub/sync-overdue-v2');
 
+// ClickUp Pub/Sub services
+const clickupTaskStateComment = require('./pubsub/clickup-task-state-comment-v2');
+const clickupTaskProgressNote = require('./pubsub/clickup-task-progress-note-v2');
+
 module.exports = {
   createOnUpdateStateV2,
   createOnUpdateArchiveV2,
@@ -21,5 +25,7 @@ module.exports = {
     trelloCardClose,
     trelloCardDueDate,
     syncOverdue,
+    clickupTaskStateComment,
+    clickupTaskProgressNote,
   },
 };

@@ -2761,6 +2761,672 @@
           }
         }
       }
+    },
+    "/v0/integrations/clickup/authorization": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": ["Integrations"],
+        "summary": "Authorize ClickUp API credentials",
+        "description": "Set up ClickUp integration by providing API token and workspace ID",
+        "parameters": [
+          {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          },
+          {
+            "name": "integration",
+            "in": "body",
+            "description": "ClickUp integration payload.",
+            "required": ["apiToken"],
+            "schema": {
+              "type": "object",
+              "properties": {
+                "apiToken": {
+                  "type": "string",
+                  "description": "ClickUp API token"
+                },
+                "workspaceId": {
+                  "type": "string",
+                  "description": "Optional specific workspace ID to use"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "ClickUp integration created successfully",
+            "schema": {
+              "$ref": "#/definitions/INTEGRATIONSUCCESS"
+            }
+          },
+          "400": {
+            "description": "Bad request - missing required fields",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid API token",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Integrations"],
+        "summary": "Remove ClickUp API credentials & integrations",
+        "description": "Delete ClickUp integration and remove all credentials",
+        "responses": {
+          "204": {
+            "description": "Successfully deleted ClickUp integration"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/integrations/clickup/workspaces": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "get": {
+        "tags": ["Integrations"],
+        "summary": "Fetch all ClickUp workspaces",
+        "description": "Get list of all accessible ClickUp workspaces for the authenticated user",
+        "responses": {
+          "200": {
+            "description": "List of ClickUp workspaces",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {"type": "string"},
+                      "type": {"type": "string", "enum": ["clickup-workspace"]},
+                      "attributes": {
+                        "type": "object",
+                        "properties": {
+                          "name": {"type": "string"},
+                          "color": {"type": "string"},
+                          "avatar": {"type": "string"},
+                          "members": {"type": "number"}
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "404": {
+            "description": "No workspaces found",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/integrations/clickup/workspaces/{workspaceId}/spaces": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "workspaceId",
+          "in": "path",
+          "required": true,
+          "description": "ClickUp workspace ID",
+          "type": "string"
+        }
+      ],
+      "get": {
+        "tags": ["Integrations"],
+        "summary": "Fetch all spaces in a workspace",
+        "description": "Get list of all spaces and their folders within a ClickUp workspace",
+        "responses": {
+          "200": {
+            "description": "List of ClickUp spaces with folders",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {"type": "string"},
+                      "type": {"type": "string", "enum": ["clickup-space"]},
+                      "attributes": {
+                        "type": "object",
+                        "properties": {
+                          "name": {"type": "string"},
+                          "color": {"type": "string"},
+                          "private": {"type": "boolean"},
+                          "folderCount": {"type": "number"}
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - missing workspace ID",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/integrations/clickup/lists": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        }
+      ],
+      "get": {
+        "tags": ["Integrations"],
+        "summary": "Browse folders and lists",
+        "description": "Get folders and lists in a space or folder for hierarchical navigation",
+        "parameters": [
+          {
+            "name": "spaceId",
+            "in": "query",
+            "required": false,
+            "description": "ClickUp space ID to browse",
+            "type": "string"
+          },
+          {
+            "name": "folderId",
+            "in": "query", 
+            "required": false,
+            "description": "ClickUp folder ID to browse",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of folders and lists for browsing",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {"type": "string"},
+                      "type": {"type": "string", "enum": ["clickup-folder", "clickup-list"]},
+                      "attributes": {
+                        "type": "object",
+                        "properties": {
+                          "name": {"type": "string"},
+                          "itemType": {"type": "string", "enum": ["folder", "list"]},
+                          "statuses": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {"type": "string"},
+                                "status": {"type": "string"},
+                                "type": {"type": "string"},
+                                "color": {"type": "string"}
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "meta": {
+                  "type": "object",
+                  "properties": {
+                    "folderCount": {"type": "number"},
+                    "listCount": {"type": "number"}
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - missing spaceId or folderId",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/integrations/clickup/properties/{propertyId}": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "propertyId",
+          "in": "path",
+          "required": true,
+          "description": "Property ID",
+          "type": "string"
+        }
+      ],
+      "put": {
+        "tags": ["Integrations"],
+        "summary": "Create/update a property ClickUp integration",
+        "description": "Configure ClickUp lists for a property's deficient items and jobs",
+        "parameters": [
+          {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          },
+          {
+            "name": "integration",
+            "in": "body",
+            "description": "Property ClickUp integration payload.",
+            "required": ["spaceId", "spaceName"],
+            "schema": {
+              "type": "object",
+              "properties": {
+                "spaceId": {
+                  "type": "string",
+                  "description": "ClickUp space ID"
+                },
+                "spaceName": {
+                  "type": "string", 
+                  "description": "ClickUp space name"
+                },
+                "deficienciesListId": {
+                  "type": "string",
+                  "description": "ClickUp list ID for deficient items"
+                },
+                "deficienciesListName": {
+                  "type": "string",
+                  "description": "ClickUp list name for deficient items"
+                },
+                "jobsListId": {
+                  "type": "string",
+                  "description": "ClickUp list ID for jobs"
+                },
+                "jobsListName": {
+                  "type": "string",
+                  "description": "ClickUp list name for jobs"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Property ClickUp integration created/updated successfully",
+            "schema": {
+              "$ref": "#/definitions/INTEGRATIONSUCCESS"
+            }
+          },
+          "400": {
+            "description": "Bad request - missing required fields",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "404": {
+            "description": "Property not found",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Integrations"],
+        "summary": "Delete a property's ClickUp integration",
+        "description": "Remove ClickUp integration configuration for a property",
+        "parameters": [
+          {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Property ClickUp integration deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "404": {
+            "description": "Property or integration not found",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/properties/{propertyId}/jobs/{jobId}/clickup/task": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "propertyId",
+          "in": "path",
+          "required": true,
+          "description": "Property ID",
+          "type": "string"
+        },
+        {
+          "name": "jobId",
+          "in": "path",
+          "required": true,
+          "description": "Job ID for which to create a ClickUp task",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": ["Jobs"],
+        "summary": "Create ClickUp Task for job",
+        "description": "Create a ClickUp task for a job with automatic status mapping and rich description",
+        "parameters": [
+          {
+            "name": "notify",
+            "in": "query",
+            "required": false,
+            "description": "Send notification about task creation",
+            "type": "string",
+            "enum": ["true", "false"]
+          },
+          {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "ClickUp task created successfully for job",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {"type": "string"},
+                    "type": {"type": "string", "enum": ["clickup-task"]},
+                    "attributes": {
+                      "type": "object",
+                      "properties": {
+                        "name": {"type": "string"},
+                        "status": {"type": "string"},
+                        "url": {"type": "string"}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Job already has ClickUp task or job is complete",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "404": {
+            "description": "Property or job not found",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/properties/{propertyId}/deficiencies/{deficiencyId}/clickup/task": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "propertyId",
+          "in": "path",
+          "required": true,
+          "description": "Property ID",
+          "type": "string"
+        },
+        {
+          "name": "deficiencyId",
+          "in": "path",
+          "required": true,
+          "description": "Deficiency ID for which to create a ClickUp task",
+          "type": "string"
+        }
+      ],
+      "post": {
+        "tags": ["Deficiencies"],
+        "summary": "Create ClickUp Task for deficiency",
+        "description": "Create a ClickUp task for a deficient item with automatic status mapping and rich description",
+        "parameters": [
+          {
+            "name": "notify",
+            "in": "query",
+            "required": false,
+            "description": "Send notification about task creation",
+            "type": "string",
+            "enum": ["true", "false"]
+          },
+          {
+            "name": "incognitoMode",
+            "in": "query",
+            "required": false,
+            "description": "Manage request silently, without sending global notifications",
+            "type": "string",
+            "enum": ["true", "false"]
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "ClickUp task created successfully for deficiency",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {"type": "string"},
+                    "type": {"type": "string", "enum": ["clickup-task"]},
+                    "attributes": {
+                      "type": "object",
+                      "properties": {
+                        "name": {"type": "string"},
+                        "status": {"type": "string"},
+                        "url": {"type": "string"}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Deficiency already has ClickUp task",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "404": {
+            "description": "Property or deficiency not found",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/UNAUTH"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
     }
   },
   "definitions": {

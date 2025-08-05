@@ -21,7 +21,9 @@ module.exports = {
         },
       });
     } catch (err) {
-      throw Error(`${PREFIX} fetchTeams: ClickUp API request failed: ${err.message}`);
+      throw Error(
+        `${PREFIX} fetchTeams: ClickUp API request failed: ${err.message}`
+      );
     }
 
     let responseBody = null;
@@ -42,7 +44,7 @@ module.exports = {
 
   /**
    * Get spaces for a specific team
-   * @param  {String} apiToken - ClickUp API token  
+   * @param  {String} apiToken - ClickUp API token
    * @param  {String} teamId - Team/workspace ID
    * @return {Promise} - resolves {Object} response body
    */
@@ -58,7 +60,9 @@ module.exports = {
         },
       });
     } catch (err) {
-      throw Error(`${PREFIX} fetchSpaces: ClickUp API request failed: ${err.message}`);
+      throw Error(
+        `${PREFIX} fetchSpaces: ClickUp API request failed: ${err.message}`
+      );
     }
 
     let responseBody = null;
@@ -91,7 +95,9 @@ module.exports = {
         },
       });
     } catch (err) {
-      throw Error(`${PREFIX} fetchLists: ClickUp API request failed: ${err.message}`);
+      throw Error(
+        `${PREFIX} fetchLists: ClickUp API request failed: ${err.message}`
+      );
     }
 
     let responseBody = null;
@@ -124,7 +130,9 @@ module.exports = {
         },
       });
     } catch (err) {
-      throw Error(`${PREFIX} fetchList: ClickUp API request failed: ${err.message}`);
+      throw Error(
+        `${PREFIX} fetchList: ClickUp API request failed: ${err.message}`
+      );
     }
 
     let responseBody = null;
@@ -161,7 +169,9 @@ module.exports = {
         body: JSON.stringify(taskData),
       });
     } catch (err) {
-      throw Error(`${PREFIX} createTask: ClickUp API request failed: ${err.message}`);
+      throw Error(
+        `${PREFIX} createTask: ClickUp API request failed: ${err.message}`
+      );
     }
 
     let responseBody = null;
@@ -198,7 +208,9 @@ module.exports = {
         body: JSON.stringify(updateData),
       });
     } catch (err) {
-      throw Error(`${PREFIX} updateTask: ClickUp API request failed: ${err.message}`);
+      throw Error(
+        `${PREFIX} updateTask: ClickUp API request failed: ${err.message}`
+      );
     }
 
     let responseBody = null;
@@ -235,7 +247,9 @@ module.exports = {
         body: JSON.stringify(spaceData),
       });
     } catch (err) {
-      throw Error(`${PREFIX} createSpace: ClickUp API request failed: ${err.message}`);
+      throw Error(
+        `${PREFIX} createSpace: ClickUp API request failed: ${err.message}`
+      );
     }
 
     let responseBody = null;
@@ -272,7 +286,9 @@ module.exports = {
         body: JSON.stringify(folderData),
       });
     } catch (err) {
-      throw Error(`${PREFIX} createFolder: ClickUp API request failed: ${err.message}`);
+      throw Error(
+        `${PREFIX} createFolder: ClickUp API request failed: ${err.message}`
+      );
     }
 
     let responseBody = null;
@@ -309,7 +325,9 @@ module.exports = {
         body: JSON.stringify(listData),
       });
     } catch (err) {
-      throw Error(`${PREFIX} createList: ClickUp API request failed: ${err.message}`);
+      throw Error(
+        `${PREFIX} createList: ClickUp API request failed: ${err.message}`
+      );
     }
 
     let responseBody = null;
@@ -342,7 +360,9 @@ module.exports = {
         },
       });
     } catch (err) {
-      throw Error(`${PREFIX} fetchFolders: ClickUp API request failed: ${err.message}`);
+      throw Error(
+        `${PREFIX} fetchFolders: ClickUp API request failed: ${err.message}`
+      );
     }
 
     let responseBody = null;
@@ -375,7 +395,9 @@ module.exports = {
         },
       });
     } catch (err) {
-      throw Error(`${PREFIX} fetchFolderLists: ClickUp API request failed: ${err.message}`);
+      throw Error(
+        `${PREFIX} fetchFolderLists: ClickUp API request failed: ${err.message}`
+      );
     }
 
     let responseBody = null;
@@ -411,7 +433,9 @@ module.exports = {
     }
 
     const queryString = queryParams.toString();
-    const url = `${API_BASE_URL}/list/${listId}/task${queryString ? '?' + queryString : ''}`;
+    const url = `${API_BASE_URL}/list/${listId}/task${
+      queryString ? `?${queryString}` : ''
+    }`;
 
     let response = null;
     try {
@@ -421,7 +445,9 @@ module.exports = {
         },
       });
     } catch (err) {
-      throw Error(`${PREFIX} fetchTasks: ClickUp API request failed: ${err.message}`);
+      throw Error(
+        `${PREFIX} fetchTasks: ClickUp API request failed: ${err.message}`
+      );
     }
 
     let responseBody = null;
@@ -454,7 +480,9 @@ module.exports = {
         },
       });
     } catch (err) {
-      throw Error(`${PREFIX} fetchTask: ClickUp API request failed: ${err.message}`);
+      throw Error(
+        `${PREFIX} fetchTask: ClickUp API request failed: ${err.message}`
+      );
     }
 
     let responseBody = null;
@@ -487,7 +515,9 @@ module.exports = {
         },
       });
     } catch (err) {
-      throw Error(`${PREFIX} fetchListMembers: ClickUp API request failed: ${err.message}`);
+      throw Error(
+        `${PREFIX} fetchListMembers: ClickUp API request failed: ${err.message}`
+      );
     }
 
     let responseBody = null;
@@ -524,7 +554,9 @@ module.exports = {
         body: JSON.stringify(commentData),
       });
     } catch (err) {
-      throw Error(`${PREFIX} addTaskComment: ClickUp API request failed: ${err.message}`);
+      throw Error(
+        `${PREFIX} addTaskComment: ClickUp API request failed: ${err.message}`
+      );
     }
 
     let responseBody = null;
@@ -537,5 +569,64 @@ module.exports = {
     }
 
     return responseBody;
-  }
+  },
+
+  /**
+   * Update list statuses to match Sparkle workflow
+   * @param  {String} apiToken - ClickUp API token
+   * @param  {String} listId - List ID
+   * @param  {String} type - 'deficiency' or 'job'
+   * @return {Promise} - resolves {Object} response body
+   */
+  async setupListStatuses(apiToken, listId, type = 'deficiency') {
+    assert(apiToken && typeof apiToken === 'string', 'has api token');
+    assert(listId && typeof listId === 'string', 'has list id');
+
+    const statusConfigs =
+      type === 'job'
+        ? {
+            statuses: [
+              { status: 'NEEDS REVIEW', type: 'open', color: '#f9cb9c' },
+              { status: 'APPROVED', type: 'custom', color: '#4dc3ff' },
+              { status: 'AUTHORIZED', type: 'done', color: '#02c39a' },
+              { status: 'COMPLETE', type: 'closed', color: '#008844' },
+            ],
+          }
+        : {
+            statuses: [
+              { status: 'TO DO', type: 'open', color: '#d3d3d3' },
+              { status: 'IN PROGRESS', type: 'custom', color: '#4194f6' },
+              { status: 'NEEDS REVIEW', type: 'done', color: '#f9cb9c' },
+              { status: 'ON HOLD', type: 'open', color: '#ff9800' },
+              { status: 'REJECTED', type: 'open', color: '#f44336' },
+              { status: 'COMPLETE', type: 'closed', color: '#008844' },
+            ],
+          };
+
+    let response = null;
+    try {
+      response = await got.put(`${API_BASE_URL}/list/${listId}`, {
+        headers: {
+          Authorization: apiToken,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(statusConfigs),
+      });
+    } catch (err) {
+      throw Error(
+        `${PREFIX} setupListStatuses: ClickUp API request failed: ${err.message}`
+      );
+    }
+
+    let responseBody = null;
+    try {
+      responseBody = JSON.parse(response.body);
+    } catch (err) {
+      throw Error(
+        `${PREFIX} setupListStatuses: failed to parse ClickUp API response JSON`
+      );
+    }
+
+    return responseBody;
+  },
 };

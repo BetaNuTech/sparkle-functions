@@ -42,7 +42,7 @@ module.exports = async function createTaskFromJob(apiToken, listId, job, propert
       clickup.tags.sparkle,
       clickup.tags.automated,
       property.code || `property-${property.id}`,
-      job.type?.toLowerCase().replace(/[^a-z0-9]/g, '-') || 'general'
+      (job.type && job.type.toLowerCase().replace(/[^a-z0-9]/g, '-')) || 'general'
     ].filter(Boolean),
     notify_all: clickup.defaults.notifyAssignees,
   };

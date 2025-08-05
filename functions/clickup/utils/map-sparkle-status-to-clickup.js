@@ -6,12 +6,15 @@ const config = require('../../config');
  * @param  {String} type - 'deficiency' or 'job'
  * @return {String} ClickUp status
  */
-module.exports = function mapSparkleStatusToClickUp(sparkleState, type = 'deficiency') {
+module.exports = function mapSparkleStatusToClickUp(
+  sparkleState,
+  type = 'deficiency'
+) {
   const { clickup } = config;
-  
+
   if (type === 'job') {
     return clickup.jobStatusMapping[sparkleState] || 'to do';
   }
-  
+
   return clickup.deficientItemStatusMapping[sparkleState] || 'to do';
 };

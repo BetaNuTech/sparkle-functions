@@ -45,7 +45,7 @@ async function testUserAssignment() {
     const workspace = teamsResponse.teams[0]; // Bluecrest Residential
     
     console.log(`Workspace: ${workspace.name}`);
-    console.log(`Members found: ${workspace.members?.length || 0}`);
+    console.log(`Members found: ${(workspace.members && workspace.members.length) || 0}`);
     
     if (workspace.members && workspace.members.length > 0) {
       console.log('\n👤 Workspace Members:');
@@ -90,7 +90,7 @@ async function testUserAssignment() {
       console.log('\n📋 Step 3: Getting current task details...');
       const currentTask = await clickupService.fetchTask(apiToken, jobTaskId);
       console.log(`Task: ${currentTask.name}`);
-      console.log(`Current assignees: ${currentTask.assignees?.length || 0}`);
+      console.log(`Current assignees: ${(currentTask.assignees && currentTask.assignees.length) || 0}`);
       
       if (currentTask.assignees && currentTask.assignees.length > 0) {
         currentTask.assignees.forEach(assignee => {

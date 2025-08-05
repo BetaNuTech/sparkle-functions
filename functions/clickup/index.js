@@ -1,4 +1,4 @@
-const postAuth = require('./api/post-auth');
+const createPostAuth = require('./api/post-auth');
 const deleteAuth = require('./api/delete-auth');
 const getWorkspaces = require('./api/get-workspaces');
 const getSpaces = require('./api/get-spaces');
@@ -10,7 +10,7 @@ const deletePropertyIntegration = require('./api/delete-property-integration');
 
 module.exports = {
   api: {
-    postAuth,
+    postAuth: createPostAuth,
     deleteAuth,
     getWorkspaces,
     getSpaces,

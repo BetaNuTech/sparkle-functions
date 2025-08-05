@@ -6,6 +6,7 @@ const swaggerUi = require('swagger-ui-express');
 const fileParser = require('express-multipart-file-parser');
 const slack = require('./slack');
 const trello = require('./trello');
+const clickup = require('./clickup');
 const deficiencies = require('./deficient-items');
 const properties = require('./properties');
 const inspections = require('./inspections');
@@ -18,6 +19,7 @@ const teams = require('./teams');
 const authUser = require('./utils/auth-firebase-user');
 const authUserCrud = require('./middleware/auth-user-crud');
 const authTrelloReq = require('./utils/auth-trello-request');
+const authClickUpReq = require('./utils/auth-clickup-request');
 const swaggerDocument = require('./swagger.json');
 const config = require('./config');
 
@@ -318,6 +320,92 @@ module.exports = (db, auth, settings, storage, pubsubClient) => {
     }),
     authTrelloReq(db),
     trello.api.postDeficiencyCard(db)
+  );
+
+  // ========================================
+  // ClickUp Integration Routes
+  // ========================================
+
+  // Authorize ClickUp API credentials
+  app.post(
+    '/v0/integrations/clickup/authorization',
+    authUser(db, auth, true),
+    clickup.api.postAuth(db)
+  );
+
+  // Remove ClickUp API credentials & integrations
+  app.delete(
+    '/v0/integrations/clickup/authorization',
+    authUser(db, auth, true),
+    clickup.api.deleteAuth(db)
+  );
+
+  // Fetch all ClickUp workspaces
+  app.get(
+    '/v0/integrations/clickup/workspaces',
+    authUser(db, auth, true),
+    authClickUpReq(db),
+    clickup.api.getWorkspaces(db)
+  );
+
+  // Fetch all spaces in a workspace
+  app.get(
+    '/v0/integrations/clickup/workspaces/:workspaceId/spaces',
+    authUser(db, auth, true),
+    authClickUpReq(db),
+    clickup.api.getSpaces(db)
+  );
+
+  // Browse folders and lists in a space or folder
+  app.get(
+    '/v0/integrations/clickup/lists',
+    authUser(db, auth, true),
+    authClickUpReq(db),
+    clickup.api.getLists(db)
+  );
+
+  // Create/update a property's ClickUp integration
+  app.put(
+    '/v0/integrations/clickup/properties/:propertyId',
+    authUser(db, auth, true),
+    authClickUpReq(db),
+    clickup.api.putPropertyIntegration(db)
+  );
+
+  // Delete a property's ClickUp integration
+  app.delete(
+    '/v0/integrations/clickup/properties/:propertyId',
+    authUser(db, auth, true),
+    authClickUpReq(db),
+    clickup.api.deletePropertyIntegration(db)
+  );
+
+  // Create ClickUp Task for job
+  app.post(
+    '/v0/properties/:propertyId/jobs/:jobId/clickup/task',
+    authUser(db, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    authClickUpReq(db),
+    clickup.api.postJobTask(db)
+  );
+
+  // Create ClickUp Task for deficiency
+  app.post(
+    '/v0/properties/:propertyId/deficiencies/:deficiencyId/clickup/task',
+    // setup property-level auth requirements
+    deficiencies.api.authSetup(db),
+    authUser(db, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    authClickUpReq(db),
+    clickup.api.postDeficiencyTask(db)
   );
 
   // Update 1 or more deficiencies

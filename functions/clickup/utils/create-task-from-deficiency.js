@@ -43,7 +43,7 @@ module.exports = async function createTaskFromDeficiency(apiToken, listId, defic
       clickup.tags.sparkle,
       clickup.tags.automated,
       property.code || `property-${property.id}`,
-      deficiency.currentResponsibilityGroup?.toLowerCase().replace(/[^a-z0-9]/g, '-') || 'unassigned'
+      (deficiency.currentResponsibilityGroup && deficiency.currentResponsibilityGroup.toLowerCase().replace(/[^a-z0-9]/g, '-')) || 'unassigned'
     ].filter(Boolean),
     notify_all: clickup.defaults.notifyAssignees,
   };

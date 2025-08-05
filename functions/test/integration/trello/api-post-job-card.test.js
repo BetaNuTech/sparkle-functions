@@ -314,8 +314,13 @@ describe('Trello | API | POST Job Card', () => {
         firebase.createDocSnapshot(`trello-${PROPERTY_ID}`, trelloIntegration)
       );
     sinon
+      .stub(jobsModel, 'createDocRef')
+      .returns(jobDoc);
+    sinon
       .stub(jobsModel, 'findAssociatedBids')
       .resolves(stubs.wrapSnapshot([bid]));
+    sinon.stub(systemModel, 'upsertPropertyTrello').resolves();
+    sinon.stub(jobsModel, 'updateRecord').resolves();
     const publish = sinon
       .stub(trelloService, 'publishListCard')
       .resolves({ id: uuid(), shortUrl: 'test.co/123' });
@@ -325,7 +330,7 @@ describe('Trello | API | POST Job Card', () => {
       .post(`/t/${PROPERTY_ID}/${JOB_ID}`)
       .send()
       .expect('Content-Type', /application\/vnd.api\+json/)
-      .expect(500);
+      .expect(201);
 
     // Assertions
     const result = publish.firstCall || { args: [] };

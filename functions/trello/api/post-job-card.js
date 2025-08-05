@@ -199,7 +199,7 @@ module.exports = function createPostTrelloJob(
     let approvedBid = null;
     if (job.state === 'authorized') {
       try {
-        const bidsSnap = await jobsModel.findAssociatedBids(db, jobId);
+        const bidsSnap = await jobsModel.findAssociatedBids(db, jobsModel.createDocRef(db, jobId));
         bidsSnap.docs.forEach(doc => {
           const bid = doc.data();
           if (bid && bid.state === 'approved') {

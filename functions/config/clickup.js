@@ -1,6 +1,6 @@
 /**
  * ClickUp Integration Configuration
- * 
+ *
  * Templates and settings for ClickUp task descriptions, comments,
  * and state transitions for both deficient items and jobs.
  */
@@ -25,13 +25,13 @@ const deficientItemTaskDescriptionTemplate = `**DEFICIENT ITEM** ({{createdAt}})
 
 *This deficient item was created automatically from Sparkle.*`;
 
-// Job Task Description Template  
+// Job Task Description Template
 const jobTaskDescriptionTemplate = `**JOB**
 
 {{#if propertyName}}**Property:** {{propertyName}}{{/if}}
 {{#if jobTitle}}**Job:** {{jobTitle}}{{/if}}
 {{#if jobType}}**Type:** {{jobType}}{{/if}}
-{{#if estimatedCost}}**Estimated Cost:** ${{estimatedCost}}{{/if}}
+{{#if estimatedCost}}**Estimated Cost:** \${{estimatedCost}}{{/if}}
 {{#if completionDate}}**Target Completion:** {{completionDate}}{{/if}}
 
 {{#if jobDescription}}**Description:**
@@ -51,7 +51,7 @@ const deficientItemCommentTemplates = {
 **Plan to Fix:** {{currentPlanToFix}}`,
 
   // Any → Deferred
-  'any_to_deferred': `{{firstName}} {{lastName}} ({{email}}) moved deficient item to **DEFERRED** from {{previousState}}.
+  any_to_deferred: `{{firstName}} {{lastName}} ({{email}}) moved deficient item to **DEFERRED** from {{previousState}}.
 
 **Deferred Date:** {{currentDeferredDateDay}}
 {{#if previousDueDateDay}}**Previous Due Date:** {{previousDueDateDay}}{{/if}}`,
@@ -62,7 +62,7 @@ const deficientItemCommentTemplates = {
 Please add a progress note in Sparkle.`,
 
   // Pending → Overdue
-  'pending_to_overdue': `🚨 **ACTION REQUIRED:** Item is now **OVERDUE**.
+  pending_to_overdue: `🚨 **ACTION REQUIRED:** Item is now **OVERDUE**.
 
 Please add reason incomplete in Sparkle.`,
 
@@ -72,7 +72,7 @@ Please add reason incomplete in Sparkle.`,
 **Progress Note:** {{currentProgressNote}}`,
 
   // Overdue → Incomplete
-  'overdue_to_incomplete': `🚨 **INCOMPLETE:** Corporate review required.
+  overdue_to_incomplete: `🚨 **INCOMPLETE:** Corporate review required.
 
 {{firstName}} {{lastName}} ({{email}}) added reason incomplete:
 {{currentReasonIncomplete}}`,
@@ -83,16 +83,16 @@ Please add reason incomplete in Sparkle.`,
 ⚠️ **ACTION REQUIRED:** New due date, plan to fix, and responsibility group needed.`,
 
   // Incomplete → Closed
-  'incomplete_to_closed': `✅ {{firstName}} {{lastName}} ({{email}}) **CLOSED** the deficient item.`,
+  incomplete_to_closed: `✅ {{firstName}} {{lastName}} ({{email}}) **CLOSED** the deficient item.`,
 
   // Pending → Completed
-  'pending_to_completed': `✅ **COMPLETED** - Corporate review required.
+  pending_to_completed: `✅ **COMPLETED** - Corporate review required.
 
 {{firstName}} {{lastName}} ({{email}}) completed the deficient item.
 Completed photos have been added. Please review in Sparkle.`,
 
   // Completed → Closed
-  'completed_to_closed': `✅ {{firstName}} {{lastName}} ({{email}}) approved and **CLOSED** the deficient item.`,
+  completed_to_closed: `✅ {{firstName}} {{lastName}} ({{email}}) approved and **CLOSED** the deficient item.`,
 
   // Completed → Go Back
   'completed_to_go-back': `{{firstName}} {{lastName}} ({{email}}) rejected completion, moving to **GO-BACK**.
@@ -112,15 +112,15 @@ Completed photos have been added. Please review in Sparkle.`,
 ⚠️ **ACTION REQUIRED:** New due date, plan to fix, and responsibility group needed.`,
 
   // Default fallback
-  'default': `{{firstName}} {{lastName}} ({{email}}) changed state from {{previousState}} to {{currentState}}.`
+  default: `{{firstName}} {{lastName}} ({{email}}) changed state from {{previousState}} to {{currentState}}.`,
 };
 
 // Job State Comment Templates
 const jobCommentTemplates = {
-  'open_to_approved': `{{firstName}} {{lastName}} ({{email}}) **APPROVED** the job.`,
-  'approved_to_authorized': `{{firstName}} {{lastName}} ({{email}}) **AUTHORIZED** the job for work to begin.`,
-  'authorized_to_complete': `✅ {{firstName}} {{lastName}} ({{email}}) marked the job as **COMPLETE**.`,
-  'default': `{{firstName}} {{lastName}} ({{email}}) changed job status from {{previousState}} to {{currentState}}.`
+  open_to_approved: `{{firstName}} {{lastName}} ({{email}}) **APPROVED** the job.`,
+  approved_to_authorized: `{{firstName}} {{lastName}} ({{email}}) **AUTHORIZED** the job for work to begin.`,
+  authorized_to_complete: `✅ {{firstName}} {{lastName}} ({{email}}) marked the job as **COMPLETE**.`,
+  default: `{{firstName}} {{lastName}} ({{email}}) changed job status from {{previousState}} to {{currentState}}.`,
 };
 
 // Progress Note Template
@@ -130,67 +130,67 @@ const progressNoteTemplate = `{{firstName}} {{lastName}} ({{email}}) added a pro
 
 // Sparkle State to ClickUp Status Mapping
 const deficientItemStatusMapping = {
-  'requires-action': 'to do',
-  'pending': 'in progress', 
-  'requires-progress-update': 'in progress',
-  'overdue': 'blocked',
-  'completed': 'review',
-  'incomplete': 'blocked',
-  'deferred': 'on hold',
-  'go-back': 'to do',
-  'closed': 'complete'
+  'requires-action': 'TO DO',
+  pending: 'IN PROGRESS',
+  'requires-progress-update': 'IN PROGRESS',
+  overdue: 'IN PROGRESS',
+  completed: 'IN PROGRESS', // Since NEEDS REVIEW doesn't exist, keep in progress
+  incomplete: 'REJECTED',
+  deferred: 'ON HOLD',
+  'go-back': 'TO DO',
+  closed: 'COMPLETE',
 };
 
 const jobStatusMapping = {
-  'open': 'to do',
-  'approved': 'approved',
-  'authorized': 'in progress',
-  'complete': 'complete'
+  open: 'TO DO', // NEEDS REVIEW doesn't exist in jobs list either
+  approved: 'APPROVED',
+  authorized: 'AUTHORIZED',
+  complete: 'COMPLETE',
 };
 
 module.exports = {
   // API Configuration
   apiBaseUrl: 'https://api.clickup.com/api/v2',
-  
+
   // Template Configuration
   deficientItemTaskDescriptionTemplate,
   jobTaskDescriptionTemplate,
-  
+
   // Comment Templates
   deficientItemCommentTemplates,
   jobCommentTemplates,
   progressNoteTemplate,
-  
+
   // Status Mappings
   deficientItemStatusMapping,
   jobStatusMapping,
-  
+
   // Priority Mappings (ClickUp uses 1=urgent, 2=high, 3=normal, 4=low)
   priorityMapping: {
     1: 1, // Urgent
-    2: 2, // High  
+    2: 2, // High
     3: 3, // Normal
     4: 4, // Low
-    5: 4  // Default to Low
+    5: 4, // Default to Low
   },
-  
+
   // Default Settings
   defaults: {
     taskPriority: 3, // Normal priority
     includeClosedTasks: true,
     notifyAssignees: true,
     enableDueDates: true,
-    enableTimeTracking: false
+    enableTimeTracking: false,
   },
-  
+
   // Tag Configuration
   tags: {
     deficientItem: 'deficient-item',
     job: 'job',
     sparkle: 'sparkle',
-    automated: 'auto-created'
+    automated: 'auto-created',
   },
-  
+
   // Custom Field Types (for future enhancement)
   customFields: {
     inspectionScore: 'number',
@@ -198,6 +198,33 @@ module.exports = {
     propertyCode: 'short_text',
     planToFix: 'long_text',
     reasonIncomplete: 'long_text',
-    estimatedCost: 'currency'
-  }
+    estimatedCost: 'currency',
+  },
+
+  // Recommended status configurations for lists
+  recommendedStatuses: {
+    deficiency: [
+      { status: 'TO DO', type: 'open', color: '#d3d3d3' },
+      { status: 'IN PROGRESS', type: 'custom', color: '#4194f6' },
+      { status: 'NEEDS REVIEW', type: 'done', color: '#f9cb9c' },
+      { status: 'ON HOLD', type: 'open', color: '#ff9800' },
+      { status: 'REJECTED', type: 'open', color: '#f44336' },
+      { status: 'COMPLETE', type: 'closed', color: '#008844' },
+    ],
+    job: [
+      { status: 'NEEDS REVIEW', type: 'open', color: '#f9cb9c' },
+      { status: 'APPROVED', type: 'custom', color: '#4dc3ff' },
+      { status: 'AUTHORIZED', type: 'done', color: '#02c39a' },
+      { status: 'COMPLETE', type: 'closed', color: '#008844' },
+    ],
+  },
+
+  // Status type mappings for ClickUp workflow
+  // Based on ClickUp's status groups: open (not started), custom (active), done (completed but open), closed
+  statusTypesByClickUp: {
+    open: ['TO DO', 'NEEDS REVIEW', 'ON HOLD', 'REJECTED'],
+    custom: ['IN PROGRESS', 'APPROVED'],
+    done: ['NEEDS REVIEW', 'AUTHORIZED'],
+    closed: ['COMPLETE'],
+  },
 };

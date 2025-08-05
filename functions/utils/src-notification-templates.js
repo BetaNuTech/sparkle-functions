@@ -463,6 +463,103 @@ Deficient Items, CLOSED Board: {{{currentClosedBoard}}}
 Deficient Items, CLOSED List: {{{currentClosedList}}}
 \`\`\`
 *Updated by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // //////////////////////////////
+  // ClickUp Integration Addition
+  // //////////////////////////////
+
+  'clickup-integration-added-summary':
+    'ClickUp workspace {{{workspaceName}}} added{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'clickup-integration-added-markdown-body': `\`\`\`
+{{#if workspaceName}}Workspace: {{{workspaceName}}}{{/if}}
+{{#if workspaceId}}Workspace ID: {{{workspaceId}}}{{/if}}
+\`\`\`
+*Added by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // /////////////////////////////
+  // ClickUp Integration Removal
+  // ////////////////////////////
+
+  'clickup-integration-removal-summary':
+    'ClickUp workspace {{{workspaceName}}} removed{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'clickup-integration-removal-markdown-body': `\`\`\`
+{{#if workspaceName}}Workspace: {{{workspaceName}}}{{/if}}
+\`\`\`
+*Removed by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // /////////////////////////////////////////////
+  // Property ClickUp Integration Update
+  // /////////////////////////////////////////////
+
+  'property-clickup-integration-update-summary':
+    'ClickUp settings updated for {{{propertyName}}}{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'property-clickup-integration-update-markdown-body': `Previous Settings:
+\`\`\`
+Space: {{{previousSpace}}}
+Deficient Items List: {{{previousDeficienciesList}}}
+Jobs List: {{{previousJobsList}}}
+\`\`\`
+New Settings:
+\`\`\`
+Space: {{{currentSpace}}}
+Deficient Items List: {{{currentDeficienciesList}}}
+Jobs List: {{{currentJobsList}}}
+\`\`\`
+*Updated by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // //////////////////////////////////////////////
+  // Property ClickUp Integration Removal
+  // //////////////////////////////////////////////
+
+  'property-clickup-integration-removal-summary':
+    'ClickUp integration removed for {{{propertyName}}}{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'property-clickup-integration-removal-markdown-body': `ClickUp integration removed for property: {{{propertyName}}}
+
+Previous Configuration:
+\`\`\`
+Space: {{{spaceName}}}
+Deficient Items List: {{{deficienciesListName}}}
+Jobs List: {{{jobsListName}}}
+\`\`\`
+*Removed by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // /////////////////////////////////////////////////
+  // Deficient Item ClickUp Task Creation
+  // /////////////////////////////////////////////////
+
+  'deficient-item-clickup-task-create-summary':
+    'ClickUp task created for Deficient Item: {{{title}}}{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'deficient-item-clickup-task-create-markdown-body': `*ClickUp task created for deficient item.*
+\`\`\`
+{{#if title}}Title: {{{title}}}{{/if}}
+{{#if section}}Section: {{{section}}}{{/if}}
+{{#if subSection}}Sub-section: {{{subSection}}}{{/if}}
+\`\`\`{{#if clickupTaskURL}}
+ClickUp Task: {{{clickupTaskURL}}}{{/if}}
+
+*Created by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
+
+  // /////////////////////////////////////////////////
+  // Job ClickUp Task Creation
+  // /////////////////////////////////////////////////
+
+  'job-clickup-task-create-summary':
+    'ClickUp task created for Job: {{{title}}}{{#if authorName}} by {{{authorName}}}{{/if}}',
+
+  'job-clickup-task-create-markdown-body': `*ClickUp task created for job.*
+\`\`\`
+{{#if title}}Title: {{{title}}}{{/if}}
+{{#if jobType}}Type: {{{jobType}}}{{/if}}
+{{#if estimatedCost}}Estimated Cost: {{{estimatedCost}}}{{/if}}
+\`\`\`{{#if clickupTaskURL}}
+ClickUp Task: {{{clickupTaskURL}}}{{/if}}
+
+*Created by*:{{#if authorName}} {{{authorName}}}{{/if}} ({{{authorEmail}}})`,
 };
 
 /**

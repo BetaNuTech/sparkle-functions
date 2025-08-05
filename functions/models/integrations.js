@@ -453,4 +453,175 @@ module.exports = modelSetup({
       .doc(`trello-${propertyId}`)
       .get();
   },
+
+  /**
+   * Create or update ClickUp integration details
+   * @param  {admin.firestore} db
+   * @param  {Object} details
+   * @param  {firestore.batch?} batch
+   * @return {Promise} - resolves {Object} integration details
+   */
+  upsertClickUp(db, details, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(details && typeof details === 'object', 'has details object');
+    assert(
+      details.workspaceId && typeof details.workspaceId === 'string',
+      'has ClickUp workspace ID'
+    );
+    assert(
+      details.workspaceName && typeof details.workspaceName === 'string',
+      'has ClickUp workspace name'
+    );
+
+    if (batch) {
+      assert(
+        typeof batch.update === 'function' &&
+          typeof batch.create === 'function',
+        'has firestore batch'
+      );
+    }
+
+    return db.runTransaction(async transaction => {
+      const clickupDoc = db.collection(INTEGRATIONS_COLLECTION).doc('clickup');
+
+      let clickupRef = null;
+      try {
+        clickupRef = await transaction.get(clickupDoc);
+      } catch (err) {
+        throw Error(
+          `${PREFIX} upsertClickUp: failed to lookup existing ClickUp integration`
+        );
+      }
+
+      const batchOrTrans = batch || transaction;
+      const now = Math.round(Date.now() / 1000);
+      const data = {
+        workspaceId: details.workspaceId,
+        workspaceName: details.workspaceName,
+        workspaceColor: details.workspaceColor || '#7b68ee',
+        workspaceAvatar: details.workspaceAvatar || null,
+        availableWorkspaces: details.availableWorkspaces || [],
+        updatedAt: now,
+      };
+
+      if (clickupRef.exists) {
+        batchOrTrans.update(clickupDoc, data);
+      } else {
+        data.createdAt = now;
+        batchOrTrans.create(clickupDoc, data);
+      }
+
+      return data;
+    });
+  },
+
+  /**
+   * Lookup ClickUp integration details
+   * @param  {admin.firestore} db
+   * @return {Promise} - resolves {DocumentSnapshot}
+   */
+  findClickUp(db) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    return db
+      .collection(INTEGRATIONS_COLLECTION)
+      .doc('clickup')
+      .get();
+  },
+
+  /**
+   * Remove ClickUp integration details
+   * @param  {admin.firestore} db
+   * @param  {firestore.batch?} batch
+   * @return {Promise}
+   */
+  removeClickUp(db, batch) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    const doc = db.collection(INTEGRATIONS_COLLECTION).doc('clickup');
+
+    if (batch) {
+      batch.delete(doc);
+      return Promise.resolve();
+    }
+
+    return doc.delete();
+  },
+
+  /**
+   * Create a property ClickUp integration
+   * @param  {admin.firestore} db
+   * @param  {String} propertyId
+   * @param  {Object} data
+   * @return {Promise}
+   */
+  createClickUpProperty(db, propertyId, data) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    assert(data && typeof data === 'object', 'has data object');
+    return db
+      .collection(INTEGRATIONS_COLLECTION)
+      .doc(`clickup-${propertyId}`)
+      .create(data);
+  },
+
+  /**
+   * Remove property ClickUp integration
+   * @param  {admin.firestore} db
+   * @param  {String} propertyId
+   * @return {Promise}
+   */
+  removeClickUpProperty(db, propertyId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    return db
+      .collection(INTEGRATIONS_COLLECTION)
+      .doc(`clickup-${propertyId}`)
+      .delete();
+  },
+
+  /**
+   * Set (create/update) property ClickUp integration
+   * @param  {admin.firestore} db
+   * @param  {String} propertyId
+   * @param  {Object} data
+   * @param  {firestore.batch?} batch
+   * @param  {Boolean?} merge - deep merge record
+   * @return {Promise}
+   */
+  setClickUpPropertyRecord(db, propertyId, data, batch, merge = false) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    assert(data && typeof data === 'object', 'has data payload');
+
+    const docRef = db
+      .collection(INTEGRATIONS_COLLECTION)
+      .doc(`clickup-${propertyId}`);
+
+    // Add batched update
+    if (batch) {
+      assert(
+        typeof batch.set === 'function' && typeof batch.update === 'function',
+        'has batch instance'
+      );
+      batch.set(docRef, data, { merge });
+      return Promise.resolve();
+    }
+
+    // Normal update
+    return docRef.set(data, { merge });
+  },
+
+  /**
+   * Lookup a property ClickUp integration
+   * @param  {admin.firestore} db
+   * @param  {String} propertyId
+   * @return {Promise}
+   */
+  findClickUpProperty(db, propertyId) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(propertyId && typeof propertyId === 'string', 'has property id');
+    return db
+      .collection(INTEGRATIONS_COLLECTION)
+      .doc(`clickup-${propertyId}`)
+      .get();
+  },
 });
