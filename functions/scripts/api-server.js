@@ -1,5 +1,5 @@
 const express = require('express');
-const PubSub = require('@google-cloud/pubsub');
+const { PubSub } = require('@google-cloud/pubsub');
 const { db, auth, storage } = require('./setup'); // eslint-disable-line
 const config = require('../config');
 const router = require('../router');
