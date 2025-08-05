@@ -59,4 +59,30 @@ describe('Deficient Items | Utils | Can User Transition Deficient Item State', (
 
     expect(actual).to.deep.equal(expected);
   });
+
+  it('should allow property-level users to transition to incomplete state', () => {
+    // This test documents that 'incomplete' is not a permissioned state
+    // Property users can transition deficient items to incomplete when
+    // providing a reason incomplete for overdue items
+    const propertyUser = mocking.createUser({
+      properties: { a: true },
+      corporate: false,
+      admin: false,
+    });
+    
+    const canTransition = util(propertyUser, 'incomplete');
+    expect(canTransition).to.equal(true);
+  });
+
+  it('should NOT allow property-level users to transition to deferred state', () => {
+    // Deferred remains a permissioned state - only corporate/admin
+    const propertyUser = mocking.createUser({
+      properties: { a: true },
+      corporate: false,
+      admin: false,
+    });
+    
+    const canTransition = util(propertyUser, 'deferred');
+    expect(canTransition).to.equal(false);
+  });
 });

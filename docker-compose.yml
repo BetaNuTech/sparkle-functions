@@ -49,6 +49,19 @@ services:
       - ./auth.json:/src/auth.json
       - ./functions:/src/functions
 
+  test-int-fn:
+    build: 
+      context: .
+      dockerfile: yarn-Dockerfile
+    working_dir: /src/functions
+    env_file: .env.test
+    environment:
+      - AUTH_FILE_PATH=/src/auth.json
+    command: [sh, -c, "yarn test-int"]
+    volumes:
+      - ./auth.json:/src/auth.json
+      - ./functions:/src/functions
+      
   deploy-fn:
     image: mj3000/firebase-tools
     working_dir: /srv
