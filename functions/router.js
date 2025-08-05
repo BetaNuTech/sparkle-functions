@@ -36,8 +36,7 @@ module.exports = (db, auth, settings, storage, pubsubClient) => {
 
   const app = express();
   const completeInspUpdatePublisher = pubsubClient
-    .topic('complete-inspection-update')
-    .publisher();
+    .topic('complete-inspection-update');
 
   app.use(bodyParser.json(), cors({ origin: true, credentials: true }));
   swaggerDocument.host = process.env.FIREBASE_FUNCTIONS_DOMAIN;
