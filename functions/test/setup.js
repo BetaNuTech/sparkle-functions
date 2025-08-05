@@ -16,7 +16,7 @@ try {
 process.env.NODE_ENV = 'test';
 
 const sinon = require('sinon');
-const PubSub = require('@google-cloud/pubsub');
+const { PubSub } = require('@google-cloud/pubsub');
 const CONFIG = require('../config');
 
 const { firebase: testConfig } = CONFIG;

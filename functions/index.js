@@ -1,6 +1,6 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-const PubSub = require('@google-cloud/pubsub');
+const { PubSub } = require('@google-cloud/pubsub');
 const templateCategories = require('./template-categories');
 const inspections = require('./inspections');
 const properties = require('./properties');
