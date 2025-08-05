@@ -69,7 +69,7 @@ describe('Deficient Items | Utils | Can User Transition Deficient Item State', (
       corporate: false,
       admin: false,
     });
-    
+
     const canTransition = util(propertyUser, 'incomplete');
     expect(canTransition).to.equal(true);
   });
@@ -81,7 +81,7 @@ describe('Deficient Items | Utils | Can User Transition Deficient Item State', (
       corporate: false,
       admin: false,
     });
-    
+
     const canTransition = util(propertyUser, 'deferred');
     expect(canTransition).to.equal(false);
   });
