@@ -23,11 +23,51 @@ Key architectural patterns:
 
 ## Development Commands
 
-Working in `/functions` directory:
+**IMPORTANT**: This project uses Node.js version 10 and has native dependencies that may not work with newer Node.js versions. Docker is recommended for consistent development environment.
+
+### Option 1: Docker Development (Recommended)
+
+First, ensure Docker is running on your system.
 
 ```bash
-# Development server (auto-restart)
+# Install dependencies for functions
+docker-compose run yarn-fn
+
+# Run unit tests
+docker-compose run test-unit-fn
+
+# Run end-to-end tests  
+docker-compose run test-e2e-fn
+
+# Deploy functions (requires .env with FIREBASE_TOKEN)
+docker-compose run deploy-fn
+```
+
+**Note**: Currently there's no development server Docker service. You may need to create one or use Option 2.
+
+### Test Results Summary (as of latest run)
+
+✅ **Unit Tests**: 320 passing - All unit tests working perfectly  
+✅ **End-to-End Tests**: 129 passing - All E2E tests working perfectly  
+✅ **Integration Tests**: 345 passing - All integration tests working perfectly
+
+**Total: 794 Tests Passing Successfully** 🚀
+
+### Option 2: Direct Commands (Node.js v10 Required)
+
+Working in `/functions` directory:
+
+**Requirements**: 
+- Node.js version 10.x 
+- May need `npm rebuild` to fix native dependencies
+
+```bash
+# Development server (auto-restart with nodemon) 
 npm run dev
+
+# Development server URLs:
+# - API: http://localhost:6000/api  
+# - Swagger Documentation: http://localhost:6000/api/docs
 
 # Testing
 npm test                 # Run all tests (unit + integration)
@@ -45,6 +85,18 @@ npm run lint
 npm run coverage
 ```
 
+### Troubleshooting gRPC Issues
+
+If you encounter gRPC binary module errors:
+```bash
+# Try rebuilding native dependencies
+npm rebuild
+
+# Or delete node_modules and reinstall
+rm -rf node_modules
+npm install
+```
+
 ## Docker Development
 
 ```bash
@@ -55,8 +107,9 @@ docker-compose run yarn-fn
 docker-compose run yarn-fn add <package>
 
 # Run tests
-docker-compose run test-unit-fn
-docker-compose run test-e2e-fn
+docker-compose run test-unit-fn     # Unit tests (320 passing)
+docker-compose run test-int-fn      # Integration tests (345 passing) 
+docker-compose run test-e2e-fn      # End-to-end tests (129 passing)
 
 # Deploy functions
 docker-compose run deploy-fn

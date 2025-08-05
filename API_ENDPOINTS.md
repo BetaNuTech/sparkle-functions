@@ -236,6 +236,47 @@ This document lists all API endpoints available in the Sparkle Functions applica
 
 ---
 
+## ClickUp Integration
+
+### POST `/v0/integrations/clickup/authorization`
+**Auth**: Admin  
+**Purpose**: Authorize ClickUp API credentials for workspace integration
+
+### DELETE `/v0/integrations/clickup/authorization`
+**Auth**: Admin  
+**Purpose**: Remove ClickUp API credentials and all integrations
+
+### GET `/v0/integrations/clickup/workspaces`
+**Auth**: Admin + ClickUp Auth  
+**Purpose**: Fetch all available ClickUp workspaces for the authenticated user
+
+### GET `/v0/integrations/clickup/workspaces/:workspaceId/spaces`
+**Auth**: Admin + ClickUp Auth  
+**Purpose**: Fetch all spaces within a specific ClickUp workspace
+
+### GET `/v0/integrations/clickup/lists`
+**Auth**: Admin + ClickUp Auth  
+**Query Parameters**: `spaceId` or `folderId`  
+**Purpose**: Browse folders and lists hierarchically within spaces or folders
+
+### PUT `/v0/integrations/clickup/properties/:propertyId`
+**Auth**: Admin + ClickUp Auth  
+**Purpose**: Create or update ClickUp integration settings for a property
+
+### DELETE `/v0/integrations/clickup/properties/:propertyId`
+**Auth**: Admin + ClickUp Auth  
+**Purpose**: Remove ClickUp integration from a property
+
+### POST `/v0/properties/:propertyId/deficiencies/:deficiencyId/clickup/task`
+**Auth**: Multi-Role + Deficiency Auth Setup + ClickUp Auth  
+**Purpose**: Create a ClickUp task for tracking deficiency resolution
+
+### POST `/v0/properties/:propertyId/jobs/:jobId/clickup/task`
+**Auth**: Multi-Role + ClickUp Auth  
+**Purpose**: Create a ClickUp task for job tracking
+
+---
+
 ## Documentation
 
 ### GET `/docs`
@@ -255,6 +296,9 @@ Validates permissions for user creation and deletion operations.
 ### Trello Auth
 Validates that the user has configured and authenticated Trello API credentials.
 
+### ClickUp Auth
+Validates that the user has configured and authenticated ClickUp API credentials.
+
 ### File Parser
 Handles multipart/form-data file uploads for image endpoints.
 
@@ -272,4 +316,4 @@ Handles multipart/form-data file uploads for image endpoints.
 
 - **Pub/Sub**: Inspection updates trigger PDF generation and other async processes
 - **Storage**: Images uploaded to Google Cloud Storage
-- **External APIs**: Yardi, Slack, and Trello integrations for external system coordination
+- **External APIs**: Yardi, Slack, Trello, and ClickUp integrations for external system coordination
