@@ -3,9 +3,6 @@
     "rules": "database.rules.json"
   },
   "functions": {
-    "source": "functions",
-    "cleanupPolicy": {
-      "keepDays": 7
-    }
+    "source": "functions"
   }
 }
