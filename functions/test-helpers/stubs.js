@@ -56,12 +56,10 @@ module.exports = {
   createPubSub(cb = () => {}) {
     return {
       topic: () => ({
-        publisher: () => ({
-          publish: (...args) => {
-            cb(...args);
-            return Promise.resolve();
-          },
-        }),
+        publish: (...args) => {
+          cb(...args);
+          return Promise.resolve();
+        },
       }),
     };
   },

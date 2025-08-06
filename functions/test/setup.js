@@ -16,7 +16,7 @@ try {
 process.env.NODE_ENV = 'test';
 
 const sinon = require('sinon');
-const PubSub = require('@google-cloud/pubsub');
+const { PubSub } = require('@google-cloud/pubsub');
 const CONFIG = require('../config');
 
 const { firebase: testConfig } = CONFIG;
@@ -57,17 +57,15 @@ const pubsubSubscribers = {};
 Object.defineProperty(PubSub.prototype, 'topic', {
   writable: true,
   value: topic => ({
-    publisher: () => ({
-      publish(data) {
-        if (
-          pubsubSubscribers[topic] &&
-          Array.isArray(pubsubSubscribers[topic])
-        ) {
-          pubsubSubscribers[topic].forEach(subscriber => subscriber(data));
-        }
-        return Promise.resolve();
-      },
-    }),
+    publish(data) {
+      if (
+        pubsubSubscribers[topic] &&
+        Array.isArray(pubsubSubscribers[topic])
+      ) {
+        pubsubSubscribers[topic].forEach(subscriber => subscriber(data));
+      }
+      return Promise.resolve();
+    },
   }),
 });
 

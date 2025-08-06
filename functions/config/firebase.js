@@ -20,7 +20,7 @@ try {
   } else if (fs.existsSync(AUTH_FILE_PATH)) {
     serviceAccount = require(AUTH_FILE_PATH); // eslint-disable-line import/no-dynamic-require,global-require
   } else {
-    throw Error('Service account not configured');
+    console.warn(`${PREFIX}Service account not configured`);
   }
 
   if (process.env.FIREBASE_CONFIG) {

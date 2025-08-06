@@ -33,8 +33,8 @@ module.exports = function createOnCreatekNotification(
     'has push notification topic'
   );
 
-  const slackPublisher = pubsubClient.topic(slackPublishTopic).publisher();
-  const pushPublisher = pubsubClient.topic(pushPublishTopic).publisher();
+  const slackPublisher = pubsubClient.topic(slackPublishTopic);
+  const pushPublisher = pubsubClient.topic(pushPublishTopic);
 
   return async (doc, event) => {
     const { notificationId } = event.params;
