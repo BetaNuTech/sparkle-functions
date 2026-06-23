@@ -107,6 +107,7 @@ module.exports = function createPatch(db, auth) {
       corporate: false,
       isDisabled: false,
       pushOptOut: false,
+      courtesyOfficer: false,
       createdAt: Math.round(Date.now() / 1000),
     };
     // Create user

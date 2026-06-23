@@ -21,6 +21,7 @@ describe('Users | API | PATCH', () => {
       { body: {} },
       { body: { superAdmin: 'string' } },
       { body: { admin: 'string' } },
+      { body: { courtesyOfficer: 'string' } },
       { body: { whatever: true } },
     ];
 
@@ -161,6 +162,30 @@ describe('Users | API | PATCH', () => {
       .expect(200);
 
     expect(setClaims.called).to.equal(true, 'updated custom claim');
+    expect(setRecord.called).to.equal(true, 'updated user record');
+    expect(setDisabled.called).to.equal(false, 'did not update auth disabled');
+  });
+
+  it('allows setting the requested user as a courtesy officer', async () => {
+    // Stup auth requests
+    sinon.stub(usersModel, 'hasUpdatePermission').resolves(true);
+    sinon.stub(usersModel, 'getAuthUser').resolves({});
+    sinon
+      .stub(usersModel, 'findRecord')
+      .resolves(createFirestoreSnap('1', { email: 'test' }));
+    const setClaims = sinon.stub(usersModel, 'upsertCustomClaims').resolves();
+    const setDisabled = sinon
+      .stub(usersModel, 'setAuthUserDisabled')
+      .resolves({});
+    const setRecord = sinon.stub(usersModel, 'setRecord').resolves();
+
+    await request(createApp())
+      .patch('/t/1?incognitoMode=true')
+      .send({ courtesyOfficer: true })
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    expect(setClaims.called).to.equal(false, 'did not update custom claim');
     expect(setRecord.called).to.equal(true, 'updated user record');
     expect(setDisabled.called).to.equal(false, 'did not update auth disabled');
   });

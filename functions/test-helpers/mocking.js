@@ -636,6 +636,7 @@ module.exports = {
       pushOptOut: false,
       admin: false,
       corporate: false,
+      courtesyOfficer: false,
       lastUserAgent: 'web',
       createdAt: nowUnix(), // Unix timestamp
       lastSignInDate: nowUnix() - 10000,
