@@ -58,6 +58,7 @@ module.exports = function createPatch(db, auth) {
     const hasLastNameUpdate =
       Boolean(body.lastName) && typeof body.lastName === 'string';
     const hasPushOptOutUpdate = typeof body.pushOptOut === 'boolean';
+    const hasCourtesyOfficerUpdate = typeof body.courtesyOfficer === 'boolean';
     const hasUpdates = Boolean(
       hasDisabledUpdate ||
         hasClaimsUpdate ||
@@ -65,7 +66,8 @@ module.exports = function createPatch(db, auth) {
         hasPropertiesUpdate ||
         hasFirstNameUpdate ||
         hasLastNameUpdate ||
-        hasPushOptOutUpdate
+        hasPushOptOutUpdate ||
+        hasCourtesyOfficerUpdate
     );
 
     // Optional incognito mode query
@@ -106,6 +108,7 @@ module.exports = function createPatch(db, auth) {
           firstName: hasFirstNameUpdate,
           lastName: hasLastNameUpdate,
           pushOptOut: hasPushOptOutUpdate,
+          courtesyOfficer: hasCourtesyOfficerUpdate,
         }
       );
     } catch (err) {
@@ -257,6 +260,9 @@ module.exports = function createPatch(db, auth) {
         }
         if (hasPushOptOutUpdate) {
           dbUpdate.pushOptOut = body.pushOptOut;
+        }
+        if (hasCourtesyOfficerUpdate) {
+          dbUpdate.courtesyOfficer = body.courtesyOfficer;
         }
 
         // Update target users' Realtime DB record

@@ -150,6 +150,53 @@ describe('Users | API | PATCH', () => {
       expect(actual).to.equal(expected, message);
     }
   });
+
+  it('should allow admin to set a target user as a courtesy officer', async () => {
+    const userId = uuid();
+    const user = mocking.createUser();
+
+    // Setup database
+    await usersModel.createRecord(db, userId, user);
+
+    // Stub auth requests
+    sinon.stub(usersModel, 'getCustomClaims').resolves({ admin: true });
+    sinon.stub(usersModel, 'getAuthUser').resolves({});
+
+    // Execute
+    const app = createApp({ admin: true });
+    await request(app)
+      .patch(`/t/${userId}?incognitoMode=true`)
+      .send({ courtesyOfficer: true })
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    // Get Results
+    const snapshot = await usersModel.findRecord(db, userId);
+    const result = snapshot.data() || {};
+
+    // Assertions
+    expect(result.courtesyOfficer).to.equal(true, 'set courtesy officer flag');
+  });
+
+  it('should reject a non-admin setting their own courtesy officer status', async () => {
+    const userId = uuid();
+    const user = mocking.createUser();
+
+    // Setup database
+    await usersModel.createRecord(db, userId, user);
+
+    // Stub auth requests
+    sinon.stub(usersModel, 'getCustomClaims').resolves({ admin: false });
+    sinon.stub(usersModel, 'getAuthUser').resolves({});
+
+    // Execute
+    const app = createApp({ id: userId, admin: false });
+    await request(app)
+      .patch(`/t/${userId}?incognitoMode=true`)
+      .send({ courtesyOfficer: true })
+      .expect('Content-Type', /json/)
+      .expect(401);
+  });
 });
 
 function createApp(user = {}) {
