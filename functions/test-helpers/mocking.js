@@ -72,8 +72,15 @@ module.exports = {
     assert(Boolean(inspConfig.property, 'config has `property` id'));
 
     const now = nowUnix();
-    const offset = Math.floor(Math.random() * 100);
-    const items = Math.floor(Math.random() * 100);
+    // NOTE: fixed (not random) defaults keep tests deterministic. The update
+    // util only emits a derived field when it differs from the inspection's
+    // current value, so a random default could coincidentally equal a test's
+    // expected value and make the field appear unset (flaky). Tests that assert
+    // on these fields pass an explicit value via inspConfig, which overrides
+    // these defaults in the Object.assign below. Values chosen to avoid
+    // colliding with the small counts/scores used in tests.
+    const offset = 36;
+    const items = 20;
     const completed = inspConfig.inspectionCompleted || false;
     const templateName =
       inspConfig.templateName ||
@@ -84,12 +91,12 @@ module.exports = {
       {
         creationDate: now - offset,
         completionDate: completed ? now - offset + 1000 : 0,
-        deficienciesExist: Math.random() > 0.5,
+        deficienciesExist: false,
         inspectionCompleted: completed,
         inspector: `user-${offset * 2}`,
         inspectorName: 'test-user',
         itemsCompleted: completed ? items : Math.round(items / 2),
-        score: Math.random() > 0.5 ? 100 : Math.random(),
+        score: 50,
         templateName,
         template: {
           trackDeficientItems: false,
