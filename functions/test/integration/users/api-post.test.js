@@ -147,6 +147,7 @@ describe('Users | API | POST', () => {
       corporate: false,
       isDisabled: false,
       pushOptOut: false,
+      courtesyOfficer: false,
     };
     const emptySnap = createEmptySnapshot();
     sinon.stub(usersModel, 'hasCrudPermission').resolves(true);
@@ -188,6 +189,7 @@ describe('Users | API | POST', () => {
           corporate: false,
           isDisabled: false,
           pushOptOut: false,
+          courtesyOfficer: false,
         },
       },
     };

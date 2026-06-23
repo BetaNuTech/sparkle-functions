@@ -526,7 +526,8 @@ module.exports = modelSetup({
         hasUpdates.coroprate ||
         hasUpdates.teams ||
         hasUpdates.properties ||
-        hasUpdates.isDisabled
+        hasUpdates.isDisabled ||
+        hasUpdates.courtesyOfficer
     );
     const isProfileUpdate = Boolean(
       hasUpdates.firstName || hasUpdates.lastName || hasUpdates.pushOptOut
