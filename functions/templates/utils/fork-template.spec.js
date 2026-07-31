@@ -101,6 +101,50 @@ describe('Templates | Utils | Fork Template', () => {
     expect(actual).to.deep.equal(expected);
   });
 
+  it('it updates item section references to new section identifiers', () => {
+    const sectionOneId = uuid();
+    const sectionTwoId = uuid();
+    const sectionOne = mocking.createSection({ index: 0 });
+    const sectionTwo = mocking.createSection({
+      index: 1,
+      added_multi_section: true,
+    });
+    const itemOne = mocking.createItem({ index: 0, sectionId: sectionOneId });
+    const itemTwo = mocking.createItem({ index: 1, sectionId: sectionTwoId });
+    const srcTemplate = mocking.createTemplate({
+      sections: {
+        [sectionOneId]: sectionOne,
+        [sectionTwoId]: sectionTwo,
+      },
+      items: {
+        one: itemOne,
+        two: itemTwo,
+      },
+    });
+    const result = forkTemplate('1', srcTemplate);
+    const sections = (result || {}).sections || {};
+    const items = (result || {}).items || {};
+
+    // Lookup each old section's new identifier
+    const newSectionOneId = Object.keys(sections).find(
+      id => sections[id].clone === sectionOneId
+    );
+    const newSectionTwoId = Object.keys(sections).find(
+      id => sections[id].clone === sectionTwoId
+    );
+    const expected = [newSectionOneId, newSectionTwoId];
+    const actual = Object.values(items)
+      .sort((a, b) => a.index - b.index)
+      .map(item => item.sectionId);
+
+    expect(newSectionOneId).to.be.a('string', 'created new section one');
+    expect(newSectionTwoId).to.be.a('string', 'created new section two');
+    expect(actual).to.deep.equal(
+      expected,
+      'items reference their sections new identifiers'
+    );
+  });
+
   it('it sets a clone reference in template, sections, and items', () => {
     const templateId = uuid();
     const sectionId = uuid();
