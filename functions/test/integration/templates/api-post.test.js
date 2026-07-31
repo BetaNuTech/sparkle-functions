@@ -98,6 +98,7 @@ describe('Templates | API | POST', () => {
     expected.sections[resultSectionId] = expected.sections[sectionId];
     delete expected.sections[sectionId];
     expected.items[resultItemId] = expected.items[itemId];
+    expected.items[resultItemId].sectionId = resultSectionId; // remapped to new section
     delete expected.items[itemId];
     expected.name = actual.name;
     expected.createdAt = actual.createdAt;
@@ -106,6 +107,36 @@ describe('Templates | API | POST', () => {
     // Assertions
     expect(actual.name).to.contain(expectedName);
     expect(actual).to.deep.equal(expected);
+  });
+
+  it('clones a template record missing items and sections', async () => {
+    const templateId = uuid();
+    const clonedTemplateId = uuid();
+    const cloneTarget = mocking.createTemplate({ name: 'Cloned Template' });
+    delete cloneTarget.items;
+    delete cloneTarget.sections;
+
+    // Stub Requests
+    sinon.stub(templatesModel, 'createId').returns(templateId);
+    sinon
+      .stub(templatesModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(clonedTemplateId, cloneTarget));
+    sinon
+      .stub(templatesModel, 'createRecord')
+      .resolves(firebase.createDocSnapshot(templateId, { name: 'created' }));
+
+    const res = await request(createApp())
+      .post(`/t?clone=${clonedTemplateId}`)
+      .send()
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(201);
+
+    // Assertions
+    const result = (res.body || {}).data || {};
+    const actual = result.attributes || {};
+    expect(actual.name).to.contain('Copy: Cloned Template');
+    expect(actual.items).to.deep.equal({}, 'defaulted empty items');
+    expect(actual.sections).to.deep.equal({}, 'defaulted empty sections');
   });
 
   it('creates a template with creation date that matches the updated date', async () => {
