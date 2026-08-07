@@ -1,6 +1,7 @@
 const onWriteV2 = require('./on-write-v2');
 const onDeleteV2 = require('./on-delete-v2');
 const createAPIPatchProperty = require('./api/patch-property');
+const createAPIPatchUnitNumber = require('./api/patch-unit-number');
 const post = require('./api/post');
 const getLatestCompletedInspection = require('./api/get-latest-completed');
 const createPatchReportPDF = require('./api/patch-report-pdf');
@@ -16,6 +17,7 @@ module.exports = {
 
   api: {
     createPatchProperty: createAPIPatchProperty,
+    createPatchUnitNumber: createAPIPatchUnitNumber,
     createPatchReportPDF,
     getLatestCompletedInspection,
     post,

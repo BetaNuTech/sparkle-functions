@@ -26,11 +26,16 @@ module.exports = function createForkedTemplate(templateId, template) {
   const result = deepClone(template);
   result.clone = templateId;
 
+  // Old section ID's to their new identifiers
+  const sectionIdMap = {};
+
   // Reset sections
   Object.keys(result.sections).forEach(sectionId => {
     const section = deepClone(result.sections[sectionId]);
     delete result.sections[sectionId]; // set unique identifier
-    result.sections[uuid(20)] = {
+    const newSectionId = uuid(20);
+    sectionIdMap[sectionId] = newSectionId;
+    result.sections[newSectionId] = {
       ...section,
       clone: sectionId,
     };
@@ -43,6 +48,8 @@ module.exports = function createForkedTemplate(templateId, template) {
     delete result.items[itemId]; // set unique identifier
     result.items[uuid(20)] = {
       ...item,
+      // Point item to its section's new identifier
+      sectionId: sectionIdMap[item.sectionId] || item.sectionId,
       clone: itemId,
     };
   });

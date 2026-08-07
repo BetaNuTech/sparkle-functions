@@ -84,7 +84,12 @@ module.exports = function createPostTemplate(db) {
       template.name = `New Template - ${nowDateString}`;
     } else {
       // Copy over clone target to payload
-      template = createForkedTemplate(cloneTemplateId, cloneTarget);
+      // defaulting any missing items/sections
+      template = createForkedTemplate(cloneTemplateId, {
+        items: {},
+        sections: {},
+        ...cloneTarget,
+      });
       template.name = `Copy: ${cloneTarget.name} - ${nowDateString}`;
     }
 
