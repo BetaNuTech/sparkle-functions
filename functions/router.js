@@ -104,6 +104,19 @@ module.exports = (db, auth, settings, storage, pubsubClient) => {
     inspections.api.createPatchProperty(db)
   );
 
+  // Update Inspection unit number
+  app.patch(
+    '/v0/inspections/:inspectionId/unit-number',
+    inspections.api.propertyAuthSetupMiddleware(db),
+    authUser(db, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    inspections.api.createPatchUnitNumber(db)
+  );
+
   // Generate Inspection PDF report
   app.patch(
     '/v0/inspections/:inspectionId/report-pdf',

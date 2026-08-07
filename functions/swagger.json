@@ -649,6 +649,10 @@
               "template": {
                 "type": "string",
                 "description": "template details."
+              },
+              "unitNumber": {
+                "type": "string",
+                "description": "optional unit number, 24 characters or less."
               }
             }
           }
@@ -1624,6 +1628,63 @@
           "409": {
             "schema": {
               "$ref": "#/definitions/RESPONSE"
+            }
+          },
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/RESPONSE"
+            }
+          }
+        }
+      }
+    },
+    "/v0/inspections/{inspectionId}/unit-number": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "inspectionId",
+          "in": "path",
+          "required": true,
+          "description": "inspection id.",
+          "type": "string"
+        }
+      ],
+      "patch": {
+        "tags": ["Inspection"],
+        "parameters": [
+          {
+            "name": "integration",
+            "in": "body",
+            "description": "Update an inspection's optional unit number without effecting completion date or report generation. An empty string removes the unit number.",
+            "required": ["unitNumber"],
+            "properties": {
+              "unitNumber": {
+                "type": "string",
+                "description": "unit number, 24 characters or less."
+              }
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
             }
           },
           "201": {
@@ -3282,6 +3343,9 @@
                   "type": "number"
                 },
                 "templateCategory": {
+                  "type": "string"
+                },
+                "unitNumber": {
                   "type": "string"
                 }
               }

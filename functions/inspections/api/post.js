@@ -8,6 +8,7 @@ const setItemDefaults = require('../utils/set-item-defaults');
 const { getFullName } = require('../../utils/user');
 
 const PREFIX = 'inspection: api: post:';
+const MAX_UNIT_NUMBER_LENGTH = 24;
 
 /**
  * Factory for creating a POST endpoint
@@ -27,7 +28,7 @@ module.exports = function post(db) {
   return async (req, res) => {
     const { body = {} } = req;
     const { propertyId } = req.params;
-    const { template: templateId } = body;
+    const { template: templateId, unitNumber } = body;
     const user = req.user;
     const send500Error = create500ErrHandler(PREFIX, res);
     const badReqPayload = { errors: [] };
@@ -42,6 +43,19 @@ module.exports = function post(db) {
         source: { pointer: 'template' },
         title: 'body missing "template" identifier',
         detail: 'template is required',
+      });
+    }
+
+    // Invalid optional unit number attribute
+    if (
+      unitNumber !== undefined &&
+      (typeof unitNumber !== 'string' ||
+        unitNumber.trim().length > MAX_UNIT_NUMBER_LENGTH)
+    ) {
+      badReqPayload.errors.push({
+        source: { pointer: 'unitNumber' },
+        title: 'body contains bad "unitNumber"',
+        detail: `unitNumber must be a string of ${MAX_UNIT_NUMBER_LENGTH} characters or less`,
       });
     }
 
@@ -117,6 +131,11 @@ module.exports = function post(db) {
         updatedAt: Math.floor(Date.now() / 1000),
         templateCategory: template.category || '',
       };
+
+      // Add optional unit number
+      if (typeof unitNumber === 'string') {
+        inspection.unitNumber = unitNumber.trim();
+      }
 
       // Add item defaults
       Object.keys(inspection.template.items || {}).forEach(itemId => {
