@@ -37,6 +37,22 @@ describe('Inspections | API | POST', () => {
     expect(actual).to.equal(expected);
   });
 
+  it('rejects request to create inspection with an invalid unit number', async () => {
+    const expected = 'unitNumber';
+    const propertyId = uuid();
+
+    const res = await request(createApp())
+      .post(`/t/${propertyId}`)
+      .send({ template: '1', unitNumber: 'a'.repeat(25) })
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(400);
+
+    // Assertions
+    const result = res.body.errors || [];
+    const actual = result.map(err => err.source.pointer).join(',');
+    expect(actual).to.equal(expected);
+  });
+
   it('rejects request to create inspection with non-existent property', async () => {
     const expected = 'Property not found';
     const propertyId = uuid();
@@ -141,6 +157,40 @@ describe('Inspections | API | POST', () => {
     // Assertions
     const actual = res.body;
     expect(actual).to.deep.equal(expected);
+  });
+
+  it('adds an optionally provided unit number to new inspection', async () => {
+    const expected = 'A12';
+    const propertyId = uuid();
+    const templateId = uuid();
+    const inspectionId = uuid();
+    const template = {
+      trackDeficientItems: false,
+      name: 'Test template',
+      sections: {},
+      items: {},
+    };
+    const property = mocking.createProperty();
+
+    // Stub Requests
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(propertyId, property));
+    sinon
+      .stub(templatesModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(templateId, template));
+    sinon.stub(inspectionsModel, 'createId').returns(inspectionId);
+    sinon.stub(inspectionsModel, 'createRecord').resolves();
+
+    const res = await request(createApp())
+      .post(`/t/${propertyId}`)
+      .send({ template: templateId, unitNumber: ' A12 ' })
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(201);
+
+    // Assertions
+    const actual = res.body.data.attributes.unitNumber;
+    expect(actual).to.equal(expected);
   });
 
   it('adds item defaults to embedded template', async () => {
