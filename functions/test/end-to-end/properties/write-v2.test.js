@@ -227,7 +227,11 @@ describe('Properties | Write | V2', () => {
     const tmplBefore = { name: 'test' };
 
     await propertiesModel.createRecord(db, propertyId, propData);
-    await templatesModel.upsertRecord(db, tmplOneId, tmplBefore);
+    // Template one starts out in sync: it claims the property back
+    await templatesModel.upsertRecord(db, tmplOneId, {
+      ...tmplBefore,
+      properties: [propertyId],
+    });
     await templatesModel.upsertRecord(db, tmplTwoId, tmplBefore);
     const before = await propertiesModel.findRecord(db, propertyId);
     await propertiesModel.upsertRecord(db, propertyId, propUpdate); // Update
@@ -259,6 +263,97 @@ describe('Properties | Write | V2', () => {
     ].forEach(({ actual, expected, msg }) => {
       expect(actual).to.deep.equal(expected, msg);
     });
+  });
+
+  it("should repair a template's property association that failed to sync previously", async () => {
+    const propertyId = uuid();
+    const tmplId = uuid();
+    // Property already assigns the template, but the
+    // template never got its side of the relationship
+    const propData = createProperty({ templates: { [tmplId]: true } });
+    const tmplBefore = { name: 'test' };
+    const expected = { ...tmplBefore, properties: [propertyId] };
+
+    // Setup database
+    await propertiesModel.createRecord(db, propertyId, propData);
+    await templatesModel.upsertRecord(db, tmplId, tmplBefore);
+    const before = await propertiesModel.findRecord(db, propertyId);
+    await propertiesModel.upsertRecord(db, propertyId, { name: 'updated' }); // leaves templates unchanged
+    const after = await propertiesModel.findRecord(db, propertyId);
+
+    // Execute
+    const changeSnap = test.makeChange(before, after);
+    const wrapped = test.wrap(cloudFunctions.propertyWriteV2);
+    await wrapped(changeSnap, { params: { propertyId } });
+
+    // Test results
+    const result = await templatesModel.findRecord(db, tmplId);
+
+    // Assertions
+    expect(result.data()).to.deep.equal(
+      expected,
+      'restored the stale template property association'
+    );
+  });
+
+  it('should remove a stale claim by a template the property no longer assigns', async () => {
+    const propertyId = uuid();
+    const tmplId = uuid();
+    const propData = createProperty(); // assigns no templates
+    const tmplBefore = { name: 'test', properties: [propertyId] }; // stale claim
+    const expected = { ...tmplBefore, properties: [] };
+
+    // Setup database
+    await propertiesModel.createRecord(db, propertyId, propData);
+    await templatesModel.upsertRecord(db, tmplId, tmplBefore);
+    const before = await propertiesModel.findRecord(db, propertyId);
+    await propertiesModel.upsertRecord(db, propertyId, { name: 'updated' });
+    const after = await propertiesModel.findRecord(db, propertyId);
+
+    // Execute
+    const changeSnap = test.makeChange(before, after);
+    const wrapped = test.wrap(cloudFunctions.propertyWriteV2);
+    await wrapped(changeSnap, { params: { propertyId } });
+
+    // Test results
+    const result = await templatesModel.findRecord(db, tmplId);
+
+    // Assertions
+    expect(result.data()).to.deep.equal(
+      expected,
+      'dropped the stale property claim'
+    );
+  });
+
+  it('should sync remaining templates when a property references a deleted template', async () => {
+    const propertyId = uuid();
+    const tmplId = uuid();
+    const deletedTmplId = uuid(); // never created
+    const propData = createProperty();
+    const propUpdate = { templates: { [tmplId]: true, [deletedTmplId]: true } };
+    const tmplBefore = { name: 'test' };
+    const expected = { ...tmplBefore, properties: [propertyId] };
+
+    // Setup database
+    await propertiesModel.createRecord(db, propertyId, propData);
+    await templatesModel.upsertRecord(db, tmplId, tmplBefore);
+    const before = await propertiesModel.findRecord(db, propertyId);
+    await propertiesModel.upsertRecord(db, propertyId, propUpdate);
+    const after = await propertiesModel.findRecord(db, propertyId);
+
+    // Execute
+    const changeSnap = test.makeChange(before, after);
+    const wrapped = test.wrap(cloudFunctions.propertyWriteV2);
+    await wrapped(changeSnap, { params: { propertyId } });
+
+    // Test results
+    const result = await templatesModel.findRecord(db, tmplId);
+
+    // Assertions
+    expect(result.data()).to.deep.equal(
+      expected,
+      'synced the existing template despite the missing one'
+    );
   });
 });
 

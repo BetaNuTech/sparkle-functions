@@ -19,7 +19,7 @@ module.exports = function createOnWriteV2Handler(db) {
       throw Error(`${PREFIX} missing parameter "propertyId"`);
     }
 
-    const batch = db.batch();
+    const teamBatch = db.batch();
     const beforeData = change.before.data() || {};
     const afterData = change.after.data() || {};
     const beforeTeam = beforeData.team || '';
@@ -27,17 +27,18 @@ module.exports = function createOnWriteV2Handler(db) {
     const isTeamRemoved = beforeTeam && !afterTeam;
     const isTeamAdded = afterTeam && !beforeTeam;
     const isTeamUpdated = afterTeam && beforeTeam && afterTeam !== beforeTeam;
-    const beforeTmpl = Object.keys(beforeData.templates || {})
-      .sort()
-      .join('');
-    const afterTmpl = Object.keys(afterData.templates || {})
-      .sort()
-      .join('');
-    const hasUpdatedTemplates = beforeTmpl !== afterTmpl;
+    const beforeTmplIds = Object.keys(beforeData.templates || {});
+    const afterTmplIds = Object.keys(afterData.templates || {});
+    const errors = [];
 
     if (isTeamRemoved) {
       try {
-        await teamUsersModel.removeProperty(db, beforeTeam, propertyId, batch);
+        await teamUsersModel.removeProperty(
+          db,
+          beforeTeam,
+          propertyId,
+          teamBatch
+        );
         log.info(
           `${PREFIX} property: "${propertyId}" removed team: "${beforeTeam}"`
         );
@@ -48,7 +49,7 @@ module.exports = function createOnWriteV2Handler(db) {
 
     if (isTeamAdded) {
       try {
-        await teamUsersModel.addProperty(db, afterTeam, propertyId, batch);
+        await teamUsersModel.addProperty(db, afterTeam, propertyId, teamBatch);
         log.info(
           `${PREFIX} property: "${propertyId}" added team: "${beforeTeam}"`
         );
@@ -64,7 +65,7 @@ module.exports = function createOnWriteV2Handler(db) {
           beforeTeam,
           afterTeam,
           propertyId,
-          batch
+          teamBatch
         );
         log.info(
           `${PREFIX} property: "${propertyId}" updated team from: "${beforeTeam}" to: "${afterTeam}"`
@@ -74,29 +75,39 @@ module.exports = function createOnWriteV2Handler(db) {
       }
     }
 
-    // Sync templates with
-    // latest property relationships
-    if (hasUpdatedTemplates) {
-      try {
-        await templatesModel.updatePropertyRelationships(
-          db,
-          propertyId,
-          beforeData ? Object.keys(beforeData.templates || {}) : [],
-          afterData ? Object.keys(afterData.templates || {}) : [],
-          batch
-        );
-      } catch (err) {
-        log.error(
-          `${PREFIX} failed to update Firestore templates relationship to property "${propertyId}" | ${err}`
-        );
-      }
+    // Commit team updates on their own batch, so a failed
+    // template sync cannot roll them back, or vice versa
+    try {
+      await teamBatch.commit();
+    } catch (err) {
+      errors.push(Error(`${PREFIX} failed to commit team updates | ${err}`));
     }
 
-    // Commit all updates
+    // Sync templates with latest property relationships.
+    // Runs on every write, not only when the template set
+    // changed: comparing key sets meant a sync that failed
+    // once was never retried, leaving the template's
+    // `properties` permanently stale and the template
+    // hidden from both clients
     try {
-      await batch.commit();
+      await templatesModel.updatePropertyRelationships(
+        db,
+        propertyId,
+        beforeTmplIds,
+        afterTmplIds
+      );
     } catch (err) {
-      throw Error(`${PREFIX} failed to commit batch updates | ${err}`);
+      errors.push(
+        Error(
+          `${PREFIX} failed to update Firestore templates relationship to property "${propertyId}" | ${err}`
+        )
+      );
+    }
+
+    // Surface any failure, having attempted every update
+    if (errors.length) {
+      errors.forEach(err => log.error(`${err}`));
+      throw errors[0];
     }
   };
 };
