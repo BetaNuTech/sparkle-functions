@@ -1,5 +1,6 @@
 const assert = require('assert');
 const FieldValue = require('firebase-admin').firestore.FieldValue;
+const log = require('../utils/logger');
 const modelSetup = require('./utils/model-setup');
 const firestoreUtils = require('../utils/firestore');
 
@@ -275,8 +276,9 @@ module.exports = modelSetup({
   /**
    * Perform a batch updates on
    * Firestore templates properties
-   * relationships. Removes old and
-   * adds new property relationships
+   * relationships. Reconciles each
+   * template's `properties` against the
+   * property's current template list
    * @param  {admin.firestore} db
    * @param  {String} propertyId
    * @param  {String[]} beforeTemplates
@@ -284,7 +286,7 @@ module.exports = modelSetup({
    * @param  {firestore.batch?} parentBatch
    * @return {Promise}
    */
-  updatePropertyRelationships(
+  async updatePropertyRelationships(
     db,
     propertyId,
     beforeTemplates,
@@ -304,33 +306,84 @@ module.exports = modelSetup({
       'has after templates id list'
     );
 
-    const added = afterTemplates.filter(t => !beforeTemplates.includes(t));
-    const removed = beforeTemplates.filter(t => !afterTemplates.includes(t));
     const batch = parentBatch || db.batch();
-
     const templatesRef = db.collection(TEMPLATE_COLLECTION);
 
-    // Append each new relationship
-    // add to batch
-    added.forEach(id => {
-      const templateDoc = templatesRef.doc(id);
-      batch.update(templateDoc, {
-        properties: FieldValue.arrayUnion(propertyId),
-      });
+    // Reconcile against current state instead of the before/after
+    // diff. A diff only ever revisits templates that just changed,
+    // so a relationship that failed to sync once would stay broken
+    // forever. Both sides are checked:
+    //   1. every template the property currently assigns
+    //   2. every template currently claiming the property
+    // so a stale relationship is repaired from either direction
+    let claimingSnaps = [];
+    try {
+      const claimingSnap = await templatesRef
+        .where('properties', 'array-contains', propertyId)
+        .get();
+      claimingSnaps = claimingSnap.docs;
+    } catch (err) {
+      throw Error(
+        `${PREFIX} updatePropertyRelationships: failed to lookup templates claiming property | ${err}`
+      );
+    }
+
+    const claimingIds = claimingSnaps.map(({ id }) => id);
+    // Only templates that should have the relationship, but are not
+    // already claiming it, still need looking up
+    const unclaimedIds = afterTemplates.filter(
+      (id, i, all) => all.indexOf(id) === i && !claimingIds.includes(id)
+    );
+
+    let unclaimedSnaps = [];
+    if (unclaimedIds.length) {
+      try {
+        unclaimedSnaps = await db.getAll(
+          ...unclaimedIds.map(id => templatesRef.doc(id))
+        );
+      } catch (err) {
+        throw Error(
+          `${PREFIX} updatePropertyRelationships: failed to lookup templates | ${err}`
+        );
+      }
+    }
+
+    const missingIds = [];
+
+    [...claimingSnaps, ...unclaimedSnaps].forEach(templateSnap => {
+      // A deleted template would fail its `batch.update()` and
+      // take down every other write in the batch with it
+      if (!templateSnap.exists) {
+        missingIds.push(templateSnap.id);
+        return;
+      }
+
+      const { properties } = templateSnap.data() || {};
+      const hasRelationship = (properties || []).includes(propertyId);
+      const shouldHaveRelationship = afterTemplates.includes(templateSnap.id);
+
+      if (shouldHaveRelationship && !hasRelationship) {
+        batch.update(templateSnap.ref, {
+          properties: FieldValue.arrayUnion(propertyId),
+        });
+      } else if (!shouldHaveRelationship && hasRelationship) {
+        batch.update(templateSnap.ref, {
+          properties: FieldValue.arrayRemove(propertyId),
+        });
+      }
     });
 
-    // Append each old relationship
-    // remove to batch
-    removed.forEach(id => {
-      const templateDoc = templatesRef.doc(id);
-      batch.update(templateDoc, {
-        properties: FieldValue.arrayRemove(propertyId),
-      });
-    });
+    if (missingIds.length) {
+      log.error(
+        `${PREFIX} updatePropertyRelationships: property "${propertyId}" references ${
+          missingIds.length
+        } non-existent template(s): ${missingIds.join(', ')}`
+      );
+    }
 
     // Return without committing
     if (parentBatch) {
-      return Promise.resolve(parentBatch);
+      return parentBatch;
     }
 
     return batch.commit();
