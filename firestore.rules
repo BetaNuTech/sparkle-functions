@@ -1,0 +1,35 @@
+rules_version = '2';
+
+// Sparkle is internal and invite-only. Membership is defined by the existence
+// of a users/{uid} document, which only POST /v0/users creates.
+//
+// These rules previously read:
+//
+//   allow read: if true;
+//   allow write: if request.auth.uid != null;
+//
+// ...which made every document in the database world-readable, and writable by
+// anyone holding any valid uid for this project. That was survivable only
+// because no self-service way to obtain a uid existed: accounts were created
+// exclusively by an administrator calling POST /v0/users. Enabling the Google
+// sign-in provider removes that assumption, so the rules have to carry the
+// weight the absence of a signup flow used to.
+//
+// The auth-gate blocking function (see ../auth-gate) is the first lock: it
+// refuses to create an account for an uninvited address. This is the second,
+// and it is the one that holds if the first is ever bypassed or disabled.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // A caller is a member if they are signed in AND an administrator has
+    // already created their Sparkle user record.
+    function isMember() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    match /{document=**} {
+      allow read, write: if isMember();
+    }
+  }
+}

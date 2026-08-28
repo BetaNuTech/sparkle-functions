@@ -86,19 +86,6 @@ module.exports = function createPatch(db, auth) {
       });
     }
 
-    // Create Firebase Auth user
-    // NOTE: this step is optional
-    // to account for potential failure
-    // and allow end users to retry POST
-    if (!authUser) {
-      try {
-        authUser = await usersModel.createAuthUser(auth, email);
-      } catch (err) {
-        return send500Error(err);
-      }
-    }
-
-    // Create new realtime DB record
     const attributes = {
       firstName,
       lastName,
@@ -110,9 +97,20 @@ module.exports = function createPatch(db, auth) {
       courtesyOfficer: false,
       createdAt: Math.round(Date.now() / 1000),
     };
-    // Create user
+
+    // Claim the user ID up front so the Firestore record can be written
+    // before the Auth account exists. Order matters: the auth gate blocking
+    // function (see auth-gate/) refuses to create an Auth account for any
+    // address without a matching users record, so creating the Auth user
+    // first would have this endpoint rejected by our own gate. Writing
+    // Firestore first also means a failure part way through leaves a record
+    // an administrator can see and retry, rather than an orphaned Auth
+    // account that is invisible in the app.
+    const userId = authUser ? authUser.uid : usersModel.createId(db);
+
+    // Create new Firestore record
     try {
-      await usersModel.upsertRecord(db, authUser.uid, attributes);
+      await usersModel.upsertRecord(db, userId, attributes);
     } catch (err) {
       return send500Error(
         err,
@@ -121,11 +119,23 @@ module.exports = function createPatch(db, auth) {
       );
     }
 
+    // Create Firebase Auth user
+    // NOTE: this step is optional
+    // to account for potential failure
+    // and allow end users to retry POST
+    if (!authUser) {
+      try {
+        authUser = await usersModel.createAuthUser(auth, email, userId);
+      } catch (err) {
+        return send500Error(err);
+      }
+    }
+
     // Success
     res.status(201).send({
       data: {
         type: 'user',
-        id: authUser.uid,
+        id: userId,
         attributes,
       },
     });

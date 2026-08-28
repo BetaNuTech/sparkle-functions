@@ -2,7 +2,7 @@
   "database": {
     "rules": "database.rules.json"
   },
-  "functions": {
-    "source": "functions"
+  "firestore": {
+    "rules": "firestore.rules"
   }
 }
