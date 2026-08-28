@@ -432,18 +432,38 @@ module.exports = modelSetup({
   },
 
   /**
+   * Generate an unused Firestore document ID for a user record.
+   * Used to create the Firestore record before the Auth account,
+   * see users/api/post.js
+   * @param  {admin.firestore} db
+   * @return {String} - document ID, also valid as a Firebase Auth uid
+   */
+  createId(db) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    return db.collection(USERS_COLLECTION).doc().id;
+  },
+
+  /**
    * Create new Auth user
    * @param {admin.auth} auth - Firebase Auth instance
    * @param  {String} email
+   * @param  {String?} userId - claim a specific uid instead of a generated one
    * @return {Promise} - resolves {UserRecord} Auth user record
    */
-  createAuthUser(auth, email) {
+  createAuthUser(auth, email, userId = '') {
     assert(
       auth && typeof auth.createUser === 'function',
       'has firebase auth instance'
     );
     assert(email && typeof email === 'string', 'has email string');
-    return auth.createUser({ email });
+
+    // Letting the caller choose the uid is what allows the Firestore user
+    // record to be written first, which the auth gate blocking function
+    // requires in order to recognize an administrator-created user
+    const payload = { email };
+    if (userId) payload.uid = userId;
+
+    return auth.createUser(payload);
   },
 
   /**
