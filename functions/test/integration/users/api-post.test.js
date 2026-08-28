@@ -6,6 +6,8 @@ const bodyParser = require('body-parser');
 const usersModel = require('../../../models/users');
 const handler = require('../../../users/api/post');
 
+const GENERATED_ID = '-generated-id';
+
 describe('Users | API | POST', () => {
   afterEach(() => sinon.restore());
 
@@ -108,6 +110,38 @@ describe('Users | API | POST', () => {
       .expect(201)
       .then(() => {
         expect(createUser.called).to.equal(true);
+        expect(createUser.firstCall.args[2]).to.equal(
+          GENERATED_ID,
+          'claimed the generated user ID for the auth account'
+        );
+        done();
+      })
+      .catch(done);
+  });
+
+  it('writes the Firestore record before creating the auth account', done => {
+    // The auth gate blocking function refuses to create an auth account for
+    // any address without a matching users record, so this endpoint would be
+    // rejected by our own gate if it created the auth user first
+    const order = [];
+    const emptySnap = createEmptySnapshot();
+    sinon.stub(usersModel, 'hasCrudPermission').resolves(true);
+    sinon.stub(usersModel, 'getAuthUserByEmail').rejects(new Error('not found'));
+    sinon.stub(usersModel, 'findRecord').resolves(emptySnap);
+    sinon
+      .stub(usersModel, 'upsertRecord')
+      .callsFake(() => order.push('firestore'));
+    sinon.stub(usersModel, 'createAuthUser').callsFake(() => {
+      order.push('auth');
+      return Promise.resolve({ uid: GENERATED_ID });
+    });
+
+    request(createApp())
+      .post('/t')
+      .send({ firstName: 'a', lastName: 'b', email: 't@g.com' })
+      .expect(201)
+      .then(() => {
+        expect(order).to.deep.equal(['firestore', 'auth']);
         done();
       })
       .catch(done);
@@ -224,7 +258,7 @@ function createApp() {
     '/t',
     bodyParser.json(),
     stubAuth,
-    handler({ collection: () => {} }, {})
+    handler({ collection: () => ({ doc: () => ({ id: GENERATED_ID }) }) }, {})
   );
   return app;
 }
