@@ -9,3 +9,8 @@ firebase functions:config:set globalapi.token=${GLOBAL_API_TOKEN}
 firebase functions:config:set globalapi.domain=${GLOBAL_API_DOMAIN}
 if [ ! -z "$COBALT_DOMAIN" ]; then firebase functions:config:set cobalt.domain=${COBALT_DOMAIN}; fi
 echo "n\n" | firebase deploy --only functions --interactive --token $FIREBASE_TOKEN
+
+# Firestore security rules. Scoped to firestore:rules on purpose: a broader
+# deploy would also try the realtime database rules, and firebase.json points
+# those at database.rules.json, which does not exist in this repo.
+firebase deploy --only firestore:rules --token $FIREBASE_TOKEN
