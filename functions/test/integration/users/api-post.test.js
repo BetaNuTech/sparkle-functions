@@ -126,7 +126,9 @@ describe('Users | API | POST', () => {
     const order = [];
     const emptySnap = createEmptySnapshot();
     sinon.stub(usersModel, 'hasCrudPermission').resolves(true);
-    sinon.stub(usersModel, 'getAuthUserByEmail').rejects(new Error('not found'));
+    sinon
+      .stub(usersModel, 'getAuthUserByEmail')
+      .rejects(new Error('not found'));
     sinon.stub(usersModel, 'findRecord').resolves(emptySnap);
     sinon
       .stub(usersModel, 'upsertRecord')
