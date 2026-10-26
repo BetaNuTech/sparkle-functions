@@ -165,20 +165,19 @@ module.exports = function publishSlackNotification(db, pubsub, topic) {
           continue; // eslint-disable-line
         }
 
-        // Mark notification as published to Slack
+        // Mark notification as published to Slack.
+        // Written immediately, not batched, so a
+        // notification removed by the cleanup job
+        // in the meantime cannot fail the shared
+        // batch commit for every other notification
         try {
-          await notificationsModel.updateRecord(
-            db,
-            notificationId,
-            {
-              'publishedMediums.slack': true,
-            },
-            batch
-          );
+          await notificationsModel.updateRecord(db, notificationId, {
+            'publishedMediums.slack': true,
+          });
         } catch (err) {
           // Allow failure
           log.error(
-            `${PREFIX} failed to mark notification as published to slack | ${err}`
+            `${PREFIX} failed to mark notification "${notificationId}" as published to slack | ${err}`
           );
         }
       }
