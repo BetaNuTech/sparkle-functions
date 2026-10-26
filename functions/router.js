@@ -210,6 +210,63 @@ module.exports = (db, auth, settings, storage, pubsubClient) => {
     properties.api.getPropertyYardiWorkOrders()
   );
 
+  // Request a single Property work order from Yardi
+  app.get(
+    '/v0/properties/:propertyId/yardi/work-orders/:workOrderId',
+    authUser(db, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    properties.middleware.propertyCode(db),
+    properties.middleware.yardiIntegration(db),
+    properties.api.getPropertyYardiWorkOrder()
+  );
+
+  // Create a Property's work order in Yardi
+  app.post(
+    '/v0/properties/:propertyId/yardi/work-orders',
+    authUser(db, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    properties.middleware.propertyCode(db),
+    properties.middleware.yardiIntegration(db),
+    properties.api.postPropertyYardiWorkOrder()
+  );
+
+  // Update a Property's work order in Yardi
+  app.patch(
+    '/v0/properties/:propertyId/yardi/work-orders/:workOrderId',
+    authUser(db, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    properties.middleware.propertyCode(db),
+    properties.middleware.yardiIntegration(db),
+    properties.api.patchPropertyYardiWorkOrder()
+  );
+
+  // Request Yardi's accepted work order values
+  // (priorities, categories, statuses, reasons)
+  app.get(
+    '/v0/properties/:propertyId/yardi/custom-values',
+    authUser(db, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    properties.middleware.propertyCode(db),
+    properties.middleware.yardiIntegration(db),
+    properties.api.getPropertyYardiCustomValues()
+  );
+
   // Create a property
   app.post(
     '/v0/properties',
