@@ -43,10 +43,12 @@ const OCCUPANT_ATTRS = {
 const WORK_ORDER_ATTRS = {
   status: '',
   category: '',
+  subCategory: '',
   origin: '',
   priority: '',
   unit: '',
   resident: '',
+  vendor: '',
   updatedAt: '',
   createdAt: '',
   updatedBy: '',
@@ -54,12 +56,46 @@ const WORK_ORDER_ATTRS = {
   permissionToEnter: '',
   tenantCaused: '',
   technicianNotes: '',
+  briefDescription: '',
   description: '',
   problemNotes: '',
+  accessNotes: '',
   requestorName: '',
   requestorPhone: '',
   requestorEmail: '',
+  dueDate: '',
+  reason: '',
+  resolution: '',
 };
+
+// Yardi Service Request elements in the exact
+// order required by the Itf_ServiceRequest.xsd
+// sequence, mapped from Sparkle work order attributes
+const SERVICE_REQUEST_ELEMENTS = Object.freeze([
+  ['ServiceRequestId', 'id'],
+  ['Origin', 'origin'],
+  ['PropertyCode', 'property'],
+  ['UnitCode', 'unit'],
+  ['TenantCode', 'resident'],
+  ['VendorCode', 'vendor'],
+  ['ServiceRequestBriefDescription', 'briefDescription'],
+  ['ServiceRequestFullDescription', 'description'],
+  ['Priority', 'priority'],
+  ['Category', 'category'],
+  ['SubCategory', 'subCategory'],
+  ['HasPermissionToEnter', 'permissionToEnter'],
+  ['AccessNotes', 'accessNotes'],
+  ['ProblemDescriptionNotes', 'problemNotes'],
+  ['TechnicianNotes', 'technicianNotes'],
+  ['TenantCaused', 'tenantCaused'],
+  ['RequestorName', 'requestorName'],
+  ['RequestorPhoneNumber', 'requestorPhone'],
+  ['RequestorEmail', 'requestorEmail'],
+  ['DueDate', 'dueDate'],
+  ['CurrentStatus', 'status'],
+  ['Resolution', 'resolution'],
+  ['Reason', 'reason'],
+]);
 
 module.exports = {
   /**
@@ -218,6 +254,34 @@ module.exports = {
       result.category = `${src.Category[0]}`.toLowerCase();
     }
 
+    if (isYardiValue(src.SubCategory)) {
+      result.subCategory = `${src.SubCategory[0]}`;
+    }
+
+    if (isYardiValue(src.VendorCode)) {
+      result.vendor = `${src.VendorCode[0]}`;
+    }
+
+    if (isYardiValue(src.ServiceRequestBriefDescription)) {
+      result.briefDescription = src.ServiceRequestBriefDescription[0];
+    }
+
+    if (isYardiValue(src.AccessNotes)) {
+      result.accessNotes = src.AccessNotes[0];
+    }
+
+    if (isYardiValue(src.DueDate)) {
+      result.dueDate = src.DueDate[0];
+    }
+
+    if (isYardiValue(src.Reason)) {
+      result.reason = src.Reason[0];
+    }
+
+    if (isYardiValue(src.Resolution)) {
+      result.resolution = src.Resolution[0];
+    }
+
     if (isYardiValue(src.Origin)) {
       result.origin = `${src.Origin[0]}`;
     }
@@ -267,10 +331,6 @@ module.exports = {
       result.requestorName = src.RequestorName[0];
     }
 
-    if (isYardiValue(src.RequestorName)) {
-      result.requestorName = src.RequestorName[0];
-    }
-
     if (isYardiValue(src.RequestorPhoneNumber)) {
       result.requestorPhone = parsePhoneNumber(src.RequestorPhoneNumber[0]);
     }
@@ -300,8 +360,79 @@ module.exports = {
     return result;
   },
 
+  /**
+   * Create the Yardi `ServiceRequests` XML document
+   * consumed by the `CreateOrEditServiceRequests`
+   * SOAP method from Sparkle work order attributes.
+   * A missing/falsey `id` requests a new service request.
+   * Elements are written in the XSD sequence order and
+   * only attributes with a value are included.
+   * @param  {String} propertyCode
+   * @param  {Object} workOrder
+   * @return {String} - XML
+   */
+  createYardiServiceRequestXml(propertyCode, workOrder) {
+    assert(
+      propertyCode && typeof propertyCode === 'string',
+      'has property code'
+    );
+    assert(workOrder && typeof workOrder === 'object', 'has work order');
+
+    const source = { ...workOrder, property: propertyCode };
+    if (!source.id) source.id = '0';
+
+    const elements = SERVICE_REQUEST_ELEMENTS.filter(([, attr]) =>
+      hasValue(source[attr])
+    ).map(([tag, attr]) => `<${tag}>${escapeXml(source[attr])}</${tag}>`);
+
+    return `<ServiceRequests xmlns=""><ServiceRequest>${elements.join(
+      ''
+    )}</ServiceRequest></ServiceRequests>`;
+  },
+
+  /**
+   * Collect any error messages Yardi embedded
+   * in a parsed service request record
+   * @param  {Object} record - parsed Yardi ServiceRequest
+   * @return {String[]}
+   */
+  getYardiErrorMessages(record) {
+    const messages = (record || {}).ErrorMessages;
+    if (!messages || !isArray(messages) || !messages[0]) return [];
+    const errors = messages[0].Error;
+    if (!errors || !isArray(errors)) return [];
+    return errors
+      .map(err => `${err && err._ !== undefined ? err._ : err}`.trim())
+      .filter(Boolean);
+  },
+
   _getYardiPhoneNumbers: getYardiPhoneNumbers,
+  _escapeXml: escapeXml,
 };
+
+/**
+ * Attribute has a value worth
+ * sending to Yardi (booleans included)
+ * @param  {Any}  value
+ * @return {Boolean}
+ */
+function hasValue(value) {
+  if (typeof value === 'boolean' || typeof value === 'number') return true;
+  return Boolean(value && `${value}`.trim());
+}
+
+/**
+ * Escape text for use in an XML element
+ * @param  {Any} value
+ * @return {String}
+ */
+function escapeXml(value) {
+  return `${value}`
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 
 /**
  * Parse Yardi Numbers & remove duplicates

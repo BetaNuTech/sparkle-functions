@@ -211,6 +211,34 @@ module.exports = (db, auth, settings, storage, pubsubClient) => {
     properties.api.getPropertyYardiWorkOrders()
   );
 
+  // Create a Property's work order in Yardi
+  app.post(
+    '/v0/properties/:propertyId/yardi/work-orders',
+    authUser(db, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    properties.middleware.propertyCode(db),
+    properties.middleware.yardiIntegration(db),
+    properties.api.postPropertyYardiWorkOrder()
+  );
+
+  // Update a Property's work order in Yardi
+  app.patch(
+    '/v0/properties/:propertyId/yardi/work-orders/:workOrderId',
+    authUser(db, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    properties.middleware.propertyCode(db),
+    properties.middleware.yardiIntegration(db),
+    properties.api.patchPropertyYardiWorkOrder()
+  );
+
   // Create a property
   app.post(
     '/v0/properties',
