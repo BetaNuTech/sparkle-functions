@@ -4,6 +4,8 @@ const getPropertyYardiResidents = require('./api/get-property-yardi-residents');
 const getPropertyYardiWorkOrders = require('./api/get-property-yardi-work-orders');
 const postPropertyYardiWorkOrder = require('./api/post-property-yardi-work-order');
 const patchPropertyYardiWorkOrder = require('./api/patch-property-yardi-work-order');
+const getPropertyYardiCustomValues = require('./api/get-property-yardi-custom-values');
+const getPropertyYardiWorkOrder = require('./api/get-property-yardi-work-order');
 const post = require('./api/post');
 const put = require('./api/put');
 const propertyCode = require('./middleware/property-code');
@@ -18,6 +20,8 @@ module.exports = {
     getPropertyYardiWorkOrders,
     postPropertyYardiWorkOrder,
     patchPropertyYardiWorkOrder,
+    getPropertyYardiCustomValues,
+    getPropertyYardiWorkOrder,
     post,
     put,
     postImage,
