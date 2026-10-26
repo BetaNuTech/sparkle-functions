@@ -876,6 +876,324 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "Property"
+        ],
+        "summary": "Create a work order (service request) for the property in Yardi",
+        "parameters": [
+          {
+            "name": "workOrder",
+            "in": "body",
+            "required": true,
+            "description": "Work order attributes, forwarded to Yardi as a service request",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "unit": {
+                  "type": "string",
+                  "maxLength": 8,
+                  "description": "Yardi unit code (required to create)"
+                },
+                "resident": {
+                  "type": "string",
+                  "maxLength": 8,
+                  "description": "Yardi tenant code"
+                },
+                "vendor": {
+                  "type": "string",
+                  "maxLength": 12
+                },
+                "briefDescription": {
+                  "type": "string",
+                  "maxLength": 35
+                },
+                "description": {
+                  "type": "string",
+                  "maxLength": 1500
+                },
+                "priority": {
+                  "type": "string",
+                  "maxLength": 30,
+                  "description": "Must match a Yardi priority (ie High, Medium, Low)"
+                },
+                "category": {
+                  "type": "string",
+                  "maxLength": 30,
+                  "description": "Must match a Yardi category"
+                },
+                "subCategory": {
+                  "type": "string",
+                  "maxLength": 30
+                },
+                "status": {
+                  "type": "string",
+                  "maxLength": 30,
+                  "description": "Must match a Yardi status (ie Call, Scheduled, Canceled)"
+                },
+                "reason": {
+                  "type": "string",
+                  "maxLength": 100,
+                  "description": "Required by Yardi for some statuses"
+                },
+                "resolution": {
+                  "type": "string",
+                  "maxLength": 50
+                },
+                "permissionToEnter": {
+                  "type": "boolean"
+                },
+                "tenantCaused": {
+                  "type": "boolean"
+                },
+                "accessNotes": {
+                  "type": "string",
+                  "maxLength": 1500
+                },
+                "problemNotes": {
+                  "type": "string",
+                  "maxLength": 1500
+                },
+                "technicianNotes": {
+                  "type": "string",
+                  "maxLength": 1500
+                },
+                "requestorName": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "requestorPhone": {
+                  "type": "string",
+                  "maxLength": 20
+                },
+                "requestorEmail": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "dueDate": {
+                  "type": "string",
+                  "maxLength": 19,
+                  "description": "YYYY-MM-DD"
+                },
+                "origin": {
+                  "type": "string",
+                  "maxLength": 10
+                }
+              },
+              "required": [
+                "unit"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/WORKORDERRECORD"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "407": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "502": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/properties/{propertyId}/yardi/work-orders/{workOrderId}": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "propertyId",
+          "in": "path",
+          "required": true,
+          "description": "property id owning the work order.",
+          "type": "string"
+        },
+        {
+          "name": "workOrderId",
+          "in": "path",
+          "required": true,
+          "description": "Yardi service request id (numeric).",
+          "type": "string"
+        }
+      ],
+      "patch": {
+        "tags": [
+          "Property"
+        ],
+        "summary": "Update an existing work order (service request) for the property in Yardi. Partial updates are supported.",
+        "parameters": [
+          {
+            "name": "workOrder",
+            "in": "body",
+            "required": true,
+            "description": "Work order attributes, forwarded to Yardi as a service request",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "unit": {
+                  "type": "string",
+                  "maxLength": 8,
+                  "description": "Yardi unit code (required to create)"
+                },
+                "resident": {
+                  "type": "string",
+                  "maxLength": 8,
+                  "description": "Yardi tenant code"
+                },
+                "vendor": {
+                  "type": "string",
+                  "maxLength": 12
+                },
+                "briefDescription": {
+                  "type": "string",
+                  "maxLength": 35
+                },
+                "description": {
+                  "type": "string",
+                  "maxLength": 1500
+                },
+                "priority": {
+                  "type": "string",
+                  "maxLength": 30,
+                  "description": "Must match a Yardi priority (ie High, Medium, Low)"
+                },
+                "category": {
+                  "type": "string",
+                  "maxLength": 30,
+                  "description": "Must match a Yardi category"
+                },
+                "subCategory": {
+                  "type": "string",
+                  "maxLength": 30
+                },
+                "status": {
+                  "type": "string",
+                  "maxLength": 30,
+                  "description": "Must match a Yardi status (ie Call, Scheduled, Canceled)"
+                },
+                "reason": {
+                  "type": "string",
+                  "maxLength": 100,
+                  "description": "Required by Yardi for some statuses"
+                },
+                "resolution": {
+                  "type": "string",
+                  "maxLength": 50
+                },
+                "permissionToEnter": {
+                  "type": "boolean"
+                },
+                "tenantCaused": {
+                  "type": "boolean"
+                },
+                "accessNotes": {
+                  "type": "string",
+                  "maxLength": 1500
+                },
+                "problemNotes": {
+                  "type": "string",
+                  "maxLength": 1500
+                },
+                "technicianNotes": {
+                  "type": "string",
+                  "maxLength": 1500
+                },
+                "requestorName": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "requestorPhone": {
+                  "type": "string",
+                  "maxLength": 20
+                },
+                "requestorEmail": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "dueDate": {
+                  "type": "string",
+                  "maxLength": 19,
+                  "description": "YYYY-MM-DD"
+                },
+                "origin": {
+                  "type": "string",
+                  "maxLength": 10
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/WORKORDERRECORD"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "407": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "502": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
       }
     },
     "/v0/properties/{propertyId}": {
@@ -3469,6 +3787,47 @@
                           "id": {
                             "type": "string"
                           }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "WORKORDERRECORD": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "attributes": {
+              "type": "object",
+              "properties": {}
+            },
+            "relationships": {
+              "type": "object",
+              "properties": {
+                "resident": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
                         }
                       }
                     }

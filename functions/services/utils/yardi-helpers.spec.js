@@ -774,3 +774,192 @@ function createPhone({ officeNumber, homeNumber, mobileNumber }) {
   if (mobileNumber) phone.MobileNumber = [mobileNumber];
   return result;
 }
+
+describe('Service | Utils | Yardi Helpers | Service Request XML', () => {
+  const {
+    createYardiServiceRequestXml,
+    getYardiErrorMessages,
+  } = require('./yardi-helpers'); // eslint-disable-line global-require
+
+  it('defaults to a new service request when no id is provided', () => {
+    const actual = createYardiServiceRequestXml('prop', { unit: '101' });
+    expect(actual).to.contain('<ServiceRequestId>0</ServiceRequestId>');
+  });
+
+  it('uses the provided id when editing', () => {
+    const actual = createYardiServiceRequestXml('prop', {
+      id: '531772',
+      unit: '101',
+    });
+    expect(actual).to.contain('<ServiceRequestId>531772</ServiceRequestId>');
+  });
+
+  it('wraps the document in an empty default namespace root', () => {
+    const actual = createYardiServiceRequestXml('prop', { unit: '101' });
+    expect(actual.indexOf('<ServiceRequests xmlns="">')).to.equal(0);
+    expect(actual.slice(-'</ServiceRequests>'.length)).to.equal(
+      '</ServiceRequests>'
+    );
+  });
+
+  it('always includes the property code', () => {
+    const actual = createYardiServiceRequestXml('prop', { unit: '101' });
+    expect(actual).to.contain('<PropertyCode>prop</PropertyCode>');
+  });
+
+  it('writes elements in the XSD sequence order regardless of input order', () => {
+    const actual = createYardiServiceRequestXml('prop', {
+      status: 'Call',
+      requestorName: 'Testor',
+      priority: 'Low',
+      unit: '101',
+      resident: 't0001',
+      description: 'full',
+      briefDescription: 'brief',
+      category: 'Plumbing',
+    });
+    const order = [
+      'ServiceRequestId',
+      'PropertyCode',
+      'UnitCode',
+      'TenantCode',
+      'ServiceRequestBriefDescription',
+      'ServiceRequestFullDescription',
+      'Priority',
+      'Category',
+      'RequestorName',
+      'CurrentStatus',
+    ].map(tag => actual.indexOf(`<${tag}>`));
+
+    order.forEach(index => expect(index).to.be.greaterThan(-1));
+    expect(order).to.deep.equal([...order].sort((a, b) => a - b));
+  });
+
+  it('maps every Sparkle attribute to its Yardi element', () => {
+    const actual = createYardiServiceRequestXml('prop', {
+      origin: 'SP',
+      unit: '101',
+      resident: 't0001',
+      vendor: 'v1',
+      briefDescription: 'brief',
+      description: 'full',
+      priority: 'Low',
+      category: 'Plumbing',
+      subCategory: 'Drains',
+      permissionToEnter: true,
+      accessNotes: 'access',
+      problemNotes: 'problem',
+      technicianNotes: 'tech',
+      tenantCaused: false,
+      requestorName: 'name',
+      requestorPhone: '1234567890',
+      requestorEmail: 'a@b.co',
+      dueDate: '2020-01-01',
+      status: 'Call',
+      resolution: 'done',
+      reason: 'why',
+    });
+
+    [
+      '<Origin>SP</Origin>',
+      '<UnitCode>101</UnitCode>',
+      '<TenantCode>t0001</TenantCode>',
+      '<VendorCode>v1</VendorCode>',
+      '<ServiceRequestBriefDescription>brief</ServiceRequestBriefDescription>',
+      '<ServiceRequestFullDescription>full</ServiceRequestFullDescription>',
+      '<Priority>Low</Priority>',
+      '<Category>Plumbing</Category>',
+      '<SubCategory>Drains</SubCategory>',
+      '<HasPermissionToEnter>true</HasPermissionToEnter>',
+      '<AccessNotes>access</AccessNotes>',
+      '<ProblemDescriptionNotes>problem</ProblemDescriptionNotes>',
+      '<TechnicianNotes>tech</TechnicianNotes>',
+      '<TenantCaused>false</TenantCaused>',
+      '<RequestorName>name</RequestorName>',
+      '<RequestorPhoneNumber>1234567890</RequestorPhoneNumber>',
+      '<RequestorEmail>a@b.co</RequestorEmail>',
+      '<DueDate>2020-01-01</DueDate>',
+      '<CurrentStatus>Call</CurrentStatus>',
+      '<Resolution>done</Resolution>',
+      '<Reason>why</Reason>',
+    ].forEach(element => expect(actual).to.contain(element));
+  });
+
+  it('omits attributes without a value', () => {
+    const actual = createYardiServiceRequestXml('prop', {
+      unit: '101',
+      description: '',
+      technicianNotes: '   ',
+      priority: null,
+      category: undefined,
+    });
+    expect(actual).to.not.contain('ServiceRequestFullDescription');
+    expect(actual).to.not.contain('TechnicianNotes');
+    expect(actual).to.not.contain('Priority');
+    expect(actual).to.not.contain('Category');
+  });
+
+  it('ignores unknown attributes', () => {
+    const actual = createYardiServiceRequestXml('prop', {
+      unit: '101',
+      bogus: 'nope',
+    });
+    expect(actual).to.not.contain('nope');
+  });
+
+  it('escapes XML special characters in values', () => {
+    const actual = createYardiServiceRequestXml('prop', {
+      unit: '101',
+      description: 'Tom & Jerry <broke> the "sink"',
+    });
+    expect(actual).to.contain(
+      '<ServiceRequestFullDescription>Tom &amp; Jerry &lt;broke&gt; the &quot;sink&quot;</ServiceRequestFullDescription>'
+    );
+  });
+
+  it('collects all error messages from a Yardi record', () => {
+    const record = {
+      ServiceRequestId: ['0'],
+      ErrorMessages: [
+        {
+          Error: [
+            'Could not find Unit:ZZ in Property:prop',
+            'Could not find Priority:Urgent',
+          ],
+        },
+      ],
+    };
+    expect(getYardiErrorMessages(record)).to.deep.equal([
+      'Could not find Unit:ZZ in Property:prop',
+      'Could not find Priority:Urgent',
+    ]);
+  });
+
+  it('returns no error messages for a successful Yardi record', () => {
+    expect(getYardiErrorMessages({ ServiceRequestId: ['1'] })).to.deep.equal(
+      []
+    );
+    expect(getYardiErrorMessages(undefined)).to.deep.equal([]);
+  });
+
+  it('reads the additional writable attributes back from a Yardi record', () => {
+    const actual = createWorkOrderFromYardi({
+      ServiceRequestId: ['1'],
+      UnitCode: ['101'],
+      SubCategory: ['Drains'],
+      VendorCode: ['v1'],
+      ServiceRequestBriefDescription: ['brief'],
+      AccessNotes: ['access'],
+      DueDate: ['2020-01-01'],
+      Reason: ['why'],
+      Resolution: ['done'],
+    });
+    expect(actual.subCategory).to.equal('Drains');
+    expect(actual.vendor).to.equal('v1');
+    expect(actual.briefDescription).to.equal('brief');
+    expect(actual.accessNotes).to.equal('access');
+    expect(actual.dueDate).to.equal('2020-01-01');
+    expect(actual.reason).to.equal('why');
+    expect(actual.resolution).to.equal('done');
+  });
+});
