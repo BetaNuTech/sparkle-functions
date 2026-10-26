@@ -287,6 +287,210 @@ describe('Services | Yardi', () => {
     });
   });
 
+  describe('getYardiCustomValues', () => {
+    const CUSTOM_VALUES_XML = `<ServiceRequests xmlns="" xsi="http://www.w3.org/2001/XMLSchema-instance"><CustomValues><Categories><Category><Name>Electrical</Name><SubCategory>Breakers</SubCategory><SubCategory>Wiring</SubCategory></Category><Category><Name>Building Exterior</Name></Category></Categories><Approvers><Warning>There are no Approvers set up in this database.</Warning></Approvers><Priorities><Priority>High</Priority><Priority>Low</Priority></Priorities><Statuses><Status Type="Standard"><Status>Call</Status><Status>Canceled</Status></Status></Statuses><Status Type="Custom"><Status>Parts Ordered</Status></Status><Reasons><Reason Status="On Hold" Required="true">Duplicate Work Order</Reason><Reason Status="Request Reassignment" Required="false">Need new vendor</Reason></Reasons></CustomValues><Resolutions><Resolution>General Repairs</Resolution></Resolutions><Employees /></ServiceRequests>`;
+
+    it('requests custom values with the login block and no property', async () => {
+      const post = sinon.stub(got, 'post').resolves({
+        body: createSoapResponse('GetCustomValues', CUSTOM_VALUES_XML),
+      });
+
+      await yardi.getYardiCustomValues(CONFIG);
+
+      const { body, headers } = post.firstCall.args[1];
+      expect(headers.SOAPAction).to.contain('/GetCustomValues');
+      expect(body).to.contain('<UserName>user</UserName>');
+      expect(body).to.contain('<InterfaceLicense>license</InterfaceLicense>');
+      expect(body).to.not.contain('YardiPropertyId');
+    });
+
+    it('resolves the organization work order values', async () => {
+      sinon.stub(got, 'post').resolves({
+        body: createSoapResponse('GetCustomValues', CUSTOM_VALUES_XML),
+      });
+
+      const actual = await yardi.getYardiCustomValues(CONFIG);
+
+      expect(actual).to.deep.equal({
+        priorities: ['High', 'Low'],
+        categories: [
+          { name: 'Electrical', subCategories: ['Breakers', 'Wiring'] },
+          { name: 'Building Exterior', subCategories: [] },
+        ],
+        statuses: [
+          { name: 'Call', type: 'standard' },
+          { name: 'Canceled', type: 'standard' },
+          { name: 'Parts Ordered', type: 'custom' },
+        ],
+        reasons: [
+          { status: 'On Hold', reason: 'Duplicate Work Order', required: true },
+          {
+            status: 'Request Reassignment',
+            reason: 'Need new vendor',
+            required: false,
+          },
+        ],
+        resolutions: ['General Repairs'],
+      });
+    });
+
+    it('resolves empty lists when Yardi returns warnings instead of values', async () => {
+      sinon.stub(got, 'post').resolves({
+        body: createSoapResponse(
+          'GetCustomValues',
+          '<ServiceRequests xmlns=""><CustomValues><Categories /><Priorities /><Statuses /><Reasons /></CustomValues><Resolutions><Warning>There are no Resolutions set up in this database.</Warning></Resolutions></ServiceRequests>'
+        ),
+      });
+
+      const actual = await yardi.getYardiCustomValues(CONFIG);
+
+      expect(actual).to.deep.equal({
+        priorities: [],
+        categories: [],
+        statuses: [],
+        reasons: [],
+        resolutions: [],
+      });
+    });
+
+    it('rejects with a credentials error when Yardi login fails', async () => {
+      sinon.stub(got, 'post').resolves({
+        body: createSoapResponse(
+          'GetCustomValues',
+          '<Messages xmlns=""><Message messageType="Error">Login failed. Please check login credentials and try again.</Message></Messages>'
+        ),
+      });
+
+      let actual = null;
+      try {
+        await yardi.getYardiCustomValues(CONFIG);
+      } catch (err) {
+        actual = err;
+      }
+
+      expect(actual.code).to.equal('ERR_BAD_YARDI_CREDENTIALS');
+    });
+  });
+
+  describe('Voyager URL', () => {
+    it('posts to the default Voyager endpoint when no url is configured', async () => {
+      const post = sinon.stub(got, 'post').resolves({
+        body: createSoapResponse(
+          'GetCustomValues',
+          '<ServiceRequests xmlns=""><CustomValues /></ServiceRequests>'
+        ),
+      });
+
+      await yardi.getYardiCustomValues(CONFIG);
+
+      expect(post.firstCall.args[0]).to.equal(
+        'https://www.yardiasp14.com/21253beta/Webservices/itfServiceRequests.asmx'
+      );
+    });
+
+    it('posts to the configured Voyager endpoint when a url is provided', async () => {
+      const post = sinon.stub(got, 'post').resolves({
+        body: createCreateResponse(createServiceRequest()),
+      });
+      const url =
+        'https://example.yardi.test/client/Webservices/itfServiceRequests.asmx';
+
+      await yardi.createOrEditYardiWorkOrder(
+        'prop',
+        { ...CONFIG, url: ` ${url} ` },
+        { unit: '101' }
+      );
+
+      expect(post.firstCall.args[0]).to.equal(url);
+    });
+
+    it('rejects a non-string url configuration', async () => {
+      let actual = null;
+      try {
+        await yardi.getYardiCustomValues({ ...CONFIG, url: 42 });
+      } catch (err) {
+        actual = err;
+      }
+      expect(actual).to.be.an('error');
+    });
+  });
+
+  describe('getYardiPropertyWorkOrders filters', () => {
+    const EMPTY = createSoapResponse(
+      'GetServiceRequest_Search',
+      '<ServiceRequests xmlns=""></ServiceRequests>'
+    );
+
+    it('searches open work orders by default', async () => {
+      const post = sinon.stub(got, 'post').resolves({ body: EMPTY });
+      await yardi.getYardiPropertyWorkOrders('prop', CONFIG);
+      const { body } = post.firstCall.args[1];
+      expect(body).to.contain('<OpenOrClosed>Open</OpenOrClosed>');
+      expect(body).to.not.contain('<UnitCode>');
+      expect(body).to.not.contain('<FromDate>');
+    });
+
+    it('searches closed work orders when requested', async () => {
+      const post = sinon.stub(got, 'post').resolves({ body: EMPTY });
+      await yardi.getYardiPropertyWorkOrders('prop', CONFIG, {
+        openOrClosed: 'closed',
+      });
+      expect(post.firstCall.args[1].body).to.contain(
+        '<OpenOrClosed>Closed</OpenOrClosed>'
+      );
+    });
+
+    it('passes unit, resident and status filters to Yardi', async () => {
+      const post = sinon.stub(got, 'post').resolves({ body: EMPTY });
+      await yardi.getYardiPropertyWorkOrders('prop', CONFIG, {
+        unit: '1-103',
+        resident: 't0225029',
+        status: 'Scheduled',
+      });
+      const { body } = post.firstCall.args[1];
+      expect(body).to.contain('<UnitCode>1-103</UnitCode>');
+      expect(body).to.contain('<ResidentCode>t0225029</ResidentCode>');
+      expect(body).to.contain('<Status>Scheduled</Status>');
+    });
+
+    it('converts YYYY-MM-DD dates to the MM/DD/YYYY format Yardi expects', async () => {
+      const post = sinon.stub(got, 'post').resolves({ body: EMPTY });
+      await yardi.getYardiPropertyWorkOrders('prop', CONFIG, {
+        from: '2026-10-01',
+        to: '2026-10-26',
+      });
+      const { body } = post.firstCall.args[1];
+      expect(body).to.contain('<FromDate>10/01/2026</FromDate>');
+      expect(body).to.contain('<ToDate>10/26/2026</ToDate>');
+    });
+
+    it('rejects an unknown open/closed filter', async () => {
+      sinon.stub(got, 'post').resolves({ body: EMPTY });
+      let actual = null;
+      try {
+        await yardi.getYardiPropertyWorkOrders('prop', CONFIG, {
+          openOrClosed: 'all',
+        });
+      } catch (err) {
+        actual = err;
+      }
+      expect(actual).to.be.an('error');
+    });
+
+    it('rejects a malformed date filter', async () => {
+      sinon.stub(got, 'post').resolves({ body: EMPTY });
+      let actual = null;
+      try {
+        await yardi.getYardiPropertyWorkOrders('prop', CONFIG, {
+          from: '10/01/2026',
+        });
+      } catch (err) {
+        actual = err;
+      }
+      expect(actual).to.be.an('error');
+    });
+  });
+
   describe('SOAP envelope isolation', () => {
     it('does not leak one operation into the body of the next request', async () => {
       const post = sinon.stub(got, 'post');

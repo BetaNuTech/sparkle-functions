@@ -406,9 +406,121 @@ module.exports = {
       .filter(Boolean);
   },
 
+  /**
+   * Create the organization's work order custom
+   * values from a parsed Yardi `GetCustomValues`
+   * `ServiceRequests` payload
+   * @param  {Object} src - parsed `ServiceRequests` element
+   * @return {Object}
+   */
+  createCustomValuesFromYardi(src) {
+    const source = src && typeof src === 'object' ? src : {};
+    const customValues = firstEntry(source.CustomValues) || {};
+    const result = {
+      priorities: [],
+      categories: [],
+      statuses: [],
+      reasons: [],
+      resolutions: [],
+    };
+
+    // Priorities
+    result.priorities = yardiTextValues(
+      (firstEntry(customValues.Priorities) || {}).Priority
+    );
+
+    // Categories & their sub categories
+    const categories = (firstEntry(customValues.Categories) || {}).Category;
+    result.categories = (isArray(categories) ? categories : [])
+      .map(category => ({
+        name: yardiTextValues(category.Name)[0] || '',
+        subCategories: yardiTextValues(category.SubCategory),
+      }))
+      .filter(({ name }) => name);
+
+    // Statuses: standard groups live under `Statuses`
+    // while custom groups are a sibling `Status` element
+    // (older plug-ins place custom groups beside `CustomValues`)
+    const statusGroups = [
+      ...toArray((firstEntry(customValues.Statuses) || {}).Status),
+      ...toArray(customValues.Status),
+      ...toArray(source.Status),
+    ];
+    statusGroups.forEach(group => {
+      if (!group || typeof group !== 'object') return;
+      const type = `${(group.$ && group.$.Type) || ''}`.toLowerCase();
+      yardiTextValues(group.Status).forEach(name => {
+        result.statuses.push({ name, type: type || 'standard' });
+      });
+    });
+
+    // Reasons for statuses
+    const reasons = (firstEntry(customValues.Reasons) || {}).Reason;
+    result.reasons = toArray(reasons)
+      .map(reason => ({
+        status: `${(reason && reason.$ && reason.$.Status) || ''}`,
+        reason: yardiText(reason),
+        required:
+          `${(reason && reason.$ && reason.$.Required) || ''}`.toLowerCase() ===
+          'true',
+      }))
+      .filter(({ reason }) => reason);
+
+    // Resolutions (Yardi returns a `Warning` when none configured)
+    result.resolutions = yardiTextValues(
+      (firstEntry(source.Resolutions) || {}).Resolution
+    );
+
+    return result;
+  },
+
   _getYardiPhoneNumbers: getYardiPhoneNumbers,
   _escapeXml: escapeXml,
 };
+
+/**
+ * First object entry of a parsed Yardi array
+ * @param  {Any} entry
+ * @return {Object|null}
+ */
+function firstEntry(entry) {
+  return isYardiEntry(entry) ? entry[0] : null;
+}
+
+/**
+ * Coerce a parsed Yardi value to an array
+ * @param  {Any} value
+ * @return {Array}
+ */
+function toArray(value) {
+  if (isArray(value)) return value;
+  return typeof value === 'undefined' || value === null ? [] : [value];
+}
+
+/**
+ * Text content of a parsed Yardi node, which
+ * is a string or an object with `_` when
+ * the node has attributes
+ * @param  {Any} node
+ * @return {String}
+ */
+function yardiText(node) {
+  if (node && typeof node === 'object') {
+    return `${typeof node._ === 'undefined' ? '' : node._}`.trim();
+  }
+  return typeof node === 'undefined' || node === null ? '' : `${node}`.trim();
+}
+
+/**
+ * Non-empty text values of a parsed Yardi node list
+ * @param  {Any} nodes
+ * @return {String[]}
+ */
+function yardiTextValues(nodes) {
+  return toArray(nodes)
+    .map(yardiText)
+    .filter(Boolean);
+}
 
 /**
  * Attribute has a value worth

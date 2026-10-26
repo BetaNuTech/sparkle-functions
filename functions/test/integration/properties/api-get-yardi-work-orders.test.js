@@ -133,6 +133,100 @@ describe("Properties | API | GET Property's Yardi Work Orders", () => {
       .catch(done);
   });
 
+  it('rejects invalid search filters', async () => {
+    const property = { code: 'test' };
+    sinon
+      .stub(systemModel, 'findYardi')
+      .resolves(firebase.createDocSnapshot('yardi', {}));
+    sinon
+      .stub(integrationModel, 'findYardi')
+      .resolves(firebase.createDocSnapshot('yardi', {}));
+    const search = sinon.stub(yardi, 'getYardiPropertyWorkOrders');
+
+    const result = await request(createApp(property))
+      .get('/t/123?state=all&from=10/01/2026&unit=')
+      .send()
+      .expect('Content-Type', /json/)
+      .expect(400);
+
+    const params = result.body.errors.map(({ source }) => source.parameter);
+    expect(params.sort()).to.deep.equal(['from', 'state', 'unit']);
+    expect(search.called).to.equal(false);
+  });
+
+  it('searches open work orders without filters by default', async () => {
+    const property = { code: 'test' };
+    sinon
+      .stub(systemModel, 'findYardi')
+      .resolves(firebase.createDocSnapshot('yardi', {}));
+    sinon
+      .stub(integrationModel, 'findYardi')
+      .resolves(firebase.createDocSnapshot('yardi', {}));
+    const search = sinon
+      .stub(yardi, 'getYardiPropertyWorkOrders')
+      .resolves({ workOrders: [] });
+
+    await request(createApp(property))
+      .get('/t/123')
+      .send()
+      .expect(200);
+
+    expect(search.firstCall.args[2]).to.deep.equal({});
+  });
+
+  it('passes search filters through to Yardi', async () => {
+    const property = { code: 'test' };
+    sinon
+      .stub(systemModel, 'findYardi')
+      .resolves(firebase.createDocSnapshot('yardi', {}));
+    sinon
+      .stub(integrationModel, 'findYardi')
+      .resolves(firebase.createDocSnapshot('yardi', {}));
+    const search = sinon
+      .stub(yardi, 'getYardiPropertyWorkOrders')
+      .resolves({ workOrders: [] });
+
+    await request(createApp(property))
+      .get(
+        '/t/123?state=Closed&unit=1-103&resident=t0225029&status=Scheduled&from=2026-10-01&to=2026-10-26'
+      )
+      .send()
+      .expect(200);
+
+    expect(search.firstCall.args[2]).to.deep.equal({
+      openOrClosed: 'closed',
+      unit: '1-103',
+      resident: 't0225029',
+      status: 'Scheduled',
+      from: '2026-10-01',
+      to: '2026-10-26',
+    });
+  });
+
+  it('defaults closed work orders to the last 90 days', async () => {
+    const property = { code: 'test' };
+    sinon
+      .stub(systemModel, 'findYardi')
+      .resolves(firebase.createDocSnapshot('yardi', {}));
+    sinon
+      .stub(integrationModel, 'findYardi')
+      .resolves(firebase.createDocSnapshot('yardi', {}));
+    const search = sinon
+      .stub(yardi, 'getYardiPropertyWorkOrders')
+      .resolves({ workOrders: [] });
+
+    await request(createApp(property))
+      .get('/t/123?state=closed')
+      .send()
+      .expect(200);
+
+    const { from } = search.firstCall.args[2];
+    const expected = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
+    expect(from).to.equal(expected);
+  });
+
   it('returns all discovered work orders as JSON/API formatted records', done => {
     const property = { code: 'test' };
     const workOrder = createWorkOrder();

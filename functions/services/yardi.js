@@ -6,7 +6,9 @@ const helpers = require('./utils/yardi-helpers');
 const { isArray } = Array;
 
 const PREFIX = 'services: yardi:';
-const YARDI_URL =
+// Fallback Voyager endpoint when the organization's
+// Yardi configuration does not provide a `url`
+const DEFAULT_YARDI_URL =
   'https://www.yardiasp14.com/21253beta/Webservices/itfServiceRequests.asmx';
 const YARDI_XMLNS_ATTR =
   'http://tempuri.org/YSI.Interfaces.WebServices/ItfServiceRequests';
@@ -51,6 +53,7 @@ module.exports = {
 
     const body = createYardXMLBody(soapEnvelope);
     const response = await postYardi(
+      yardiConfig,
       'GetResident_Search',
       body,
       'getYardiPropertyResidents'
@@ -116,29 +119,39 @@ module.exports = {
   },
 
   /**
-   * POST to Yardi for all a property's work orders
+   * POST to Yardi for a property's work orders,
+   * open ones by default, optionally filtered
    * @param  {String} propertyCode
    * @param  {Object} yardiConfig
+   * @param  {Object?} filters
+   * @param  {String?} filters.openOrClosed - "open" (default) or "closed"
+   * @param  {String?} filters.unit - Yardi unit code
+   * @param  {String?} filters.resident - Yardi tenant code
+   * @param  {String?} filters.status - current work order status
+   * @param  {String?} filters.from - last modified on/after, YYYY-MM-DD
+   * @param  {String?} filters.to - last modified on/before, YYYY-MM-DD
    * @return {Promise} - resolves {Object}
    */
-  async getYardiPropertyWorkOrders(propertyCode, yardiConfig) {
+  async getYardiPropertyWorkOrders(propertyCode, yardiConfig, filters = {}) {
     assert(
       propertyCode && typeof propertyCode === 'string',
       'has property Yardi code'
     );
     assertYardiConfig(yardiConfig);
+    assert(filters && typeof filters === 'object', 'has filters object');
 
     const soapEnvelope = createYardiEnvelope();
     soapEnvelope['soap:Envelope']['soap:Body'].GetServiceRequest_Search = {
       $: {
         xmlns: YARDI_XMLNS_ATTR,
       },
-      OpenOrClosed: 'Open',
       ...createYardyBody(propertyCode, yardiConfig),
+      ...createYardiSearchFilters(filters),
     };
 
     const body = createYardXMLBody(soapEnvelope);
     const response = await postYardi(
+      yardiConfig,
       'GetServiceRequest_Search',
       body,
       'getYardiPropertyWorkOrders'
@@ -210,6 +223,7 @@ module.exports = {
 
     const body = createYardXMLBody(soapEnvelope);
     const response = await postYardi(
+      yardiConfig,
       'GetServiceRequests',
       body,
       'getYardiPropertyWorkOrder'
@@ -300,6 +314,7 @@ module.exports = {
       () => serviceRequestXml
     );
     const response = await postYardi(
+      yardiConfig,
       'CreateOrEditServiceRequests',
       body,
       'createOrEditYardiWorkOrder'
@@ -351,6 +366,59 @@ module.exports = {
 
     return helpers.createWorkOrderFromYardi(record);
   },
+
+  /**
+   * POST to Yardi for the organization's configured
+   * work order values: priorities, categories,
+   * statuses, status reasons and resolutions
+   * @param  {Object} yardiConfig
+   * @return {Promise} - resolves {Object}
+   */
+  async getYardiCustomValues(yardiConfig) {
+    assertYardiConfig(yardiConfig);
+
+    const soapEnvelope = createYardiEnvelope();
+    const query = createYardyBody('', yardiConfig);
+    delete query.YardiPropertyId;
+    delete query.Address;
+    soapEnvelope['soap:Envelope']['soap:Body'].GetCustomValues = {
+      $: {
+        xmlns: YARDI_XMLNS_ATTR,
+      },
+      ...query,
+    };
+
+    const body = createYardXMLBody(soapEnvelope);
+    const response = await postYardi(
+      yardiConfig,
+      'GetCustomValues',
+      body,
+      'getYardiCustomValues'
+    );
+
+    let serviceRequests = null;
+    let errorMsg = '';
+    try {
+      const parsed = await parseYardyResponse(response.body);
+      const result = getYardiResult(parsed, 'GetCustomValues');
+
+      if (!result) {
+        errorMsg = LOGIN_FAILED_MSG;
+      } else if (getYardiMessageError(result)) {
+        errorMsg = getYardiMessageError(result);
+      } else {
+        serviceRequests = (result.ServiceRequests || [])[0] || {};
+      }
+    } catch (err) {
+      throw Error(`${PREFIX} getYardiCustomValues: XML Parsing failed: ${err}`);
+    }
+
+    if (errorMsg) {
+      throw createYardiError('getYardiCustomValues', errorMsg);
+    }
+
+    return helpers.createCustomValuesFromYardi(serviceRequests);
+  },
 };
 
 /**
@@ -380,6 +448,10 @@ function assertYardiConfig(conf) {
   );
   assert(entity && typeof entity === 'string', 'has Yardi config "entity"');
   assert(license && typeof license === 'string', 'has Yardi config "license"');
+  assert(
+    typeof conf.url === 'undefined' || typeof conf.url === 'string',
+    'has string Yardi config "url" when provided'
+  );
 }
 
 /**
@@ -419,6 +491,46 @@ function createYardyBody(propertyCode, yardiConfig) {
 }
 
 /**
+ * Create the `GetServiceRequest_Search` filter
+ * elements from Sparkle filter attributes, Yardi
+ * expects MM/DD/YYYY dates and capitalized
+ * "Open"/"Closed" values
+ * @param  {Object} filters
+ * @return {Object}
+ */
+function createYardiSearchFilters(filters) {
+  const openOrClosed = `${filters.openOrClosed || 'open'}`.toLowerCase();
+  assert(
+    ['open', 'closed'].includes(openOrClosed),
+    'has "open" or "closed" filter'
+  );
+
+  const result = {
+    OpenOrClosed: openOrClosed === 'closed' ? 'Closed' : 'Open',
+  };
+
+  if (filters.unit) result.UnitCode = `${filters.unit}`;
+  if (filters.resident) result.ResidentCode = `${filters.resident}`;
+  if (filters.status) result.Status = `${filters.status}`;
+  if (filters.from) result.FromDate = toYardiDate(filters.from);
+  if (filters.to) result.ToDate = toYardiDate(filters.to);
+
+  return result;
+}
+
+/**
+ * Convert a YYYY-MM-DD date to
+ * Yardi's MM/DD/YYYY search format
+ * @param  {String} date
+ * @return {String}
+ */
+function toYardiDate(date) {
+  const match = `${date}`.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  assert(match, 'has YYYY-MM-DD date');
+  return `${match[2]}/${match[3]}/${match[1]}`;
+}
+
+/**
  * Converty Yardi JSON Body into XML
  * @param  {Object} soapEnvelope
  * @return {String} - XML payolad
@@ -441,9 +553,9 @@ function createYardXMLBody(soapEnvelope) {
  * @param  {String} fnName - calling function (for logs)
  * @return {Promise} - resolves {Object} got response
  */
-async function postYardi(method, body, fnName) {
+async function postYardi(yardiConfig, method, body, fnName) {
   try {
-    return await got.post(YARDI_URL, {
+    return await got.post(getYardiUrl(yardiConfig), {
       headers: {
         'Content-Type': 'text/xml; charset=utf-8',
         'Content-Length': Buffer.byteLength(body),
@@ -469,6 +581,17 @@ async function postYardi(method, body, fnName) {
 
     throw Error(`${PREFIX} ${fnName}: Yardi request failed: ${err}`);
   }
+}
+
+/**
+ * Resolve the Voyager web service URL for
+ * an organization, falling back to the default
+ * @param  {Object} yardiConfig
+ * @return {String}
+ */
+function getYardiUrl(yardiConfig) {
+  const url = yardiConfig && yardiConfig.url;
+  return url && typeof url === 'string' ? url.trim() : DEFAULT_YARDI_URL;
 }
 
 /**

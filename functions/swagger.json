@@ -849,7 +849,60 @@
       ],
       "get": {
         "tags": ["Property"],
+        "parameters": [
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "open",
+              "closed"
+            ],
+            "description": "Open (default) or closed work orders. Closed work orders default to those modified in the last 90 days unless `from` is given."
+          },
+          {
+            "name": "unit",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Yardi unit code"
+          },
+          {
+            "name": "resident",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Yardi tenant code"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Current Yardi status (ie Scheduled)"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Last modified on or after, YYYY-MM-DD"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Last modified on or before, YYYY-MM-DD"
+          }
+        ],
         "responses": {
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
           "404": {
             "schema": {
               "$ref": "#/definitions/BADSTATUS404"
@@ -1050,6 +1103,49 @@
           "type": "string"
         }
       ],
+      "get": {
+        "tags": [
+          "Property"
+        ],
+        "summary": "Fetch a single work order (service request) for the property from Yardi.",
+        "responses": {
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/WORKORDERRECORD"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "407": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "502": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      },
       "patch": {
         "tags": [
           "Property"
@@ -1166,6 +1262,62 @@
           "400": {
             "schema": {
               "$ref": "#/definitions/BADSTATUS400"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/BADSTATUS404"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "407": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "502": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/properties/{propertyId}/yardi/custom-values": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "propertyId",
+          "in": "path",
+          "required": true,
+          "description": "property id whose Yardi organization values are requested.",
+          "type": "string"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Property"
+        ],
+        "summary": "Fetch the work order values Yardi accepts when creating or editing work orders: priorities, categories, statuses, status reasons and resolutions.",
+        "responses": {
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/YARDICUSTOMVALUES"
             }
           },
           "404": {
@@ -3831,6 +3983,92 @@
                         }
                       }
                     }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "YARDICUSTOMVALUES": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Property Yardi code"
+            },
+            "type": {
+              "type": "string"
+            },
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "priorities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "categories": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "subCategories": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "statuses": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "standard",
+                          "custom"
+                        ]
+                      }
+                    }
+                  }
+                },
+                "reasons": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string"
+                      },
+                      "reason": {
+                        "type": "string"
+                      },
+                      "required": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                },
+                "resolutions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
                   }
                 }
               }
