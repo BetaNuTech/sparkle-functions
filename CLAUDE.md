@@ -23,7 +23,7 @@ Key architectural patterns:
 
 ## Development Commands
 
-**IMPORTANT**: This project uses Node.js version 10 and has native dependencies that may not work with newer Node.js versions. Docker is recommended for consistent development environment.
+**IMPORTANT**: This project uses Node.js version 20 and Firebase Functions v3 (`firebase-functions: ^3.24.1`). Docker is recommended for consistent development environment.
 
 ### Option 1: Docker Development (Recommended)
 
@@ -45,20 +45,12 @@ docker-compose run deploy-fn
 
 **Note**: Currently there's no development server Docker service. You may need to create one or use Option 2.
 
-### Test Results Summary (as of latest run)
-
-✅ **Unit Tests**: 320 passing - All unit tests working perfectly  
-✅ **End-to-End Tests**: 129 passing - All E2E tests working perfectly  
-✅ **Integration Tests**: 345 passing - All integration tests working perfectly
-
-**Total: 794 Tests Passing Successfully** 🚀
-
-### Option 2: Direct Commands (Node.js v10 Required)
+### Option 2: Direct Commands (Node.js v20 Required)
 
 Working in `/functions` directory:
 
-**Requirements**: 
-- Node.js version 10.x 
+**Requirements**:
+- Node.js version 20.x
 - May need `npm rebuild` to fix native dependencies
 
 ```bash
@@ -107,9 +99,9 @@ docker-compose run yarn-fn
 docker-compose run yarn-fn add <package>
 
 # Run tests
-docker-compose run test-unit-fn     # Unit tests (320 passing)
-docker-compose run test-int-fn      # Integration tests (345 passing) 
-docker-compose run test-e2e-fn      # End-to-end tests (129 passing)
+docker-compose run test-unit-fn     # Unit tests
+docker-compose run test-int-fn      # Integration tests
+docker-compose run test-e2e-fn      # End-to-end tests
 
 # Deploy functions
 docker-compose run deploy-fn

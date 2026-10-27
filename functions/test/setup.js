@@ -57,17 +57,12 @@ const pubsubSubscribers = {};
 Object.defineProperty(PubSub.prototype, 'topic', {
   writable: true,
   value: topic => ({
-    publisher: () => ({
-      publish(data) {
-        if (
-          pubsubSubscribers[topic] &&
-          Array.isArray(pubsubSubscribers[topic])
-        ) {
-          pubsubSubscribers[topic].forEach(subscriber => subscriber(data));
-        }
-        return Promise.resolve();
-      },
-    }),
+    publish(data) {
+      if (pubsubSubscribers[topic] && Array.isArray(pubsubSubscribers[topic])) {
+        pubsubSubscribers[topic].forEach(subscriber => subscriber(data));
+      }
+      return Promise.resolve();
+    },
   }),
 });
 
