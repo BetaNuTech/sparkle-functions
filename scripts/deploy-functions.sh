@@ -1,3 +1,8 @@
+#!/bin/sh
+# Fail the CI job when any step fails. Without this a failed functions
+# deploy was masked by the firestore rules deploy that follows it.
+set -e
+
 firebase functions:config:set auth.firebase=${FIREBASE_FUNCTIONS_AUTH}
 firebase functions:config:set slack.clientid=${SLACK_CLIENT_ID}
 firebase functions:config:set slack.secret=${SLACK_CLIENT_SECRET}
