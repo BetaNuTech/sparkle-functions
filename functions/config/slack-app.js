@@ -17,7 +17,9 @@ if (!SLACK_CLIENT_SECRET) {
 }
 
 if (!SLACK_CLIENT_ID) {
-  console.warn('Warning: "SLACK_CLIENT_ID" not set in system or Firebase Environment');
+  console.warn(
+    'Warning: "SLACK_CLIENT_ID" not set in system or Firebase Environment'
+  );
 }
 
 module.exports = {

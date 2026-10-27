@@ -58,10 +58,7 @@ Object.defineProperty(PubSub.prototype, 'topic', {
   writable: true,
   value: topic => ({
     publish(data) {
-      if (
-        pubsubSubscribers[topic] &&
-        Array.isArray(pubsubSubscribers[topic])
-      ) {
+      if (pubsubSubscribers[topic] && Array.isArray(pubsubSubscribers[topic])) {
         pubsubSubscribers[topic].forEach(subscriber => subscriber(data));
       }
       return Promise.resolve();
