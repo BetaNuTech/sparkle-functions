@@ -28,6 +28,7 @@ const YARDI_SEARCH_CONFIG_BOILERPLATE = Object.freeze({
 // for parameters Yardi types as `<s:any />`
 const RAW_XML_PLACEHOLDER = '__SPARKLE_RAW_XML__';
 const LOGIN_FAILED_MSG = 'Login failed';
+const NO_WORK_ORDERS_MSG = /no work orders found/i;
 
 module.exports = {
   /**
@@ -172,6 +173,13 @@ module.exports = {
       } else {
         parsed = result.ServiceRequests[0].ServiceRequest || [];
         errorMsg = helpers.getYardiErrorMessages(parsed[0]).join(', ');
+
+        // Yardi reports an empty search
+        // result as an error record
+        if (errorMsg.search(NO_WORK_ORDERS_MSG) > -1) {
+          errorMsg = '';
+          parsed = [];
+        }
       }
     } catch (err) {
       throw Error(
@@ -182,7 +190,14 @@ module.exports = {
     // Abandon when error discovered
     // within response body
     if (errorMsg) {
-      throw createYardiError('getYardiPropertyWorkOrders', errorMsg);
+      const err = createYardiError('getYardiPropertyWorkOrders', errorMsg);
+
+      // Unit filter does not exist in property
+      if (errorMsg.search(/Could not find Unit/i) > -1) {
+        err.code = 'ERR_NO_YARDI_UNIT';
+      }
+
+      throw err;
     }
 
     // Map parsed into usable JSON

@@ -65,6 +65,18 @@ module.exports = function createGetYardiWorkOrders() {
         });
       }
 
+      // Unit filter unknown to Yardi
+      if (err.code === 'ERR_NO_YARDI_UNIT') {
+        return res.status(400).send({
+          errors: [
+            {
+              detail: 'Unit does not exist for property in Yardi',
+              source: { parameter: 'unit' },
+            },
+          ],
+        });
+      }
+
       // Bad system integration credentials
       if (err.code === 'ERR_BAD_YARDI_CREDENTIALS') {
         return res.status(407).send({
