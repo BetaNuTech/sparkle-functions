@@ -11,22 +11,22 @@ const EXCLUDED_DI_COUNTER_VALUES =
 const OVERDUE_DI_COUNTER_VALUES = deficientItems.overdueCounterStates;
 
 describe('Properties | Utils | Update Deficient Items Attrs', () => {
-  it('counts the total number of inspections deficient items', () => {
+  it('counts the total number of inspections deficient items, when no existing deficient items exist', () => {
     [
       {
         actual: update(createConfig([''])).updates.numOfDeficientItems,
-        expected: 1,
-        msg: 'found 1 for 1 inspections with 1',
+        expected: 0,
+        msg: 'found 0 for 1 inspections with 1',
       },
       {
         actual: update(createConfig([''], [''])).updates.numOfDeficientItems,
-        expected: 2,
-        msg: 'found 2 for 2 inspections with 1 each',
+        expected: 0,
+        msg: 'found 0 for 2 inspections with 1 each',
       },
       {
         actual: update(createConfig(['', ''])).updates.numOfDeficientItems,
-        expected: 2,
-        msg: 'found 2 for 1 inspections with 2',
+        expected: 0,
+        msg: 'found 0 for 1 inspections with 2',
       },
     ].forEach(({ actual, expected, msg }) => {
       expect(actual).equal(expected, msg);

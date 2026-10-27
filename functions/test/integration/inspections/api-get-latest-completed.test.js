@@ -10,6 +10,7 @@ const inspectionsModel = require('../../../models/inspections');
 const getLatest = require('../../../inspections/api/get-latest-completed');
 
 const INSP_URL_PATH = config.clientApps.web.inspectionURL;
+const DEFICIENT_ITEMS_URL_PATH = config.clientApps.web.deficientItemsURL;
 const TODAY_UNIX = Math.round(Date.now() / 1000);
 
 describe('Inspections | API | GET Latest Completed', () => {
@@ -173,6 +174,10 @@ describe('Inspections | API | GET Latest Completed', () => {
           templateName: inspection.templateName,
           inspectionReportURL: inspection.inspectionReportURL,
           inspectionURL: createInspectionUrl(inspection.property, 'expected'),
+          deficientItemsURL: createDeficientItemsUrl(
+            inspection.property,
+            'expected'
+          ),
         },
       },
     };
@@ -330,4 +335,8 @@ function createInspectionUrl(propertyId, inspId) {
     '{{inspectionId}}',
     inspId
   );
+}
+
+function createDeficientItemsUrl(propertyId) {
+  return DEFICIENT_ITEMS_URL_PATH.replace('{{propertyId}}', propertyId);
 }

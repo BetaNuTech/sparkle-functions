@@ -35,9 +35,9 @@ module.exports = (db, auth, settings, storage, pubsubClient) => {
   assert(Boolean(auth), 'has firebase auth instance');
 
   const app = express();
-  const completeInspUpdatePublisher = pubsubClient
-    .topic('complete-inspection-update')
-    .publisher();
+  const completeInspUpdatePublisher = pubsubClient.topic(
+    'complete-inspection-update'
+  );
 
   app.use(bodyParser.json(), cors({ origin: true, credentials: true }));
   swaggerDocument.host = process.env.FIREBASE_FUNCTIONS_DOMAIN;

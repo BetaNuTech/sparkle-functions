@@ -33,9 +33,7 @@ module.exports = function createOnDiStateUpdateHandler(
     'has status update topic'
   );
 
-  const diStatusUpdatePublisher = pubsubClient
-    .topic(statusUpdateTopic)
-    .publisher();
+  const diStatusUpdatePublisher = pubsubClient.topic(statusUpdateTopic);
 
   return async (change, context) => {
     const updates = {};

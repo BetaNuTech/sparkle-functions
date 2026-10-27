@@ -2,14 +2,16 @@ version: "3.7"
 
 services:
   yarn:
-    image: "node:10.15-alpine"
+    build: 
+      context: .
+      dockerfile: yarn-Dockerfile
     working_dir: /src
     entrypoint: yarn
     volumes:
       - ./appengine:/src
 
   start:
-    image: "node:10.15-alpine"
+    image: "node:20-alpine"
     working_dir: /src
     env_file: .env
     command: [sh, -c, "yarn start"]
@@ -19,14 +21,16 @@ services:
       - ./appengine:/src
 
   yarn-fn:
-    image: "node:10-alpine"
+    image: "node:20-alpine"
     working_dir: /src/functions
     entrypoint: yarn
     volumes:
       - ./functions:/src/functions
 
   test-unit-fn:
-    image: "node:10-alpine"
+    build: 
+      context: .
+      dockerfile: yarn-Dockerfile
     working_dir: /src/functions
     env_file: .env.test
     command: [sh, -c, "yarn test-unit"]
@@ -35,7 +39,7 @@ services:
       - ./functions:/src/functions
 
   test-e2e-fn:
-    image: "node:10.15-alpine"
+    image: "node:20-alpine"
     working_dir: /src/functions
     env_file: .env.test
     environment:
@@ -45,6 +49,19 @@ services:
       - ./auth.json:/src/auth.json
       - ./functions:/src/functions
 
+  test-int-fn:
+    build: 
+      context: .
+      dockerfile: yarn-Dockerfile
+    working_dir: /src/functions
+    env_file: .env.test
+    environment:
+      - AUTH_FILE_PATH=/src/auth.json
+    command: [sh, -c, "yarn test-int"]
+    volumes:
+      - ./auth.json:/src/auth.json
+      - ./functions:/src/functions
+      
   deploy-fn:
     image: mj3000/firebase-tools
     working_dir: /srv
