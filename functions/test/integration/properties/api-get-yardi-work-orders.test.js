@@ -133,6 +133,29 @@ describe("Properties | API | GET Property's Yardi Work Orders", () => {
       .catch(done);
   });
 
+  it('returns a helpful error when Yardi rejected the unit filter', async () => {
+    const property = { code: 'test' };
+    const unknownUnitErr = Error('bad unit');
+    unknownUnitErr.code = 'ERR_NO_YARDI_UNIT';
+    sinon
+      .stub(systemModel, 'findYardi')
+      .resolves(firebase.createDocSnapshot('yardi', {}));
+    sinon
+      .stub(integrationModel, 'findYardi')
+      .resolves(firebase.createDocSnapshot('yardi', {}));
+    sinon.stub(yardi, 'getYardiPropertyWorkOrders').rejects(unknownUnitErr);
+
+    const result = await request(createApp(property))
+      .get('/t/123?unit=zz-none')
+      .send()
+      .expect('Content-Type', /json/)
+      .expect(400);
+
+    const [error] = result.body.errors;
+    expect(error.source.parameter).to.equal('unit');
+    expect(error.detail).to.contain('Unit does not exist');
+  });
+
   it('rejects invalid search filters', async () => {
     const property = { code: 'test' };
     sinon

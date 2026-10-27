@@ -1,3 +1,13 @@
+#!/bin/sh
+# Fail the CI job when any step fails. Without this a failed functions
+# deploy was masked by the firestore rules deploy that follows it.
+set -e
+
+# functions:config:* is deprecated and refused by current firebase-tools
+# unless this experiment is on. Runtime Config shuts down March 2027, so
+# these values must move to the params package before then.
+firebase experiments:enable legacyRuntimeConfigCommands
+
 firebase functions:config:set auth.firebase=${FIREBASE_FUNCTIONS_AUTH}
 firebase functions:config:set slack.clientid=${SLACK_CLIENT_ID}
 firebase functions:config:set slack.secret=${SLACK_CLIENT_SECRET}
