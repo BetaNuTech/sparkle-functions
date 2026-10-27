@@ -285,6 +285,42 @@ describe('Services | Yardi', () => {
 
       expect(actual.code).to.equal('ERR_BAD_YARDI_CREDENTIALS');
     });
+
+    it('resolves an empty list when Yardi finds no matching work orders', async () => {
+      sinon.stub(got, 'post').resolves({
+        body: createSoapResponse(
+          'GetServiceRequest_Search',
+          '<ServiceRequests xmlns=""><ServiceRequest HasAttachments="false"><ErrorMessages><Error>There are no work orders found for these input values.</Error></ErrorMessages></ServiceRequest></ServiceRequests>'
+        ),
+      });
+
+      const actual = await yardi.getYardiPropertyWorkOrders('prop', CONFIG, {
+        openOrClosed: 'open',
+        unit: '1-103',
+      });
+
+      expect(actual).to.deep.equal({ workOrders: [] });
+    });
+
+    it('rejects with a unit error when the unit filter is unknown', async () => {
+      sinon.stub(got, 'post').resolves({
+        body: createSoapResponse(
+          'GetServiceRequest_Search',
+          '<ServiceRequests xmlns=""><ServiceRequest HasAttachments="false"><ErrorMessages><Error>Could not find Unit:zz-none in Property:prop</Error></ErrorMessages></ServiceRequest></ServiceRequests>'
+        ),
+      });
+
+      let actual = null;
+      try {
+        await yardi.getYardiPropertyWorkOrders('prop', CONFIG, {
+          unit: 'zz-none',
+        });
+      } catch (err) {
+        actual = err;
+      }
+
+      expect(actual.code).to.equal('ERR_NO_YARDI_UNIT');
+    });
   });
 
   describe('getYardiCustomValues', () => {
