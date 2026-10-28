@@ -328,6 +328,31 @@ describe('Services | Yardi', () => {
       expect(actual.code).to.equal('ERR_BAD_YARDI_CREDENTIALS');
     });
 
+    it('flags listed work orders that have attachments', async () => {
+      sinon.stub(got, 'post').resolves({
+        body: createSoapResponse(
+          'GetServiceRequest_Search',
+          `<ServiceRequests xmlns="">${createServiceRequest({
+            ServiceRequestId: '1',
+          })}${createServiceRequest({
+            ServiceRequestId: '2',
+          }).replace(
+            'HasAttachments="false"',
+            'HasAttachments="true"'
+          )}</ServiceRequests>`
+        ),
+      });
+
+      const { workOrders } = await yardi.getYardiPropertyWorkOrders(
+        'prop',
+        CONFIG
+      );
+
+      expect(
+        workOrders.map(({ hasAttachments }) => hasAttachments)
+      ).to.deep.equal([false, true]);
+    });
+
     it('keeps common area work orders that have no unit in the list', async () => {
       sinon.stub(got, 'post').resolves({
         body: createSoapResponse(
