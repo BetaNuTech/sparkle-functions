@@ -28,6 +28,9 @@ const YARDI_SEARCH_CONFIG_BOILERPLATE = Object.freeze({
 // for parameters Yardi types as `<s:any />`
 const RAW_XML_PLACEHOLDER = '__SPARKLE_RAW_XML__';
 const LOGIN_FAILED_MSG = 'Login failed';
+// Voyager attachment type the client configured
+// for the interface entity (overridable per org)
+const DEFAULT_ATTACHMENT_TYPE = 'Work Order';
 const NO_WORK_ORDERS_MSG = /no work orders found/i;
 
 module.exports = {
@@ -433,6 +436,194 @@ module.exports = {
     }
 
     return helpers.createCustomValuesFromYardi(serviceRequests);
+  },
+
+  /**
+   * Fetch the attachments (files) of a property's
+   * work order from Yardi, every file is returned
+   * inline as base64 so this can be a large response
+   * @param  {String} propertyCode
+   * @param  {Object} yardiConfig
+   * @param  {String} workOrderId
+   * @return {Promise} - resolves {Object[]} attachments
+   */
+  async getYardiWorkOrderAttachments(propertyCode, yardiConfig, workOrderId) {
+    assert(
+      propertyCode && typeof propertyCode === 'string',
+      'has property Yardi code'
+    );
+    assertYardiConfig(yardiConfig);
+    assert(
+      workOrderId && /^\d+$/.test(`${workOrderId}`),
+      'has numeric work order ID'
+    );
+
+    const soapEnvelope = createYardiEnvelope();
+    soapEnvelope['soap:Envelope']['soap:Body'].GetAttachments = {
+      $: {
+        xmlns: YARDI_XMLNS_ATTR,
+      },
+      UserName: yardiConfig.userName,
+      Password: yardiConfig.password,
+      ServerName: yardiConfig.serverName,
+      Database: yardiConfig.database,
+      Platform: 'SQL Server',
+      PropertyID: propertyCode,
+      InterfaceEntity: yardiConfig.entity,
+      InterfaceLicense: yardiConfig.license,
+      ServiceRequestId: `${workOrderId}`,
+    };
+
+    const body = createYardXMLBody(soapEnvelope);
+    const response = await postYardi(
+      yardiConfig,
+      'GetAttachments',
+      body,
+      'getYardiWorkOrderAttachments'
+    );
+
+    let attachments = null;
+    let errorMsg = '';
+    try {
+      const parsed = await parseYardyResponse(response.body);
+      const result = getYardiResult(parsed, 'GetAttachments');
+
+      if (!result) {
+        errorMsg = LOGIN_FAILED_MSG;
+      } else if (getYardiMessageError(result)) {
+        errorMsg = getYardiMessageError(result);
+      } else {
+        attachments = helpers.createAttachmentsFromYardi(
+          (result.ServiceRequestAttachments || [])[0] || {}
+        );
+      }
+    } catch (err) {
+      throw Error(
+        `${PREFIX} getYardiWorkOrderAttachments: XML Parsing failed: ${err}`
+      );
+    }
+
+    if (errorMsg) {
+      throw createYardiError('getYardiWorkOrderAttachments', errorMsg);
+    }
+
+    return attachments;
+  },
+
+  /**
+   * Upload a file to a property's work order in Yardi
+   * via `ImportWorkOrderDocumentExt`, Yardi names the
+   * stored file itself ("Attachment_<id>_<n>.<ext>")
+   * @param  {String} propertyCode
+   * @param  {Object} yardiConfig
+   * @param  {String} workOrderId
+   * @param  {Object} attachment - {data: base64 String, extension: String, description: String?}
+   * @return {Promise} - resolves {Object} {name, attachmentType, description, extension}
+   */
+  async uploadYardiWorkOrderAttachment(
+    propertyCode,
+    yardiConfig,
+    workOrderId,
+    attachment
+  ) {
+    assert(
+      propertyCode && typeof propertyCode === 'string',
+      'has property Yardi code'
+    );
+    assertYardiConfig(yardiConfig);
+    assert(
+      workOrderId && /^\d+$/.test(`${workOrderId}`),
+      'has numeric work order ID'
+    );
+    assert(
+      attachment && typeof attachment === 'object',
+      'has attachment object'
+    );
+    const { data, description } = attachment;
+    assert(data && typeof data === 'string', 'has base64 attachment data');
+    const extension = `${attachment.extension || ''}`
+      .replace(/^\./, '')
+      .toLowerCase();
+    assert(/^[a-z0-9]{1,8}$/.test(extension), 'has file extension');
+    const attachmentType =
+      (yardiConfig.attachmentType &&
+        typeof yardiConfig.attachmentType === 'string' &&
+        yardiConfig.attachmentType) ||
+      DEFAULT_ATTACHMENT_TYPE;
+
+    const soapEnvelope = createYardiEnvelope();
+    // NOTE: the import methods spell `DataBase`
+    // with a capital B and take no YardiPropertyId
+    soapEnvelope['soap:Envelope']['soap:Body'].ImportWorkOrderDocumentExt = {
+      $: {
+        xmlns: YARDI_XMLNS_ATTR,
+      },
+      UserName: yardiConfig.userName,
+      Password: yardiConfig.password,
+      ServerName: yardiConfig.serverName,
+      DataBase: yardiConfig.database,
+      Platform: 'SQL Server',
+      InterfaceEntity: yardiConfig.entity,
+      InterfaceLicense: yardiConfig.license,
+      WorkOrderId: `${workOrderId}`,
+      PropertyCode: propertyCode,
+      AttachmentType: attachmentType,
+      Description: `${description || ''}`,
+      Attachment: data,
+      Extension: extension,
+    };
+
+    const body = createYardXMLBody(soapEnvelope);
+    const response = await postYardi(
+      yardiConfig,
+      'ImportWorkOrderDocumentExt',
+      body,
+      'uploadYardiWorkOrderAttachment'
+    );
+
+    let outcome = null;
+    let errorMsg = '';
+    try {
+      const parsed = await parseYardyResponse(response.body);
+      const result = getYardiResult(parsed, 'ImportWorkOrderDocumentExt');
+
+      if (!result) {
+        errorMsg = LOGIN_FAILED_MSG;
+      } else if (getYardiMessageError(result)) {
+        errorMsg = getYardiMessageError(result);
+      } else {
+        outcome = helpers.createAttachmentImportResultFromYardi(
+          (result.ImportAttach || [])[0] || {}
+        );
+      }
+    } catch (err) {
+      throw Error(
+        `${PREFIX} uploadYardiWorkOrderAttachment: XML Parsing failed: ${err}`
+      );
+    }
+
+    if (errorMsg) {
+      throw createYardiError('uploadYardiWorkOrderAttachment', errorMsg);
+    }
+
+    if (!outcome.success) {
+      const err = createYardiError(
+        'uploadYardiWorkOrderAttachment',
+        outcome.message || 'attachment not accepted'
+      );
+      if (!err.code || err.code === 'ERR_YARDI_REQUEST') {
+        err.code = 'ERR_YARDI_ATTACHMENT_REJECTED';
+      }
+      err.details = [outcome.message || 'Yardi rejected attachment'];
+      throw err;
+    }
+
+    return {
+      name: outcome.name,
+      attachmentType,
+      description: `${description || ''}`,
+      extension,
+    };
   },
 };
 

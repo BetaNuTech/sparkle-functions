@@ -1290,6 +1290,217 @@
         }
       }
     },
+    "/v0/properties/{propertyId}/yardi/work-orders/{workOrderId}/attachments": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "propertyId",
+          "in": "path",
+          "required": true,
+          "description": "property id owning the work order.",
+          "type": "string"
+        },
+        {
+          "name": "workOrderId",
+          "in": "path",
+          "required": true,
+          "description": "Yardi service request id (numeric).",
+          "type": "string"
+        }
+      ],
+      "get": {
+        "tags": ["Properties"],
+        "summary": "List the attachments (files) of a property's Yardi work order, without file data. Yardi returns all files inline so this call can be slow for work orders with many large attachments.",
+        "responses": {
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/WORKORDERATTACHMENTS"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "407": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "502": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Properties"],
+        "summary": "Upload a file (base64) to a property's Yardi work order. Yardi names the stored file itself and requires an attachment type configured for the interface entity in Voyager.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "string",
+                  "description": "File content as base64 (6 MB decoded maximum)"
+                },
+                "extension": {
+                  "type": "string",
+                  "description": "File extension such as jpg, png or pdf"
+                },
+                "description": {
+                  "type": "string",
+                  "maxLength": 100,
+                  "description": "Optional caption stored with the file"
+                }
+              },
+              "required": ["data", "extension"]
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "schema": {
+              "$ref": "#/definitions/WORKORDERATTACHMENT"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "407": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "502": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
+    "/v0/properties/{propertyId}/yardi/work-orders/{workOrderId}/attachments/{attachmentName}": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "required": true,
+          "description": "Authorization token.",
+          "type": "string"
+        },
+        {
+          "name": "propertyId",
+          "in": "path",
+          "required": true,
+          "description": "property id owning the work order.",
+          "type": "string"
+        },
+        {
+          "name": "workOrderId",
+          "in": "path",
+          "required": true,
+          "description": "Yardi service request id (numeric).",
+          "type": "string"
+        },
+        {
+          "name": "attachmentName",
+          "in": "path",
+          "required": true,
+          "description": "Stored file name as returned by the attachments list (case insensitive).",
+          "type": "string"
+        }
+      ],
+      "get": {
+        "tags": ["Properties"],
+        "summary": "Fetch one attachment of a property's Yardi work order including its base64 file data.",
+        "responses": {
+          "200": {
+            "schema": {
+              "$ref": "#/definitions/WORKORDERATTACHMENT"
+            }
+          },
+          "400": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "401": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "403": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "404": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "407": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "500": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          },
+          "502": {
+            "schema": {
+              "$ref": "#/definitions/ERROR"
+            }
+          }
+        }
+      }
+    },
     "/v0/properties/{propertyId}/yardi/custom-values": {
       "parameters": [
         {
@@ -3986,6 +4197,107 @@
               }
             }
           }
+        }
+      }
+    },
+    "WORKORDERATTACHMENT": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "enum": ["work-order-attachment"]
+            },
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Stored file name assigned by Yardi"
+                },
+                "extension": {
+                  "type": "string"
+                },
+                "contentType": {
+                  "type": "string"
+                },
+                "attachmentType": {
+                  "type": "string",
+                  "description": "Voyager attachment type, e.g. Work Order"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "description": "Yardi timestamp"
+                },
+                "size": {
+                  "type": "integer",
+                  "description": "Decoded size in bytes"
+                },
+                "data": {
+                  "type": "string",
+                  "description": "File content as base64 (single attachment fetch only)"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "WORKORDERATTACHMENTS": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "enum": ["work-order-attachment"]
+            },
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Stored file name assigned by Yardi"
+                },
+                "extension": {
+                  "type": "string"
+                },
+                "contentType": {
+                  "type": "string"
+                },
+                "attachmentType": {
+                  "type": "string",
+                  "description": "Voyager attachment type, e.g. Work Order"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "description": "Yardi timestamp"
+                },
+                "size": {
+                  "type": "integer",
+                  "description": "Decoded size in bytes"
+                }
+              }
+            }
+          }
+        }
         }
       }
     },

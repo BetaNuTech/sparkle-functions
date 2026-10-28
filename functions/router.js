@@ -39,7 +39,12 @@ module.exports = (db, auth, settings, storage, pubsubClient) => {
     'complete-inspection-update'
   );
 
-  app.use(bodyParser.json(), cors({ origin: true, credentials: true }));
+  // NOTE: 10mb limit allows base64 work order
+  // attachment uploads (Cloud Functions request cap)
+  app.use(
+    bodyParser.json({ limit: '10mb' }),
+    cors({ origin: true, credentials: true })
+  );
   swaggerDocument.host = process.env.FIREBASE_FUNCTIONS_DOMAIN;
 
   // API documentation
@@ -251,6 +256,48 @@ module.exports = (db, auth, settings, storage, pubsubClient) => {
     properties.middleware.propertyCode(db),
     properties.middleware.yardiIntegration(db),
     properties.api.patchPropertyYardiWorkOrder()
+  );
+
+  // List a Property work order's attachments in Yardi
+  app.get(
+    '/v0/properties/:propertyId/yardi/work-orders/:workOrderId/attachments',
+    authUser(db, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    properties.middleware.propertyCode(db),
+    properties.middleware.yardiIntegration(db),
+    properties.api.getPropertyYardiWorkOrderAttachments()
+  );
+
+  // Fetch one attachment (with file data) of a Property work order in Yardi
+  app.get(
+    '/v0/properties/:propertyId/yardi/work-orders/:workOrderId/attachments/:attachmentName',
+    authUser(db, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    properties.middleware.propertyCode(db),
+    properties.middleware.yardiIntegration(db),
+    properties.api.getPropertyYardiWorkOrderAttachment()
+  );
+
+  // Upload an attachment to a Property work order in Yardi
+  app.post(
+    '/v0/properties/:propertyId/yardi/work-orders/:workOrderId/attachments',
+    authUser(db, auth, {
+      admin: true,
+      corporate: true,
+      team: true,
+      property: true,
+    }),
+    properties.middleware.propertyCode(db),
+    properties.middleware.yardiIntegration(db),
+    properties.api.postPropertyYardiWorkOrderAttachment()
   );
 
   // Request Yardi's accepted work order values

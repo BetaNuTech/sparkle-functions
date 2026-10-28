@@ -79,6 +79,15 @@ module.exports = function createYardiErrorHandler(prefix, res) {
           ).map(detail => ({ detail, source: { pointer: 'workOrder' } })),
         });
 
+      // Yardi rejected the attachment (bad extension, unknown type)
+      case 'ERR_YARDI_ATTACHMENT_REJECTED':
+        return res.status(400).send({
+          errors: (err.details && err.details.length
+            ? err.details
+            : ['Yardi rejected attachment']
+          ).map(detail => ({ detail, source: { pointer: 'attachment' } })),
+        });
+
       // Yardi could not read the request
       case 'ERR_YARDI_SOAP_FAULT':
         return res.status(502).send({

@@ -406,6 +406,199 @@ describe('Services | Yardi', () => {
     });
   });
 
+  describe('getYardiWorkOrderAttachments', () => {
+    const ATTACHMENTS_XML =
+      '<ServiceRequestAttachments xmlns=""><ServiceRequest ID="531779"><Attachments><Attachment Date="2026-10-28T12:38:52"><Name AttachmentType="Work Order" AttachmentDescription="Pool gate">Attachment_531779_1.png</Name><Value>aGVsbG8=</Value></Attachment><Attachment Date="2026-10-28T12:40:00"><Name AttachmentType="Work Order" AttachmentDescription="">Attachment_531779_2.pdf</Name><Value>JVBERi0=</Value></Attachment></Attachments></ServiceRequest></ServiceRequestAttachments>';
+
+    it('requests the attachments with the property ID and work order ID', async () => {
+      const post = sinon.stub(got, 'post').resolves({
+        body: createSoapResponse('GetAttachments', ATTACHMENTS_XML),
+      });
+
+      await yardi.getYardiWorkOrderAttachments('prop', CONFIG, '531779');
+
+      const { body, headers } = post.firstCall.args[1];
+      const compact = body.replace(/\s+/g, '');
+      expect(headers.SOAPAction).to.contain('/GetAttachments');
+      expect(compact).to.contain('<PropertyID>prop</PropertyID>');
+      expect(compact).to.contain('<ServiceRequestId>531779</ServiceRequestId>');
+      expect(compact).to.contain(`<Password>${CONFIG.password}</Password>`);
+    });
+
+    it('resolves every attachment with its details and base64 data', async () => {
+      sinon.stub(got, 'post').resolves({
+        body: createSoapResponse('GetAttachments', ATTACHMENTS_XML),
+      });
+
+      const actual = await yardi.getYardiWorkOrderAttachments(
+        'prop',
+        CONFIG,
+        '531779'
+      );
+
+      expect(actual.map(({ name }) => name)).to.deep.equal([
+        'Attachment_531779_1.png',
+        'Attachment_531779_2.pdf',
+      ]);
+      expect(actual[0]).to.deep.equal({
+        name: 'Attachment_531779_1.png',
+        attachmentType: 'Work Order',
+        description: 'Pool gate',
+        createdAt: '2026-10-28T12:38:52',
+        data: 'aGVsbG8=',
+        size: 5,
+      });
+    });
+
+    it('resolves an empty list when Yardi has no attachments', async () => {
+      sinon.stub(got, 'post').resolves({
+        body: createSoapResponse(
+          'GetAttachments',
+          '<ServiceRequestAttachments xmlns=""><ServiceRequest ID="531779"><Attachments><Attachment Date="0001-01-01T00:00:00"><Name>No attachments found for Service Request 531779 in Property prop or no access to Service Request Property prop.</Name><Value /></Attachment></Attachments></ServiceRequest></ServiceRequestAttachments>'
+        ),
+      });
+
+      const actual = await yardi.getYardiWorkOrderAttachments(
+        'prop',
+        CONFIG,
+        '531779'
+      );
+
+      expect(actual).to.deep.equal([]);
+    });
+
+    it('rejects with a credentials error when Yardi login fails', async () => {
+      sinon.stub(got, 'post').resolves({
+        body: createSoapResponse(
+          'GetAttachments',
+          '<Messages xmlns=""><Message messageType="Error">Login failed. Please check login credentials and try again.</Message></Messages>'
+        ),
+      });
+
+      let actual = null;
+      try {
+        await yardi.getYardiWorkOrderAttachments('prop', CONFIG, '531779');
+      } catch (err) {
+        actual = err;
+      }
+
+      expect(actual.code).to.equal('ERR_BAD_YARDI_CREDENTIALS');
+    });
+  });
+
+  describe('uploadYardiWorkOrderAttachment', () => {
+    const SUCCESS_XML =
+      '<ImportAttach xmlns=""><DocumentAttachment><Result>Successful:Attachment_531779_3.jpg</Result></DocumentAttachment></ImportAttach>';
+
+    it('sends the file with the import method field names and the default attachment type', async () => {
+      const post = sinon.stub(got, 'post').resolves({
+        body: createSoapResponse('ImportWorkOrderDocumentExt', SUCCESS_XML),
+      });
+
+      await yardi.uploadYardiWorkOrderAttachment('prop', CONFIG, '531779', {
+        data: 'aGVsbG8=',
+        extension: '.JPG',
+        description: 'Leaking <pipe>',
+      });
+
+      const { body, headers } = post.firstCall.args[1];
+      const compact = body.replace(/\s+/g, '');
+      expect(headers.SOAPAction).to.contain('/ImportWorkOrderDocumentExt');
+      expect(compact).to.contain(`<DataBase>${CONFIG.database}</DataBase>`);
+      expect(compact).to.contain('<WorkOrderId>531779</WorkOrderId>');
+      expect(compact).to.contain('<PropertyCode>prop</PropertyCode>');
+      expect(compact).to.contain('<AttachmentType>WorkOrder</AttachmentType>');
+      expect(compact).to.contain('<Attachment>aGVsbG8=</Attachment>');
+      expect(compact).to.contain('<Extension>jpg</Extension>');
+      expect(compact).to.contain(
+        '<Description>Leaking&lt;pipe&gt;</Description>'
+      );
+      expect(compact).to.not.contain('YardiPropertyId');
+    });
+
+    it('uses the organization attachment type when configured', async () => {
+      const post = sinon.stub(got, 'post').resolves({
+        body: createSoapResponse('ImportWorkOrderDocumentExt', SUCCESS_XML),
+      });
+
+      await yardi.uploadYardiWorkOrderAttachment(
+        'prop',
+        { ...CONFIG, attachmentType: 'SRDocument' },
+        '531779',
+        { data: 'aGVsbG8=', extension: 'jpg' }
+      );
+
+      const compact = post.firstCall.args[1].body.replace(/\s+/g, '');
+      expect(compact).to.contain('<AttachmentType>SRDocument</AttachmentType>');
+    });
+
+    it('resolves the stored file name Yardi reports', async () => {
+      sinon.stub(got, 'post').resolves({
+        body: createSoapResponse('ImportWorkOrderDocumentExt', SUCCESS_XML),
+      });
+
+      const actual = await yardi.uploadYardiWorkOrderAttachment(
+        'prop',
+        CONFIG,
+        '531779',
+        { data: 'aGVsbG8=', extension: 'jpg', description: 'Leak' }
+      );
+
+      expect(actual).to.deep.equal({
+        name: 'Attachment_531779_3.jpg',
+        attachmentType: 'Work Order',
+        description: 'Leak',
+        extension: 'jpg',
+      });
+    });
+
+    it("rejects with Yardi's message when the upload is not accepted", async () => {
+      sinon.stub(got, 'post').resolves({
+        body: createSoapResponse(
+          'ImportWorkOrderDocumentExt',
+          '<ImportAttach xmlns=""><DocumentAttachment><Result>Unsuccessful:Could not find configured Attachment Type Work Order</Result></DocumentAttachment></ImportAttach>'
+        ),
+      });
+
+      let actual = null;
+      try {
+        await yardi.uploadYardiWorkOrderAttachment('prop', CONFIG, '531779', {
+          data: 'aGVsbG8=',
+          extension: 'jpg',
+        });
+      } catch (err) {
+        actual = err;
+      }
+
+      expect(actual.code).to.equal('ERR_YARDI_ATTACHMENT_REJECTED');
+      expect(actual.details).to.deep.equal([
+        'Could not find configured Attachment Type Work Order',
+      ]);
+    });
+
+    it('rejects an invalid file extension result', async () => {
+      sinon.stub(got, 'post').resolves({
+        body: createSoapResponse(
+          'ImportWorkOrderDocumentExt',
+          '<ImportAttach xmlns=""><DocumentAttachment><Result>Invalid File Extension: exe</Result></DocumentAttachment></ImportAttach>'
+        ),
+      });
+
+      let actual = null;
+      try {
+        await yardi.uploadYardiWorkOrderAttachment('prop', CONFIG, '531779', {
+          data: 'aGVsbG8=',
+          extension: 'exe',
+        });
+      } catch (err) {
+        actual = err;
+      }
+
+      expect(actual.code).to.equal('ERR_YARDI_ATTACHMENT_REJECTED');
+      expect(actual.details[0]).to.contain('Invalid File Extension');
+    });
+  });
+
   describe('getYardiCustomValues', () => {
     const CUSTOM_VALUES_XML = `<ServiceRequests xmlns="" xsi="http://www.w3.org/2001/XMLSchema-instance"><CustomValues><Categories><Category><Name>Electrical</Name><SubCategory>Breakers</SubCategory><SubCategory>Wiring</SubCategory></Category><Category><Name>Building Exterior</Name></Category></Categories><Approvers><Warning>There are no Approvers set up in this database.</Warning></Approvers><Priorities><Priority>High</Priority><Priority>Low</Priority></Priorities><Statuses><Status Type="Standard"><Status>Call</Status><Status>Canceled</Status></Status></Statuses><Status Type="Custom"><Status>Parts Ordered</Status></Status><Reasons><Reason Status="On Hold" Required="true">Duplicate Work Order</Reason><Reason Status="Request Reassignment" Required="false">Need new vendor</Reason></Reasons></CustomValues><Resolutions><Resolution>General Repairs</Resolution></Resolutions><Employees /></ServiceRequests>`;
 

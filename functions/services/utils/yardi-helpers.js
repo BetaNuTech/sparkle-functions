@@ -476,6 +476,63 @@ module.exports = {
     return result;
   },
 
+  /**
+   * Create work order attachment records from a
+   * parsed Yardi `GetAttachments` `ServiceRequestAttachments`
+   * payload, dropping Yardi's "No attachments found" placeholder
+   * @param  {Object} src - parsed `ServiceRequestAttachments` element
+   * @return {Object[]} - [{name, attachmentType, description, createdAt, data, size}]
+   */
+  createAttachmentsFromYardi(src) {
+    const serviceRequest = firstEntry((src || {}).ServiceRequest) || {};
+    const attachments = toArray(
+      (firstEntry(serviceRequest.Attachments) || {}).Attachment
+    );
+
+    return attachments
+      .map(attachment => {
+        const attrs = (attachment && attachment.$) || {};
+        const nameEl = firstEntry((attachment || {}).Name);
+        const nameAttrs = (nameEl && nameEl.$) || {};
+        const name = yardiText(nameEl);
+        const data = yardiText(toArray((attachment || {}).Value)[0]).replace(
+          /\s+/g,
+          ''
+        );
+        return {
+          name,
+          attachmentType: `${nameAttrs.AttachmentType || ''}`,
+          description: `${nameAttrs.AttachmentDescription || ''}`,
+          createdAt: `${attrs.Date || ''}`,
+          data,
+          size: Buffer.from(data, 'base64').length,
+        };
+      })
+      .filter(
+        ({ name, createdAt }) =>
+          Boolean(name) &&
+          !/^No attachments found/i.test(name) &&
+          !/^0001-01-01/.test(createdAt)
+      );
+  },
+
+  /**
+   * Read the outcome of a Yardi `ImportWorkOrderDocumentExt`
+   * `ImportAttach` payload: "Successful:<file name>" or a failure message
+   * @param  {Object} src - parsed `ImportAttach` element
+   * @return {Object} - {success: Boolean, name: String, message: String}
+   */
+  createAttachmentImportResultFromYardi(src) {
+    const document = firstEntry((src || {}).DocumentAttachment) || {};
+    const message = yardiText(toArray(document.Result)[0]).trim();
+    const success = /^Successful:/i.test(message);
+    return {
+      success,
+      name: success ? message.replace(/^Successful:/i, '').trim() : '',
+      message: success ? '' : message.replace(/^Unsuccessful:/i, '').trim(),
+    };
+  },
+
   _getYardiPhoneNumbers: getYardiPhoneNumbers,
   _escapeXml: escapeXml,
 };
