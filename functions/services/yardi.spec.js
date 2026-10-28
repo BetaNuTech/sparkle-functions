@@ -88,6 +88,26 @@ describe('Services | Yardi', () => {
       expect(actual.status).to.equal('call');
     });
 
+    it('resolves a common area work order Yardi returns without a unit', async () => {
+      sinon.stub(got, 'post').resolves({
+        body: createCreateResponse(
+          createServiceRequest({
+            ServiceRequestId: '531779',
+            UnitCode: undefined,
+            TenantCode: undefined,
+          })
+        ),
+      });
+
+      const actual = await yardi.createOrEditYardiWorkOrder('prop', CONFIG, {
+        briefDescription: 'Pool gate latch',
+      });
+
+      expect(actual.id).to.equal('531779');
+      expect(actual.unit).to.equal('');
+      expect(actual.resident).to.equal('');
+    });
+
     it('rejects with every Yardi error message when the work order is rejected', async () => {
       sinon.stub(got, 'post').resolves({
         body: createCreateResponse(
@@ -204,6 +224,28 @@ describe('Services | Yardi', () => {
       expect(actual.unit).to.equal('101');
     });
 
+    it('resolves a common area work order that has no unit', async () => {
+      sinon.stub(got, 'post').resolves({
+        body: createSoapResponse(
+          'GetServiceRequests',
+          `<ServiceRequests xmlns="">${createServiceRequest({
+            ServiceRequestId: '531779',
+            UnitCode: undefined,
+            TenantCode: undefined,
+          })}</ServiceRequests>`
+        ),
+      });
+
+      const actual = await yardi.getYardiPropertyWorkOrder(
+        'prop',
+        CONFIG,
+        '531779'
+      );
+
+      expect(actual.id).to.equal('531779');
+      expect(actual.unit).to.equal('');
+    });
+
     it('rejects with a not found error for an unknown work order', async () => {
       sinon.stub(got, 'post').resolves({
         body: createSoapResponse(
@@ -284,6 +326,29 @@ describe('Services | Yardi', () => {
       }
 
       expect(actual.code).to.equal('ERR_BAD_YARDI_CREDENTIALS');
+    });
+
+    it('keeps common area work orders that have no unit in the list', async () => {
+      sinon.stub(got, 'post').resolves({
+        body: createSoapResponse(
+          'GetServiceRequest_Search',
+          `<ServiceRequests xmlns="">${createServiceRequest({
+            ServiceRequestId: '1',
+          })}${createServiceRequest({
+            ServiceRequestId: '2',
+            UnitCode: undefined,
+            TenantCode: undefined,
+          })}</ServiceRequests>`
+        ),
+      });
+
+      const { workOrders } = await yardi.getYardiPropertyWorkOrders(
+        'prop',
+        CONFIG
+      );
+
+      expect(workOrders.map(({ id }) => id)).to.deep.equal(['1', '2']);
+      expect(workOrders[1].unit).to.equal('');
     });
 
     it('resolves an empty list when Yardi finds no matching work orders', async () => {
@@ -594,6 +659,7 @@ function createServiceRequest(overrides = {}) {
     ...overrides,
   };
   const elements = Object.keys(attrs)
+    .filter(tag => attrs[tag] !== undefined)
     .map(tag => `<${tag}>${attrs[tag]}</${tag}>`)
     .join('');
   return `<ServiceRequest HasAttachments="false">${elements}<StatusHistory><Status Type="Call" TimeStamp="2026-10-26T17:06:11" /></StatusHistory></ServiceRequest>`;
