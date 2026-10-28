@@ -96,6 +96,24 @@ describe("Properties | API | POST Property's Yardi Work Order", () => {
     expect(result.body.errors[0].detail).to.contain('yardi code for property');
   });
 
+  it('returns a helpful error when the property is not configured for the Yardi interface', async () => {
+    stubIntegration();
+    const err = Error('not configured');
+    err.code = 'ERR_YARDI_PROPERTY_NOT_CONFIGURED';
+    sinon.stub(yardi, 'createOrEditYardiWorkOrder').rejects(err);
+
+    const result = await request(createApp())
+      .post('/t/123')
+      .send({ unit: '101' })
+      .expect('Content-Type', /json/)
+      .expect(403);
+
+    expect(result.body.errors[0].source.pointer).to.equal('code');
+    expect(result.body.errors[0].detail).to.contain(
+      'not configured for this property'
+    );
+  });
+
   it('returns a helpful error when Yardi credentials rejected', async () => {
     stubIntegration();
     const err = Error('bad credentials');

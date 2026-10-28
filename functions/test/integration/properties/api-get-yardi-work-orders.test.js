@@ -133,6 +133,29 @@ describe("Properties | API | GET Property's Yardi Work Orders", () => {
       .catch(done);
   });
 
+  it('returns a helpful error when the property is not configured for the Yardi interface', async () => {
+    const property = { code: '1003yanc' };
+    const notConfiguredErr = Error('not configured');
+    notConfiguredErr.code = 'ERR_YARDI_PROPERTY_NOT_CONFIGURED';
+    sinon
+      .stub(systemModel, 'findYardi')
+      .resolves(firebase.createDocSnapshot('yardi', {}));
+    sinon
+      .stub(integrationModel, 'findYardi')
+      .resolves(firebase.createDocSnapshot('yardi', {}));
+    sinon.stub(yardi, 'getYardiPropertyWorkOrders').rejects(notConfiguredErr);
+
+    const result = await request(createApp(property))
+      .get('/t/123')
+      .send()
+      .expect('Content-Type', /json/)
+      .expect(403);
+
+    const [error] = result.body.errors;
+    expect(error.source.pointer).to.equal('code');
+    expect(error.detail).to.contain('not configured for this property');
+  });
+
   it('returns a helpful error when Yardi rejected the unit filter', async () => {
     const property = { code: 'test' };
     const unknownUnitErr = Error('bad unit');
