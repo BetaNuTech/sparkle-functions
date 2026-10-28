@@ -2,14 +2,20 @@ const { expect } = require('chai');
 const validate = require('./validate-work-order');
 
 describe('Properties | Utils | Validate Work Order', () => {
-  it('requires a unit when creating', () => {
+  it('does not require a unit when creating, for common area requests', () => {
     const errors = validate({ briefDescription: 'test' });
-    expect(errors.map(({ path }) => path)).to.include('unit');
+    expect(errors).to.deep.equal([]);
   });
 
   it('does not require a unit when updating', () => {
     const errors = validate({ briefDescription: 'test' }, true);
     expect(errors).to.deep.equal([]);
+  });
+
+  it('rejects an empty create', () => {
+    const errors = validate({});
+    expect(errors.length).to.equal(1);
+    expect(errors[0].message).to.contain('at least one attribute');
   });
 
   it('rejects an empty update', () => {
