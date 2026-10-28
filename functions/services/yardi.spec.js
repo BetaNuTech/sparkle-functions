@@ -302,6 +302,24 @@ describe('Services | Yardi', () => {
       expect(actual).to.deep.equal({ workOrders: [] });
     });
 
+    it('rejects with a not-configured error when the interface is disabled for the property', async () => {
+      sinon.stub(got, 'post').resolves({
+        body: createSoapResponse(
+          'GetServiceRequest_Search',
+          '<ServiceRequests xmlns=""><ServiceRequest HasAttachments="false"><ErrorMessages><Error>Interface Sapphire Standard is not Configured for property 1003yanc</Error></ErrorMessages></ServiceRequest></ServiceRequests>'
+        ),
+      });
+
+      let actual = null;
+      try {
+        await yardi.getYardiPropertyWorkOrders('1003yanc', CONFIG);
+      } catch (err) {
+        actual = err;
+      }
+
+      expect(actual.code).to.equal('ERR_YARDI_PROPERTY_NOT_CONFIGURED');
+    });
+
     it('rejects with a unit error when the unit filter is unknown', async () => {
       sinon.stub(got, 'post').resolves({
         body: createSoapResponse(

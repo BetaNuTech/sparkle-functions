@@ -77,6 +77,19 @@ module.exports = function createGetYardiWorkOrders() {
         });
       }
 
+      // Property not enabled for the interface in Voyager
+      if (err.code === 'ERR_YARDI_PROPERTY_NOT_CONFIGURED') {
+        return res.status(403).send({
+          errors: [
+            {
+              detail:
+                'Yardi interface is not configured for this property in Voyager',
+              source: { pointer: 'code' },
+            },
+          ],
+        });
+      }
+
       // Bad system integration credentials
       if (err.code === 'ERR_BAD_YARDI_CREDENTIALS') {
         return res.status(407).send({
