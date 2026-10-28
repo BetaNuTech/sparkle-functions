@@ -30,16 +30,17 @@ const BOOLEANS = Object.freeze(['permissionToEnter', 'tenantCaused']);
 
 /**
  * Build a schema for work order attributes
- * @param  {Boolean} isCreate - require attributes needed for a new work order
+ * NOTE: no attribute is required, a work order
+ * without a unit is a property (common area) request
  * @return {Schema}
  */
-function createSchema(isCreate) {
+function createSchema() {
   const definition = {};
 
   Object.keys(LENGTHS).forEach(attr => {
     definition[attr] = {
       type: String,
-      required: isCreate && attr === 'unit',
+      required: false,
       length: { max: LENGTHS[attr] },
     };
   });
@@ -51,8 +52,7 @@ function createSchema(isCreate) {
   return new Schema(definition, { strip: false });
 }
 
-const createSchemaInstance = createSchema(true);
-const updateSchemaInstance = createSchema(false);
+const schemaInstance = createSchema();
 const ATTRIBUTES = Object.freeze([...Object.keys(LENGTHS), ...BOOLEANS]);
 
 /**
@@ -64,9 +64,9 @@ const ATTRIBUTES = Object.freeze([...Object.keys(LENGTHS), ...BOOLEANS]);
  */
 module.exports = (workOrder, isUpdate = false) => {
   assert(workOrder && typeof workOrder === 'object', 'has work order object');
+  assert(typeof isUpdate === 'boolean', 'has update flag');
   const clone = JSON.parse(JSON.stringify(workOrder));
-  const schema = isUpdate ? updateSchemaInstance : createSchemaInstance;
-  const errors = schema
+  const errors = schemaInstance
     .validate(clone)
     .map(({ path, message }) => ({ path, message }));
 
@@ -77,8 +77,8 @@ module.exports = (workOrder, isUpdate = false) => {
       errors.push({ path: attr, message: `${attr} is not a valid attribute` });
     });
 
-  // Reject empty updates
-  if (isUpdate && !Object.keys(workOrder).length) {
+  // Reject empty payloads
+  if (!Object.keys(workOrder).length) {
     errors.push({ path: '', message: 'at least one attribute is required' });
   }
 
