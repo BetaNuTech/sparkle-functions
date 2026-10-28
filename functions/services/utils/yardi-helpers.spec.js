@@ -381,6 +381,20 @@ describe('Service | Utils | Yardi Helpers', () => {
       });
     });
 
+    it('flags work orders that have attachments', () => {
+      const flagged = createWorkOrder({});
+      flagged.$ = { HasAttachments: 'true' };
+      const unflagged = createWorkOrder({});
+      unflagged.$ = { HasAttachments: 'false' };
+      const missing = createWorkOrder({});
+
+      expect(createWorkOrderFromYardi(flagged).hasAttachments).to.equal(true);
+      expect(createWorkOrderFromYardi(unflagged).hasAttachments).to.equal(
+        false
+      );
+      expect(createWorkOrderFromYardi(missing).hasAttachments).to.equal(false);
+    });
+
     it('copies over all yardi values', () => {
       [
         {

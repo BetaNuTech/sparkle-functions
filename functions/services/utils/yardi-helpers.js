@@ -66,6 +66,7 @@ const WORK_ORDER_ATTRS = {
   dueDate: '',
   reason: '',
   resolution: '',
+  hasAttachments: false,
 };
 
 // Yardi Service Request elements in the exact
@@ -247,6 +248,12 @@ module.exports = {
     const result = { ...WORK_ORDER_ATTRS };
 
     result.id = src.ServiceRequestId[0];
+
+    // Yardi flags each record with a
+    // `HasAttachments` attribute
+    result.hasAttachments = Boolean(
+      src.$ && /^true$/i.test(`${src.$.HasAttachments}`)
+    );
 
     if (isYardiValue(src.CurrentStatus)) {
       result.status = `${src.CurrentStatus[0]}`.toLowerCase();
