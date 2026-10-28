@@ -54,10 +54,27 @@ describe("Properties | API | POST Property's Yardi Work Order", () => {
       .expect(400);
 
     const pointers = result.body.errors.map(({ source }) => source.pointer);
-    expect(pointers).to.include('unit');
+    expect(pointers).to.not.include('unit');
     expect(pointers).to.include('briefDescription');
     expect(pointers).to.include('bogus');
     expect(create.called).to.equal(false);
+  });
+
+  it('creates a common area work order without a unit', async () => {
+    stubIntegration();
+    const create = sinon
+      .stub(yardi, 'createOrEditYardiWorkOrder')
+      .resolves({ id: '531779', briefDescription: 'Pool gate' });
+
+    await request(createApp())
+      .post('/t/123')
+      .send({ briefDescription: 'Pool gate' })
+      .expect('Content-Type', /json/)
+      .expect(201);
+
+    expect(create.firstCall.args[2]).to.deep.equal({
+      briefDescription: 'Pool gate',
+    });
   });
 
   it('returns a helpful error when Yardi rejects the work order', async () => {

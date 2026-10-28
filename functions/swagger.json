@@ -947,7 +947,7 @@
                 "unit": {
                   "type": "string",
                   "maxLength": 8,
-                  "description": "Yardi unit code (required to create)"
+                  "description": "Yardi unit code, omit for a property/common area request"
                 },
                 "resident": {
                   "type": "string",
@@ -1034,9 +1034,7 @@
                   "maxLength": 10
                 }
               },
-              "required": [
-                "unit"
-              ]
+              "description": "At least one attribute is required"
             }
           }
         ],
@@ -1163,7 +1161,7 @@
                 "unit": {
                   "type": "string",
                   "maxLength": 8,
-                  "description": "Yardi unit code (required to create)"
+                  "description": "Yardi unit code, omit for a property/common area request"
                 },
                 "resident": {
                   "type": "string",
