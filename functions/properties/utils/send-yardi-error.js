@@ -48,6 +48,18 @@ module.exports = function createYardiErrorHandler(prefix, res) {
           ],
         });
 
+      // Property not enabled for the interface in Voyager
+      case 'ERR_YARDI_PROPERTY_NOT_CONFIGURED':
+        return res.status(403).send({
+          errors: [
+            {
+              detail:
+                'Yardi interface is not configured for this property in Voyager',
+              source: { pointer: 'code' },
+            },
+          ],
+        });
+
       // Bad system integration credentials
       case 'ERR_BAD_YARDI_CREDENTIALS':
         return res.status(407).send({

@@ -667,6 +667,8 @@ function createYardiError(fnName, errorMsg) {
     err.code = 'ERR_BAD_YARDI_CREDENTIALS';
   } else if (errorMsg.search(/Could not find Property/i) > -1) {
     err.code = 'ERR_NO_YARDI_PROPERTY';
+  } else if (errorMsg.search(/is not Configured for property/i) > -1) {
+    err.code = 'ERR_YARDI_PROPERTY_NOT_CONFIGURED';
   } else if (errorMsg.search(/Could not find WorkOrderId/i) > -1) {
     err.code = 'ERR_NO_YARDI_WORK_ORDER';
   } else {
