@@ -373,8 +373,8 @@ describe('Service | Utils | Yardi Helpers', () => {
         },
         {
           actual: isValidYardiWorkOrder(invalidUnit),
-          expected: false,
-          msg: 'rejects missing "UnitCode"',
+          expected: true,
+          msg: 'allows missing "UnitCode" for common area requests',
         },
       ].forEach(({ actual, expected, msg }) => {
         expect(actual).to.equal(expected, msg);

@@ -225,15 +225,17 @@ module.exports = {
   },
 
   /**
-   * Yardi Resident/Occupant record has
+   * Yardi Service Request record has
    * required attributes to be considered
    * usable by consuming clients
+   * NOTE: a unit is optional, property level
+   * (common area) requests have no UnitCode
    * @param  {Object} record
    * @return {Boolean}
    */
   isValidYardiWorkOrder(record = {}) {
-    const { ServiceRequestId: id, UnitCode: unit } = record;
-    return Boolean(id && id[0]) && Boolean(unit && unit[0]);
+    const { ServiceRequestId: id } = record;
+    return Boolean(id && id[0]);
   },
 
   /**
