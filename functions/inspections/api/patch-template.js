@@ -13,6 +13,10 @@ const notificationsModel = require('../../models/notifications');
 const notifyTemplate = require('../../utils/src-notification-templates');
 const storageService = require('../../services/storage');
 const findDeletedItemsPhotoUrls = require('../utils/find-deleted-items-photo-urls');
+const {
+  countPendingItemUploads,
+  isFieldValueDelete,
+} = require('../../utils/inspection');
 
 const PREFIX = 'inspection: api: patch-template:';
 
@@ -189,7 +193,25 @@ module.exports = function patchTemplate(db, storage, completePublisher) {
         ? inspectionUpdates.inspectionCompleted
         : Boolean(inspection.inspectionCompleted);
 
-    const needsNewReport = isCompleted && createReport;
+    // Count item photos/signatures still uploading from
+    // the inspector's device, as they would be missing
+    // from any report generated right now
+    const pendingUploads =
+      isCompleted && createReport
+        ? countPendingItemUploads({
+            template: {
+              items: mergeTemplateItems(inspection, inspectionUpdates),
+            },
+          })
+        : 0;
+    const hasPendingUploads = pendingUploads > 0;
+    const needsNewReport = isCompleted && createReport && !hasPendingUploads;
+
+    if (isCompleted && createReport && hasPendingUploads) {
+      log.warn(
+        `${PREFIX} inspection "${inspectionId}" has ${pendingUploads} photo(s) still uploading, PDF report not queued`
+      );
+    }
 
     // Pre-emptively set report to queued
     if (needsNewReport) {
@@ -329,13 +351,30 @@ module.exports = function patchTemplate(db, storage, completePublisher) {
     }
 
     // Successful
-    res.status(201).send({
+    const payload = {
       data: {
         id: inspectionId,
         type: 'inspection',
         attributes: inspectionUpdates,
       },
-    });
+    };
+
+    // Warn client that the report was not
+    // requested due to pending photo uploads
+    if (hasPendingUploads) {
+      payload.meta = {
+        warnings: [
+          {
+            id: inspectionId,
+            type: 'inspection',
+            title: 'Photos still uploading',
+            detail: `inspection "${inspectionId}" has ${pendingUploads} photo(s) still uploading from the inspector's device; PDF report not requested, please wait for them to finish and request the report again`,
+          },
+        ],
+      };
+    }
+
+    res.status(201).send(payload);
 
     // Return before updating inspection report PDF
     if (!needsNewReport) {
@@ -360,3 +399,65 @@ module.exports = function patchTemplate(db, storage, completePublisher) {
     }
   };
 };
+
+/**
+ * Merge item updates onto an inspection's current
+ * template items to produce the items' resulting state
+ * @param  {Object} inspection - current inspection
+ * @param  {Object} inspectionUpdates - calculated updates
+ * @return {Object} - merged template items
+ */
+function mergeTemplateItems(inspection, inspectionUpdates) {
+  assert(inspection && typeof inspection === 'object', 'has inspection');
+  assert(
+    inspectionUpdates && typeof inspectionUpdates === 'object',
+    'has inspection updates'
+  );
+
+  const items = JSON.parse(
+    JSON.stringify((inspection.template || {}).items || {})
+  );
+  const itemChanges = (inspectionUpdates.template || {}).items || {};
+
+  Object.keys(itemChanges).forEach(itemId => {
+    const changes = itemChanges[itemId];
+
+    // Removed item
+    if (!changes || typeof changes !== 'object') {
+      delete items[itemId];
+      return;
+    }
+
+    const item = items[itemId] || {};
+    const { photosData: photoChanges } = changes;
+    const attrChanges = Object.assign({}, changes);
+    delete attrChanges.photosData;
+    Object.assign(item, attrChanges);
+
+    if (isFieldValueDelete(photoChanges)) {
+      delete item.photosData; // all photos removed
+    } else if (photoChanges && typeof photoChanges === 'object') {
+      item.photosData = item.photosData || {};
+
+      Object.keys(photoChanges).forEach(photoId => {
+        const photo = photoChanges[photoId];
+
+        // Removed photo
+        if (!photo || isFieldValueDelete(photo)) {
+          delete item.photosData[photoId];
+          return;
+        }
+
+        item.photosData[photoId] = Object.assign(
+          {},
+          item.photosData[photoId] || {},
+          photo
+        );
+      });
+    }
+
+    items[itemId] = item;
+  });
+
+  return items;
+}

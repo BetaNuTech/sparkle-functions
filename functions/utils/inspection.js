@@ -24,6 +24,45 @@ module.exports = {
   },
 
   /**
+   * Count an inspection's item photos and signatures
+   * that have not finished uploading from the inspector's
+   * device: the client writes a placeholder entry with an
+   * empty `downloadURL` (or `signatureDownloadURL`) until
+   * the upload completes and the real URL is synced
+   * @param  {Object} inspection
+   * @return {Number} - pending photo/signature upload count
+   */
+  countPendingItemUploads(inspection = {}) {
+    assert(
+      inspection && typeof inspection === 'object',
+      'has inspection object'
+    );
+    const items = (inspection.template || {}).items || {};
+
+    return Object.keys(items).reduce((count, itemId) => {
+      const item = items[itemId];
+      if (!item || typeof item !== 'object') return count;
+
+      const photosData = item.photosData || {};
+      const pendingPhotos = Object.keys(photosData).filter(id => {
+        const photo = photosData[id];
+        return (
+          photo &&
+          typeof photo === 'object' &&
+          Object.keys(photo).length > 0 && // ignore field value deletes
+          !photo.downloadURL
+        );
+      }).length;
+
+      const hasPendingSignature = Boolean(
+        item.signatureTimestampKey && !item.signatureDownloadURL
+      );
+
+      return count + pendingPhotos + (hasPendingSignature ? 1 : 0);
+    }, 0);
+  },
+
+  /**
    * Checks if value is a firestore field value
    * NOTE: not perfect, basically a check for an
    *       empty object at this point
