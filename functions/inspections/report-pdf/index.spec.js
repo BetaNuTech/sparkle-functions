@@ -29,6 +29,7 @@ const {
   GenerationFailError,
   ReportUrlLookupError,
   OversizedStorageError,
+  PendingPhotosError,
 } = reportPdf;
 
 describe('Inspections | Report PDF', () => {
@@ -115,6 +116,161 @@ describe('Inspections | Report PDF', () => {
     }
 
     const actual = result instanceof IncompleteInspectionError;
+    expect(actual).to.equal(expected);
+  });
+
+  it('rejects for an inspection with photos still uploading with a pending photos error', async () => {
+    const expected = true;
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const inspection = createInspection({
+      property: propertyId,
+      template: createTemplateWithPendingPhotos(2),
+    });
+
+    // Stubs
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+
+    let result = null;
+    try {
+      await reportPdf.regenerate(DB, STORAGE, inspectionId);
+    } catch (err) {
+      result = err;
+    }
+
+    const actual = result instanceof PendingPhotosError;
+    expect(actual).to.equal(expected);
+  });
+
+  it('provides the number of photos still uploading in a pending photos error', async () => {
+    const expected = 3;
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const inspection = createInspection({
+      property: propertyId,
+      template: createTemplateWithPendingPhotos(expected),
+    });
+
+    // Stubs
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+
+    let result = null;
+    try {
+      await reportPdf.regenerate(DB, STORAGE, inspectionId);
+    } catch (err) {
+      result = err;
+    }
+
+    const actual = result ? result.pendingCount : 0;
+    expect(actual).to.equal(expected);
+  });
+
+  it('rejects for an inspection with photos still uploading in dry run mode', async () => {
+    const expected = true;
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const inspection = createInspection({
+      property: propertyId,
+      template: createTemplateWithPendingPhotos(1),
+    });
+
+    // Stubs
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+
+    let result = null;
+    try {
+      await reportPdf.regenerate(
+        DB,
+        STORAGE,
+        inspectionId,
+        true,
+        '',
+        '',
+        '',
+        true // dry run
+      );
+    } catch (err) {
+      result = err;
+    }
+
+    const actual = result instanceof PendingPhotosError;
+    expect(actual).to.equal(expected);
+  });
+
+  it('does not update an inspection report status when photos are still uploading', async () => {
+    const expected = false;
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const inspection = createInspection({
+      property: propertyId,
+      template: createTemplateWithPendingPhotos(1),
+    });
+    const property = mocking.createProperty();
+
+    // Stubs
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(propertyId, property));
+    sinon.stub(storageService, 'calculateInspectionFolderByteSize').resolves(0);
+    const upsertRecord = sinon
+      .stub(inspectionsModel, 'upsertRecord')
+      .resolves();
+    const updateRecord = sinon
+      .stub(inspectionsModel, 'updateRecord')
+      .resolves();
+
+    try {
+      await reportPdf.regenerate(DB, STORAGE, inspectionId);
+    } catch (err) {} // eslint-disable-line
+
+    const actual = upsertRecord.called || updateRecord.called;
+    expect(actual).to.equal(expected);
+  });
+
+  it('allows generating a report once all photos have finished uploading', async () => {
+    const expected = 'generating';
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const template = createTemplateWithPendingPhotos(2);
+    Object.keys(template.items).forEach(itemId => {
+      const item = template.items[itemId];
+      Object.keys(item.photosData || {}).forEach(photoId => {
+        item.photosData[photoId].downloadURL = 'https://test.com/img.jpg';
+      });
+      if (item.signatureTimestampKey) {
+        item.signatureDownloadURL = 'https://test.com/sig.png';
+      }
+    });
+    const inspection = createInspection({ property: propertyId, template });
+    const property = mocking.createProperty();
+
+    // Stubs
+    let actual = '';
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(propertyId, property));
+    sinon.stub(storageService, 'calculateInspectionFolderByteSize').resolves(0);
+    sinon.stub(inspectionsModel, 'upsertRecord').callsFake((db, id, update) => {
+      actual = update.inspectionReportStatus;
+      return Promise.reject(Error('err'));
+    });
+
+    try {
+      await reportPdf.regenerate(DB, STORAGE, inspectionId);
+    } catch (err) {} // eslint-disable-line
+
     expect(actual).to.equal(expected);
   });
 
@@ -561,4 +717,41 @@ function createInspection(inspConfig = {}) {
     inspectionReportURL: 'https://test.com/img.pdf',
     ...inspConfig,
   };
+}
+
+/**
+ * Create a template whose items contain
+ * the requested number of photos/signatures
+ * that have not finished uploading
+ * @param  {Number} pendingCount
+ * @return {Object} - template
+ */
+function createTemplateWithPendingPhotos(pendingCount = 1) {
+  const items = {};
+  const photoItemId = uuid();
+  items[photoItemId] = {
+    id: photoItemId,
+    photosData: {
+      complete: { caption: '', downloadURL: 'https://test.com/done.jpg' },
+    },
+  };
+
+  for (let i = 0; i < pendingCount; i++) {
+    if (i === pendingCount - 1 && pendingCount > 1) {
+      // Make last pending upload a signature
+      const signatureItemId = uuid();
+      items[signatureItemId] = {
+        id: signatureItemId,
+        signatureTimestampKey: `${Date.now()}`,
+        signatureDownloadURL: '',
+      };
+    } else {
+      items[photoItemId].photosData[`pending-${i}`] = {
+        caption: '',
+        downloadURL: '',
+      };
+    }
+  }
+
+  return { name: 'test', items };
 }

@@ -6,6 +6,7 @@ const notificationsModel = require('../../models/notifications');
 const notifyTemplate = require('../../utils/src-notification-templates');
 const storageService = require('../../services/storage');
 const log = require('../../utils/logger');
+const { countPendingItemUploads } = require('../../utils/inspection');
 const createReportPdf = require('./create');
 const inspImages = require('./inspection-images');
 const uploader = require('./uploader');
@@ -27,6 +28,7 @@ module.exports = {
   GenerationFailError,
   ReportUrlLookupError,
   OversizedStorageError,
+  PendingPhotosError,
 
   /**
    * Regenerate an inspection's PDF Report
@@ -102,6 +104,23 @@ module.exports = {
       throw new IncompleteInspectionError(
         `${PREFIX} inspection "${inspectionId}" has not been completed yet`,
         inspection
+      );
+    }
+
+    // Inspection report PDF cannot be created while
+    // any item photos/signatures are still uploading
+    // from the inspector's device (empty download URL
+    // placeholders would be silently dropped from report)
+    // NOTE: leaves any previous report/status untouched
+    const pendingUploads = countPendingItemUploads(inspection);
+    if (pendingUploads > 0) {
+      log.warn(
+        `${PREFIX} inspection "${inspectionId}" has ${pendingUploads} photo(s) still uploading, report generation skipped`
+      );
+      throw new PendingPhotosError(
+        `${PREFIX} inspection "${inspectionId}" has ${pendingUploads} photo(s) still uploading from the inspector's device`,
+        inspection,
+        pendingUploads
       );
     }
 
@@ -527,3 +546,20 @@ function OversizedStorageError(message = '', inspection) {
   this.inspection = inspection;
 }
 OversizedStorageError.prototype = new Error();
+
+/**
+ * Inspection has item photos/signatures that
+ * have not finished uploading from inspector's device
+ * @param {String?} message
+ * @param {Object} inspection
+ * @param {Number} pendingCount
+ */
+function PendingPhotosError(message = '', inspection, pendingCount = 0) {
+  assert(inspection && typeof inspection === 'object', 'has inspection');
+  assert(typeof pendingCount === 'number', 'has pending count');
+  this.name = 'PendingPhotosError';
+  this.message = message;
+  this.inspection = inspection;
+  this.pendingCount = pendingCount;
+}
+PendingPhotosError.prototype = new Error();

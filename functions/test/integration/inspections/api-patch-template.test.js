@@ -573,6 +573,217 @@ describe('Inspections PATCH TEMPLATE | API | PATCH Template', () => {
     const actual = publish.called;
     expect(actual).to.equal(expected);
   });
+
+  it('does not queue or publish a PDF report when a completed inspection has photos still uploading', async () => {
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const sectionId = uuid();
+    const itemId = uuid();
+    const property = mocking.createProperty();
+    const currentItem = mocking.createIncompleteMainInputItem(
+      'twoactions_checkmarkx',
+      { sectionId }
+    );
+    const completeInspUpdate = {
+      items: {
+        [itemId]: {
+          mainInputSelected: true,
+          mainInputSelection: 0,
+          photosData: {
+            // Photo still uploading from device
+            1: { caption: '', downloadURL: '' },
+          },
+        },
+      },
+    };
+    const template = mocking.createTemplate({
+      name: 'test',
+      requireDeficientItemNoteAndPhoto: false,
+      sections: {
+        [sectionId]: mocking.createSection(),
+      },
+      items: {
+        [itemId]: currentItem,
+      },
+    });
+    const inspection = mocking.createInspection({
+      template,
+      inspectionCompleted: false,
+      totalItems: 1,
+      itemsCompleted: 0,
+      property: propertyId,
+    });
+
+    // Stub Requests
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+    const setRecord = sinon.stub(inspectionsModel, 'setRecord').resolves();
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(propertyId, property));
+    const publish = sinon.stub(PUBLISHER, 'publish').resolves();
+
+    // Execute
+    const res = await request(createApp())
+      .patch(`/t/${inspectionId}?incognitoMode=true`)
+      .send(completeInspUpdate)
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(201);
+
+    // Assertions
+    const result = setRecord.firstCall || { args: [] };
+    const resultPayload = result.args[2] || {};
+    expect(resultPayload.inspectionCompleted, 'completed').to.equal(true);
+    expect(
+      resultPayload.inspectionReportStatus,
+      'report status write'
+    ).to.equal(undefined);
+    expect(
+      resultPayload.inspectionReportStatusChanged,
+      'report status changed write'
+    ).to.equal(undefined);
+    expect(
+      res.body.data.attributes.inspectionReportStatus,
+      'report status payload'
+    ).to.equal(undefined);
+    expect(publish.called, 'report event published').to.equal(false);
+  });
+
+  it('warns client when a completed inspection report is not requested due to photos still uploading', async () => {
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const sectionId = uuid();
+    const itemId = uuid();
+    const property = mocking.createProperty();
+    const currentItem = mocking.createIncompleteMainInputItem(
+      'twoactions_checkmarkx',
+      { sectionId }
+    );
+    currentItem.photosData = {
+      // Previously saved photos still uploading from device
+      1: { caption: '', downloadURL: '' },
+      2: { caption: '', downloadURL: 'https://test.com/2.jpg' },
+    };
+    const completeInspUpdate = {
+      items: {
+        [itemId]: {
+          mainInputSelected: true,
+          mainInputSelection: 0,
+        },
+      },
+    };
+    const template = mocking.createTemplate({
+      name: 'test',
+      requireDeficientItemNoteAndPhoto: false,
+      sections: {
+        [sectionId]: mocking.createSection(),
+      },
+      items: {
+        [itemId]: currentItem,
+      },
+    });
+    const inspection = mocking.createInspection({
+      template,
+      inspectionCompleted: false,
+      totalItems: 1,
+      itemsCompleted: 0,
+      property: propertyId,
+    });
+
+    // Stub Requests
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+    sinon.stub(inspectionsModel, 'setRecord').resolves();
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(propertyId, property));
+    sinon.stub(PUBLISHER, 'publish').resolves();
+
+    // Execute
+    const res = await request(createApp())
+      .patch(`/t/${inspectionId}?incognitoMode=true`)
+      .send(completeInspUpdate)
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(201);
+
+    // Assertions
+    const warnings = (res.body.meta || {}).warnings || [];
+    expect(warnings.length, 'warning count').to.equal(1);
+    expect(warnings[0].id, 'warning inspection').to.equal(inspectionId);
+    expect(warnings[0].detail, 'warning detail').to.contain(
+      `inspection "${inspectionId}" has 1 photo(s) still uploading from the inspector's device`
+    );
+  });
+
+  it('queues a PDF report for a completed inspection once its photos have finished uploading', async () => {
+    const expected = 'queued';
+    const propertyId = uuid();
+    const inspectionId = uuid();
+    const sectionId = uuid();
+    const itemId = uuid();
+    const property = mocking.createProperty();
+    const currentItem = mocking.createIncompleteMainInputItem(
+      'twoactions_checkmarkx',
+      { sectionId }
+    );
+    currentItem.photosData = {
+      1: { caption: '', downloadURL: '' }, // upload pending
+    };
+    const completeInspUpdate = {
+      items: {
+        [itemId]: {
+          mainInputSelected: true,
+          mainInputSelection: 0,
+          photosData: {
+            1: { downloadURL: 'https://test.com/1.jpg' }, // upload finished
+          },
+        },
+      },
+    };
+    const template = mocking.createTemplate({
+      name: 'test',
+      requireDeficientItemNoteAndPhoto: false,
+      sections: {
+        [sectionId]: mocking.createSection(),
+      },
+      items: {
+        [itemId]: currentItem,
+      },
+    });
+    const inspection = mocking.createInspection({
+      template,
+      inspectionCompleted: false,
+      totalItems: 1,
+      itemsCompleted: 0,
+      property: propertyId,
+    });
+
+    // Stub Requests
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+    const setRecord = sinon.stub(inspectionsModel, 'setRecord').resolves();
+    sinon
+      .stub(propertiesModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(propertyId, property));
+    const publish = sinon.stub(PUBLISHER, 'publish').resolves();
+
+    // Execute
+    const res = await request(createApp())
+      .patch(`/t/${inspectionId}?incognitoMode=true`)
+      .send(completeInspUpdate)
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(201);
+
+    // Assertions
+    const result = setRecord.firstCall || { args: [] };
+    const resultPayload = result.args[2] || {};
+    expect(resultPayload.inspectionReportStatus, 'db write').to.equal(expected);
+    expect(res.body.meta, 'no warnings').to.equal(undefined);
+    expect(publish.called, 'report event published').to.equal(true);
+  });
 });
 
 function createApp() {

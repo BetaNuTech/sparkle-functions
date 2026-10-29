@@ -108,6 +108,14 @@ module.exports = function generateReportPdf(db, pubsub, storage, topic = '') {
         );
       }
 
+      // Report skipped until device finishes uploading photos
+      if (err instanceof reportPdf.PendingPhotosError) {
+        log.error(
+          `${PREFIX} requested report for inspection with ${err.pendingCount ||
+            0} photo(s) still uploading: ${err}`
+        );
+      }
+
       if (err instanceof reportPdf.OversizedStorageError) {
         log.error(
           `${PREFIX} requested to generate report for oversized inspection: ${err}`
