@@ -187,6 +187,51 @@ describe('Inspections | API | PATCH Report PDF', () => {
     );
   });
 
+  it('rejects request for an inspection with photos still uploading from the inspector device', async () => {
+    let body = null;
+    const inspectionId = uuid();
+    const propertyId = uuid();
+    const inspection = createInspection({
+      property: propertyId,
+      template: {
+        name: 'test',
+        items: {
+          one: {
+            photosData: {
+              1: { caption: '', downloadURL: '' },
+              2: { caption: '', downloadURL: 'https://test.com/2.jpg' },
+              3: { caption: '', downloadURL: '' },
+            },
+          },
+        },
+      },
+    });
+
+    // Stubs
+    sinon
+      .stub(inspectionsModel, 'findRecord')
+      .resolves(firebase.createDocSnapshot(inspectionId, inspection));
+    const updateRecord = sinon
+      .stub(inspectionsModel, 'updateRecord')
+      .resolves();
+    const publish = sinon.stub(PUBLISHER, 'publish').resolves();
+
+    await request(createApp())
+      .patch(`/${inspectionId}`)
+      .send()
+      .expect('Content-Type', /application\/vnd.api\+json/)
+      .expect(400)
+      .then(res => {
+        body = res.body;
+      });
+
+    expect(body.errors[0].detail).to.contain(
+      `inspection "${inspectionId}" has 2 photo(s) still uploading from the inspector's device`
+    );
+    expect(updateRecord.called, 'report queued').to.equal(false);
+    expect(publish.called, 'report event published').to.equal(false);
+  });
+
   it('rejects generating an inspection when its storage data is too large for allocated memory', async () => {
     let body = null;
     const inspectionId = uuid();

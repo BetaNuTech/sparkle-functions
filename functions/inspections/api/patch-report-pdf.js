@@ -160,6 +160,20 @@ module.exports = function createPatchReportPdfHandler(
       });
     }
 
+    // Inspection has photos still uploading from device
+    if (dryRunErr instanceof reportPdf.PendingPhotosError) {
+      const pendingCount = dryRunErr.pendingCount || 0;
+      log.error(`${PREFIX} inspection has pending photo uploads: ${dryRunErr}`);
+      return res.status(400).send({
+        errors: [
+          {
+            title: 'Photos still uploading',
+            detail: `inspection "${inspectionId}" has ${pendingCount} photo(s) still uploading from the inspector's device; please wait for them to finish and try again`,
+          },
+        ],
+      });
+    }
+
     // Inspection is too large for allocated memory
     if (dryRunErr instanceof reportPdf.OversizedStorageError) {
       log.error(`${PREFIX} inspection storage oversized failure: ${dryRunErr}`);

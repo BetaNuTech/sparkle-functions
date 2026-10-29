@@ -69,4 +69,27 @@ describe('Inspections | Pubsub | Generate Report PDF', function() {
     const actual = (regenerate.firstCall || { args: [] }).args.slice(3);
     expect(actual).to.deep.equal(expected);
   });
+
+  it('logs when report generation is skipped for an inspection with photos still uploading', async () => {
+    const expected = true;
+    const inspectionId = uuid();
+    const message = Buffer.from(`${inspectionId}`).toString('base64');
+    const inspection = mocking.createInspection({ property: uuid() });
+
+    sinon
+      .stub(reportPdf, 'regenerate')
+      .rejects(new reportPdf.PendingPhotosError('pending', inspection, 4));
+
+    await createHandler(
+      createFirestore(),
+      createPubSubHandler({ data: message }),
+      createStorage(),
+      'topic'
+    );
+
+    const actual = log.error.args.some(
+      ([msg]) => `${msg}`.search(/4 photo\(s\) still uploading/) > -1
+    );
+    expect(actual).to.equal(expected);
+  });
 });
