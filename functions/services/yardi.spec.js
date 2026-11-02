@@ -36,6 +36,39 @@ describe('Services | Yardi', () => {
       expect(body).to.not.contain('__SPARKLE_RAW_XML__');
     });
 
+    it('sends assignees as an Employees block', async () => {
+      const post = sinon
+        .stub(got, 'post')
+        .resolves({ body: createCreateResponse(createServiceRequest()) });
+
+      await yardi.createOrEditYardiWorkOrder('prop', CONFIG, {
+        unit: '101',
+        assignees: ['y1001249'],
+      });
+
+      expect(post.firstCall.args[1].body).to.contain(
+        '<Employees><Employee Code="y1001249"/></Employees>'
+      );
+    });
+
+    it('resolves the assignees Yardi returns', async () => {
+      sinon.stub(got, 'post').resolves({
+        body: createCreateResponse(
+          createServiceRequest({
+            Employees:
+              '<Employee Code="y1001249"><Skill /><Hours>1.0000</Hours></Employee>',
+          })
+        ),
+      });
+
+      const actual = await yardi.createOrEditYardiWorkOrder('prop', CONFIG, {
+        unit: '101',
+        assignees: ['y1001249'],
+      });
+
+      expect(actual.assignees).to.deep.equal([{ code: 'y1001249', hours: 1 }]);
+    });
+
     it('sends the credentials and property in the request', async () => {
       const post = sinon
         .stub(got, 'post')
@@ -627,6 +660,34 @@ describe('Services | Yardi', () => {
   describe('getYardiCustomValues', () => {
     const CUSTOM_VALUES_XML = `<ServiceRequests xmlns="" xsi="http://www.w3.org/2001/XMLSchema-instance"><CustomValues><Categories><Category><Name>Electrical</Name><SubCategory>Breakers</SubCategory><SubCategory>Wiring</SubCategory></Category><Category><Name>Building Exterior</Name></Category></Categories><Approvers><Warning>There are no Approvers set up in this database.</Warning></Approvers><Priorities><Priority>High</Priority><Priority>Low</Priority></Priorities><Statuses><Status Type="Standard"><Status>Call</Status><Status>Canceled</Status></Status></Statuses><Status Type="Custom"><Status>Parts Ordered</Status></Status><Reasons><Reason Status="On Hold" Required="true">Duplicate Work Order</Reason><Reason Status="Request Reassignment" Required="false">Need new vendor</Reason></Reasons></CustomValues><Resolutions><Resolution>General Repairs</Resolution></Resolutions><Employees /></ServiceRequests>`;
 
+    it('resolves employees with their property assignments', async () => {
+      sinon.stub(got, 'post').resolves({
+        body: createSoapResponse(
+          'GetCustomValues',
+          '<ServiceRequests xmlns=""><CustomValues><Priorities><Priority>High</Priority></Priorities></CustomValues><Resolutions /><Employees><Employee Code="y1001249" Description="David Ramirez"><Skills /><Properties><Property Code="1001rawe" /></Properties></Employee><Employee Code="richardp" Description="Richard Paul"><Skills /><Properties><Property Code="1002edge" /><Property Code="1001rawe" /></Properties></Employee></Employees></ServiceRequests>'
+        ),
+      });
+
+      const actual = await yardi.getYardiCustomValues(CONFIG);
+
+      expect(actual.employees).to.deep.equal([
+        {
+          code: 'y1001249',
+          name: 'David Ramirez',
+          email: '',
+          phone: '',
+          properties: ['1001rawe'],
+        },
+        {
+          code: 'richardp',
+          name: 'Richard Paul',
+          email: '',
+          phone: '',
+          properties: ['1002edge', '1001rawe'],
+        },
+      ]);
+    });
+
     it('requests custom values with the login block and no property', async () => {
       const post = sinon.stub(got, 'post').resolves({
         body: createSoapResponse('GetCustomValues', CUSTOM_VALUES_XML),
@@ -668,6 +729,7 @@ describe('Services | Yardi', () => {
           },
         ],
         resolutions: ['General Repairs'],
+        employees: [],
       });
     });
 
@@ -687,6 +749,7 @@ describe('Services | Yardi', () => {
         statuses: [],
         reasons: [],
         resolutions: [],
+        employees: [],
       });
     });
 

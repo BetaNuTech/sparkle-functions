@@ -9,6 +9,34 @@ const create500ErrHandler = require('../../utils/unexpected-api-error');
  * @param  {Express.Response} res
  * @return {Function} - handler
  */
+// Yardi rejection messages name the field
+// they refer to, map them to record attributes
+const REJECTION_POINTERS = Object.freeze([
+  [/Employee/i, 'assignees'],
+  [/Unit/i, 'unit'],
+  [/Tenant/i, 'resident'],
+  [/Vendor/i, 'vendor'],
+  [/SubCategory/i, 'subCategory'],
+  [/Category/i, 'category'],
+  [/Priority/i, 'priority'],
+  [/Reason/i, 'reason'],
+  [/Resolution/i, 'resolution'],
+  [/Status/i, 'status'],
+]);
+
+/**
+ * Lookup the work order attribute a
+ * Yardi rejection message refers to
+ * @param  {String} detail
+ * @return {String}
+ */
+function getRejectionPointer(detail) {
+  const match = REJECTION_POINTERS.find(([pattern]) =>
+    pattern.test(`${detail}`)
+  );
+  return match ? match[1] : 'workOrder';
+}
+
 module.exports = function createYardiErrorHandler(prefix, res) {
   assert(prefix && typeof prefix === 'string', 'has log prefix');
   assert(Boolean(res), 'has Express response instance');
@@ -76,7 +104,10 @@ module.exports = function createYardiErrorHandler(prefix, res) {
           errors: (err.details && err.details.length
             ? err.details
             : ['Yardi rejected work order']
-          ).map(detail => ({ detail, source: { pointer: 'workOrder' } })),
+          ).map(detail => ({
+            detail,
+            source: { pointer: getRejectionPointer(detail) },
+          })),
         });
 
       // Yardi rejected the attachment (bad extension, unknown type)
