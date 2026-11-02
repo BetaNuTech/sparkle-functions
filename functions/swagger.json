@@ -1032,6 +1032,14 @@
                 "origin": {
                   "type": "string",
                   "maxLength": 10
+                },
+                "assignees": {
+                  "type": "array",
+                  "description": "Yardi employee codes to assign (from custom values employees); an empty list clears the assignment",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 10
+                  }
                 }
               },
               "description": "At least one attribute is required"
@@ -1246,6 +1254,14 @@
                 "origin": {
                   "type": "string",
                   "maxLength": 10
+                },
+                "assignees": {
+                  "type": "array",
+                  "description": "Yardi employee codes to assign (from custom values employees); an empty list clears the assignment",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 10
+                  }
                 }
               }
             }
@@ -4371,6 +4387,27 @@
                       },
                       "required": {
                         "type": "boolean"
+                      }
+                    }
+                  }
+                },
+                "employees": {
+                  "type": "array",
+                  "description": "Active work order labor employees assigned to this property",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "code": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "email": {
+                        "type": "string"
+                      },
+                      "phone": {
+                        "type": "string"
                       }
                     }
                   }

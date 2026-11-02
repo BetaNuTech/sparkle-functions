@@ -40,12 +40,18 @@ module.exports = function createGetYardiCustomValues() {
       );
     }
 
+    // Only employees assigned to this
+    // property may be assigned its work orders
+    const employees = (customValues.employees || [])
+      .filter(({ properties }) => (properties || []).includes(property.code))
+      .map(({ code, name, email, phone }) => ({ code, name, email, phone }));
+
     // Success
     res.status(200).send({
       data: {
         id: property.code,
         type: 'yardi-custom-values',
-        attributes: customValues,
+        attributes: { ...customValues, employees },
       },
     });
   };

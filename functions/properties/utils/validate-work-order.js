@@ -27,6 +27,10 @@ const LENGTHS = Object.freeze({
 });
 
 const BOOLEANS = Object.freeze(['permissionToEnter', 'tenantCaused']);
+// Yardi employee codes, sent as a list;
+// an empty list clears the assignment
+const LISTS = Object.freeze(['assignees']);
+const EMPLOYEE_CODE = /^[A-Za-z0-9_.-]{1,10}$/;
 
 /**
  * Build a schema for work order attributes
@@ -53,7 +57,11 @@ function createSchema() {
 }
 
 const schemaInstance = createSchema();
-const ATTRIBUTES = Object.freeze([...Object.keys(LENGTHS), ...BOOLEANS]);
+const ATTRIBUTES = Object.freeze([
+  ...Object.keys(LENGTHS),
+  ...BOOLEANS,
+  ...LISTS,
+]);
 
 /**
  * Validate work order attributes for
@@ -66,9 +74,35 @@ module.exports = (workOrder, isUpdate = false) => {
   assert(workOrder && typeof workOrder === 'object', 'has work order object');
   assert(typeof isUpdate === 'boolean', 'has update flag');
   const clone = JSON.parse(JSON.stringify(workOrder));
+  LISTS.forEach(attr => delete clone[attr]);
   const errors = schemaInstance
     .validate(clone)
     .map(({ path, message }) => ({ path, message }));
+
+  // Assignees: list of unique Yardi employee codes
+  if (workOrder.assignees !== undefined) {
+    const { assignees } = workOrder;
+    if (!Array.isArray(assignees)) {
+      errors.push({
+        path: 'assignees',
+        message: 'assignees must be a list of employee codes',
+      });
+    } else if (
+      assignees.some(
+        code => typeof code !== 'string' || !EMPLOYEE_CODE.test(code)
+      )
+    ) {
+      errors.push({
+        path: 'assignees',
+        message: 'assignees must be employee codes of 1 to 10 characters',
+      });
+    } else if (new Set(assignees).size !== assignees.length) {
+      errors.push({
+        path: 'assignees',
+        message: 'assignees must not repeat an employee',
+      });
+    }
+  }
 
   // Reject unknown attributes
   Object.keys(workOrder)
