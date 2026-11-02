@@ -1,4 +1,5 @@
 const { expect } = require('chai');
+const yardiHelpers = require('./yardi-helpers');
 const {
   isValidYardiResidentOccupant,
   createResidentFromYardiCustomer,
@@ -975,5 +976,137 @@ describe('Service | Utils | Yardi Helpers | Service Request XML', () => {
     expect(actual.dueDate).to.equal('2020-01-01');
     expect(actual.reason).to.equal('why');
     expect(actual.resolution).to.equal('done');
+  });
+});
+
+describe('Services | Utils | Yardi Helpers | Assignees', () => {
+  function createRecord(employeesXmlParsed) {
+    return {
+      ServiceRequestId: ['1'],
+      UnitCode: ['101'],
+      ...(employeesXmlParsed ? { Employees: employeesXmlParsed } : {}),
+    };
+  }
+
+  it('reads assigned employees, merging repeated labor lines', () => {
+    const record = createRecord([
+      {
+        Employee: [
+          { $: { Code: 'y1001249' }, Skill: [''], Hours: ['1.0000'] },
+          { $: { Code: 'y1001249' }, Skill: [''], Hours: ['1.5000'] },
+          { $: { Code: 'y1001290' }, Hours: ['0.0000'] },
+        ],
+      },
+    ]);
+
+    expect(
+      yardiHelpers.createWorkOrderFromYardi(record).assignees
+    ).to.deep.equal([
+      { code: 'y1001249', hours: 2.5 },
+      { code: 'y1001290', hours: 0 },
+    ]);
+  });
+
+  it('defaults to no assignees', () => {
+    expect(
+      yardiHelpers.createWorkOrderFromYardi(createRecord()).assignees
+    ).to.deep.equal([]);
+    expect(
+      yardiHelpers.createWorkOrderFromYardi(createRecord([''])).assignees
+    ).to.deep.equal([]);
+  });
+
+  it('writes assignees as an Employees block after the due date', () => {
+    const actual = yardiHelpers.createYardiServiceRequestXml('prop', {
+      id: '5',
+      unit: '101',
+      dueDate: '2026-11-05',
+      status: 'Call',
+      assignees: ['y1001249', 'richardp'],
+    });
+
+    expect(actual).to.contain(
+      '<DueDate>2026-11-05</DueDate><Employees><Employee Code="y1001249"/><Employee Code="richardp"/></Employees><CurrentStatus>Call</CurrentStatus>'
+    );
+  });
+
+  it('writes an empty Employees block to clear the assignment', () => {
+    const actual = yardiHelpers.createYardiServiceRequestXml('prop', {
+      id: '5',
+      unit: '101',
+      assignees: [],
+    });
+
+    expect(actual).to.contain(
+      '<UnitCode>101</UnitCode><Employees></Employees>'
+    );
+  });
+
+  it('omits the Employees block when assignees are not provided', () => {
+    const actual = yardiHelpers.createYardiServiceRequestXml('prop', {
+      id: '5',
+      unit: '101',
+    });
+
+    expect(actual).to.not.contain('Employees');
+  });
+
+  it('escapes employee codes in the Employees block', () => {
+    const actual = yardiHelpers.createYardiServiceRequestXml('prop', {
+      assignees: ['a"b<c'],
+    });
+
+    expect(actual).to.contain('<Employee Code="a&quot;b&lt;c"/>');
+  });
+
+  it('reads employees and their properties from custom values', () => {
+    const actual = yardiHelpers.createCustomValuesFromYardi({
+      CustomValues: [{}],
+      Employees: [
+        {
+          Employee: [
+            {
+              $: { Code: 'y1001249', Description: 'David Ramirez' },
+              Email: ['dramirez@example.com'],
+              Skills: [''],
+              Properties: [{ Property: [{ $: { Code: '1001rawe' } }] }],
+            },
+            {
+              $: { Code: 'lvanpelt', Description: 'Laura Van Pelt' },
+              Skills: [''],
+              Properties: [
+                { Property: [{ $: { Code: '', Unassigned: 'true' } }] },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(actual.employees).to.deep.equal([
+      {
+        code: 'y1001249',
+        name: 'David Ramirez',
+        email: 'dramirez@example.com',
+        phone: '',
+        properties: ['1001rawe'],
+      },
+      {
+        code: 'lvanpelt',
+        name: 'Laura Van Pelt',
+        email: '',
+        phone: '',
+        properties: [],
+      },
+    ]);
+  });
+
+  it('returns no employees when Yardi exports none', () => {
+    const actual = yardiHelpers.createCustomValuesFromYardi({
+      CustomValues: [{}],
+      Employees: [''],
+    });
+
+    expect(actual.employees).to.deep.equal([]);
   });
 });

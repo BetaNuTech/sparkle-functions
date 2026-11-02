@@ -98,6 +98,36 @@ describe("Properties | API | POST Property's Yardi Work Order", () => {
     );
   });
 
+  it('points each Yardi rejection at the attribute it names', async () => {
+    stubIntegration();
+    const err = Error('rejected');
+    err.code = 'ERR_YARDI_WORK_ORDER_REJECTED';
+    err.details = [
+      'Could not find Employee Code:nobody1',
+      'Employee is not assigned to property.',
+      'Could not find Unit:ZZ in Property:prop',
+      'Could not find Priority:Urgent',
+      'Something else entirely',
+    ];
+    sinon.stub(yardi, 'createOrEditYardiWorkOrder').rejects(err);
+
+    const result = await request(createApp())
+      .post('/t/123')
+      .send({ unit: 'ZZ', assignees: ['nobody1'] })
+      .expect('Content-Type', /json/)
+      .expect(400);
+
+    expect(
+      result.body.errors.map(({ source }) => source.pointer)
+    ).to.deep.equal([
+      'assignees',
+      'assignees',
+      'unit',
+      'priority',
+      'workOrder',
+    ]);
+  });
+
   it('returns a helpful error when Yardi rejected property code', async () => {
     stubIntegration();
     const err = Error('bad code');

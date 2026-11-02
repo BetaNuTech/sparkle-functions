@@ -23,7 +23,7 @@ Key architectural patterns:
 
 ## Development Commands
 
-**IMPORTANT**: This project uses Node.js version 20 and Firebase Functions v3 (`firebase-functions: ^3.24.1`). Docker is recommended for consistent development environment.
+**IMPORTANT**: This project uses Node.js version 22 and Firebase Functions v3 (`firebase-functions: ^3.24.1`). Docker is recommended for consistent development environment.
 
 ### Option 1: Docker Development (Recommended)
 
@@ -45,12 +45,12 @@ docker-compose run deploy-fn
 
 **Note**: Currently there's no development server Docker service. You may need to create one or use Option 2.
 
-### Option 2: Direct Commands (Node.js v20 Required)
+### Option 2: Direct Commands (Node.js v22 Required)
 
 Working in `/functions` directory:
 
 **Requirements**:
-- Node.js version 20.x
+- Node.js version 22.x
 - May need `npm rebuild` to fix native dependencies
 
 ```bash

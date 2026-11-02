@@ -93,9 +93,66 @@ describe("Properties | API | GET Property's Yardi Custom Values", () => {
       data: {
         id: PROPERTY.code,
         type: 'yardi-custom-values',
-        attributes: customValues,
+        attributes: { ...customValues, employees: [] },
       },
     });
+  });
+
+  it('returns only the employees assigned to the property, without their property lists', async () => {
+    stubIntegration();
+    const customValues = createCustomValues();
+    customValues.employees = [
+      {
+        code: 'y1001249',
+        name: 'David Ramirez',
+        email: 'd@example.com',
+        phone: '',
+        properties: ['prop'],
+      },
+      {
+        code: 'richardp',
+        name: 'Richard Paul',
+        email: '',
+        phone: '5551234567',
+        properties: ['other', 'prop'],
+      },
+      {
+        code: 'y1001228',
+        name: 'Shon Howlett',
+        email: '',
+        phone: '',
+        properties: ['other'],
+      },
+      {
+        code: 'lvanpelt',
+        name: 'Laura Van Pelt',
+        email: '',
+        phone: '',
+        properties: [],
+      },
+    ];
+    sinon.stub(yardi, 'getYardiCustomValues').resolves(customValues);
+
+    const result = await request(createApp())
+      .get('/t/123')
+      .send()
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    expect(result.body.data.attributes.employees).to.deep.equal([
+      {
+        code: 'y1001249',
+        name: 'David Ramirez',
+        email: 'd@example.com',
+        phone: '',
+      },
+      {
+        code: 'richardp',
+        name: 'Richard Paul',
+        email: '',
+        phone: '5551234567',
+      },
+    ]);
   });
 });
 

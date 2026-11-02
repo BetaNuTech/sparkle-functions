@@ -67,6 +67,7 @@ const WORK_ORDER_ATTRS = {
   reason: '',
   resolution: '',
   hasAttachments: false,
+  assignees: [],
 };
 
 // Yardi Service Request elements in the exact
@@ -255,6 +256,10 @@ module.exports = {
       src.$ && /^true$/i.test(`${src.$.HasAttachments}`)
     );
 
+    // Assigned employees (Yardi repeats a
+    // code once per labor line, so merge them)
+    result.assignees = createAssigneesFromYardi(src.Employees);
+
     if (isYardiValue(src.CurrentStatus)) {
       result.status = `${src.CurrentStatus[0]}`.toLowerCase();
     }
@@ -390,9 +395,17 @@ module.exports = {
     const source = { ...workOrder, property: propertyCode };
     if (!source.id) source.id = '0';
 
-    const elements = SERVICE_REQUEST_ELEMENTS.filter(([, attr]) =>
-      hasValue(source[attr])
-    ).map(([tag, attr]) => `<${tag}>${escapeXml(source[attr])}</${tag}>`);
+    const elements = [];
+    SERVICE_REQUEST_ELEMENTS.forEach(([tag, attr]) => {
+      // XSD places `Employees` after `DueDate`
+      // and before the status elements
+      if (tag === 'CurrentStatus') {
+        elements.push(createEmployeesXml(source.assignees));
+      }
+      if (hasValue(source[attr])) {
+        elements.push(`<${tag}>${escapeXml(source[attr])}</${tag}>`);
+      }
+    });
 
     return `<ServiceRequests xmlns=""><ServiceRequest>${elements.join(
       ''
@@ -479,6 +492,28 @@ module.exports = {
     result.resolutions = yardiTextValues(
       (firstEntry(source.Resolutions) || {}).Resolution
     );
+
+    // Employees available for work order assignment
+    // with the property codes each is assigned to
+    result.employees = toArray((firstEntry(source.Employees) || {}).Employee)
+      .map(employee => {
+        const attrs = (employee && employee.$) || {};
+        const properties = toArray(
+          (firstEntry((employee || {}).Properties) || {}).Property
+        )
+          .map(
+            property => `${(property && property.$ && property.$.Code) || ''}`
+          )
+          .filter(Boolean);
+        return {
+          code: `${attrs.Code || ''}`,
+          name: `${attrs.Description || ''}`,
+          email: yardiText(toArray((employee || {}).Email)[0]),
+          phone: yardiText(toArray((employee || {}).PhoneNumber)[0]),
+          properties,
+        };
+      })
+      .filter(({ code }) => code);
 
     return result;
   },
@@ -597,6 +632,49 @@ function yardiTextValues(nodes) {
 function hasValue(value) {
   if (typeof value === 'boolean' || typeof value === 'number') return true;
   return Boolean(value && `${value}`.trim());
+}
+
+/**
+ * Merge the `Employees` entries of a parsed Yardi
+ * service request into unique assignees with
+ * their total labor hours
+ * @param  {Array?} employeesEntries - parsed `Employees` elements
+ * @return {Object[]} - [{code, hours}]
+ */
+function createAssigneesFromYardi(employeesEntries) {
+  const byCode = {};
+  const order = [];
+  toArray(employeesEntries).forEach(entry => {
+    toArray(entry && entry.Employee).forEach(employee => {
+      const code = `${(employee && employee.$ && employee.$.Code) ||
+        ''}`.trim();
+      if (!code) return;
+      const hours =
+        parseFloat(yardiText(toArray((employee || {}).Hours)[0])) || 0;
+      if (!byCode[code]) {
+        byCode[code] = { code, hours: 0 };
+        order.push(code);
+      }
+      byCode[code].hours = Math.round((byCode[code].hours + hours) * 100) / 100;
+    });
+  });
+  return order.map(code => byCode[code]);
+}
+
+/**
+ * Create the `Employees` element for a service
+ * request document: omitted when assignees are
+ * not provided, empty to clear the assignment
+ * @param  {String[]?} assignees - employee codes
+ * @return {String}
+ */
+function createEmployeesXml(assignees) {
+  if (!isArray(assignees)) return '';
+  const employees = assignees
+    .map(code => `${code}`.trim())
+    .filter(Boolean)
+    .map(code => `<Employee Code="${escapeXml(code)}"/>`);
+  return `<Employees>${employees.join('')}</Employees>`;
 }
 
 /**

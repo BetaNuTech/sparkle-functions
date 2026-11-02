@@ -70,3 +70,32 @@ describe('Properties | Utils | Validate Work Order', () => {
     expect(errors).to.deep.equal([]);
   });
 });
+
+describe('Properties | Utils | Validate Work Order | Assignees', () => {
+  it('accepts a list of employee codes, including an empty list to clear', () => {
+    expect(
+      validate({ assignees: ['y1001249', 'richardp'] }, true)
+    ).to.deep.equal([]);
+    expect(validate({ assignees: [] }, true)).to.deep.equal([]);
+    expect(validate({ unit: '101', assignees: ['y1001249'] })).to.deep.equal(
+      []
+    );
+  });
+
+  it('rejects assignees that are not a list of valid codes', () => {
+    const cases = [
+      { assignees: 'y1001249' },
+      { assignees: [5] },
+      { assignees: ['too-long-code-here'] },
+      { assignees: ['bad code'] },
+      { assignees: ['y1001249', 'y1001249'] },
+    ];
+    cases.forEach(workOrder => {
+      const errors = validate(workOrder, true);
+      expect(errors.map(({ path }) => path)).to.deep.equal(
+        ['assignees'],
+        JSON.stringify(workOrder)
+      );
+    });
+  });
+});
