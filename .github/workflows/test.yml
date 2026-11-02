@@ -10,7 +10,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: node:20-alpine
+      image: node:22-alpine
 
     steps:
       - uses: actions/checkout@v1
