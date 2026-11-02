@@ -182,6 +182,57 @@ describe("Properties | API | PATCH Property's Yardi Work Order", () => {
     });
   });
 
+  it('keeps the hours Yardi holds for employees that stay assigned', async () => {
+    stubIntegration();
+    sinon.stub(yardi, 'getYardiPropertyWorkOrder').resolves({
+      ...EXISTING,
+      assignees: [
+        { code: 'y1001249', hours: 2 },
+        { code: 'y1001339', hours: 1.5 },
+      ],
+    });
+    const update = sinon
+      .stub(yardi, 'createOrEditYardiWorkOrder')
+      .resolves({ ...EXISTING });
+
+    await request(createApp())
+      .patch('/t/123/531772')
+      .send({
+        assignees: [
+          'y1001249',
+          { code: 'y1001290' },
+          { code: 'richardp', hours: 0.5 },
+        ],
+      })
+      .expect(200);
+
+    expect(update.firstCall.args[2].assignees).to.deep.equal([
+      { code: 'y1001249', hours: 2 },
+      { code: 'y1001290' },
+      { code: 'richardp', hours: 0.5 },
+    ]);
+  });
+
+  it('lets an update override the hours Yardi holds', async () => {
+    stubIntegration();
+    sinon.stub(yardi, 'getYardiPropertyWorkOrder').resolves({
+      ...EXISTING,
+      assignees: [{ code: 'y1001249', hours: 2 }],
+    });
+    const update = sinon
+      .stub(yardi, 'createOrEditYardiWorkOrder')
+      .resolves({ ...EXISTING });
+
+    await request(createApp())
+      .patch('/t/123/531772')
+      .send({ assignees: [{ code: 'y1001249', hours: 3.25 }] })
+      .expect(200);
+
+    expect(update.firstCall.args[2].assignees).to.deep.equal([
+      { code: 'y1001249', hours: 3.25 },
+    ]);
+  });
+
   it('allows the unit to be changed by the update', async () => {
     stubIntegration();
     sinon.stub(yardi, 'getYardiPropertyWorkOrder').resolves({ ...EXISTING });
