@@ -31,6 +31,7 @@ const BOOLEANS = Object.freeze(['permissionToEnter', 'tenantCaused']);
 // an empty list clears the assignment
 const LISTS = Object.freeze(['assignees']);
 const EMPLOYEE_CODE = /^[A-Za-z0-9_.-]{1,10}$/;
+const MAX_HOURS = 9999;
 
 /**
  * Build a schema for work order attributes
@@ -79,24 +80,53 @@ module.exports = (workOrder, isUpdate = false) => {
     .validate(clone)
     .map(({ path, message }) => ({ path, message }));
 
-  // Assignees: list of unique Yardi employee codes
+  // Assignees: list of unique Yardi employee codes,
+  // each a code string or {code, hours}
   if (workOrder.assignees !== undefined) {
     const { assignees } = workOrder;
+    const codeOf = assignee =>
+      assignee && typeof assignee === 'object' ? assignee.code : assignee;
+    const hasValidHours = assignee => {
+      if (!assignee || typeof assignee !== 'object') return true;
+      if (assignee.hours === undefined) return true;
+      return (
+        typeof assignee.hours === 'number' &&
+        Number.isFinite(assignee.hours) &&
+        assignee.hours >= 0 &&
+        assignee.hours <= MAX_HOURS
+      );
+    };
+    const hasOnlyKnownKeys = assignee =>
+      !assignee ||
+      typeof assignee !== 'object' ||
+      Object.keys(assignee).every(key => ['code', 'hours'].includes(key));
+
     if (!Array.isArray(assignees)) {
       errors.push({
         path: 'assignees',
         message: 'assignees must be a list of employee codes',
       });
     } else if (
-      assignees.some(
-        code => typeof code !== 'string' || !EMPLOYEE_CODE.test(code)
-      )
+      assignees.some(assignee => {
+        const code = codeOf(assignee);
+        return typeof code !== 'string' || !EMPLOYEE_CODE.test(code);
+      })
     ) {
       errors.push({
         path: 'assignees',
         message: 'assignees must be employee codes of 1 to 10 characters',
       });
-    } else if (new Set(assignees).size !== assignees.length) {
+    } else if (!assignees.every(hasOnlyKnownKeys)) {
+      errors.push({
+        path: 'assignees',
+        message: 'assignees may only have a code and hours',
+      });
+    } else if (!assignees.every(hasValidHours)) {
+      errors.push({
+        path: 'assignees',
+        message: `assignee hours must be a number from 0 to ${MAX_HOURS}`,
+      });
+    } else if (new Set(assignees.map(codeOf)).size !== assignees.length) {
       errors.push({
         path: 'assignees',
         message: 'assignees must not repeat an employee',

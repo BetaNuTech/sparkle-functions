@@ -51,6 +51,21 @@ describe('Services | Yardi', () => {
       );
     });
 
+    it('sends assignee hours inside the Employees block', async () => {
+      const post = sinon
+        .stub(got, 'post')
+        .resolves({ body: createCreateResponse(createServiceRequest()) });
+
+      await yardi.createOrEditYardiWorkOrder('prop', CONFIG, {
+        unit: '101',
+        assignees: [{ code: 'y1001249', hours: 1.5 }],
+      });
+
+      expect(post.firstCall.args[1].body).to.contain(
+        '<Employees><Employee Code="y1001249"><Hours>1.5</Hours></Employee></Employees>'
+      );
+    });
+
     it('resolves the assignees Yardi returns', async () => {
       sinon.stub(got, 'post').resolves({
         body: createCreateResponse(

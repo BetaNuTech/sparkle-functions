@@ -664,16 +664,28 @@ function createAssigneesFromYardi(employeesEntries) {
 /**
  * Create the `Employees` element for a service
  * request document: omitted when assignees are
- * not provided, empty to clear the assignment
- * @param  {String[]?} assignees - employee codes
+ * not provided, empty to clear the assignment,
+ * each entry an employee code with optional labor hours
+ * @param  {Array?} assignees - codes or {code, hours}
  * @return {String}
  */
 function createEmployeesXml(assignees) {
   if (!isArray(assignees)) return '';
   const employees = assignees
-    .map(code => `${code}`.trim())
-    .filter(Boolean)
-    .map(code => `<Employee Code="${escapeXml(code)}"/>`);
+    .map(assignee => {
+      const isObject = assignee && typeof assignee === 'object';
+      const code = `${isObject ? assignee.code : assignee}`.trim();
+      const hours = isObject ? Number(assignee.hours) : NaN;
+      return { code, hours };
+    })
+    .filter(({ code }) => code)
+    .map(({ code, hours }) =>
+      Number.isFinite(hours) && hours >= 0
+        ? `<Employee Code="${escapeXml(
+            code
+          )}"><Hours>${hours}</Hours></Employee>`
+        : `<Employee Code="${escapeXml(code)}"/>`
+    );
   return `<Employees>${employees.join('')}</Employees>`;
 }
 

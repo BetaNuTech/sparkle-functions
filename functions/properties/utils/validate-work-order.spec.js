@@ -99,3 +99,39 @@ describe('Properties | Utils | Validate Work Order | Assignees', () => {
     });
   });
 });
+
+describe('Properties | Utils | Validate Work Order | Assignee hours', () => {
+  it('accepts assignees as objects with optional hours, mixed with codes', () => {
+    expect(
+      validate(
+        {
+          assignees: [
+            { code: 'y1001249', hours: 2.5 },
+            { code: 'y1001290' },
+            'richardp',
+          ],
+        },
+        true
+      )
+    ).to.deep.equal([]);
+  });
+
+  it('rejects invalid hours and unknown assignee keys', () => {
+    const cases = [
+      { assignees: [{ code: 'y1001249', hours: '2' }] },
+      { assignees: [{ code: 'y1001249', hours: -1 }] },
+      { assignees: [{ code: 'y1001249', hours: 10000 }] },
+      { assignees: [{ code: 'y1001249', hours: NaN }] },
+      { assignees: [{ code: 'y1001249', name: 'David' }] },
+      { assignees: [{ hours: 1 }] },
+      { assignees: [{ code: 'y1001249' }, 'y1001249'] },
+    ];
+    cases.forEach(workOrder => {
+      const errors = validate(workOrder, true);
+      expect(errors.map(({ path }) => path)).to.deep.equal(
+        ['assignees'],
+        JSON.stringify(workOrder)
+      );
+    });
+  });
+});

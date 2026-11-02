@@ -84,6 +84,16 @@ module.exports = function createPatchYardiWorkOrder() {
       );
     }
 
+    // Sending assignees replaces Yardi's labor
+    // entries, so keep the hours already recorded
+    // for employees that stay assigned
+    if (Array.isArray(updates.assignees)) {
+      updates.assignees = mergeAssigneeHours(
+        updates.assignees,
+        existing.assignees || []
+      );
+    }
+
     // Update work order in Yardi, which
     // requires the unit alongside the ID
     let updated = null;
@@ -108,3 +118,28 @@ module.exports = function createPatchYardiWorkOrder() {
     res.status(200).send({ data: toJsonApi(updated) });
   };
 };
+
+/**
+ * Normalize requested assignees to {code, hours},
+ * filling in hours Yardi already holds for an
+ * employee when the request did not provide any
+ * @param  {Array} requested - codes or {code, hours}
+ * @param  {Object[]} existing - [{code, hours}]
+ * @return {Object[]}
+ */
+function mergeAssigneeHours(requested, existing) {
+  return requested.map(assignee => {
+    const isObject = assignee && typeof assignee === 'object';
+    const code = `${isObject ? assignee.code : assignee}`;
+    const result = { code };
+
+    if (isObject && typeof assignee.hours === 'number') {
+      result.hours = assignee.hours;
+    } else {
+      const current = existing.find(entry => entry && entry.code === code);
+      if (current && current.hours > 0) result.hours = current.hours;
+    }
+
+    return result;
+  });
+}

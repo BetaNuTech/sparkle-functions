@@ -1110,3 +1110,42 @@ describe('Services | Utils | Yardi Helpers | Assignees', () => {
     expect(actual.employees).to.deep.equal([]);
   });
 });
+
+describe('Services | Utils | Yardi Helpers | Assignee hours', () => {
+  it('writes hours for assignees that provide them', () => {
+    const actual = yardiHelpers.createYardiServiceRequestXml('prop', {
+      assignees: [
+        { code: 'y1001249', hours: 2.25 },
+        { code: 'y1001290' },
+        'richardp',
+      ],
+    });
+
+    expect(actual).to.contain(
+      '<Employees><Employee Code="y1001249"><Hours>2.25</Hours></Employee><Employee Code="y1001290"/><Employee Code="richardp"/></Employees>'
+    );
+  });
+
+  it('writes zero hours when explicitly provided', () => {
+    const actual = yardiHelpers.createYardiServiceRequestXml('prop', {
+      assignees: [{ code: 'y1001249', hours: 0 }],
+    });
+
+    expect(actual).to.contain(
+      '<Employee Code="y1001249"><Hours>0</Hours></Employee>'
+    );
+  });
+
+  it('ignores hours that are not a usable number', () => {
+    const actual = yardiHelpers.createYardiServiceRequestXml('prop', {
+      assignees: [
+        { code: 'y1001249', hours: 'abc' },
+        { code: 'y1001290', hours: -1 },
+      ],
+    });
+
+    expect(actual).to.contain(
+      '<Employee Code="y1001249"/><Employee Code="y1001290"/>'
+    );
+  });
+});
