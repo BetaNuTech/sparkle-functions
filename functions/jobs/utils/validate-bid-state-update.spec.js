@@ -99,7 +99,7 @@ describe('Jobs | Utils | Validate Bid State Update', () => {
     }
   });
 
-  it('only allows approved bids to transition to completed', () => {
+  it('only allows approved bids to transition to complete', () => {
     const tests = config.stateTypes.map(state => ({
       expected: state === 'approved' ? 0 : 1,
       data: mocking.createBid({ state }),
@@ -112,7 +112,7 @@ describe('Jobs | Utils | Validate Bid State Update', () => {
       const { expected, data, msg } = tests[i];
       const result = validateBidStateUpdate(
         ADMIN_USER,
-        { state: 'completed' },
+        { state: 'complete' },
         data,
         JOB
       );

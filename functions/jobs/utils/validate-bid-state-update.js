@@ -112,7 +112,7 @@ module.exports = (user, update, bid, job) => {
       }
       break;
     }
-    case 'completed': {
+    case 'complete': {
       if (bid.state !== 'approved') {
         errors.push({
           path: 'state',
