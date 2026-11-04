@@ -1,6 +1,6 @@
 const assert = require('assert');
 const pipe = require('lodash/fp/flow');
-const FieldValue = require('firebase-admin').firestore.FieldValue;
+const { FieldValue } = require('firebase-admin/firestore');
 const { models: modelsConfig } = require('../config');
 const modelSetup = require('./utils/model-setup');
 const defItemsModel = require('./deficient-items');

@@ -1,5 +1,5 @@
 const assert = require('assert');
-const { FieldValue, FieldPath } = require('firebase-admin').firestore;
+const { FieldValue, FieldPath } = require('firebase-admin/firestore');
 const modelSetup = require('./utils/model-setup');
 
 const PREFIX = 'models: registration-tokens:';

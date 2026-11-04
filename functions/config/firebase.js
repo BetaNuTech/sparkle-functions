@@ -1,6 +1,6 @@
 const fs = require('fs');
 const appRoot = require('app-root-path');
-const admin = require('firebase-admin');
+const { cert } = require('firebase-admin/app');
 
 const PREFIX = 'config: firebase: ';
 const AUTH_FILE_PATH = `${appRoot}/../auth.json`;
@@ -40,7 +40,7 @@ try {
   }
 
   // Add service account crentials to config
-  config.credential = admin.credential.cert(serviceAccount);
+  config.credential = cert(serviceAccount);
   config.credentialJson = serviceAccount;
 
   // Limit full access of FB admin

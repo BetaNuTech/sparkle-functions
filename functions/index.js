@@ -1,5 +1,9 @@
-const functions = require('firebase-functions');
-const admin = require('firebase-admin');
+const functions = require('firebase-functions/v1');
+const { initializeApp, getApps, getApp } = require('firebase-admin/app');
+const { getFirestore } = require('firebase-admin/firestore');
+const { getAuth } = require('firebase-admin/auth');
+const { getStorage } = require('firebase-admin/storage');
+const { getMessaging } = require('firebase-admin/messaging');
 const { PubSub } = require('@google-cloud/pubsub');
 const templateCategories = require('./template-categories');
 const inspections = require('./inspections');
@@ -12,11 +16,13 @@ const config = require('./config');
 const createRouter = require('./router');
 
 const { firebase: firebaseConfig } = config;
-admin.initializeApp(firebaseConfig);
-const db = admin.firestore();
-const auth = admin.auth();
-const storage = admin.storage();
-const messaging = admin.messaging();
+// Reuse an already initialized default
+// app, as the test suite creates one first
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+const storage = getStorage(app);
+const messaging = getMessaging(app);
 const pubsubClient = new PubSub({
   projectId: firebaseConfig ? firebaseConfig.projectId : '',
 });
