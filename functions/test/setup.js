@@ -1,6 +1,10 @@
 const path = require('path');
 const dotenv = require('dotenv');
-const admin = require('firebase-admin');
+const { initializeApp } = require('firebase-admin/app');
+const { getFirestore } = require('firebase-admin/firestore');
+const { getAuth } = require('firebase-admin/auth');
+const { getStorage } = require('firebase-admin/storage');
+const { getMessaging } = require('firebase-admin/messaging');
 
 try {
   const cwd = process.cwd();
@@ -15,7 +19,6 @@ try {
 // to ensure no production db is used
 process.env.NODE_ENV = 'test';
 
-const sinon = require('sinon');
 const { PubSub } = require('@google-cloud/pubsub');
 const CONFIG = require('../config');
 
@@ -29,27 +32,14 @@ if (`${testConfig.projectId}`.search('test') === -1) {
   throw Error('Must only provide test project credentials to E2E test suite');
 }
 
-admin.initializeApp(testConfig);
-const realtimeDb = admin.database();
-const db = admin.firestore();
-const auth = admin.auth();
-const storage = admin.storage();
-const messaging = admin.messaging();
-
-// Stub admin.initializeApp & `database()` to avoid live data access
-sinon.stub(admin, 'initializeApp').returns({ database: () => realtimeDb });
-Object.defineProperty(admin, 'database', {
-  writable: true,
-  value: () => realtimeDb,
-});
-Object.defineProperty(admin, 'storage', {
-  writable: true,
-  value: () => storage,
-});
-Object.defineProperty(admin, 'messaging', {
-  writable: true,
-  value: () => messaging,
-});
+// Initialize the default app before ../index loads,
+// so the functions reuse it, and its services, with
+// any stubs tests add (e.g. on `messaging.send`)
+const app = initializeApp(testConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+const storage = getStorage(app);
+const messaging = getMessaging(app);
 
 // Stub out pubsub publisher prototype
 // to avoid publishing live messages

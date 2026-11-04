@@ -1,19 +1,8 @@
-const functions = require('firebase-functions');
-
-const firebaseConfig = functions.config() || {};
-
-// Use any system or firebase AWS secrets
-const AWS_S3_ACCESS_KEY_ID =
-  process.env.AWS_S3_ACCESS_KEY_ID ||
-  (firebaseConfig.aws && firebaseConfig.aws.id);
-
-const AWS_S3_SECRET_ACCESS_KEY =
-  process.env.AWS_S3_SECRET_ACCESS_KEY ||
-  (firebaseConfig.aws && firebaseConfig.aws.key);
-
-const AWS_S3_BUCKET_NAME =
-  process.env.AWS_S3_BUCKET_NAME ||
-  (firebaseConfig.aws && firebaseConfig.aws.bucketname);
+const {
+  AWS_S3_ACCESS_KEY_ID,
+  AWS_S3_SECRET_ACCESS_KEY,
+  AWS_S3_BUCKET_NAME,
+} = process.env;
 
 if (!AWS_S3_ACCESS_KEY_ID) {
   console.warn(

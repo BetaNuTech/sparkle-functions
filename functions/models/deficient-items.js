@@ -1,5 +1,5 @@
 const assert = require('assert');
-const FieldPath = require('firebase-admin').firestore.FieldPath;
+const { FieldPath } = require('firebase-admin/firestore');
 // const { FieldPath } = require('@google-cloud/firestore');
 const modelSetup = require('./utils/model-setup');
 const systemModel = require('./system');

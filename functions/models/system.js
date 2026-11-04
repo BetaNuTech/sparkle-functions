@@ -1,5 +1,5 @@
 const assert = require('assert');
-const FieldValue = require('firebase-admin').firestore.FieldValue;
+const { FieldValue } = require('firebase-admin/firestore');
 const archive = require('./_internal/archive');
 const modelSetup = require('./utils/model-setup');
 const config = require('../config');
