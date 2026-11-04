@@ -74,9 +74,9 @@ module.exports = {
 
   createMessagingStub(cb = () => {}) {
     return {
-      sendToDevice(...args) {
+      send(...args) {
         const result = cb(...args);
-        return result || Promise.resolve({ multicastId: uuid() });
+        return result || Promise.resolve(`projects/test/messages/${uuid()}`);
       },
     };
   },

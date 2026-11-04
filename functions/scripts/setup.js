@@ -13,16 +13,19 @@ try {
 
 const config = require('../config'); // eslint-disable-line
 const { firebase: fbConfig } = config;
-const admin = require('firebase-admin'); // eslint-disable-line
-const defaultApp = admin.initializeApp(fbConfig, 'script');
-const db = defaultApp.firestore();
+const { initializeApp } = require('firebase-admin/app'); // eslint-disable-line
+const { getFirestore } = require('firebase-admin/firestore'); // eslint-disable-line
+const { getAuth } = require('firebase-admin/auth'); // eslint-disable-line
+const { getStorage } = require('firebase-admin/storage'); // eslint-disable-line
+
+const scriptApp = initializeApp(fbConfig, 'script');
+const db = getFirestore(scriptApp);
 const test = require('firebase-functions-test')(fbConfig); // eslint-disable-line
 const cloudFunctions = require('../index'); // eslint-disable-line
-const auth = admin.auth();
-const storage = admin.storage();
+const auth = getAuth(); // default app, initialized by ../index
+const storage = getStorage();
 
 module.exports = {
-  admin,
   auth,
   db,
   test,

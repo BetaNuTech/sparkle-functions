@@ -3,6 +3,7 @@ const { expect } = require('chai');
 const uuid = require('../../../test-helpers/uuid');
 const mocking = require('../../../test-helpers/mocking');
 const regTokenModel = require('../../../models/registration-tokens');
+const usersModel = require('../../../models/users');
 const notificationsModel = require('../../../models/notifications');
 const { cleanDb } = require('../../../test-helpers/firebase');
 const { db, test, cloudFunctions, messaging } = require('../../setup');
@@ -31,12 +32,15 @@ describe('Notifications | Pubsub | Publish Push V2', () => {
     };
     const notification = mocking.createNotification(null, null, pushConfig); // has 1 push target
     const regTokens = { [uuid()]: mocking.nowUnix() };
-    const sendtoDevicePayload = { multicastId: uuid() };
 
     // Stup Requests
-    sinon.stub(messaging, 'sendToDevice').resolves(sendtoDevicePayload);
+    const sendStub = sinon
+      .stub(messaging, 'send')
+      .resolves(`projects/test/messages/${uuid()}`);
 
     // Setup Database
+    await usersModel.createRecord(db, user1Id, mocking.createUser());
+    await usersModel.createRecord(db, user2Id, mocking.createUser());
     await regTokenModel.createRecord(db, user1Id, regTokens);
     await regTokenModel.createRecord(db, user2Id, regTokens);
     await notificationsModel.createRecord(db, notificationId, notification);
@@ -50,6 +54,7 @@ describe('Notifications | Pubsub | Publish Push V2', () => {
     const result = resultSnap.data() || {};
 
     // Assertions
+    expect(sendStub.callCount).to.equal(2, 'sent a message to each user');
     [
       {
         actual: (result.publishedMediums || {}).push || false,
@@ -88,10 +93,9 @@ describe('Notifications | Pubsub | Publish Push V2', () => {
       },
     };
     const notification = mocking.createNotification(null, null, pushConfig); // has 1 push target
-    const sendtoDevicePayload = { multicastId: uuid() };
 
     // Stup Requests
-    sinon.stub(messaging, 'sendToDevice').resolves(sendtoDevicePayload);
+    sinon.stub(messaging, 'send').resolves(`projects/test/messages/${uuid()}`);
 
     // Setup Database
     await notificationsModel.createRecord(db, notificationId, notification);
@@ -107,5 +111,54 @@ describe('Notifications | Pubsub | Publish Push V2', () => {
 
     // Assertions
     expect(actual).to.equal(expected);
+  });
+
+  it('removes registration tokens FCM reports as unregistered', async () => {
+    const userId = uuid();
+    const notificationId = uuid();
+    // Shaped like real FCM tokens, which contain ":" and "-"
+    const deadToken = `dEaD${uuid()}:APA91b-${uuid()}_x`;
+    const liveToken = `lIvE${uuid()}:APA91b-${uuid()}_y`;
+    const pushConfig = {
+      [userId]: {
+        title: 'title',
+        message: 'message',
+        createdAt: mocking.nowUnix(),
+      },
+    };
+    const notification = mocking.createNotification(null, null, pushConfig);
+
+    // Stup Requests
+    sinon.stub(messaging, 'send').callsFake(msg => {
+      if (msg.token === deadToken) {
+        const err = Error('Requested entity was not found.');
+        err.code = 'messaging/registration-token-not-registered';
+        return Promise.reject(err);
+      }
+      return Promise.resolve(`projects/test/messages/${uuid()}`);
+    });
+
+    // Setup Database
+    await usersModel.createRecord(db, userId, mocking.createUser());
+    await regTokenModel.createRecord(db, userId, {
+      [deadToken]: mocking.nowUnix(),
+      [liveToken]: mocking.nowUnix(),
+    });
+    await notificationsModel.createRecord(db, notificationId, notification);
+
+    // Execute
+    const message = { data: Buffer.from(notificationId) };
+    await test.wrap(cloudFunctions.publishPushNotificationsV2)(message);
+
+    // Test Results
+    const tokensSnap = await regTokenModel.findRecord(db, userId);
+    const tokens = tokensSnap.data() || {};
+    const resultSnap = await notificationsModel.findRecord(db, notificationId);
+    const result = resultSnap.data() || {};
+
+    // Assertions
+    expect(tokens).to.not.have.property(deadToken);
+    expect(tokens).to.have.property(liveToken);
+    expect(result.unpublishedPush).to.equal(0);
   });
 });

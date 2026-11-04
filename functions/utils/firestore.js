@@ -1,5 +1,5 @@
 const assert = require('assert');
-const FieldValue = require('firebase-admin').firestore.FieldValue;
+const { FieldValue } = require('firebase-admin/firestore');
 
 module.exports = {
   /**
