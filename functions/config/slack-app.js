@@ -1,14 +1,4 @@
-const functions = require('firebase-functions');
-
-const firebaseConfig = functions.config() || {};
-
-const SLACK_CLIENT_SECRET =
-  process.env.SLACK_CLIENT_SECRET ||
-  (firebaseConfig.slack && firebaseConfig.slack.secret);
-
-const SLACK_CLIENT_ID =
-  process.env.SLACK_CLIENT_ID ||
-  (firebaseConfig.slack && firebaseConfig.slack.clientid);
+const { SLACK_CLIENT_SECRET, SLACK_CLIENT_ID } = process.env;
 
 if (!SLACK_CLIENT_SECRET) {
   console.warn(

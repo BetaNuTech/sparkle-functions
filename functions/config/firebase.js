@@ -1,20 +1,19 @@
 const fs = require('fs');
 const appRoot = require('app-root-path');
 const admin = require('firebase-admin');
-const functions = require('firebase-functions');
 
 const PREFIX = 'config: firebase: ';
 const AUTH_FILE_PATH = `${appRoot}/../auth.json`;
 
 let config = null;
-const firebaseConfig = functions.config() || {};
 
 try {
-  // Get auth file from environment if non-existent
+  // Get auth file from environment if non-existent.
+  // Deployed functions get SPARKLE_FUNCTIONS_AUTH from
+  // functions/.env, as the FIREBASE_ prefix is reserved there
   let serviceAccount;
-  const firebaseAuthHex = firebaseConfig.auth
-    ? firebaseConfig.auth.firebase
-    : process.env.FIREBASE_FUNCTIONS_AUTH;
+  const firebaseAuthHex =
+    process.env.SPARKLE_FUNCTIONS_AUTH || process.env.FIREBASE_FUNCTIONS_AUTH;
   if (firebaseAuthHex) {
     serviceAccount = JSON.parse(Buffer.from(firebaseAuthHex, 'hex').toString());
   } else if (fs.existsSync(AUTH_FILE_PATH)) {
