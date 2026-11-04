@@ -84,6 +84,12 @@ exports.createNotification = functions.firestore
     )
   );
 
+// Mirror registration tokens that released iOS
+// builds write to the Realtime Database into Firestore
+exports.regTokensRealtimeMirror = functions.database
+  .ref('/registrationTokens/{userId}')
+  .onWrite(regTokens.watchers.createOnWriteRealtime(db));
+
 // Message Subscribers
 
 exports.regTokensSync = regTokens.pubsub.createSyncOutdated(

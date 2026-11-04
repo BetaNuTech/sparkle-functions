@@ -1,5 +1,5 @@
 const assert = require('assert');
-const FieldValue = require('firebase-admin').firestore.FieldValue;
+const { FieldValue, FieldPath } = require('firebase-admin').firestore;
 const modelSetup = require('./utils/model-setup');
 
 const PREFIX = 'models: registration-tokens:';
@@ -36,6 +36,53 @@ module.exports = modelSetup({
       .collection(TOKEN_COLLECTION)
       .doc(userId)
       .create(data);
+  },
+
+  /**
+   * Add or refresh a user's registration
+   * tokens, keeping any other tokens
+   * @param  {admin.firestore} db
+   * @param  {String} userId
+   * @param  {Object} tokens - { [token]: unix timestamp }
+   * @return {Promise} - resolves {WriteResult}
+   */
+  upsertTokens(db, userId, tokens) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(userId && typeof userId === 'string', 'has user id');
+    assert(tokens && typeof tokens === 'object', 'has tokens');
+    // set() treats keys as literal field
+    // names, so tokens are never parsed as paths
+    return db
+      .collection(TOKEN_COLLECTION)
+      .doc(userId)
+      .set(tokens, { merge: true });
+  },
+
+  /**
+   * Remove specific registration
+   * tokens from a user's record
+   * @param  {admin.firestore} db
+   * @param  {String} userId
+   * @param  {String[]} tokens
+   * @return {Promise} - resolves {WriteResult}
+   */
+  removeTokens(db, userId, tokens) {
+    assert(db && typeof db.collection === 'function', 'has firestore db');
+    assert(userId && typeof userId === 'string', 'has user id');
+    assert(
+      Array.isArray(tokens) &&
+        tokens.length &&
+        tokens.every(t => t && typeof t === 'string'),
+      'has tokens to remove'
+    );
+    const updates = [];
+    tokens.forEach(token =>
+      updates.push(new FieldPath(token), FieldValue.delete())
+    );
+    return db
+      .collection(TOKEN_COLLECTION)
+      .doc(userId)
+      .update(...updates);
   },
 
   /**

@@ -10,8 +10,62 @@ const {
 } = require('../../../test-helpers/stubs');
 const uuid = require('../../../test-helpers/uuid');
 const regTokensModel = require('../../../models/registration-tokens');
+const usersModel = require('../../../models/users');
 const notificationsModel = require('../../../models/notifications');
 const createHandler = require('../../../notifications/pubsub/publish-push-v2');
+
+const ONE_DAY_SEC = 60 * 60 * 24;
+
+/**
+ * Create an FCM style error
+ * @param  {String} code
+ * @return {Error}
+ */
+function fcmError(code) {
+  const err = Error(`fcm error: ${code}`);
+  err.code = code;
+  return err;
+}
+
+/**
+ * Stub a single notification with
+ * one push message for a user with
+ * the provided registration tokens
+ * @param  {Object} options
+ * @return {Object}
+ */
+function setupSinglePush({
+  regTokens = { [uuid()]: mocking.nowUnix() },
+  createdAt = mocking.nowUnix(),
+  noteConfig = {},
+  user = {},
+} = {}) {
+  const userId = uuid();
+  const notificationId = uuid();
+  const pushConfig = {
+    [userId]: { title: 'title', message: 'message', createdAt },
+  };
+  const notification = mocking.createNotification(noteConfig, null, pushConfig);
+
+  sinon
+    .stub(notificationsModel, 'query')
+    .resolves(createCollection(createSnapshot(notificationId, notification)));
+  sinon
+    .stub(regTokensModel, 'findRecord')
+    .resolves(createSnapshot(userId, regTokens));
+
+  sinon
+    .stub(usersModel, 'findRecord')
+    .resolves(createSnapshot(userId, { pushOptOut: false, ...user }));
+
+  const updates = [];
+  sinon.stub(notificationsModel, 'updateRecord').callsFake((_, id, update) => {
+    updates.push({ ...update });
+    return Promise.resolve();
+  });
+
+  return { userId, notificationId, updates };
+}
 
 describe('Notifications | Pubsub | Publish Push V2', function() {
   afterEach(() => sinon.restore());
@@ -60,119 +114,77 @@ describe('Notifications | Pubsub | Publish Push V2', function() {
     expect(actual).to.deep.equal(expected);
   });
 
-  it('publishes push messages to all a users registered tokens', async () => {
+  it('sends one message to each of a users registered tokens', async () => {
     const expected = [uuid(), uuid()];
-    const userId = uuid();
-    const notificationId = uuid();
-    const pushConfig = {
-      [userId]: {
-        title: 'title',
-        message: 'message',
-        createdAt: mocking.nowUnix(),
+    setupSinglePush({
+      regTokens: {
+        [expected[0]]: mocking.nowUnix(),
+        [expected[1]]: mocking.nowUnix(),
       },
-    };
-    const notification = mocking.createNotification(null, null, pushConfig); // has 1 push target
-    const regTokens = {
-      [expected[0]]: mocking.nowUnix(),
-      [expected[1]]: mocking.nowUnix(),
-    };
+    });
 
-    sinon
-      .stub(notificationsModel, 'query')
-      .resolves(createCollection(createSnapshot(notificationId, notification)));
-    sinon.stub(notificationsModel, 'updateRecord').resolves();
-    sinon
-      .stub(regTokensModel, 'findRecord')
-      .resolves(createSnapshot(userId, regTokens));
-
-    let actual = null;
-    const publisher = result => {
-      actual = result;
-    };
-
+    const actual = [];
     await createHandler(
       createFirestore(),
       createPubSubHandler(),
       'topic',
-      createMessagingStub(publisher)
+      createMessagingStub(msg => {
+        actual.push(msg.token);
+      })
     );
 
     expect(actual).to.deep.equal(expected);
   });
 
-  it('publishes expected push message title and message', async () => {
-    const expected = { title: 'test-title', body: 'test-message' };
-    const userId = uuid();
-    const notificationId = uuid();
-    const pushConfig = {
-      [userId]: {
-        title: expected.title,
-        message: expected.body,
-        createdAt: mocking.nowUnix(),
-      },
-    };
-    const notification = mocking.createNotification(null, null, pushConfig); // has 1 push target
-    const regTokens = { [uuid()]: mocking.nowUnix() };
-
-    sinon
-      .stub(notificationsModel, 'query')
-      .resolves(createCollection(createSnapshot(notificationId, notification)));
-    sinon.stub(notificationsModel, 'updateRecord').resolves();
-    sinon
-      .stub(regTokensModel, 'findRecord')
-      .resolves(createSnapshot(userId, regTokens));
+  it('sends an FCM v1 message with title, body, APNs alert config and data', async () => {
+    const propertyId = uuid();
+    const { notificationId } = setupSinglePush({
+      noteConfig: { property: propertyId },
+    });
 
     let actual = null;
-    const publisher = (_, result) => {
-      actual = JSON.parse(JSON.stringify(result.notification));
-      delete actual.icon;
-    };
-
     await createHandler(
       createFirestore(),
       createPubSubHandler(),
       'topic',
-      createMessagingStub(publisher)
+      createMessagingStub(msg => {
+        actual = msg;
+      })
     );
 
-    expect(actual).to.deep.equal(expected);
+    expect(actual.notification).to.deep.equal({
+      title: 'title',
+      body: 'message',
+    });
+    expect(actual.apns.headers['apns-push-type']).to.equal('alert');
+    expect(actual.apns.headers['apns-priority']).to.equal('10');
+    expect(actual.apns.payload.aps.sound).to.equal('default');
+    expect(actual.data).to.deep.equal({ notificationId, propertyId });
+  });
+
+  it('omits an empty property from the message data', async () => {
+    const { notificationId } = setupSinglePush();
+
+    let actual = null;
+    await createHandler(
+      createFirestore(),
+      createPubSubHandler(),
+      'topic',
+      createMessagingStub(msg => {
+        actual = msg.data;
+      })
+    );
+
+    expect(actual).to.deep.equal({ notificationId });
   });
 
   it('updates notification with state denoting all push messages published', async () => {
-    const userId = uuid();
+    const { userId, updates } = setupSinglePush();
     const expected = {
       unpublishedPush: 0,
       'publishedMediums.push': true,
       [`push.${userId}`]: null, // replaces FieldValue update
     };
-    const notificationId = uuid();
-    const pushConfig = {
-      [userId]: {
-        title: 'title',
-        message: 'message',
-        createdAt: mocking.nowUnix(),
-      },
-    };
-    const notification = mocking.createNotification(null, null, pushConfig); // has 1 push target
-    const regTokens = { [uuid()]: mocking.nowUnix() };
-
-    sinon
-      .stub(notificationsModel, 'query')
-      .resolves(createCollection(createSnapshot(notificationId, notification)));
-    sinon
-      .stub(regTokensModel, 'findRecord')
-      .resolves(createSnapshot(userId, regTokens));
-
-    let actual = null;
-    sinon
-      .stub(notificationsModel, 'updateRecord')
-      .callsFake((_, id, update) => {
-        actual = { ...update };
-        if (typeof actual[`push.${userId}`] === 'object') {
-          actual[`push.${userId}`] = null;
-        }
-        return Promise.resolve();
-      });
 
     await createHandler(
       createFirestore(),
@@ -181,6 +193,117 @@ describe('Notifications | Pubsub | Publish Push V2', function() {
       createMessagingStub()
     );
 
+    const actual = { ...updates[0], [`push.${userId}`]: null };
     expect(actual).to.deep.equal(expected);
+  });
+
+  it('removes tokens FCM reports as unregistered or invalid', async () => {
+    const goodToken = uuid();
+    const unregistered = uuid();
+    const invalid = uuid();
+    const { userId } = setupSinglePush({
+      regTokens: {
+        [goodToken]: mocking.nowUnix(),
+        [unregistered]: mocking.nowUnix(),
+        [invalid]: mocking.nowUnix(),
+      },
+    });
+    const removeStub = sinon.stub(regTokensModel, 'removeTokens').resolves();
+
+    await createHandler(
+      createFirestore(),
+      createPubSubHandler(),
+      'topic',
+      createMessagingStub(msg => {
+        if (msg.token === unregistered) {
+          return Promise.reject(
+            fcmError('messaging/registration-token-not-registered')
+          );
+        }
+        if (msg.token === invalid) {
+          return Promise.reject(
+            fcmError('messaging/invalid-registration-token')
+          );
+        }
+        return null;
+      })
+    );
+
+    expect(removeStub.calledOnce).to.equal(true, 'removed tokens once');
+    const [, actualUser, actualTokens] = removeStub.firstCall.args;
+    expect(actualUser).to.equal(userId);
+    expect(actualTokens).to.deep.equal([unregistered, invalid]);
+  });
+
+  it('marks a message published when all of a users tokens are invalid', async () => {
+    const { updates } = setupSinglePush();
+    sinon.stub(regTokensModel, 'removeTokens').resolves();
+
+    await createHandler(
+      createFirestore(),
+      createPubSubHandler(),
+      'topic',
+      createMessagingStub(() =>
+        Promise.reject(fcmError('messaging/registration-token-not-registered'))
+      )
+    );
+
+    expect(updates[0].unpublishedPush).to.equal(0);
+    expect(updates[0]['publishedMediums.push']).to.equal(true);
+  });
+
+  it('keeps a message for retry when sending fails temporarily', async () => {
+    const { userId, updates } = setupSinglePush();
+    const removeStub = sinon.stub(regTokensModel, 'removeTokens').resolves();
+
+    await createHandler(
+      createFirestore(),
+      createPubSubHandler(),
+      'topic',
+      createMessagingStub(() =>
+        Promise.reject(fcmError('messaging/server-unavailable'))
+      )
+    );
+
+    expect(updates[0].unpublishedPush).to.equal(1);
+    expect(updates[0]).to.not.have.property(`push.${userId}`);
+    expect(updates[0]).to.not.have.property('publishedMediums.push');
+    expect(removeStub.called).to.equal(false, 'kept registration token');
+  });
+
+  it('abandons a temporarily failing message once it is a day old', async () => {
+    const { userId, updates } = setupSinglePush({
+      createdAt: mocking.nowUnix() - ONE_DAY_SEC - 1,
+    });
+
+    await createHandler(
+      createFirestore(),
+      createPubSubHandler(),
+      'topic',
+      createMessagingStub(() =>
+        Promise.reject(fcmError('messaging/server-unavailable'))
+      )
+    );
+
+    expect(updates[0].unpublishedPush).to.equal(0);
+    expect(updates[0]).to.have.property(`push.${userId}`);
+  });
+
+  it('does not send to a user who opted out after the message was created', async () => {
+    const { userId, updates } = setupSinglePush({ user: { pushOptOut: true } });
+
+    let sent = false;
+    await createHandler(
+      createFirestore(),
+      createPubSubHandler(),
+      'topic',
+      createMessagingStub(() => {
+        sent = true;
+      })
+    );
+
+    expect(sent).to.equal(false, 'sent no message');
+    expect(updates[0].unpublishedPush).to.equal(0);
+    expect(updates[0]).to.have.property(`push.${userId}`);
   });
 });
